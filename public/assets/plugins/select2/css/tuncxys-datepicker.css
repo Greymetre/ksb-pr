@@ -1,0 +1,627 @@
+﻿﻿﻿/*!
+ * Tuncxys DatePicker v1.0.0
+ * Copyright (c) 2025 Tuncxy
+ * Licensed under MIT (https://github.com/Tuncxy/tuncxys-datepicker)
+ */
+
+/* =========================================
+   1. THEME VARIABLES & CONFIGURATION 
+   ========================================= */
+
+/* --- Default Theme (Light) --- */
+/* Applied to both wrapper and independent popups */
+.txydp-wrapper,
+.txydp-popup,
+.txydp-warning-message {
+    /* 1. Container & Input Styling */
+    --txydp-bg: #ffffff;
+    --txydp-border: #cccccc;
+    --txydp-border-focus: #333333;
+    --txydp-text: #333333;
+    --txydp-placeholder: #a0a0a0;
+    /* 2. Icons */
+    --txydp-icon: #333333;
+    --txydp-icon-bg-hover: #f0f0f0;
+    /* 3. Calendar Grid */
+    --txydp-weekday-text: #888888;
+    --txydp-day-hover-bg: #f0f0f0;
+    --txydp-day-other-month: #cccccc;
+    /* 4. Selection States */
+    --txydp-selected-bg: #333333;
+    --txydp-selected-text: #ffffff;
+    /* 5. Special Days (Today) */
+    --txydp-today-bg: #cde9fc;
+    --txydp-today-text: #4a90e2;
+    /* 6. Validation & Errors */
+    --txydp-restricted-color: #ffaaaa;
+    --txydp-error-color: #ff4444;
+    --txydp-toast-bg: #ffffff;
+    --txydp-toast-text: #333333;
+    /* 7. Time Picker */
+    --txydp-time-header: #888888;
+    --txydp-time-text: #cccccc;
+    --txydp-time-text-active: #222222;
+    --txydp-time-separator: #f0f0f0;
+    --txydp-time-grad-start: rgba(255, 255, 255, 1);
+    --txydp-time-grad-end: rgba(255, 255, 255, 0);
+    --txydp-z-index: 9999;
+    font-family: 'Segoe UI', sans-serif;
+    box-sizing: border-box;
+}
+
+    /* --- Dark Theme Override --- */
+    .txydp-wrapper.theme-dark,
+    .txydp-popup.theme-dark,
+    .txydp-warning-message.theme-dark {
+        --txydp-bg: #1e1e1e;
+        --txydp-border: #444444;
+        --txydp-border-focus: #e0e0e0;
+        --txydp-text: #e0e0e0;
+        --txydp-placeholder: #666666;
+        --txydp-icon: #e0e0e0;
+        --txydp-icon-bg-hover: #333333;
+        --txydp-weekday-text: #888888;
+        --txydp-day-hover-bg: #2d2d2d;
+        --txydp-day-other-month: #555555;
+        --txydp-selected-bg: #e0e0e0;
+        --txydp-selected-text: #1e1e1e;
+        --txydp-today-bg: rgba(255, 165, 0, 0.2);
+        --txydp-today-text: #fbbf24;
+        --txydp-restricted-color: #804040;
+        --txydp-error-color: #ff6b6b;
+        --txydp-toast-bg: #333333;
+        --txydp-toast-text: #e0e0e0;
+        --txydp-time-header: #888888;
+        --txydp-time-text: #555555;
+        --txydp-time-text-active: #ffffff;
+        --txydp-time-separator: #333333;
+        --txydp-time-grad-start: rgba(30, 30, 30, 1);
+        --txydp-time-grad-end: rgba(30, 30, 30, 0);
+    }
+
+/* =========================================
+   2. BASE RESET & LAYOUT
+   ========================================= */
+.txydp-wrapper {
+    position: relative;
+    width: 100%;
+    container-type: inline-size;
+    line-height: normal;
+    font-size: 16px;
+    margin: 0;
+    padding: 0;
+    text-align: left;
+    isolation: isolate; 
+    z-index: 1; 
+}
+
+    .txydp-wrapper *,
+    .txydp-wrapper *::before,
+    .txydp-wrapper *::after,
+    .txydp-popup *,
+    .txydp-popup *::before,
+    .txydp-popup *::after {
+        box-sizing: border-box;
+        line-height: inherit;
+        margin: 0;
+        padding: 0;
+        outline: none;
+    }
+
+/* =========================================
+   3. INPUT GROUP
+   ========================================= */
+.txydp-input-group {
+    display: flex;
+    align-items: center;
+    background: var(--txydp-bg);
+    border: 1px solid var(--txydp-border);
+    border-radius: 8px;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 6 / 1;
+    container-type: inline-size;
+    padding: 0 3cqw;
+    transition: border-color 0.3s;
+}
+
+    .txydp-input-group:focus-within {
+        border-color: var(--txydp-border-focus);
+    }
+
+    .txydp-input-group input {
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 1cqw !important;
+        height: 100% !important;
+        width: 100% !important;
+        line-height: normal !important;
+        appearance: none;
+        -webkit-appearance: none;
+        outline: none;
+        flex-grow: 1;
+        font-size: 6cqw;
+        color: var(--txydp-text) !important;
+        caret-color: transparent;
+    }
+
+        .txydp-input-group input::placeholder {
+            color: var(--txydp-placeholder);
+            opacity: 1;
+        }
+
+        .txydp-input-group input::selection {
+            background-color: var(--txydp-selection-bg, #ddd);
+            color: var(--txydp-selection-text, #000);
+        }
+
+/* --- Action Icons --- */
+.txydp-icons {
+    display: flex;
+    gap: 1.5cqw;
+    flex-shrink: 0;
+    height: 60%;
+    align-items: center;
+    
+    position: relative; 
+    z-index: 2;
+    pointer-events: auto;
+}
+
+.txydp-btn {
+    cursor: pointer;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15%;
+    transition: background 0.2s;
+}
+
+    .txydp-btn:hover {
+        background-color: var(--txydp-icon-bg-hover);
+    }
+
+    .txydp-btn svg {
+        width: 60%;
+        height: 60%;
+        fill: var(--txydp-icon);
+    }
+
+/* =========================================
+   4. POPUP CONTAINERS (MODIFIED)
+   ========================================= */
+.txydp-popup {
+    display: none;
+    position: absolute;
+    min-width: 250px;
+    max-width: 300px;
+    background: var(--txydp-bg);
+    border: 1px solid var(--txydp-border);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    padding: 12px;
+    z-index: var(--txydp-z-index);
+    
+    overflow: hidden;
+}
+
+    .txydp-popup.active {
+        display: block;
+    }
+
+/* =========================================
+   5. CALENDAR VIEW
+   ========================================= */
+.txydp-calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 4px 0;
+    font-weight: 600;
+    color: var(--txydp-text);
+}
+
+.txydp-month-year {
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+    .txydp-month-year.interactive:hover {
+        background-color: var(--txydp-day-hover-bg);
+        cursor: pointer;
+    }
+
+.txydp-nav-btn {
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    user-select: none;
+    transition: background 0.2s;
+    background: var(--txydp-day-hover-bg);
+}
+
+    .txydp-nav-btn:hover {
+        background-color: var(--txydp-border);
+    }
+
+    .txydp-nav-btn svg {
+        width: 18px;
+        height: 18px;
+        fill: var(--txydp-icon);
+    }
+
+    .txydp-nav-btn.disabled {
+        opacity: 0.3;
+        pointer-events: none;
+        cursor: default;
+    }
+
+.txydp-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 12px;
+    color: var(--txydp-weekday-text);
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.txydp-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.txydp-day {
+    aspect-ratio: 1.25 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s;
+    font-weight: 500;
+    color: var(--txydp-text);
+    border: 2px solid transparent;
+}
+
+    .txydp-day:hover {
+        background-color: var(--txydp-day-hover-bg);
+        color: var(--txydp-text);
+    }
+
+    .txydp-day.selected {
+        background-color: var(--txydp-selected-bg);
+        color: var(--txydp-selected-text);
+        border-color: var(--txydp-selected-bg);
+    }
+
+    .txydp-day.other-month {
+        color: var(--txydp-day-other-month);
+    }
+
+        .txydp-day.other-month:hover {
+            background-color: var(--txydp-day-hover-bg);
+            color: var(--txydp-weekday-text);
+        }
+
+    .txydp-day.hidden-day {
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .txydp-day.today {
+        border: 2px solid transparent;
+        background-color: var(--txydp-today-bg);
+        color: var(--txydp-today-text);
+        font-weight: 600;
+    }
+
+        .txydp-day.today.selected {
+            border-color: var(--txydp-selected-bg);
+            background-color: var(--txydp-selected-bg);
+            color: var(--txydp-selected-text);
+        }
+
+/* --- Year Picker --- */
+.txydp-year-picker {
+    display: none;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 200px;
+    padding: 2px;
+    align-content: start;
+    scrollbar-color: var(--txydp-border) var(--txydp-day-hover-bg);
+    scrollbar-width: thin;
+}
+
+    .txydp-year-picker.active {
+        display: grid;
+    }
+
+.txydp-year-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 4px 0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--txydp-text);
+    background: var(--txydp-bg);
+    border: 2px solid transparent;
+}
+
+    .txydp-year-item:hover {
+        background-color: var(--txydp-day-hover-bg);
+    }
+
+    .txydp-year-item.selected {
+        background-color: var(--txydp-selected-bg);
+        color: var(--txydp-selected-text);
+        border-color: var(--txydp-selected-bg);
+    }
+
+    .txydp-year-item.current-year {
+        border: 2px solid transparent;
+        background-color: var(--txydp-today-bg);
+        color: var(--txydp-today-text);
+        font-weight: 600;
+    }
+
+        .txydp-year-item.current-year.selected {
+            border-color: var(--txydp-selected-bg);
+            background-color: var(--txydp-selected-bg);
+            color: var(--txydp-selected-text);
+        }
+
+/* Scrollbar Styling */
+.txydp-year-picker::-webkit-scrollbar {
+    width: 6px;
+}
+
+.txydp-year-picker::-webkit-scrollbar-thumb {
+    background-color: var(--txydp-border);
+    border-radius: 4px;
+}
+
+.txydp-year-picker::-webkit-scrollbar-track {
+    background-color: var(--txydp-day-hover-bg);
+}
+
+/* =========================================
+   6. TIME PICKER
+   ========================================= */
+.txydp-time-labels {
+    display: flex;
+    width: 100%;
+    margin-bottom: 5px;
+    padding: 0;
+}
+
+.txydp-time-label {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    color: var(--txydp-time-header);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.txydp-time-container {
+    display: flex;
+    width: 100%;
+    height: 96px;
+    position: relative;
+}
+
+    .txydp-time-container::before, .txydp-time-container::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 32px;
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    .txydp-time-container::before {
+        top: 0;
+        background: linear-gradient(to bottom, var(--txydp-time-grad-start) 10%, var(--txydp-time-grad-end));
+    }
+
+    .txydp-time-container::after {
+        bottom: 0;
+        background: linear-gradient(to top, var(--txydp-time-grad-start) 10%, var(--txydp-time-grad-end));
+    }
+
+.txydp-highlight {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 32px;
+    transform: translateY(-50%);
+    border-top: 1px solid var(--txydp-time-separator);
+    border-bottom: 1px solid var(--txydp-time-separator);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.txydp-time-col {
+    flex: 1;
+    height: 100%;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    scroll-snap-type: y mandatory;
+    text-align: center;
+    scrollbar-width: none;
+    position: relative;
+    z-index: 3;
+}
+
+    .txydp-time-col::-webkit-scrollbar {
+        display: none;
+    }
+
+.txydp-time-cell {
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    scroll-snap-align: center;
+    font-size: 15px;
+    color: var(--txydp-time-text);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    transform: scale(0.9);
+}
+
+    .txydp-time-cell.active {
+        color: var(--txydp-time-text-active);
+        font-size: 17px;
+        font-weight: 700;
+        transform: scale(1.1);
+    }
+
+.txydp-spacer {
+    height: 32px;
+}
+
+/* Time Control Buttons */
+.txydp-time-controls {
+    display: flex;
+    width: 100%;
+    margin-top: 5px;
+    border-top: 1px solid var(--txydp-time-separator);
+    padding-top: 5px;
+}
+
+.txydp-control-group {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.txydp-control-btn {
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--txydp-day-hover-bg);
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+    .txydp-control-btn:hover {
+        background-color: var(--txydp-border);
+    }
+
+    .txydp-control-btn:active {
+        background-color: #ddd;
+    }
+
+    .txydp-control-btn svg {
+        width: 14px;
+        height: 14px;
+        fill: var(--txydp-icon);
+    }
+
+/* =========================================
+   7. STATES & VALIDATION
+   ========================================= */
+.txydp-day.disabled-day {
+    color: var(--txydp-day-other-month);
+    cursor: not-allowed;
+    text-decoration: line-through;
+    pointer-events: none;
+}
+
+.txydp-day.restricted-day {
+    color: var(--txydp-restricted-color);
+    cursor: not-allowed;
+    pointer-events: none;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+.txydp-day.today.restricted-day {
+    color: var(--txydp-restricted-color);
+    background-color: var(--txydp-bg);
+}
+
+/* Shake Animation */
+@keyframes txydp-shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+
+    20%, 60% {
+        transform: translateX(-5px);
+    }
+
+    40%, 80% {
+        transform: translateX(5px);
+    }
+}
+
+.txydp-input-group.input-error {
+    animation: txydp-shake 0.3s ease-in-out;
+    border-color: var(--txydp-error-color) !important;
+    box-shadow: 0 0 5px rgba(255, 68, 68, 0.3);
+}
+
+/* Toast/Warning Message */
+.txydp-warning-message {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    
+    background-color: var(--txydp-toast-bg);
+    border-left: 4px solid var(--txydp-error-color);
+    padding: 10px 15px;
+    border-radius: 6px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    font-size: 13px;
+    color: var(--txydp-toast-text);
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    
+    z-index: calc(var(--txydp-z-index) + 10); 
+    
+    pointer-events: none;
+}
+
+.txydp-warning-message.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+    .txydp-warning-message strong {
+        color: var(--txydp-text);
+        font-weight: 700;
+    }
