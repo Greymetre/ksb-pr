@@ -1936,6 +1936,15 @@
                     </div>
                 </li>
                 @endif
+                @if(auth()->user()->can('new_invoice_access'))
+                <li class="nav-link {{ request()->is('new-invoices*') ? 'active' : '' }}">
+                    <a class="hoveradd2" href="{{ route('new-invoices.index') }}">
+                        <i class="material-icons icon">receipt_long</i>
+                        <span>New Invoices</span>
+                        <div class="d-none mobile_hide"> New Invoices</div>
+                    </a>
+                </li>
+                @endif
                 @if(auth()->user()->can('marketing_access'))
                 <li class="nav-link {{ request()->is('marketings*') ? 'active' : '' }}">
                     <a class="collapsed hoveradd" data-toggle="collapse" href="#marketingMenu" aria-expanded="false">

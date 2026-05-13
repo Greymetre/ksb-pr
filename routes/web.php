@@ -72,6 +72,7 @@ use App\Http\Controllers\LoyaltyAppSettingController;
 use App\Http\Controllers\NeftRedemptionDetailsController;
 use App\Http\Controllers\TransactionHistoryController;
 use App\Http\Controllers\OrderSchemeController;
+use App\Http\Controllers\NewInvoiceController;
 use App\Http\Controllers\RedemptionController;
 use App\Http\Controllers\WarrantyActivationController;
 use App\Http\Controllers\SalesTargetUsersController;
@@ -581,6 +582,13 @@ Route::group(['middleware' => ['auth']], function () {
     Route::any('order-detail-delete', [OrderController::class, 'deleteOrderDtails'])->name('orders.deletedetails');
 
     Route::post('submit-fullydispatched', [OrderController::class, 'submitFullyDispatched'])->name('orders.submitFullyDispatched');
+
+    // New Invoices
+    Route::get('new-invoices-export', [NewInvoiceController::class, 'export'])->name('new-invoices.export');
+    Route::post('new-invoices/{newInvoice}/approve/{level}', [NewInvoiceController::class, 'approve'])->name('new-invoices.approve');
+    Route::post('new-invoices/{newInvoice}/reject', [NewInvoiceController::class, 'reject'])->name('new-invoices.reject');
+    Route::resource('new-invoices', NewInvoiceController::class);
+    Route::post('new-invoices/get-customer-details', [NewInvoiceController::class, 'getCustomerDetails'])->name('new-invoices.get-customer-details');
 
 
     //Targets
