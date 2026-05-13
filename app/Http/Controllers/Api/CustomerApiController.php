@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MasterDistributor;
 use App\Models\SecondaryCustomer;
 use App\Models\User;
+use App\Models\FieldKonnectAppSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -485,9 +486,60 @@ class CustomerApiController extends Controller
         $first->city_ids = $data->pluck('city_id')->unique()->values();
         $first->cities = $data->pluck('city')->unique()->values();
     
+        // Add full data array
+        $first->full_data = $data->map(function ($item) {
+            return [
+                'city_id'   => $item->city_id,
+                'city'      => $item->city,
+                'district_id' => $item->district_id,
+                'district'  => $item->district,
+                'state_id'  => $item->state_id,
+                'state'     => $item->state,
+                'country_id' => $item->country_id,
+                'country'   => $item->country,
+            ];
+        })->unique('city_id')->values();
+    
         return response()->json([
             'status' => true,
-            ... (array) $first   // 🔥 keep same structure + added fields
+            ...(array) $first
         ]);
+    }
+    
+    public function getAppVersion()
+    {
+        try {
+    
+            // =========================================
+            // GET LATEST SETTINGS
+            // =========================================
+            $setting = FieldKonnectAppSetting::latest()->first();
+    
+            if (!$setting) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Settings not found.'
+                ], 404);
+            }
+    
+            // =========================================
+            // SUCCESS RESPONSE
+            // =========================================
+            return response()->json([
+                'status' => 'success',
+                'data'   => [
+                    'android_version' => $setting->app_version ?? '',
+                    'ios_version'     => $setting->app_ios_version ?? '',
+                ]
+            ], 200);
+    
+        } catch (\Exception $e) {
+    
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+    
+        }
     }
 }

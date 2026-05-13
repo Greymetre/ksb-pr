@@ -634,67 +634,106 @@ private function uploadFile(Request $request, $field)
     return $file->store($path, 'public');
 }
 
-    public function export(Request $request)
+public function export(Request $request)
 {
-    // Same filters jo index mein use kar rahe ho, unko yahan bhi apply karo
     $query = MasterDistributor::query();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Role Based Access Filter
+    |--------------------------------------------------------------------------
+    */
+
+    $allowedUserIds = getUsersReportingToAuth();
+
+    $query->where(function ($q) use ($allowedUserIds) {
+
+        // supervisor match
+        $q->whereIn('supervisor_id', $allowedUserIds);
+
+        // sales executive JSON match
+        $q->orWhere(function ($sub) use ($allowedUserIds) {
+
+            foreach ($allowedUserIds as $id) {
+                $sub->orWhereJsonContains('sales_executive_id', $id);
+            }
+        });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Filters
+    |--------------------------------------------------------------------------
+    */
 
     if ($request->code) {
         $query->where('distributor_code', 'like', "%{$request->code}%");
     }
+
     if ($request->name) {
         $query->where('legal_name', 'like', "%{$request->name}%");
     }
+
     if ($request->trade_name) {
         $query->where('trade_name', 'like', "%{$request->trade_name}%");
     }
+
     if ($request->contact_person) {
         $query->where('contact_person', 'like', "%{$request->contact_person}%");
     }
+
     if ($request->mobile) {
         $query->where('mobile', $request->mobile);
     }
-    // if ($request->billing_city) {
-    // $query->where('billing_city', $request->billing_city); 
-    // }
-    // if ($request->billing_state) {
-    // $query->where('billing_state', $request->billing_state); 
-    // }
-//     if ($request->filled('billing_state')) {
-//     $query->where('billing_state', 'like', '%' . trim($request->billing_state) . '%');
-// }
-if ($request->filled('billing_state_id')) {
-    $stateName = State::find($request->billing_state_id)?->state_name;
-    if ($stateName) {
-        $query->where('billing_state', 'like', '%' . trim($stateName) . '%');
+
+    if ($request->filled('billing_state_id')) {
+
+        $stateName = State::find($request->billing_state_id)?->state_name;
+
+        if ($stateName) {
+            $query->where(
+                'billing_state',
+                'like',
+                '%' . trim($stateName) . '%'
+            );
+        }
     }
-}
 
-if ($request->filled('global_search')) {
-    $search = trim($request->global_search);
-    $query->where(function ($q) use ($search) {
-        $q->where('distributor_code', 'like', "%{$search}%")
-          ->orWhere('legal_name', 'like', "%{$search}%")
-          ->orWhere('trade_name', 'like', "%{$search}%")
-          ->orWhere('contact_person', 'like', "%{$search}%")
-          ->orWhere('mobile', 'like', "%{$search}%")
-          ->orWhere('billing_city', 'like', "%{$search}%")
-          ->orWhere('billing_state', 'like', "%{$search}%");
-    });
-}
+    if ($request->filled('global_search')) {
 
-if ($request->filled('billing_city')) {
-    $query->where('billing_city', 'like', '%' . trim($request->billing_city) . '%');
-}
+        $search = trim($request->global_search);
+
+        $query->where(function ($q) use ($search) {
+
+            $q->where('distributor_code', 'like', "%{$search}%")
+                ->orWhere('legal_name', 'like', "%{$search}%")
+                ->orWhere('trade_name', 'like', "%{$search}%")
+                ->orWhere('contact_person', 'like', "%{$search}%")
+                ->orWhere('mobile', 'like', "%{$search}%")
+                ->orWhere('billing_city', 'like', "%{$search}%")
+                ->orWhere('billing_state', 'like', "%{$search}%");
+        });
+    }
+
+    if ($request->filled('billing_city')) {
+
+        $query->where(
+            'billing_city',
+            'like',
+            '%' . trim($request->billing_city) . '%'
+        );
+    }
+
     if ($request->status) {
         $query->where('business_status', $request->status);
     }
 
-    // Agar future mein date filter add karna ho to yahan
-
     $distributors = $query->get();
 
-    return Excel::download(new MasterDistributorsExport($distributors), 'master_distributors_' . date('Y-m-d_H-i-s') . '.xlsx');
+    return Excel::download(
+        new MasterDistributorsExport($distributors),
+        'master_distributors_' . date('Y-m-d_H-i-s') . '.xlsx'
+    );
 }
 
 public function template()

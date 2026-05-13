@@ -909,37 +909,270 @@ class AttendanceController extends Controller
             $baseAsr = Attendance::whereIn('user_id', $asrUserIds)
                 ->whereNotNull('working_type')->where('working_type', '!=', '');
     
+            // $wtAsrToday = (clone $baseAsr)->whereDate('punchin_date', $today)
+            //     ->select([
+            //         DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Visit', working_type) > 0 THEN 1 ELSE 0 END) as retailer_visit"),
+            //         DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Meet', working_type) > 0 THEN 1 ELSE 0 END) as retailer_meet"),
+            //         DB::raw("SUM(CASE WHEN FIND_IN_SET('Nukkad Meet', working_type) > 0 THEN 1 ELSE 0 END) as nukkad_meet"),
+            //         DB::raw("SUM(CASE WHEN FIND_IN_SET('Field Demo', working_type) > 0 THEN 1 ELSE 0 END) as field_demo"),
+            //         DB::raw("SUM(CASE WHEN NOT (FIND_IN_SET('Retailer Visit', working_type) > 0 
+            //                                   OR FIND_IN_SET('Nukkad Meet', working_type) > 0 
+            //                                   OR FIND_IN_SET('Field Demo', working_type) > 0) THEN 1 ELSE 0 END) as other")
+            //     ])->first();
+                
             $wtAsrToday = (clone $baseAsr)->whereDate('punchin_date', $today)
                 ->select([
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Visit', working_type) > 0 THEN 1 ELSE 0 END) as retailer_visit"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Meet', working_type) > 0 THEN 1 ELSE 0 END) as retailer_meet"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Nukkad Meet', working_type) > 0 THEN 1 ELSE 0 END) as nukkad_meet"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Field Demo', working_type) > 0 THEN 1 ELSE 0 END) as field_demo"),
-                    DB::raw("SUM(CASE WHEN NOT (FIND_IN_SET('Retailer Visit', working_type) > 0 
-                                               OR FIND_IN_SET('Nukkad Meet', working_type) > 0 
-                                               OR FIND_IN_SET('Field Demo', working_type) > 0) THEN 1 ELSE 0 END) as other")
+
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Retailer Visit', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as retailer_visit
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Retailer Meet', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as retailer_meet
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Nukkad Meet', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as nukkad_meet
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Field Demo', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as field_demo
+                    "),
+            
+                    DB::raw("
+                    SUM(
+                        CASE
+                            WHEN
+                                TRIM(
+                                    REPLACE(
+                                        REPLACE(
+                                            REPLACE(
+                                                REPLACE(
+                                                    REPLACE(
+                                                        REPLACE(
+                                                            REPLACE(
+                                                                REPLACE(
+                                                                    REPLACE(
+                                                                        REPLACE(
+                                                                            working_type,
+                                                                            'Retailer Visit', ''
+                                                                        ),
+                                                                        'Retailer Meet', ''
+                                                                    ),
+                                                                    'Nukkad Meet', ''
+                                                                ),
+                                                                'Field Demo', ''
+                                                            ),
+                                                            'Full Day Leave', ''
+                                                        ),
+                                                        'First Half Leave', ''
+                                                    ),
+                                                    'Second Half Leave', ''
+                                                ),
+                                                ',', ''
+                                            ),
+                                            '-', ''
+                                        ),
+                                        '  ',
+                                        ''
+                                    )
+                                ) != ''
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) as other
+                    ")
+            
                 ])->first();
     
             $wtAsrMonth = (clone $baseAsr)->whereBetween('punchin_date', [$currentMonthStart, $currentMonthEnd])
                 ->select([
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Visit', working_type) > 0 THEN 1 ELSE 0 END) as retailer_visit"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Meet', working_type) > 0 THEN 1 ELSE 0 END) as retailer_meet"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Nukkad Meet', working_type) > 0 THEN 1 ELSE 0 END) as nukkad_meet"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Field Demo', working_type) > 0 THEN 1 ELSE 0 END) as field_demo"),
-                    DB::raw("SUM(CASE WHEN NOT (FIND_IN_SET('Retailer Visit', working_type) > 0 
-                                               OR FIND_IN_SET('Nukkad Meet', working_type) > 0 
-                                               OR FIND_IN_SET('Field Demo', working_type) > 0) THEN 1 ELSE 0 END) as other")
+
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Retailer Visit', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as retailer_visit
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Retailer Meet', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as retailer_meet
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Nukkad Meet', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as nukkad_meet
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Field Demo', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as field_demo
+                    "),
+            
+                    DB::raw("
+                    SUM(
+                        CASE
+                            WHEN
+                                TRIM(
+                                    REPLACE(
+                                        REPLACE(
+                                            REPLACE(
+                                                REPLACE(
+                                                    REPLACE(
+                                                        REPLACE(
+                                                            REPLACE(
+                                                                REPLACE(
+                                                                    REPLACE(
+                                                                        REPLACE(
+                                                                            working_type,
+                                                                            'Retailer Visit', ''
+                                                                        ),
+                                                                        'Retailer Meet', ''
+                                                                    ),
+                                                                    'Nukkad Meet', ''
+                                                                ),
+                                                                'Field Demo', ''
+                                                            ),
+                                                            'Full Day Leave', ''
+                                                        ),
+                                                        'First Half Leave', ''
+                                                    ),
+                                                    'Second Half Leave', ''
+                                                ),
+                                                ',', ''
+                                            ),
+                                            '-', ''
+                                        ),
+                                        '  ',
+                                        ''
+                                    )
+                                ) != ''
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) as other
+                    ")
+            
                 ])->first();
     
             $wtAsrYear = (clone $baseAsr)->whereBetween('punchin_date', [$currentYearStart, $currentYearEnd])
                 ->select([
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Visit', working_type) > 0 THEN 1 ELSE 0 END) as retailer_visit"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Meet', working_type) > 0 THEN 1 ELSE 0 END) as retailer_meet"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Nukkad Meet', working_type) > 0 THEN 1 ELSE 0 END) as nukkad_meet"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Field Demo', working_type) > 0 THEN 1 ELSE 0 END) as field_demo"),
-                    DB::raw("SUM(CASE WHEN NOT (FIND_IN_SET('Retailer Visit', working_type) > 0 
-                                               OR FIND_IN_SET('Nukkad Meet', working_type) > 0 
-                                               OR FIND_IN_SET('Field Demo', working_type) > 0) THEN 1 ELSE 0 END) as other")
+
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Retailer Visit', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as retailer_visit
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Retailer Meet', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as retailer_meet
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Nukkad Meet', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as nukkad_meet
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Field Demo', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as field_demo
+                    "),
+            
+                    DB::raw("
+                    SUM(
+                        CASE
+                            WHEN
+                                TRIM(
+                                    REPLACE(
+                                        REPLACE(
+                                            REPLACE(
+                                                REPLACE(
+                                                    REPLACE(
+                                                        REPLACE(
+                                                            REPLACE(
+                                                                REPLACE(
+                                                                    REPLACE(
+                                                                        REPLACE(
+                                                                            working_type,
+                                                                            'Retailer Visit', ''
+                                                                        ),
+                                                                        'Retailer Meet', ''
+                                                                    ),
+                                                                    'Nukkad Meet', ''
+                                                                ),
+                                                                'Field Demo', ''
+                                                            ),
+                                                            'Full Day Leave', ''
+                                                        ),
+                                                        'First Half Leave', ''
+                                                    ),
+                                                    'Second Half Leave', ''
+                                                ),
+                                                ',', ''
+                                            ),
+                                            '-', ''
+                                        ),
+                                        '  ',
+                                        ''
+                                    )
+                                ) != ''
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) as other
+                    ")
+            
                 ])->first();
     
             // ===================== Working Type - DSR =====================
@@ -948,35 +1181,257 @@ class AttendanceController extends Controller
     
             $wtDsrToday = (clone $baseDsr)->whereDate('punchin_date', $today)
                 ->select([
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Visit', working_type) > 0 THEN 1 ELSE 0 END) as retailer_visit"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Meet', working_type) > 0 THEN 1 ELSE 0 END) as retailer_meet"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Nukkad Meet', working_type) > 0 THEN 1 ELSE 0 END) as nukkad_meet"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Field Demo', working_type) > 0 THEN 1 ELSE 0 END) as field_demo"),
-                    DB::raw("SUM(CASE WHEN NOT (FIND_IN_SET('Retailer Visit', working_type) > 0 
-                                               OR FIND_IN_SET('Nukkad Meet', working_type) > 0 
-                                               OR FIND_IN_SET('Field Demo', working_type) > 0) THEN 1 ELSE 0 END) as other")
+
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Retailer Visit', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as retailer_visit
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Retailer Meet', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as retailer_meet
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Nukkad Meet', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as nukkad_meet
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Field Demo', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as field_demo
+                    "),
+            
+                    DB::raw("
+                    SUM(
+                        CASE
+                            WHEN
+                                TRIM(
+                                    REPLACE(
+                                        REPLACE(
+                                            REPLACE(
+                                                REPLACE(
+                                                    REPLACE(
+                                                        REPLACE(
+                                                            REPLACE(
+                                                                REPLACE(
+                                                                    REPLACE(
+                                                                        REPLACE(
+                                                                            working_type,
+                                                                            'Retailer Visit', ''
+                                                                        ),
+                                                                        'Retailer Meet', ''
+                                                                    ),
+                                                                    'Nukkad Meet', ''
+                                                                ),
+                                                                'Field Demo', ''
+                                                            ),
+                                                            'Full Day Leave', ''
+                                                        ),
+                                                        'First Half Leave', ''
+                                                    ),
+                                                    'Second Half Leave', ''
+                                                ),
+                                                ',', ''
+                                            ),
+                                            '-', ''
+                                        ),
+                                        '  ',
+                                        ''
+                                    )
+                                ) != ''
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) as other
+                    ")
+            
                 ])->first();
     
             $wtDsrMonth = (clone $baseDsr)->whereBetween('punchin_date', [$currentMonthStart, $currentMonthEnd])
                 ->select([
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Visit', working_type) > 0 THEN 1 ELSE 0 END) as retailer_visit"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Meet', working_type) > 0 THEN 1 ELSE 0 END) as retailer_meet"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Nukkad Meet', working_type) > 0 THEN 1 ELSE 0 END) as nukkad_meet"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Field Demo', working_type) > 0 THEN 1 ELSE 0 END) as field_demo"),
-                    DB::raw("SUM(CASE WHEN NOT (FIND_IN_SET('Retailer Visit', working_type) > 0 
-                                               OR FIND_IN_SET('Nukkad Meet', working_type) > 0 
-                                               OR FIND_IN_SET('Field Demo', working_type) > 0) THEN 1 ELSE 0 END) as other")
+
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Retailer Visit', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as retailer_visit
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Retailer Meet', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as retailer_meet
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Nukkad Meet', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as nukkad_meet
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Field Demo', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as field_demo
+                    "),
+            
+                    DB::raw("
+                    SUM(
+                        CASE
+                            WHEN
+                                TRIM(
+                                    REPLACE(
+                                        REPLACE(
+                                            REPLACE(
+                                                REPLACE(
+                                                    REPLACE(
+                                                        REPLACE(
+                                                            REPLACE(
+                                                                REPLACE(
+                                                                    REPLACE(
+                                                                        REPLACE(
+                                                                            working_type,
+                                                                            'Retailer Visit', ''
+                                                                        ),
+                                                                        'Retailer Meet', ''
+                                                                    ),
+                                                                    'Nukkad Meet', ''
+                                                                ),
+                                                                'Field Demo', ''
+                                                            ),
+                                                            'Full Day Leave', ''
+                                                        ),
+                                                        'First Half Leave', ''
+                                                    ),
+                                                    'Second Half Leave', ''
+                                                ),
+                                                ',', ''
+                                            ),
+                                            '-', ''
+                                        ),
+                                        '  ',
+                                        ''
+                                    )
+                                ) != ''
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) as other
+                    ")
+            
                 ])->first();
     
             $wtDsrYear = (clone $baseDsr)->whereBetween('punchin_date', [$currentYearStart, $currentYearEnd])
                 ->select([
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Visit', working_type) > 0 THEN 1 ELSE 0 END) as retailer_visit"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Meet', working_type) > 0 THEN 1 ELSE 0 END) as retailer_meet"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Nukkad Meet', working_type) > 0 THEN 1 ELSE 0 END) as nukkad_meet"),
-                    DB::raw("SUM(CASE WHEN FIND_IN_SET('Field Demo', working_type) > 0 THEN 1 ELSE 0 END) as field_demo"),
-                    DB::raw("SUM(CASE WHEN NOT (FIND_IN_SET('Retailer Visit', working_type) > 0 
-                                               OR FIND_IN_SET('Nukkad Meet', working_type) > 0 
-                                               OR FIND_IN_SET('Field Demo', working_type) > 0) THEN 1 ELSE 0 END) as other")
+
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Retailer Visit', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as retailer_visit
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Retailer Meet', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as retailer_meet
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Nukkad Meet', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as nukkad_meet
+                    "),
+            
+                    DB::raw("
+                        SUM(
+                            CASE 
+                                WHEN FIND_IN_SET('Field Demo', REPLACE(working_type, ', ', ',')) > 0 
+                                THEN 1 ELSE 0 
+                            END
+                        ) as field_demo
+                    "),
+            
+                    DB::raw("
+                    SUM(
+                        CASE
+                            WHEN
+                                TRIM(
+                                    REPLACE(
+                                        REPLACE(
+                                            REPLACE(
+                                                REPLACE(
+                                                    REPLACE(
+                                                        REPLACE(
+                                                            REPLACE(
+                                                                REPLACE(
+                                                                    REPLACE(
+                                                                        REPLACE(
+                                                                            working_type,
+                                                                            'Retailer Visit', ''
+                                                                        ),
+                                                                        'Retailer Meet', ''
+                                                                    ),
+                                                                    'Nukkad Meet', ''
+                                                                ),
+                                                                'Field Demo', ''
+                                                            ),
+                                                            'Full Day Leave', ''
+                                                        ),
+                                                        'First Half Leave', ''
+                                                    ),
+                                                    'Second Half Leave', ''
+                                                ),
+                                                ',', ''
+                                            ),
+                                            '-', ''
+                                        ),
+                                        '  ',
+                                        ''
+                                    )
+                                ) != ''
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) as other
+                    ")
+            
                 ])->first();
             
             $top5Products = DB::table('order_details')
@@ -1514,7 +1969,10 @@ class AttendanceController extends Controller
                 'reporting_user.mobile as reporting_mobile',
                 'branches.branch_name',
                 'divisions.division_name'
-            )->get();
+            )
+            ->orderBy('reporting_user.name', 'ASC') // A to Z by reporting name
+            ->orderBy('users.name', 'ASC') // optional secondary sorting
+            ->get();
     
             // =========================
             // 🔥 PRELOAD TARGETS (FAST)

@@ -60,6 +60,7 @@ use App\Http\Controllers\Api\CustomerApiController;
 /*================= Auth Routes ============================*/
 
 Route::post('login', [LoginController::class, 'login']);
+Route::post('signup', [LoginController::class, 'signup']);
 Route::post('customerLogin', [LoginController::class, 'customerLogin']);
 Route::post('customer/email-login', [LoginController::class, 'customerEmailLogin']);
 Route::post('customer/email-signup', [LoginController::class, 'customerEmailSignup']);
@@ -102,7 +103,7 @@ Route::get('/exotel/call-details', [ExotelApiController::class, 'getCallDetails'
 Route::get('/exotel/get-recording', [ExotelApiController::class, 'getRecording']);
 
 Route::post('/get-location-by-pincode', [CustomerApiController::class,'getLocationByPincode']);
-
+Route::get('/getAppVersion', [CustomerApiController::class,'getAppVersion']);
 
 /*================= Customer Routes ============================*/
 Route::group(['middleware' => ['auth:customers']], function () {

@@ -142,6 +142,100 @@ class LoginController extends Controller
     //         return response()->json(['status' => 'error', 'message' => $e->getMessage()], $this->internalError);
     //     }
     // }
+    
+    public function signup(Request $request)
+    {
+        try {
+    
+            // =========================================
+            // VALIDATION
+            // =========================================
+            $validator = Validator::make(
+                $request->all(),
+                [
+                    'name' => 'required|string|max:255',
+    
+                    'mobile' => [
+                        'required',
+                        'digits:10',
+                        'regex:/^[6-9][0-9]{9}$/',
+                        'unique:users,mobile',
+                    ],
+    
+                    'email' => [
+                        'required',
+                        'email',
+                        'unique:users,email',
+                    ],
+    
+                    'password' => 'required|min:6',
+                ],
+    
+                // =========================================
+                // CUSTOM VALIDATION MESSAGES
+                // =========================================
+                [
+                    'name.required' => 'Name is required.',
+    
+                    'mobile.required' => 'Mobile number is required.',
+                    'mobile.digits' => 'Mobile number must be 10 digits.',
+                    'mobile.regex' => 'Please enter a valid mobile number.',
+                    'mobile.unique' => 'This mobile number is already registered.',
+    
+                    'email.required' => 'Email address is required.',
+                    'email.email' => 'Please enter a valid email address.',
+                    'email.unique' => 'This email address is already registered.',
+    
+                    'password.required' => 'Password is required.',
+                    'password.min' => 'Password must be at least 6 characters.',
+                ]
+            );
+    
+            // =========================================
+            // VALIDATION FAILED
+            // =========================================
+            if ($validator->fails()) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => $validator->errors()->first()
+                ], 400);
+            }
+    
+            // =========================================
+            // CREATE USER
+            // =========================================
+            $user = User::create([
+                'name'     => $request->name,
+                'mobile'   => $request->mobile,
+                'email'    => $request->email,
+                'password' => Hash::make($request->password),
+                'active'   => 'N',
+            ]);
+    
+            // =========================================
+            // SUCCESS RESPONSE
+            // =========================================
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Your account request has been submitted successfully. Admin will verify your account and contact you soon.',
+                'data'    => [
+                    'id'     => $user->id,
+                    'name'   => $user->name,
+                    'mobile' => $user->mobile,
+                    'email'  => $user->email,
+                    'active' => $user->active,
+                ]
+            ], 201);
+    
+        } catch (\Exception $e) {
+    
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+    
+        }
+    }
 
     public function login(Request $request)
     {

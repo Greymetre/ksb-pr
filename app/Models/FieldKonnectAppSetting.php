@@ -11,7 +11,7 @@ class FieldKonnectAppSetting extends Model implements HasMedia
 {
     use HasFactory,InteractsWithMedia;
 
-    protected $fillable = ['app_version', 'order_discount_limit'];
+    protected $fillable = ['app_version', 'order_discount_limit', 'app_ios_version'];
 
     public $timestamps = true;
 

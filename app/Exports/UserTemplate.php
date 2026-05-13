@@ -20,18 +20,55 @@ class UserTemplate implements FromCollection,WithHeadings,ShouldAutoSize
 
     public function headings(): array
     {
-        return ['id','User Name','Email'
-        // ,'Gender','User Code'
-        ,'Location','Employee Codes','Branch id'
-        // ,'Designation id','Division id','Department id'
-        ,'Payroll','Reportingid','role_ids'
-        // ,'Sales Type'
-        ,'Date Of Joining','Date Of Birth'
-        // ,'Last Year Increments','Last Year Increment Percent','Last promotion','CTC Annual','Gross Salary Monthly','Salary','last_year_increment_value','marital_status','father_name','father_date_of_birth','mother_name','mother_date_of_birth','marriage_anniversary','spouse_name','spouse_date_of_birth','children_one','children_one_date_of_birth','children_two','children_two_date_of_birth','children_three','children_three_date_of_birth','children_four','children_four_date_of_birth','children_five','children_five_date_of_birth','pan_number','aadhar_number','emergency_number','current_address','permanent_address','biometric_code','account_number','bank_name','ifsc_code','pf_number','un_number','esi_number','probation_period'
-        ,'date_of_confirmation'
-        // ,'notice_period'
-        ,'date_of_leaving'
-        // ,'current_company_tenture','previous_exp','total_exp',
+        return [
+        //     'id','User Name','Email'
+        // // ,'Gender','User Code'
+        // ,'Location','Employee Codes','Branch id'
+        // // ,'Designation id','Division id','Department id'
+        // ,'Payroll','Reportingid','role_ids'
+        // // ,'Sales Type'
+        // ,'Date Of Joining','Date Of Birth'
+        // // ,'Last Year Increments','Last Year Increment Percent','Last promotion','CTC Annual','Gross Salary Monthly','Salary','last_year_increment_value','marital_status','father_name','father_date_of_birth','mother_name','mother_date_of_birth','marriage_anniversary','spouse_name','spouse_date_of_birth','children_one','children_one_date_of_birth','children_two','children_two_date_of_birth','children_three','children_three_date_of_birth','children_four','children_four_date_of_birth','children_five','children_five_date_of_birth','pan_number','aadhar_number','emergency_number','current_address','permanent_address','biometric_code','account_number','bank_name','ifsc_code','pf_number','un_number','esi_number','probation_period'
+        // ,'date_of_confirmation'
+        // // ,'notice_period'
+        // ,'date_of_leaving'
+        // // ,'current_company_tenture','previous_exp','total_exp',
+
+            'id',
+            'employees_code',
+            'user_name',
+            'designation',
+            'role',
+            'zone_name',
+            'base_location',
+            'department',
+            'division',
+            'reporting_to',
+            'mobile',
+            'password',
+            'email',
+            'date_of_joining',
+            'date_of_birth',
+            'date_of_confirmation',
+            'date_of_leaving',
+            'grade',
+            'designation_code',
+            'employee_super_code',
+            'base_location_coordinates_latitude_longitude',
+            // 'travel_policy_name',
+            'reporting_id',
+            'role_ids',
+            'payroll',
+            'designation_id',
+            'branch_id',
+            'division_id',
+            'department_id',
+            'attandance_summary_report',
+            // 'earned_leave_el_balance',
+            // 'casual_leave_cl_balance',
+            // 'sick_leave_sl_balance',
+            // 'comp_off_balance',
+            
         ];
     }
 

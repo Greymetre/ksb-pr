@@ -76,12 +76,16 @@ class UserExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMa
                 'Date of Confirmation',
                 //  'Notice Period',
                   'Date of leaving',
+                  'Grade',
+                   'Designation Code', 'Employee Super Code',
+                   'Base Location Coordinates (latitude, longitude)',
                 //    'High School', 'Higher Secondary', 'Graducation', 'Post Graducation', 'Other', 'Current Company TENURE', 'Previous Exp', 'Total Exp', 'Sales Type', 'Status', 'profile_image',
                     // 'designation_id', 'branch_id','primary_branch_id', 'division_id', 'department_id',
-                     'Reporting ID', 'Role Ids',
-                     'payroll',
+                     'Reporting ID', 'Role Ids', 'payroll' ,'designation_id', 'branch_id','division_id', 'department_id','Attandance Summary Report',
+                    //  'payroll',
                     //   'warehouse_id', 'Attandance Summary Report', 'Order Mails', 'Order Mail Type', 'Order Mail Type ID',
-                       'Leave Balance', 'Grade', 'Blood Group', 'Personal Number'];
+                    //    'Leave Balance'
+                       ];
         } else {
             return ['ID', 'Employees Code', 'User Name', 'Designation', 'Role', 'Zone Name', 'Location', 'Department', 'Division', 'Reporting To', 'Mobile', 'Email', 
             // 'Gender', 
@@ -89,11 +93,15 @@ class UserExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMa
             // 'Age', 'Last Promotion', 'Marital Status', 'Father Name', 'Father Date Of Birth', 'Mother Name', 'Mother  DOB', 'Marriage Anniversary', 'Spouse name', 'Spouse Date Of Birth', 'Children-1', 'Children-1 DOB', 'Children-2', 'Children-2 DOB', 'Children-3', 'Children-3 DOB', 'Children-4', 'Children-4 DOB', 'Children-5', 'Children-5 DOB', 'PAN Number', 'Adhar Number', 'Emergency Number', 'Current Address', 'Permanent Address', 'Biometric Code', 'Account Number', 'Bank Name', 'IFSC Code', 'PF Number', 'UN Number', 'ESI Number', 'Probation Period',
              'Date of Confirmation', 
             //  'Notice Period', 
-             'Date of leaving', 
+             'Date of leaving',
+             'Grade', 
+                'Designation Code', 'Employee Super Code',
+             'Base Location Coordinates (latitude, longitude)',
             //  'High School', 'Higher Secondary', 'Graducation', 'Post Graducation', 'Other', 'Current Company TENURE', 'Previous Exp', 'Total Exp', 'Sales Type', 'Status', 'profile_image', 'designation_id', 'branch_id','primary_branch_id', 'division_id', 'department_id',
-              'Reporting ID', 'Role Ids', 'payroll' ,
-            //   'warehouse_id', 'Attandance Summary Report', 'Order Mails', 'Order Mail Type', 'Order Mail Type ID', 
-              'Leave Balance', 'Grade', 'Blood Group', 'Personal Number'];
+              'Reporting ID', 'Role Ids', 'payroll' ,'designation_id', 'branch_id','division_id', 'department_id','Attandance Summary Report',
+            //   'warehouse_id',  'Order Mails', 'Order Mail Type', 'Order Mail Type ID', 
+            //   'Leave Balance',
+               ];
         }
     }
 
@@ -188,6 +196,18 @@ class UserExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMa
                 isset($data['userinfo']['date_of_confirmation']) ? $data['userinfo']['date_of_confirmation'] : '',
                 // isset($data['resignation']['notice']) ? ($data['resignation']['notice'] > 10 ? $data['resignation']['notice'].' Days' : $data['resignation']['notice'].' Month') : '',
                 isset($data['resignation']['last_working_date']) ? date('d M Y', strtotime($data['resignation']['last_working_date'])) : '',
+                $data['grade'] ?? '-',
+                $data['blood_group'] ?? '-',
+               $data['personal_number'] ?? '-',
+
+                (
+                    !empty($data['latitude']) && !empty($data['longitude'])
+                        ? $data['latitude'] . ', ' . $data['longitude']
+                        : '-'
+                ),
+
+
+
                 // isset($data['geteducation']) ? $data['geteducation']->where('education_type_id', '0')->value('degree_name') : '',
                 // isset($data['geteducation']) ? $data['geteducation']->where('education_type_id', '1')->value('degree_name') : '',
                 // isset($data['geteducation']) ? $data['geteducation']->where('education_type_id', '2')->value('degree_name') : '',
@@ -199,23 +219,24 @@ class UserExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMa
                 // $data['sales_type'],
                 // $status,
                 // $data['profile_image'],
-                // $data['designation_id'] ?? '-',
-                // $data['branch_id'] ?? '-',
+                
                 // $data['primary_branch_id'] ?? '',
-                // $data['division_id'] ?? '-',
-                // $data['department_id'] ?? '-',
+               
                 $data['reportingid'] ?? '-',
                 $roles,
                 $data['payroll'] ?? '-',
+                $data['designation_id'] ?? '-',
+                $data['branch_id'] ?? '-',
+                $data['division_id'] ?? '-',
+                $data['department_id'] ?? '-',
                 // $data['warehouse_id'] ?? '-',
-                // (string)$data['show_attandance_report'] ?? '0',
+                ($data['show_attandance_report'] == 1 ? 'Yes' : 'No'),
                 // $data['userinfo'] ? $data['userinfo']['order_mails'] : '',
                 // implode(',', $mail_types_name),
                 // $data['userinfo'] ? $data['userinfo']['order_mails_type'] : '',
-                $data['leave_balance'] ?? '-',
-                $data['grade'] ?? '-',
-                $data['blood_group'] ?? '-',
-                $data['personal_number'] ?? '-',
+                // $data['leave_balance'] ?? '-',
+                
+                
             ];
         } else {
             return [
@@ -270,6 +291,16 @@ class UserExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMa
                 isset($data['userinfo']['date_of_confirmation']) ? $data['userinfo']['date_of_confirmation'] : '',
                 // isset($data['resignation']['notice']) ? ($data['resignation']['notice'] > 10 ? $data['resignation']['notice'].' Days' : $data['resignation']['notice'].' Month') : '',
                 isset($data['resignation']['last_working_date']) ? date('d M Y', strtotime($data['resignation']['last_working_date'])) : '',
+                $data['grade'] ?? '-',
+                $data['blood_group'] ?? '-',
+                
+                $data['personal_number'] ?? '-',
+
+                (
+                    !empty($data['latitude']) && !empty($data['longitude'])
+                        ? $data['latitude'] . ', ' . $data['longitude']
+                        : '-'
+                ),
                 // isset($data['geteducation']) ? $data['geteducation']->where('education_type_id', '0')->value('degree_name') : '',
                 // isset($data['geteducation']) ? $data['geteducation']->where('education_type_id', '1')->value('degree_name') : '',
                 // isset($data['geteducation']) ? $data['geteducation']->where('education_type_id', '2')->value('degree_name') : '',
@@ -289,15 +320,17 @@ class UserExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMa
                 $data['reportingid'] ?? '-',
                 $roles,
                 $data['payroll'] ?? '-',
+                $data['designation_id'] ?? '-',
+                $data['branch_id'] ?? '-',
+                $data['division_id'] ?? '-',
+                $data['department_id'] ?? '-',
                 // $data['warehouse_id'] ?? '-',
-                // (string)$data['show_attandance_report'] ?? '0',
+                ($data['show_attandance_report'] == 1 ? 'Yes' : 'No'),
                 // $data['userinfo'] ? $data['userinfo']['order_mails'] : '',
                 // implode(',', $mail_types_name),
                 // $data['userinfo'] ? $data['userinfo']['order_mails_type'] : '',
-                $data['leave_balance'] ?? '-',
-                $data['grade'] ?? '-',
-                $data['blood_group'] ?? '-',
-                $data['personal_number'] ?? '-',
+                // $data['leave_balance'] ?? '-',
+
             ];
         }
     }

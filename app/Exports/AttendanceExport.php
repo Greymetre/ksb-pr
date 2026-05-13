@@ -234,7 +234,11 @@ class AttendanceExport implements FromCollection, WithHeadings, ShouldAutoSize, 
                 $data['punchin_date'],
                 $data['punchin_time'],
                 isset($data['punchout_time']) ? $data['punchout_time'] : 'misspunch',
-                $attendanceLabel = $this->getAttendanceLabel($data['worked_time'], $data['punchout_time']),
+                $attendanceLabel = $this->getAttendanceLabel(
+                    $data['worked_time'],
+                    $data['punchout_time'],
+                    $data['working_type']
+                ),
                 $data['worked_time'],
                 isset($data['working_type']) ? $data['working_type'] . (isset($leave_details) && $leave_details ? ' - ' . $leave_details['bal_type'] : '') : '',
                 $status,

@@ -16,6 +16,7 @@ use Maatwebsite\Excel\Validators\Failure;
 use Maatwebsite\Excel\Concerns\SkipsFailures;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Illuminate\Support\Facades\DB;
+
 use Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -47,36 +48,36 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
             }
    
             if (!empty($row['id'])) {
-                if (is_numeric($row['spouse_date_of_birth'])) {
-                    $excelDate = $row['spouse_date_of_birth'] - 25569; // Adjust for Excel's epoch
-                    $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
-                    $row['spouse_date_of_birth'] = !empty($row['spouse_date_of_birth']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
-                }
-                if (is_numeric($row['children_1_dob'])) {
-                    $excelDate = $row['children_1_dob'] - 25569; // Adjust for Excel's epoch
-                    $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
-                    $row['children_1_dob'] = !empty($row['children_1_dob']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
-                }
-                if (is_numeric($row['children_2_dob'])) {
-                    $excelDate = $row['children_2_dob'] - 25569; // Adjust for Excel's epoch
-                    $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
-                    $row['children_2_dob'] = !empty($row['children_2_dob']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
-                }
-                if (is_numeric($row['children_3_dob'])) {
-                    $excelDate = $row['children_3_dob'] - 25569; // Adjust for Excel's epoch
-                    $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
-                    $row['children_3_dob'] = !empty($row['children_3_dob']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
-                }
-                if (is_numeric($row['children_4_dob'])) {
-                    $excelDate = $row['children_4_dob'] - 25569; // Adjust for Excel's epoch
-                    $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
-                    $row['children_4_dob'] = !empty($row['children_4_dob']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
-                }
-                if (is_numeric($row['children_5_dob'])) {
-                    $excelDate = $row['children_5_dob'] - 25569; // Adjust for Excel's epoch
-                    $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
-                    $row['children_5_dob'] = !empty($row['children_5_dob']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
-                }
+                // if (is_numeric($row['spouse_date_of_birth'])) {
+                //     $excelDate = $row['spouse_date_of_birth'] - 25569; // Adjust for Excel's epoch
+                //     $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
+                //     $row['spouse_date_of_birth'] = !empty($row['spouse_date_of_birth']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
+                // }
+                // if (is_numeric($row['children_1_dob'])) {
+                //     $excelDate = $row['children_1_dob'] - 25569; // Adjust for Excel's epoch
+                //     $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
+                //     $row['children_1_dob'] = !empty($row['children_1_dob']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
+                // }
+                // if (is_numeric($row['children_2_dob'])) {
+                //     $excelDate = $row['children_2_dob'] - 25569; // Adjust for Excel's epoch
+                //     $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
+                //     $row['children_2_dob'] = !empty($row['children_2_dob']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
+                // }
+                // if (is_numeric($row['children_3_dob'])) {
+                //     $excelDate = $row['children_3_dob'] - 25569; // Adjust for Excel's epoch
+                //     $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
+                //     $row['children_3_dob'] = !empty($row['children_3_dob']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
+                // }
+                // if (is_numeric($row['children_4_dob'])) {
+                //     $excelDate = $row['children_4_dob'] - 25569; // Adjust for Excel's epoch
+                //     $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
+                //     $row['children_4_dob'] = !empty($row['children_4_dob']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
+                // }
+                // if (is_numeric($row['children_5_dob'])) {
+                //     $excelDate = $row['children_5_dob'] - 25569; // Adjust for Excel's epoch
+                //     $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
+                //     $row['children_5_dob'] = !empty($row['children_5_dob']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
+                // }
                 if (is_numeric($row['date_of_joining'])) {
                     $excelDate = $row['date_of_joining'] - 25569; // Adjust for Excel's epoch
                     $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
@@ -85,6 +86,26 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                 $name = trim($row['user_name']);
                 $last_name = (strpos($name, ' ') === false) ? '' : preg_replace('#.*\s([\w-]*)$#', '$1', $name);
                 $first_name = trim(preg_replace('#' . preg_quote($last_name, '#') . '#', '', $name));
+
+
+                // dd($row);
+                $latitude = null;
+                $longitude = null;
+
+                if (!empty($row['base_location_coordinates_latitude_longitude'])) {
+
+                    $parts = array_map(
+                        'trim',
+                        explode(',', $row['base_location_coordinates_latitude_longitude'], 2)
+                    );
+
+                    if (count($parts) === 2) {
+                        $latitude  = is_numeric($parts[0]) ? $parts[0] : null;
+                        $longitude = is_numeric($parts[1]) ? $parts[1] : null;
+                    }
+                }
+
+                
 
                 User::where('id', '=', $row['id'])->update([
                     'name' => !empty($name) ? ucfirst(strtolower($name)) : '',
@@ -95,13 +116,13 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     'email' => !empty($row['email']) ? $row['email'] : null,
                     'leave_balance' => !empty($row['leave_balance']) ? $row['leave_balance'] : 0.00,
                     'grade' => !empty($row['grade']) ? $row['grade'] : NULL,
-                    'blood_group' => !empty($row['blood_group']) ? $row['blood_group'] : NULL,
-                    'personal_number' => !empty($row['personal_number']) ? $row['personal_number'] : NULL,
-                    //'password' => !empty($row['password'])? Hash::make($row['password']) :'',
+                    'blood_group' => !empty($row['designation_code']) ? $row['designation_code'] : NULL,
+                    'personal_number' => !empty($row['employee_super_code']) ? $row['employee_super_code'] : NULL,
+                    'password' => !empty($row['password'])? Hash::make($row['password']) :'',
                     'gender' => !empty($row['gender']) ? $row['gender'] : '',
                     //'profile_image' => !empty($row['profile_image'])? $row['profile_image']:'',
                     'user_code' => !empty($row['user_code']) ? $row['user_code'] : '',
-                    'location' => !empty($row['location']) ? $row['location'] : '',
+                    'location' => !empty($row['base_location']) ? $row['base_location'] : '',
                     'employee_codes' => !empty($row['employees_code']) ? $row['employees_code'] : '',
                     'branch_id' => !empty($row['branch_id']) ? $row['branch_id'] : '',
                     'primary_branch_id' => !empty($row['primary_branch_id']) ? $row['primary_branch_id'] : '',
@@ -110,9 +131,12 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     'department_id' => !empty($row['department_id']) ? $row['department_id'] : '',
                     'payroll' => !empty($row['payroll']) ? $row['payroll'] : '',
                     'warehouse_id' => !empty($row['warehouse_id']) ? $row['warehouse_id'] : NULL,
-                    'reportingid' => !empty($row['reporting_id']) ? $row['reporting_id'] : '',
+                    'reportingids' => !empty($row['reporting_id']) ? $row['reporting_id'] : '',
                     'sales_type' => !empty($row['sales_type']) ? $row['sales_type'] : '',
                     'show_attandance_report' => !empty($row['attandance_summary_report']) ? (int)$row['attandance_summary_report'] : '',
+                    'password' => !empty($row['password']) ? Hash::make($row['password']) : '',
+                    'latitude'  => $latitude,
+                    'longitude' => $longitude,
                     //'created_at' => getcurentDateTime(),
                     //'updated_at' => getcurentDateTime()
                 ]);
@@ -260,6 +284,10 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     'division_id' => !empty($row['division_id']) ? $row['division_id'] : '',
                     'warehouse_id' => !empty($row['warehouse_id']) ? $row['warehouse_id'] : NULL,
                     'department_id' => !empty($row['department_id']) ? $row['department_id'] : '',
+                    'reportingids' => !empty($row['reporting_id']) ? $row['reporting_id'] : '',
+                    'latitude'  => $latitude,
+                    'password' => !empty($row['password']) ? Hash::make($row['password']) : '',
+                    'longitude' => $longitude,
                     'created_at' => getcurentDateTime(),
                     'updated_at' => getcurentDateTime()
                 ])) {

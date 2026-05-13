@@ -54,6 +54,7 @@ class SecondaryCustomer extends Model
     'remark',
     'approve_reject_by',
     'gmap',
+    'status_updated_at'
     
 ];
 

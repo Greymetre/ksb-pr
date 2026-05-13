@@ -164,6 +164,7 @@ class OrderController extends Controller
                         'completed_date' => isset($value['completed_date']) ? $value['completed_date'] : '',
                         'grand_total' => $grand_total,
                         'sub_total' => isset($value['sub_total']) ? $value['sub_total'] : 0.00,
+                        'order_remark' => isset($value['order_remark']) ? $value['order_remark'] : '',
                         'order_status' => isset($value['statusname']) ? $value['statusname']['status_name'] : 'Pending',
                         'order_status_id' => (isset($value['status_id']) && $value['status_id'] != NULL) ? $value['status_id'] : '0',
                         'order_details' => $order_details,

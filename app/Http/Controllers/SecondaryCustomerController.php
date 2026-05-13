@@ -861,8 +861,10 @@ public function downloadExcel(Request $request)
     $filename = strtolower($type) . 's_' . now()->format('Y-m-d') . '.xlsx';
     // Example: retailers_2026-01-05.xlsx
 
+    $userIds = getUsersReportingToAuth();
+
     return Excel::download(
-        new SecondaryCustomersExport($request->all(), $type),
+        new SecondaryCustomersExport($request->all(), $type, $userIds ),
         $filename
     );
 }

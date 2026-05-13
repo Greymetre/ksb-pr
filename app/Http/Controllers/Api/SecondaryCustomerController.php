@@ -849,6 +849,7 @@ if (!empty($validated['gps_location'])) {
             'status' => $validated['status'],
             'remark' => $validated['remark'] ?? null,
             'approve_reject_by' => auth()->id(),
+            'status_updated_at'  => now(),
         ]);
     
         \Log::info('ChangeStatus after', $customer->only(['status', 'remark']));

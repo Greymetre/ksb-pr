@@ -210,23 +210,48 @@ class ReportingActivityController extends Controller
             ->whereDate('created_at', $date)
             ->get();
     
+        // $customer_update = SecondaryCustomer::with(['city.statename', 'state'])
+        //     ->where('created_by', $user_id)
+        //     ->whereColumn('updated_at', '>', 'created_at')
+        //     ->whereDate('updated_at', $date)
+        //     ->get();
         $customer_update = SecondaryCustomer::with(['city.statename', 'state'])
             ->where('created_by', $user_id)
+        
+            // exclude approve/reject updates
+            ->where(function ($q) {
+                $q->whereNull('status_updated_at')
+                  ->orWhereColumn('updated_at', '!=', 'status_updated_at');
+            })
+        
             ->whereColumn('updated_at', '>', 'created_at')
             ->whereDate('updated_at', $date)
             ->get();
     
         // Master Distributor - Add & Update
-        $master_add = MasterDistributor::with(['getCity.statename', 'getState'])
+        $master_add = MasterDistributor::with(['billingCity', 'billingDistrict'])
             ->where('created_by', $user_id)
             ->whereDate('created_at', $date)
             ->get();
     
-        $master_update = MasterDistributor::with(['getCity.statename', 'getState'])
+        $master_update = MasterDistributor::with(['billingCity', 'billingDistrict'])
             ->where('created_by', $user_id)
             ->whereColumn('updated_at', '>', 'created_at')
             ->whereDate('updated_at', $date)
             ->get();
+        $approvedCustomers = SecondaryCustomer::with(['city', 'state'])
+            ->where('status', 'APPROVED')
+            ->where('approve_reject_by', $user_id)
+            ->whereNotNull('status_updated_at')
+            ->whereDate('status_updated_at', $date)
+            ->get();
+        $rejectedCustomers = SecondaryCustomer::with(['city', 'state'])
+            ->where('status', 'REJECTED')
+            ->where('approve_reject_by', $user_id)
+            ->whereNotNull('status_updated_at')
+            ->whereDate('status_updated_at', $date)
+            ->get();
+
 
         $punchInData = array();
         $punchOutData = array();
@@ -235,6 +260,8 @@ class ReportingActivityController extends Controller
         $orderData = array();
         $customerAddData = array();
         $customerUpdateData = array();
+        $customerApprovedData = array();
+        $customerRejectedData = array();
 
         // foreach($punchInOut as $k=>$val){
         //     if($val->punchin_time != null){
@@ -440,7 +467,8 @@ class ReportingActivityController extends Controller
         // Add Master Distributor new registrations if needed
         foreach ($master_add as $val) {
             $customerName = $val->trade_name ?? $val->legal_name ?? 'Unknown Distributor';
-            $cityName     = $val->billing_city ?? 'City not available';
+            $cityName = $cityLookup[$val->billing_city] ?? 'City not available';
+            $stateName = $stateLookup[$val->billing_state] ?? 'State not available';
             $location     = $val->billing_address ?? 'No Location';
     
             $customerAddData[] = [
@@ -452,8 +480,9 @@ class ReportingActivityController extends Controller
                 'time_display'  => date('h:i A', strtotime($val->created_at)),
                 'location'      => $location,
                 'city'          => $cityName,
+                'state'         => $stateName,
                 'customer'      => $customerName,
-                'customer_type' => $val->type                     // or 'Master Distributor'
+                'customer_type' => "Distributor"                    // or 'Master Distributor'
             ];
         }
 
@@ -492,11 +521,62 @@ class ReportingActivityController extends Controller
                 'customer_type' => $val->type
             ];
         }
+        
+        foreach ($approvedCustomers as $val) {
+
+            $customerName = $val->shop_name ?? $val->owner_name ?? 'Unknown Customer';
+        
+            $cityName = $cityLookup[$val->city_id] ?? 'City not available';
+            $stateName = $stateLookup[$val->state_id] ?? 'State not available';
+        
+            $location = $val->address_line ?? $val->belt_area_market_name ?? 'No Location';
+        
+            $customerApprovedData[] = [
+                'title'         => 'Customer Approved',
+                'time'          => date('H:i:s', strtotime($val->status_updated_at)),
+                'date'          => $date,
+                'latitude'      => '',
+                'longitude'     => '',
+                'time_display'  => date('h:i A', strtotime($val->status_updated_at)),
+                'location'      => $location,
+                'city'          => $cityName,
+                'state'         => $stateName,
+                'customer'      => $customerName,
+                'customer_type' => $val->type,
+                'remark'        => $val->remark ?? ''
+            ];
+        }
+        
+        foreach ($rejectedCustomers as $val) {
+
+            $customerName = $val->shop_name ?? $val->owner_name ?? 'Unknown Customer';
+        
+            $cityName = $cityLookup[$val->city_id] ?? 'City not available';
+            $stateName = $stateLookup[$val->state_id] ?? 'State not available';
+        
+            $location = $val->address_line ?? $val->belt_area_market_name ?? 'No Location';
+        
+            $customerRejectedData[] = [
+                'title'         => 'Customer Rejected',
+                'time'          => date('H:i:s', strtotime($val->status_updated_at)),
+                'date'          => $date,
+                'latitude'      => '',
+                'longitude'     => '',
+                'time_display'  => date('h:i A', strtotime($val->status_updated_at)),
+                'location'      => $location,
+                'city'          => $cityName,
+                'state'         => $stateName,
+                'customer'      => $customerName,
+                'customer_type' => $val->type,
+                'remark'        => $val->remark ?? ''
+            ];
+        }
     
         // Master Distributor Update
         foreach ($master_update as $val) {
             $customerName = $val->trade_name ?? $val->legal_name ?? 'Unknown Distributor';
-            $cityName     = $val->billing_city ?? 'City not available';
+            $cityName = $cityLookup[$val->billing_city] ?? 'City not available';
+            $stateName = $stateLookup[$val->billing_state] ?? 'State not available';
             $location     = $val->billing_address ?? 'No Location';
     
             $customerUpdateData[] = [
@@ -508,12 +588,13 @@ class ReportingActivityController extends Controller
                 'time_display'  => date('h:i A', strtotime($val->updated_at)),
                 'location'      => $location,
                 'city'          => $cityName,
+                'state'         => $stateName,
                 'customer'      => $customerName,
-                'customer_type' => $val->type
+                'customer_type' => "Distributor"
             ];
         }
 
-        $data = array_merge($punchInData, $punchOutData, $orderData, $customerAddData, $customerUpdateData, $checkInData, $checkOutData);
+        $data = array_merge($punchInData, $punchOutData, $orderData, $customerAddData, $customerUpdateData, $checkInData, $checkOutData, $customerApprovedData, $customerRejectedData);
         // $data = array_merge($punchInData, $punchOutData, $checkInData, $checkOutData, $orderData, $customerAddData, $customerUpdateData);
         // return response(['status' => 'error', 'message' => 'No Record data Found.', 'data' => $data ],200);
         

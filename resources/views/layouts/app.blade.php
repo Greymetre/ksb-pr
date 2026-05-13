@@ -2784,19 +2784,23 @@
                 <!-- <img src="{!! asset('assets/img/logo.png') !!}" width="50"> -->
                 <div class="navbar-wrapper">
                     <div class="navbar-minimize">
-                        <!--               <button id="minimizeSidebar" class="btn btn-just-icon btn-white btn-fab btn-round">
+                                      <!-- <button id="minimizeSidebar" class="btn btn-just-icon btn-white btn-fab btn-round">
                            <i class="material-icons text_align-center visible-on-sidebar-regular">more_vert</i>
                            <i class="material-icons design_bullet-list-67 visible-on-sidebar-mini">view_list</i>
                            <div class="ripple-container"></div></button> -->
                     </div>
                 </div>
-                <button class="navbar-toggler" type="button" data-toggle="collapse" aria-controls="navigation-index"
-                    aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="navbar-toggler-icon icon-bar"></span>
-                    <span class="navbar-toggler-icon icon-bar"></span>
-                    <span class="navbar-toggler-icon icon-bar"></span>
-                </button>
+                <button class="navbar-toggler" type="button"
+    data-toggle="collapse"
+    aria-controls="navigation-index"
+    aria-expanded="false"
+    aria-label="Toggle navigation">
+
+    <i class="material-icons" style="color: black; font-size: 30px;">
+        menu
+    </i>
+
+</button>
                 @auth
                 <div class="collapse navbar-collapse justify-content-end">
                     <ul class="navbar-nav">
@@ -2819,29 +2823,34 @@
                              <a class="dropdown-item" href="#">Another One</a>
                            </div>
                            </li> -->
-                        <li class="nav-item dropdown d-flex" style="align-items: center;">
-                            <p class="m-0" style="font-weight: bold;">{{ auth()->user()->name }}</p>
-                            <a class="nav-link" href="javascript:;" id="navbarDropdownProfile" data-toggle="dropdown"
-                                aria-haspopup="true" aria-expanded="false">
-                                @if (auth()->user()->getMedia('profile_image')->count() > 0 &&
-                                Storage::disk('s3')->exists(auth()->user()->getMedia('profile_image')[0]->getPath()))
-                                <img src="{{ auth()->user()->getMedia('profile_image')[0]->getFullUrl() }}" border="0"
-                                    width="40" class="rounded-circle" />
-                                @else
-                                <i class="material-icons">person</i>
-                                @endif
-                                <p class="d-lg-none d-md-block">
-                                    Account
-                                </p>
-                            </a>
-                            @auth
-                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownProfile">
-                                <!-- <a class="dropdown-item" href="{{ url('change-password') }}">Change Password</a> -->
-                                <!-- <div class="dropdown-divider"></div> -->
-                                <a class="dropdown-item" href="{{ url('logout') }}">Log out</a>
-                            </div>
-                            @endauth
-                        </li>
+                        <!-- Profile Dropdown -->
+<li class="nav-item dropdown d-flex align-items-center">
+    <p class="m-0 mr-2" style="font-weight: bold;">{{ auth()->user()->name }}</p>
+    
+    <a class="nav-link dropdown-toggle" href="javascript:;" 
+       id="navbarDropdownProfile" 
+       data-toggle="dropdown" 
+       aria-haspopup="true" 
+       aria-expanded="false">
+        
+        @if (auth()->user()->getMedia('profile_image')->count() > 0 &&
+             Storage::disk('s3')->exists(auth()->user()->getMedia('profile_image')[0]->getPath()))
+            <img src="{{ auth()->user()->getMedia('profile_image')[0]->getFullUrl() }}" 
+                 width="40" height="40" class="rounded-circle" style="object-fit: cover;">
+        @else
+            <i class="material-icons" style="font-size: 32px; color: black;">person</i>
+        @endif
+    </a>
+
+    @auth
+    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownProfile">
+        <a class="dropdown-item text-danger" href="{{ url('logout') }}">
+            <i class="material-icons mr-2" style="color: black;">logout</i>
+            <span>Log Out</span>
+        </a>
+    </div>
+    @endauth
+</li>
                     </ul>
                 </div>
                 @endauth

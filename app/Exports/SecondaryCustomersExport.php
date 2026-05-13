@@ -21,11 +21,13 @@ class SecondaryCustomersExport implements
 {
     protected $filters;
     protected $type;
+    protected $userIds;
 
-    public function __construct(array $filters, string $type)
+    public function __construct(array $filters, string $type, $userIds = [])
     {
         $this->filters = $filters;
         $this->type = $type;
+        $this->userIds = $userIds;
     }
 
     public function collection()
@@ -53,6 +55,10 @@ class SecondaryCustomersExport implements
             'creator:id,name'
         ])
         ->where('type', $this->type);
+
+        if (!empty($this->userIds)) {
+            $query->whereIn('created_by', $this->userIds);
+        }
 
         // Apply other filters (same as before)
         if (!empty($this->filters['owner_name'])) {
