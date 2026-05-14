@@ -8,14 +8,14 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
-use Illuminate\Support\Str;
 use Maatwebsite\Excel\Events\AfterSheet;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
-class SecondaryCustomersExport implements 
-    FromCollection, 
-    WithHeadings, 
-    WithMapping, 
+class SecondaryCustomersExport implements
+    FromCollection,
+    WithHeadings,
+    WithMapping,
     ShouldAutoSize,
     WithEvents
 {
@@ -40,8 +40,13 @@ class SecondaryCustomersExport implements
             'bank_account_type', 'bank_account_number', 'bank_name', 'ifsc_code',
             'account_holder_name', 'status', 'active', 'agri_distributor',
             'created_by', 'employee_id', 'created_at', 'remark', 'approve_reject_by',
+
+            // Photo & Attachment fields
+            'owner_photo',
+            'shop_photo',
+            'gst_attachment',
+            'pan_attachment',
         ])
-        
         ->with([
             'country:id,country_name',
             'state:id,state_name',
@@ -52,7 +57,7 @@ class SecondaryCustomersExport implements
             'distributor:id,legal_name,distributor_code',
             'agriDistributor:id,legal_name,distributor_code',
             'approvedBy:id,name',
-            'creator:id,name'
+            'creator:id,name',
         ])
         ->where('type', $this->type);
 
@@ -60,7 +65,7 @@ class SecondaryCustomersExport implements
             $query->whereIn('created_by', $this->userIds);
         }
 
-        // Apply other filters (same as before)
+        // === Filters (unchanged) ===
         if (!empty($this->filters['owner_name'])) {
             $query->where('owner_name', 'like', '%' . $this->filters['owner_name'] . '%');
         }
@@ -76,7 +81,7 @@ class SecondaryCustomersExport implements
         if (!empty($this->filters['status'])) $query->where('status', $this->filters['status']);
         if (!empty($this->filters['active'])) $query->where('active', $this->filters['active']);
 
-        // Date Filters (Safe)
+        // Date Filters
         if (!empty($this->filters['start_date'])) {
             try {
                 $start = Carbon::parse($this->filters['start_date'])->startOfDay();
@@ -88,7 +93,6 @@ class SecondaryCustomersExport implements
                 } catch (\Exception $e2) {}
             }
         }
-
         if (!empty($this->filters['end_date'])) {
             try {
                 $end = Carbon::parse($this->filters['end_date'])->endOfDay();
@@ -100,21 +104,16 @@ class SecondaryCustomersExport implements
                 } catch (\Exception $e2) {}
             }
         }
+
         if (!empty($this->filters['designation_id'])) {
-
             $designationIds = (array) $this->filters['designation_id'];
-
-            $query->where(function ($q) use ($designationIds) {
-
-                $q->whereRaw("
-                    EXISTS (
-                        SELECT 1 FROM users 
-                        WHERE FIND_IN_SET(users.id, secondary_customers.employee_id)
-                        AND users.designation_id IN (" . implode(',', $designationIds) . ")
-                    )
-                ");
-
-            });
+            $query->whereRaw("
+                EXISTS (
+                    SELECT 1 FROM users 
+                    WHERE FIND_IN_SET(users.id, secondary_customers.employee_id)
+                    AND users.designation_id IN (" . implode(',', $designationIds) . ")
+                )
+            ");
         }
 
         return $query->latest()->get();
@@ -123,55 +122,24 @@ class SecondaryCustomersExport implements
     public function headings(): array
     {
         return [
-            'Type',
-            'Approval Status',
-            'Employee Names',           // Changed to plural
-            'Branch Name',
-            'Shop Name',
-            'Owner Name',
-            'Mobile Number-1',
-            'Mobile Number-2',
-            'Mobile Number-3',
-            'Mobile Number-4',
-            'Mobile Number-5',
-            'Domestic Distributor Name',
-            'Distributor Code',
-            'Agri Distributor',
-            'Distributor Code',
-            'Address',
-            'Belt/Area/Market Name',
-            'Country',
-            'Country ID',  
-            'State',
-            'State ID',
-            'District',
-            'District ID',
-            'City',
-            'City ID',
-            'Pincode',
-            'Pincode ID',
-            'Beat',
-            'Beat ID', 
-            'Gst Number',
-            'Pan Number',
-            'Bank Account Type',
-            'Bank Account Number',
-            'Bank Name',
-            'IFSC Code',
-            'Account Holder Name',
-            'Active Status',
-            'GPS Location',
-            'Google Map',
-            'Created Date',
-            'Employee Designations',    // Plural
-            'Created By',
-            'Approved/Rejected By',
-            'Rejected Reason',
-            'Retailer ID',
-            'Domestic Distributor ID', 
-            'Agri Distributor ID',
-            'Employee Codes',
-            'Reporting Managers',            // Plural - New/Improved column
+            'Type', 'Approval Status', 'Employee Names', 'Branch Name', 'Shop Name', 
+            'Owner Name', 'Mobile Number-1', 'Mobile Number-2', 'Mobile Number-3', 
+            'Mobile Number-4', 'Mobile Number-5', 'Domestic Distributor Name', 
+            'Distributor Code', 'Agri Distributor', 'Distributor Code', 'Address', 
+            'Belt/Area/Market Name', 'Country', 'Country ID', 'State', 'State ID', 
+            'District', 'District ID', 'City', 'City ID', 'Pincode', 'Pincode ID', 
+            'Beat', 'Beat ID', 'Gst Number', 'Pan Number', 'Bank Account Type', 
+            'Bank Account Number', 'Bank Name', 'IFSC Code', 'Account Holder Name', 
+            'Active Status', 'GPS Location', 'Google Map', 'Created Date', 
+            'Employee Designations', 'Created By', 'Approved/Rejected By', 
+            'Rejected Reason', 'Retailer ID', 'Domestic Distributor ID', 
+            'Agri Distributor ID', 'Employee Codes', 'Reporting Managers',
+
+            // New Columns
+            'Owner Photo',
+            'Shop Photo',
+            'GST Attachment',
+            'PAN Attachment',
         ];
     }
 
@@ -179,36 +147,13 @@ class SecondaryCustomersExport implements
     {
         $mobiles = $row->getMobileNumbersAttribute() ?? [];
 
-        // Handle Multiple Employees
         $employeeNames = [];
         $employeeCodes = [];
         $employeeDesignations = [];
-       $reportingManagerNames = [];
-
-if (!empty($row->employee_id)) {
-
-    // Step 1: get employee
-    $employee = \App\Models\User::find($row->employee_id);
-
-    if ($employee && !empty($employee->reportingid)) {
-
-        // Step 2: explode reporting ids
-        $managerIds = array_filter(array_map('trim', explode(',', $employee->reportingid)));
-
-        // Step 3: get managers
-        if (!empty($managerIds)) {
-            $managers = \App\Models\User::whereIn('id', $managerIds)->get(['id', 'name']);
-
-            foreach ($managers as $manager) {
-                $reportingManagerNames[] = Str::title($manager->name ?? '-');
-            }
-        }
-    }
-}
+        $reportingManagerNames = [];
 
         if (!empty($row->employee_id)) {
             $employeeIds = array_filter(array_map('trim', explode(',', $row->employee_id)));
-
             $employees = \App\Models\User::whereIn('id', $employeeIds)
                 ->with(['getbranch', 'getdesignation'])
                 ->get();
@@ -217,31 +162,32 @@ if (!empty($row->employee_id)) {
                 $employeeNames[] = Str::title($emp->name ?? '-');
                 $employeeCodes[] = $emp->employee_codes ?? '-';
                 $employeeDesignations[] = Str::title($emp->getdesignation?->designation_name ?? '-');
+
+                if (!empty($emp->reportingid)) {
+                    $managerIds = array_filter(array_map('trim', explode(',', $emp->reportingid)));
+                    $managers = \App\Models\User::whereIn('id', $managerIds)->pluck('name');
+                    foreach ($managers as $name) {
+                        $reportingManagerNames[] = Str::title($name);
+                    }
+                }
             }
         }
 
         return [
             $row->type ?? '-',
             $row->status ?? '-',
-            implode(', ', $employeeNames) ?: '-',           // Multiple Names
-            Str::title($row->employee?->getbranch?->branch_name ?? '-'), // Keeping first for branch (or you can change)
+            implode(', ', $employeeNames) ?: '-',
+            Str::title($row->employee?->getbranch?->branch_name ?? '-'),
             Str::title($row->shop_name ?? '-'),
             Str::title($row->owner_name ?? '-'),
-
-            $mobiles[0] ?? '-',
-            $mobiles[1] ?? '-',
-            $mobiles[2] ?? '-',
-            $mobiles[3] ?? '-',
-            $mobiles[4] ?? '-',
-
+            $mobiles[0] ?? '-', $mobiles[1] ?? '-', $mobiles[2] ?? '-', 
+            $mobiles[3] ?? '-', $mobiles[4] ?? '-',
             Str::title($row->distributor?->legal_name ?? '-'),
             $row->distributor?->distributor_code ?? '-',
             Str::title($row->agriDistributor?->legal_name ?? '-'),
             $row->agriDistributor?->distributor_code ?? '-',
-
             Str::title($row->address_line ?? '-'),
             Str::title($row->belt_area_market_name ?? '-'),
-
             Str::title($row->country?->country_name ?? '-'),
             $row->country_id ?? '-',
             Str::title($row->state?->state_name ?? '-'),
@@ -254,7 +200,6 @@ if (!empty($row->employee_id)) {
             $row->pincode_id ?? '-',
             Str::title($row->beat?->beat_name ?? '-'),
             $row->beat_id ?? '-',
-
             $row->gst_number ?? '-',
             $row->pan_number ?? '-',
             Str::title($row->bank_account_type ?? '-'),
@@ -262,30 +207,51 @@ if (!empty($row->employee_id)) {
             Str::title($row->bank_name ?? '-'),
             $row->ifsc_code ?? '-',
             Str::title($row->account_holder_name ?? '-'),
-
             $row->active === 'Y' ? 'Active' : 'Inactive',
-
             $row->gps_location ?? '-',
             $row->gmap ?? '-',
             $row->created_at ? $row->created_at->format('d-m-Y') : '-',
-
-            implode(', ', $employeeDesignations) ?: '-',    // Multiple Designations
+            implode(', ', $employeeDesignations) ?: '-',
             Str::title($row->creator?->name ?? '-'),
             Str::title($row->approvedBy?->name ?? '-'),
             $row->remark ?? '-',
             $row->id ?? '-',
             $row->distributor_name ?? '-',
             $row->agri_distributor ?? '-',
-            implode(', ', $employeeCodes) ?: '-',           // Multiple Employee Codes
+            implode(', ', $employeeCodes) ?: '-',
             implode(', ', $reportingManagerNames) ?: '-',
+
+            // Hyperlinks
+            $this->getHyperlink($row->owner_photo, 'View Owner Photo'),
+            $this->getHyperlink($row->shop_photo, 'View Shop Photo'),
+            $this->getHyperlink($row->gst_attachment, 'View GST Attachment'),
+            $this->getHyperlink($row->pan_attachment, 'View PAN Attachment'),
         ];
+    }
+
+    /**
+     * Generate Hyperlink based on your actual URL structure
+     */
+    private function getHyperlink(?string $path, string $displayText): string
+    {
+        if (empty($path)) {
+            return '-';
+        }
+
+        // Remove leading slash if present
+        $path = ltrim($path, '/');
+
+        // Full URL matching your domain
+        $fullUrl = 'https://ksb-pr.fieldkonnect.in/public/storage/' . $path;
+
+        return '=HYPERLINK("' . $fullUrl . '", "' . $displayText . '")';
     }
 
     public function registerEvents(): array
     {
         return [
-            AfterSheet::class => function(AfterSheet $event) {
-                $event->sheet->getStyle('A1:AU1')->applyFromArray([
+            AfterSheet::class => function (AfterSheet $event) {
+                $event->sheet->getStyle('A1:AY1')->applyFromArray([
                     'font' => ['bold' => true],
                     'fill' => [
                         'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,

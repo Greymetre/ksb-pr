@@ -572,73 +572,204 @@ if (! function_exists('getLatLongToCity')) {
 //     }
 // }
 
-if (!function_exists('getUsersReportingToAuth')) {
+
+if (! function_exists('getUsersReportingToAuth')) {
     function getUsersReportingToAuth($userid = '')
     {
         $userid = !empty($userid) ? $userid : Auth::user()->id;
         $userinfo = User::where('id', '=', $userid)->first();
 
+        Log::info('User Branch Info', [
+            'user_id' => $userinfo->id,
+            'branch_show' => $userinfo->branch_show,
+            'branch_id' => $userinfo->branch_id,
+        ]);
+
         $all_users = User::whereDoesntHave('roles', function ($query) {
             $query->whereIn('id', config('constants.customer_roles'));
         })->where('active', 'Y')->get();
 
-        if (!$userinfo->hasRole('superadmin') && 
-            !$userinfo->hasRole('subAdmin') && 
-            !$userinfo->hasRole('GM.') && 
-            !$userinfo->hasRole('Admin') && 
-            !$userinfo->hasRole('CRM') && 
-            !$userinfo->hasRole('HR_Admin') && 
-            !$userinfo->hasRole('HO_Account') && 
-            !$userinfo->hasRole('Sub_Support') && 
-            !$userinfo->hasRole('Accounts Order') && 
-            !$userinfo->hasRole('Service Admin') && 
-            !$userinfo->hasRole('All Customers') && 
-            !$userinfo->hasRole('Sub billing') && 
-            !$userinfo->hasRole('Sales Admin') && 
-            !$userinfo->hasRole('Marketing_Admin') && 
-            !$userinfo->hasRole('MIS_ADMIN') && 
-            !$userinfo->hasRole('Marketing Team') && 
-            !$userinfo->hasRole('Data_Crm')) 
-            
-            {
+        // if(!$userinfo->hasRole('superadmin') && !$userinfo->hasRole('Admin'))
+        // {
+        //     $all_ids_array = array($userid);
+        //     $test = getAllChild(array($userid), $all_users);
+        //     while(count($test) > 0){
+        //         $all_ids_array = array_merge($all_ids_array, $test);
+        //         $test = getAllChild($test, $all_users);
+        //     }
+        // }else{
+        //     $all_ids_array = User::pluck('id')->toArray();
+        // }
 
-            $all_ids_array = array($userid);
-            $test = getAllChild(array($userid), $all_users);
-            while (count($test) > 0) {
-                $all_ids_array = array_merge($all_ids_array, $test);
-                $test = getAllChild($test, $all_users);
-            }
-        } elseif ($userinfo->hasRole('Accounts Order') || $userinfo->hasRole('Marketing Team')) {
-            $branches = explode(',', $userinfo->branch_show);
+        // if (!$userinfo->hasRole('superadmin') && !$userinfo->hasRole ('Admin') && !$userinfo->hasRole('ZONAL') && !$userinfo->hasRole('subAdmin') && !$userinfo->hasRole('GM.') && !$userinfo->hasRole('CRM') && !$userinfo->hasRole('HR_Admin') && !$userinfo->hasRole('HO_Account')  && !$userinfo->hasRole('Sub_Support') && !$userinfo->hasRole('Accounts Order') && !$userinfo->hasRole('Service Admin') && !$userinfo->hasRole('All Customers') && !$userinfo->hasRole('Sub billing') && !$userinfo->hasRole('Sales Admin') && !$userinfo->hasRole('Marketing_Admin') && !$userinfo->hasRole('MIS_ADMIN') && !$userinfo->hasRole('Marketing Team') && !$userinfo->hasRole('Data_Crm')) {
+        //     $all_ids_array = array($userid);
+        //     $test = getAllChild(array($userid), $all_users);
+        //     while (count($test) > 0) {
+        //         $all_ids_array = array_merge($all_ids_array, $test);
+        //         $test = getAllChild($test, $all_users);
+        //     }
+
+        //     Log::info('FIRST IF EXECUTED');
+        // } elseif (
+        //     $userinfo->hasRole('BM.') ||
+        //     $userinfo->hasRole('Marketing Team')
+        // ) {
+
+        //     $branches = explode(',', $userinfo->branch_id);
+
+        //     Log::info('Logged In User Branches', [
+        //         'user_id' => $userinfo->id,
+        //         'branches' => $branches
+        //     ]);
+
+        //     $all_ids_array = User::where('active', 'Y')
+        //         ->where(function ($query) use ($branches) {
+
+        //             foreach ($branches as $branch) {
+
+        //                 $query->orWhereRaw(
+        //                     "FIND_IN_SET(?, branch_id)",
+        //                     [$branch]
+        //                 );
+        //             }
+        //         })
+        //         ->pluck('id')
+        //         ->toArray();
+
+        //         Log::info('BM BLOCK EXECUTED');
+
+        //     Log::info('Branch Wise Users', $all_ids_array);
+        // } else {
+        //     $all_ids_array = User::whereDoesntHave('roles', function ($query) {
+        //         $query->whereIn('id', config('constants.customer_roles'));
+        //     })->where('active', 'Y')->pluck('id')->toArray();
+        // }
+
+
+        if (
+            $userinfo->hasRole('BM.') ||
+            $userinfo->hasRole('Marketing Team')
+        ) {
+
+            Log::info('BM BLOCK EXECUTED');
+
+            $branches = explode(',', $userinfo->branch_id);
+
             $all_ids_array = User::where('active', 'Y')
                 ->where(function ($query) use ($branches) {
+
                     foreach ($branches as $branch) {
-                        $query->orWhereRaw("FIND_IN_SET(?, branch_id)", [$branch]);
+
+                        $query->orWhereRaw(
+                            "FIND_IN_SET(?, branch_id)",
+                            [$branch]
+                        );
                     }
                 })
                 ->pluck('id')
                 ->toArray();
 
+        } elseif (!$userinfo->hasRole('superadmin') && !$userinfo->hasRole ('Admin') && !$userinfo->hasRole('ZONAL') && !$userinfo->hasRole('subAdmin') && !$userinfo->hasRole('GM.') && !$userinfo->hasRole('CRM') && !$userinfo->hasRole('HR_Admin') && !$userinfo->hasRole('HO_Account')  && !$userinfo->hasRole('Sub_Support') && !$userinfo->hasRole('Accounts Order') && !$userinfo->hasRole('Service Admin') && !$userinfo->hasRole('All Customers') && !$userinfo->hasRole('Sub billing') && !$userinfo->hasRole('Sales Admin') && !$userinfo->hasRole('Marketing_Admin') && !$userinfo->hasRole('MIS_ADMIN') && !$userinfo->hasRole('Marketing Team') && !$userinfo->hasRole('Data_Crm')) {
+
+            Log::info('FIRST IF EXECUTED');
+
+            $all_ids_array = array($userid);
+
             $test = getAllChild(array($userid), $all_users);
+
             while (count($test) > 0) {
+
                 $all_ids_array = array_merge($all_ids_array, $test);
+
                 $test = getAllChild($test, $all_users);
             }
+
         } else {
-            $all_ids_array = User::whereDoesntHave('roles', function ($query) {
-                $query->whereIn('id', config('constants.customer_roles'));
-            })->where('active', 'Y')->pluck('id')->toArray();
+
+            $all_ids_array = User::where('active', 'Y')
+                ->pluck('id')
+                ->toArray();
         }
 
         if ($userinfo->id == '41012') {
-            $all_ids_array = User::whereHas('roles', function ($query) {
+            $all_ids_array =  User::whereHas('roles', function ($query) {
                 $query->where('id', 34);
             })->pluck('id')->toArray();
         }
 
+                Log::info('User Roles', $userinfo->getRoleNames()->toArray());
+        Log::info('Accessible User IDs', $all_ids_array);
         return $all_ids_array;
     }
 }
+
+// if (!function_exists('getUsersReportingToAuth')) {
+//     function getUsersReportingToAuth($userid = '')
+//     {
+//         $userid = !empty($userid) ? $userid : Auth::user()->id;
+//         $userinfo = User::where('id', '=', $userid)->first();
+
+//         $all_users = User::whereDoesntHave('roles', function ($query) {
+//             $query->whereIn('id', config('constants.customer_roles'));
+//         })->where('active', 'Y')->get();
+
+//         if (!$userinfo->hasRole('superadmin') && 
+//             !$userinfo->hasRole('subAdmin') && 
+//             !$userinfo->hasRole('GM.') && 
+//             !$userinfo->hasRole('Admin') && 
+//             !$userinfo->hasRole('CRM') && 
+//             !$userinfo->hasRole('HR_Admin') && 
+//             !$userinfo->hasRole('HO_Account') && 
+//             !$userinfo->hasRole('Sub_Support') && 
+//             !$userinfo->hasRole('Accounts Order') && 
+//             !$userinfo->hasRole('Service Admin') && 
+//             !$userinfo->hasRole('All Customers') && 
+//             !$userinfo->hasRole('Sub billing') && 
+//             !$userinfo->hasRole('Sales Admin') && 
+//             !$userinfo->hasRole('Marketing_Admin') && 
+//             !$userinfo->hasRole('MIS_ADMIN') && 
+//             !$userinfo->hasRole('Marketing Team') && 
+//             !$userinfo->hasRole('Data_Crm')) 
+            
+//             {
+
+//             $all_ids_array = array($userid);
+//             $test = getAllChild(array($userid), $all_users);
+//             while (count($test) > 0) {
+//                 $all_ids_array = array_merge($all_ids_array, $test);
+//                 $test = getAllChild($test, $all_users);
+//             }
+//         } elseif ($userinfo->hasRole('Accounts Order') || $userinfo->hasRole('Marketing Team')) {
+//             $branches = explode(',', $userinfo->branch_show);
+//             $all_ids_array = User::where('active', 'Y')
+//                 ->where(function ($query) use ($branches) {
+//                     foreach ($branches as $branch) {
+//                         $query->orWhereRaw("FIND_IN_SET(?, branch_id)", [$branch]);
+//                     }
+//                 })
+//                 ->pluck('id')
+//                 ->toArray();
+
+//             $test = getAllChild(array($userid), $all_users);
+//             while (count($test) > 0) {
+//                 $all_ids_array = array_merge($all_ids_array, $test);
+//                 $test = getAllChild($test, $all_users);
+//             }
+//         } else {
+//             $all_ids_array = User::whereDoesntHave('roles', function ($query) {
+//                 $query->whereIn('id', config('constants.customer_roles'));
+//             })->where('active', 'Y')->pluck('id')->toArray();
+//         }
+
+//         if ($userinfo->id == '41012') {
+//             $all_ids_array = User::whereHas('roles', function ($query) {
+//                 $query->where('id', 34);
+//             })->pluck('id')->toArray();
+//         }
+
+//         return $all_ids_array;
+//     }
+// }
 
 if (!function_exists('getHierarchyLevel')) {
     function getHierarchyLevel($target_user_id, $auth_user_id = null)

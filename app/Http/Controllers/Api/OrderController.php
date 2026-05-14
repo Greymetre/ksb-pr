@@ -295,174 +295,175 @@ class OrderController extends Controller
     }
 
    public function insertOrder(Request $request)
-{
-    DB::beginTransaction();
-
-    try {
-        $user = $request->user();
-        $request['created_by'] = $user->id;
-        $request['order_remark'] = $request['remark'] ?? '';
-
-        // Set product category from first product
-        if (!empty($request->orderdetail[0]['product_id'])) {
-            $fprodu = Product::find($request->orderdetail[0]['product_id']);
-            $request['product_cat_id'] = $fprodu ? $fprodu->category_id : null;
-        }
-
-        // ========================
-        // Order Type & Defaults
-        // ========================
-        $request['order_type']   = 'SECONDARY_CUSTOMER';
-        $request['active']       = 'Y';
-        $request['total_qty']    = 0;
-        $request['shipped_qty']  = 0;
-        $request['order_taking'] = 'MobileApp';
-        $request['executive_id'] = $user->id;
-        $request['order_date']   = now()->toDateString();
-
-        // ========================
-        // Create Order First (without orderno)
-        // ========================
-        $order = Order::create([
-            'active'         => 'Y',
-            'buyer_id'       => $request->buyer_id ?? null,
-            'seller_id'      => $request->seller_id ?? null,
-            'executive_id'   => $user->id,
-            'total_qty'      => 0,
-            'shipped_qty'    => 0,
-            'order_date'     => $request['order_date'],
-            'order_taking'   => 'MobileApp',
-            'order_type'     => $request['order_type'],
-            'product_cat_id' => $request['product_cat_id'] ?? null,
-            'order_remark'   => $request['order_remark'],
-            'created_by'     => $user->id,
-            // Totals will be calculated and updated later
-            'sub_total'      => 0,
-            'total_gst'      => 0,
-            'grand_total'    => 0,
-        ]);
-
-        // ========================
-        // Generate Proper Order No
-        // ========================
-        $order->orderno = date('Y') 
-            . '-' . ($order->seller_id ?? 0) 
-            . '-' . ($order->buyer_id ?? 0) 
-            . '-' . $order->id;
-
-        $order->save();
-
-        // ========================
-        // Insert Order Details + Calculate Totals
-        // ========================
-        $orderDetailsData = [];
-        $sub_total = 0;
-        $total_gst = 0;
-
-        foreach ($request->orderdetail as $rows) {
-            $product = Product::with('productpriceinfo')->find($rows['product_id']);
-
-            $gst_percent = 0;
-            $gst_amount  = 0;
-
-            if ($product && $product->productpriceinfo) {
-                $gst_percent = (int)$product->productpriceinfo->gst ?? 0;
-                $base_amount = $rows['quantity'] * ($rows['price'] ?? 0);
-                $gst_amount  = ($base_amount * $gst_percent) / 100;
+    {
+        DB::beginTransaction();
+    
+        try {
+            $user = $request->user();
+            $request['created_by'] = $user->id;
+            $request['order_remark'] = $request['remark'] ?? '';
+    
+            // Set product category from first product
+            if (!empty($request->orderdetail[0]['product_id'])) {
+                $fprodu = Product::find($request->orderdetail[0]['product_id']);
+                $request['product_cat_id'] = $fprodu ? $fprodu->category_id : null;
             }
-
-            // Use line_total from payload, fallback to calculation
-            $line_total = $rows['line_total'] ?? 
-                         ($rows['quantity'] * ($rows['price'] ?? 0));
-
-            // Grand total per line = line_total + gst_amount
-            $line_grand_total = $line_total + $gst_amount;
-
-            $orderDetailsData[] = [
-                'active'            => 'Y',
-                'order_id'          => $order->id,
-                'product_id'        => $rows['product_id'] ?? null,
-                'product_detail_id' => $rows['product_detail_id'] ?? null,
-                'quantity'          => $rows['quantity'] ?? 0,
-                'shipped_qty'       => $rows['shipped_qty'] ?? 0,
-                'price'             => $rows['price'] ?? 0.00,
-                'tax_amount'        => $rows['tax_amount'] ?? $gst_amount,
-                'line_total'        => $line_total,
-                'gst'               => $gst_percent,
-                'gst_amount'        => $gst_amount,
-                'discount'          => $rows['discount'] ?? 0.00,
-                'ebd_amount'        => $rows['ebd_amount'] ?? 0.00,
-                'created_at'        => getcurentDateTime(),
-                'category_id'       => $product->category_id ?? null,
-                'subcategory_id'    => $product->subcategory_id ?? null,
-            ];
-
-            $sub_total += $line_total;
-            $total_gst += $gst_amount;
+    
+            // ========================
+            // Order Type & Defaults
+            // ========================
+            $request['order_type']   = 'SECONDARY_CUSTOMER';
+            $request['active']       = 'Y';
+            $request['total_qty']    = 0;
+            $request['shipped_qty']  = 0;
+            $request['order_taking'] = 'MobileApp';
+            $request['executive_id'] = $user->id;
+            $request['order_date']   = now()->toDateString();
+    
+            // ========================
+            // Create Order First (without orderno)
+            // ========================
+            $order = Order::create([
+                'active'         => 'Y',
+                'buyer_id'       => $request->buyer_id ?? null,
+                'seller_id'      => $request->seller_id ?? null,
+                'executive_id'   => $user->id,
+                'total_qty'      => 0,
+                'shipped_qty'    => 0,
+                'order_date'     => $request['order_date'],
+                'order_taking'   => 'MobileApp',
+                'order_type'     => $request['order_type'],
+                'product_cat_id' => $request['product_cat_id'] ?? null,
+                'order_remark'   => $request['order_remark'],
+                'created_by'     => $user->id,
+                // Totals will be calculated and updated later
+                'sub_total'      => 0,
+                'total_gst'      => 0,
+                'grand_total'    => 0,
+                // 'customer_type'  => $request['customer_type']
+            ]);
+    
+            // ========================
+            // Generate Proper Order No
+            // ========================
+            $order->orderno = date('Y') 
+                . '-' . ($order->seller_id ?? 0) 
+                . '-' . ($order->buyer_id ?? 0) 
+                . '-' . $order->id;
+    
+            $order->save();
+    
+            // ========================
+            // Insert Order Details + Calculate Totals
+            // ========================
+            $orderDetailsData = [];
+            $sub_total = 0;
+            $total_gst = 0;
+    
+            foreach ($request->orderdetail as $rows) {
+                $product = Product::with('productpriceinfo')->find($rows['product_id']);
+    
+                $gst_percent = 0;
+                $gst_amount  = 0;
+    
+                if ($product && $product->productpriceinfo) {
+                    $gst_percent = (int)$product->productpriceinfo->gst ?? 0;
+                    $base_amount = $rows['quantity'] * ($rows['price'] ?? 0);
+                    $gst_amount  = ($base_amount * $gst_percent) / 100;
+                }
+    
+                // Use line_total from payload, fallback to calculation
+                $line_total = $rows['line_total'] ?? 
+                             ($rows['quantity'] * ($rows['price'] ?? 0));
+    
+                // Grand total per line = line_total + gst_amount
+                $line_grand_total = $line_total + $gst_amount;
+    
+                $orderDetailsData[] = [
+                    'active'            => 'Y',
+                    'order_id'          => $order->id,
+                    'product_id'        => $rows['product_id'] ?? null,
+                    'product_detail_id' => $rows['product_detail_id'] ?? null,
+                    'quantity'          => $rows['quantity'] ?? 0,
+                    'shipped_qty'       => $rows['shipped_qty'] ?? 0,
+                    'price'             => $rows['price'] ?? 0.00,
+                    'tax_amount'        => $rows['tax_amount'] ?? $gst_amount,
+                    'line_total'        => $line_total,
+                    'gst'               => $gst_percent,
+                    'gst_amount'        => $gst_amount,
+                    'discount'          => $rows['discount'] ?? 0.00,
+                    'ebd_amount'        => $rows['ebd_amount'] ?? 0.00,
+                    'created_at'        => getcurentDateTime(),
+                    'category_id'       => $product->category_id ?? null,
+                    'subcategory_id'    => $product->subcategory_id ?? null,
+                ];
+    
+                $sub_total += $line_total;
+                $total_gst += $gst_amount;
+            }
+    
+            // Insert all order details
+            if (!empty($orderDetailsData)) {
+                OrderDetails::insert($orderDetailsData);
+            }
+    
+            // ========================
+            // Calculate & Update Grand Total in Order
+            // ========================
+            $grand_total = $sub_total + $total_gst;
+    
+            $order->update([
+                'sub_total'   => round($sub_total, 2),
+                'total_gst'   => round($total_gst, 2),
+                'grand_total' => round($grand_total, 2),
+                'total_qty'   => array_sum(array_column($request->orderdetail, 'quantity')) ?? 0,
+            ]);
+    
+            DB::commit();
+    
+            // ========================
+            // Excel Export (Optional)
+            // ========================
+            $exportData = new Request();
+            $exportData->merge(['order_id' => $order->id]);
+            Excel::store(new OrderEmailExport($exportData), '/assets/orderDetails.xlsx', 'local');
+    
+            // ========================
+            // Notifications
+            // ========================
+            $buyerName = SecondaryCustomer::where('id', $request->buyer_id)
+                            ->value('shop_name') ?? 'Unknown Buyer';
+    
+            $adminnotify = collect([
+                'title' => 'Order collected',
+                'body'  => $user->name . ' has collected order at ' . $buyerName
+            ]);
+            sendNotification(39, $adminnotify);
+    
+            $zsmnotify = collect([
+                'title' => 'Order collected',
+                'body'  => $user->name . ' has collected order at ' . $buyerName
+            ]);
+            sendNotification($user->reportingid ?? 0, $zsmnotify);
+    
+            return response()->json([
+                'status'     => 'success',
+                'message'    => 'Order created successfully',
+                'order_id'   => $order->id,
+                'orderno'    => $order->orderno,
+                'grand_total'=> round($grand_total, 2)
+            ], 200);
+    
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('API Order Insert Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        // Insert all order details
-        if (!empty($orderDetailsData)) {
-            OrderDetails::insert($orderDetailsData);
-        }
-
-        // ========================
-        // Calculate & Update Grand Total in Order
-        // ========================
-        $grand_total = $sub_total + $total_gst;
-
-        $order->update([
-            'sub_total'   => round($sub_total, 2),
-            'total_gst'   => round($total_gst, 2),
-            'grand_total' => round($grand_total, 2),
-            'total_qty'   => array_sum(array_column($request->orderdetail, 'quantity')) ?? 0,
-        ]);
-
-        DB::commit();
-
-        // ========================
-        // Excel Export (Optional)
-        // ========================
-        $exportData = new Request();
-        $exportData->merge(['order_id' => $order->id]);
-        Excel::store(new OrderEmailExport($exportData), '/assets/orderDetails.xlsx', 'local');
-
-        // ========================
-        // Notifications
-        // ========================
-        $buyerName = SecondaryCustomer::where('id', $request->buyer_id)
-                        ->value('shop_name') ?? 'Unknown Buyer';
-
-        $adminnotify = collect([
-            'title' => 'Order collected',
-            'body'  => $user->name . ' has collected order at ' . $buyerName
-        ]);
-        sendNotification(39, $adminnotify);
-
-        $zsmnotify = collect([
-            'title' => 'Order collected',
-            'body'  => $user->name . ' has collected order at ' . $buyerName
-        ]);
-        sendNotification($user->reportingid ?? 0, $zsmnotify);
-
-        return response()->json([
-            'status'     => 'success',
-            'message'    => 'Order created successfully',
-            'order_id'   => $order->id,
-            'orderno'    => $order->orderno,
-            'grand_total'=> round($grand_total, 2)
-        ], 200);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        \Log::error('API Order Insert Error: ' . $e->getMessage());
-        
-        return response()->json([
-            'status'  => 'error',
-            'message' => $e->getMessage()
-        ], 500);
     }
-}
 
     public function addCartItems(Request $request)
     {

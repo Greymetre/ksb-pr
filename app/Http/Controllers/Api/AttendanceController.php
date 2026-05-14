@@ -1455,6 +1455,44 @@ class AttendanceController extends Controller
             $top5TotalQuantity = $top5Products->sum('total_quantity');
             $top5TotalValue    = $top5Products->sum('total_value');
             
+            $top5ProductsValueWise = DB::table('order_details')
+                ->join('orders', 'order_details.order_id', '=', 'orders.id')
+                ->join('products', 'order_details.product_id', '=', 'products.id')
+                ->whereIn('orders.created_by', $visibleUserIds)
+                ->whereBetween('orders.order_date', [$currentYearStart, $currentYearEnd])
+                ->whereNotNull('order_details.product_id')
+                ->groupBy('order_details.product_id', 'products.product_name')
+                ->select(
+                    'order_details.product_id',
+                    'products.product_name',
+                    DB::raw('COALESCE(SUM(order_details.quantity), 0) as total_quantity'),
+                    DB::raw('COALESCE(SUM(order_details.line_total), 0) as total_value')
+                )
+                ->orderBy('total_value', 'desc')
+                ->limit(5)
+                ->get();
+            
+            $top5ProductsValueWiseTotalQty = $top5ProductsValueWise->sum('total_quantity');
+            $top5ProductsValueWiseTotalValue = $top5ProductsValueWise->sum('total_value');
+            
+            $top5MonthValueWise = DB::table('order_details')
+                ->join('orders', 'order_details.order_id', '=', 'orders.id')
+                ->join('products', 'order_details.product_id', '=', 'products.id')
+                ->whereIn('orders.created_by', $visibleUserIds)
+                ->whereBetween('orders.order_date', [$currentMonthStart, $currentMonthEnd])
+                ->groupBy('order_details.product_id', 'products.product_name')
+                ->select(
+                    'products.product_name',
+                    DB::raw('COALESCE(SUM(order_details.quantity), 0) as total_quantity'),
+                    DB::raw('COALESCE(SUM(order_details.line_total), 0) as total_value')
+                )
+                ->orderBy('total_value', 'desc')
+                ->limit(5)
+                ->get();
+            
+            $top5MonthValueWiseTotalQty = $top5MonthValueWise->sum('total_quantity');
+            $top5MonthValueWiseTotalValue = $top5MonthValueWise->sum('total_value');
+            
             // Total Unique Buyers in Current Year (New as requested)
             $totalUniqueBuyersCurrentYear = DB::table('orders')
                 ->whereIn('created_by', $visibleUserIds)
@@ -1599,6 +1637,32 @@ class AttendanceController extends Controller
                 'top_5_products_total' => [
                     'quantity' => (int) $top5TotalQuantity,
                     'value'    => round($top5TotalValue, 2),
+                ],
+                
+                'top_5_products_value_wise' => $top5ProductsValueWise->map(function ($item) {
+                    return [
+                        'product_name' => $item->product_name ?? 'N/A',
+                        'quantity'     => (int) $item->total_quantity,
+                        'value'        => round($item->total_value, 2),
+                    ];
+                })->toArray(),
+                
+                'top_5_products_total_value_wise' => [
+                    'quantity' => (int) $top5ProductsValueWiseTotalQty,
+                    'value'    => round($top5ProductsValueWiseTotalValue, 2),
+                ],
+                
+                'top_5_products_current_month_value_wise' => $top5MonthValueWise->map(function ($item) {
+                    return [
+                        'product_name' => $item->product_name ?? 'N/A',
+                        'quantity'     => (int) $item->total_quantity,
+                        'value'        => round($item->total_value, 2),
+                    ];
+                })->toArray(),
+                
+                'top_5_products_total_current_month_value_wise' => [
+                    'quantity' => (int) $top5MonthValueWiseTotalQty,
+                    'value'    => round($top5MonthValueWiseTotalValue, 2),
                 ],
     
                 // Working Type - ASR
