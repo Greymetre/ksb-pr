@@ -32,8 +32,7 @@ return [
         'Self' => 'Self',
     ],
     'customer_roles' => [
-        29,
-        40,
+        61
     ],
 
 
