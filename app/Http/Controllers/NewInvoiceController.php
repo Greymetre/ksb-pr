@@ -33,7 +33,7 @@ class NewInvoiceController extends Controller
             return DataTables::of($this->invoiceQuery($request))
                 ->addIndexColumn()
                 ->addColumn('retailer_id', function ($invoice) {
-                    return '<span class="badge badge-light">RET-' . str_pad($invoice->secondary_customer_id, 4, '0', STR_PAD_LEFT) . '</span>';
+                    return '<span class="badge badge-light text-dark">RET-' . str_pad($invoice->secondary_customer_id, 4, '0', STR_PAD_LEFT) . '</span>';
                 })
                 ->addColumn('customer_name', function ($invoice) {
                     return e($invoice->customer->owner_name ?? '-');
@@ -292,6 +292,7 @@ class NewInvoiceController extends Controller
                 $invoice->invoice_number,
                 (float) $invoice->amount,
                 (float) $invoice->points,
+                $invoice->getMedia('attachments')->isNotEmpty() ? 'Yes' : 'No',
                 $invoice->approval_status_label,
                 $invoice->approval_remark,
             ];
@@ -307,6 +308,7 @@ class NewInvoiceController extends Controller
             'Invoice Number',
             'Pre-GST Amount',
             'Points',
+            'Has Attachment',
             'Approval Status',
             'Remark',
         ], $data), 'new-invoices-report.xlsx');
@@ -337,7 +339,7 @@ class NewInvoiceController extends Controller
     private function invoiceQuery(Request $request)
     {
         $query = NewInvoice::query()
-            ->with(['customer.city', 'creator.getbranch'])
+            ->with(['customer.city', 'creator.getbranch', 'media'])
             ->latest('new_invoices.created_at');
 
         if ($request->filled('retailer_search')) {

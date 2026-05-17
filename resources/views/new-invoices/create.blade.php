@@ -111,7 +111,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label class="col-form-label">
-                                        <strong>Amount</strong>
+                                        <strong>Pre-GST Amount</strong>
                                         <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group">

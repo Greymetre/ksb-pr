@@ -163,7 +163,7 @@
                     <h5 class="card-title">Approval History</h5>
                     <div class="approval-timeline">
                         @forelse($invoice->approvalLogs->sortByDesc('created_at') as $log)
-                        <div class="approval-item">
+                        <div class="approval-item text-dark">
                             <strong>{{ ucwords($log->status_type) }}</strong>
                             <div>{{ $log->user->employee_codes ?? '' }} {{ $log->user->name ?? '-' }}</div>
                             <small>{{ $log->created_at ? $log->created_at->format('d M Y - g:i A') : '-' }}</small>
