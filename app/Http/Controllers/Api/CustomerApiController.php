@@ -127,52 +127,106 @@ class CustomerApiController extends Controller
                 // Else: Superadmin sees ALL active distributors
             } 
             else {
+
                 // ────────────────────────────────────────────────
-                // Normal User - Hierarchy Logic (reportingid + sales_executive_id)
+                // BM Role Check
                 // ────────────────────────────────────────────────
-                $targetUserId = $request->query('for_user_id');
-    
-                if ($targetUserId) {
-                    $targetUser = User::find((int)$targetUserId);
-                    if (!$targetUser) {
-                        return response()->json([
-                            'status' => false,
-                            'message' => 'Requested user not found',
-                        ], 404);
-                    }
-    
-                    $myVisibleIds = $this->getVisibleUserIds($authUser);
-                    $myVisibleIds[] = $authUser->id;
-                    $myVisibleIds = array_unique($myVisibleIds);
-    
-                    if (!in_array((int)$targetUserId, $myVisibleIds)) {
-                        return response()->json([
-                            'status' => false,
-                            'message' => 'You do not have permission to view this user\'s distributors',
-                        ], 403);
-                    }
-    
-                    $visibleUserIds = [(int)$targetUserId];
-                } else {
-                    $visibleUserIds = $this->getVisibleUserIds($authUser);
-                    $visibleUserIds[] = $authUser->id;
-                    $visibleUserIds = array_unique($visibleUserIds);
+                $isBM = false;
+            
+                if (method_exists($authUser, 'hasRole')) {
+                    $isBM = $authUser->hasRole('BM.');
                 }
-    
-                // Safe filtering for created_by + sales_executive_id (longtext)
+            
+                if (!$isBM && $authUser->relationLoaded('roles')) {
+                    $roles = $authUser->roles->pluck('name');
+                    $isBM = $roles->contains('BM.');
+                }
+            
+                $targetUserId = $request->query('for_user_id');
+            
+                // ────────────────────────────────────────────────
+                // BM FLOW
+                // ────────────────────────────────────────────────
+                if ($isBM) {
+            
+                    $visibleUserIds = User::where('branch_id', $authUser->branch_id)
+                        ->pluck('id')
+                        ->toArray();
+            
+                    // Optional for_user_id support
+                    if ($targetUserId) {
+            
+                        if (!in_array((int)$targetUserId, $visibleUserIds)) {
+            
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'You do not have permission to view this user distributors',
+                            ], 403);
+                        }
+            
+                        $visibleUserIds = [(int)$targetUserId];
+                    }
+            
+                } else {
+            
+                    // ────────────────────────────────────────────────
+                    // NORMAL HIERARCHY FLOW
+                    // ────────────────────────────────────────────────
+                    if ($targetUserId) {
+            
+                        $targetUser = User::find((int)$targetUserId);
+            
+                        if (!$targetUser) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'Requested user not found',
+                            ], 404);
+                        }
+            
+                        $myVisibleIds = $this->getVisibleUserIds($authUser);
+            
+                        $myVisibleIds[] = $authUser->id;
+            
+                        $myVisibleIds = array_unique($myVisibleIds);
+            
+                        if (!in_array((int)$targetUserId, $myVisibleIds)) {
+            
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'You do not have permission to view this user distributors',
+                            ], 403);
+                        }
+            
+                        $visibleUserIds = [(int)$targetUserId];
+            
+                    } else {
+            
+                        $visibleUserIds = $this->getVisibleUserIds($authUser);
+            
+                        $visibleUserIds[] = $authUser->id;
+            
+                        $visibleUserIds = array_unique($visibleUserIds);
+                    }
+                }
+            
+                // ────────────────────────────────────────────────
+                // created_by + sales_executive_id filter
+                // ────────────────────────────────────────────────
                 $query->where(function ($q) use ($visibleUserIds) {
+            
                     $q->whereIn('created_by', $visibleUserIds);
             
                     foreach ($visibleUserIds as $userId) {
+            
                         $id = (int) $userId;
             
-                        $q->orWhere('sales_executive_id', 'LIKE', "%\"{$id}\"%")           // handles "[\"42022\"]"
+                        $q->orWhere('sales_executive_id', 'LIKE', "%\"{$id}\"%")
                           ->orWhere('sales_executive_id', 'LIKE', "%'{$id}'%")
                           ->orWhere('sales_executive_id', 'LIKE', "%[{$id}]%")
                           ->orWhere('sales_executive_id', 'LIKE', "%[{$id},%")
                           ->orWhere('sales_executive_id', 'LIKE', "%,{$id}]%")
                           ->orWhere('sales_executive_id', 'LIKE', "%,{$id},%")
-                          ->orWhere('sales_executive_id', 'LIKE', "%{$id}%")               // broad fallback
+                          ->orWhere('sales_executive_id', 'LIKE', "%{$id}%")
                           ->orWhereRaw("JSON_CONTAINS(sales_executive_id, '\"{$id}\"')")
                           ->orWhereRaw("JSON_CONTAINS(sales_executive_id, '{$id}')")
                           ->orWhereRaw("JSON_SEARCH(sales_executive_id, 'one', '{$id}') IS NOT NULL");
@@ -351,41 +405,91 @@ class CustomerApiController extends Controller
                     });
                 }
                 // Else: No where condition → Superadmin sees everything
-            } 
-            else {
-                // Normal User + Hierarchy Logic
-                $targetUserId = request()->query('for_user_id');
-    
-                if ($targetUserId) {
-                    // Someone wants to see specific user's customers
-                    $targetUser = User::find($targetUserId);
-                    if (!$targetUser) {
-                        return response()->json([
-                            'status' => false,
-                            'message' => 'Requested user not found',
-                        ], 404);
-                    }
-    
-                    $myVisibleIds = $this->getVisibleUserIds($authUser);
-                    $myVisibleIds[] = $authUser->id;
-                    $myVisibleIds = array_unique($myVisibleIds);
-    
-                    if (!in_array($targetUserId, $myVisibleIds)) {
-                        return response()->json([
-                            'status' => false,
-                            'message' => 'You do not have permission to view this user\'s customers',
-                        ], 403);
-                    }
-    
-                    $visibleUserIds = [$targetUserId];
-                } else {
-                    // Default: Show my hierarchy + myself
-                    $visibleUserIds = $this->getVisibleUserIds($authUser);
-                    $visibleUserIds[] = $authUser->id;
-                    $visibleUserIds = array_unique($visibleUserIds);
+            } else {
+
+                // ────────────────────────────────────────────────
+                // BM Role Check
+                // ────────────────────────────────────────────────
+                $isBM = false;
+            
+                if (method_exists($authUser, 'hasRole')) {
+                    $isBM = $authUser->hasRole('BM.');
                 }
-    
+            
+                if (!$isBM && $authUser->relationLoaded('roles')) {
+                    $roles = $authUser->roles->pluck('name');
+                    $isBM = $roles->contains('BM.');
+                }
+            
+                $targetUserId = request()->query('for_user_id');
+            
+                // ────────────────────────────────────────────────
+                // BM FLOW
+                // ────────────────────────────────────────────────
+                if ($isBM) {
+            
+                    $visibleUserIds = User::where('branch_id', $authUser->branch_id)
+                        ->pluck('id')
+                        ->toArray();
+            
+                    // Optional for_user_id support
+                    if ($targetUserId) {
+            
+                        if (!in_array($targetUserId, $visibleUserIds)) {
+            
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'You do not have permission to view this user customers',
+                            ], 403);
+                        }
+            
+                        $visibleUserIds = [$targetUserId];
+                    }
+            
+                } else {
+            
+                    // ────────────────────────────────────────────────
+                    // NORMAL HIERARCHY FLOW
+                    // ────────────────────────────────────────────────
+                    if ($targetUserId) {
+            
+                        $targetUser = User::find($targetUserId);
+            
+                        if (!$targetUser) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'Requested user not found',
+                            ], 404);
+                        }
+            
+                        $myVisibleIds = $this->getVisibleUserIds($authUser);
+            
+                        $myVisibleIds[] = $authUser->id;
+            
+                        $myVisibleIds = array_unique($myVisibleIds);
+            
+                        if (!in_array($targetUserId, $myVisibleIds)) {
+            
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'You do not have permission to view this user customers',
+                            ], 403);
+                        }
+            
+                        $visibleUserIds = [$targetUserId];
+            
+                    } else {
+            
+                        $visibleUserIds = $this->getVisibleUserIds($authUser);
+            
+                        $visibleUserIds[] = $authUser->id;
+            
+                        $visibleUserIds = array_unique($visibleUserIds);
+                    }
+                }
+            
                 $query->where(function ($q) use ($visibleUserIds) {
+            
                     $q->whereIn('created_by', $visibleUserIds)
                       ->orWhereIn('employee_id', $visibleUserIds);
                 });

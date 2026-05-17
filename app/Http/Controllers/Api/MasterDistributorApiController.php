@@ -147,19 +147,44 @@ class MasterDistributorApiController extends Controller
                 }
     
                 // ──────── FIXED Sales Executive Filter ────────
+                // ────────────────────────────────────────────────
+                // BM Role Check
+                // ────────────────────────────────────────────────
+                $isBM = false;
+                
+                if (method_exists($authUser, 'hasRole')) {
+                    $isBM = $authUser->hasRole('BM.');
+                }
+                
+                if (!$isBM && $authUser->relationLoaded('roles')) {
+                    $roles = $authUser->roles->pluck('name');
+                    $isBM = $roles->contains('BM.');
+                }
+                
+                // If BM → get all branch users
+                if ($isBM) {
+                
+                    $visibleUserIds = User::where('branch_id', $authUser->branch_id)
+                        ->pluck('id')
+                        ->toArray();
+                }
+                
+                // ──────── Sales Executive Filter ────────
                 $query->where(function ($q) use ($visibleUserIds) {
+                
                     $q->whereIn('created_by', $visibleUserIds);
-            
+                
                     foreach ($visibleUserIds as $userId) {
+                
                         $id = (int) $userId;
-            
-                        $q->orWhere('sales_executive_id', 'LIKE', "%\"{$id}\"%")           // handles "[\"42022\"]"
+                
+                        $q->orWhere('sales_executive_id', 'LIKE', "%\"{$id}\"%")
                           ->orWhere('sales_executive_id', 'LIKE', "%'{$id}'%")
                           ->orWhere('sales_executive_id', 'LIKE', "%[{$id}]%")
                           ->orWhere('sales_executive_id', 'LIKE', "%[{$id},%")
                           ->orWhere('sales_executive_id', 'LIKE', "%,{$id}]%")
                           ->orWhere('sales_executive_id', 'LIKE', "%,{$id},%")
-                          ->orWhere('sales_executive_id', 'LIKE', "%{$id}%")               // broad fallback
+                          ->orWhere('sales_executive_id', 'LIKE', "%{$id}%")
                           ->orWhereRaw("JSON_CONTAINS(sales_executive_id, '\"{$id}\"')")
                           ->orWhereRaw("JSON_CONTAINS(sales_executive_id, '{$id}')")
                           ->orWhereRaw("JSON_SEARCH(sales_executive_id, 'one', '{$id}') IS NOT NULL");

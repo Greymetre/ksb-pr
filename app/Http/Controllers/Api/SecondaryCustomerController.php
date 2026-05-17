@@ -169,16 +169,45 @@ class SecondaryCustomerController extends Controller
                     $visibleUserIds = array_unique($visibleUserIds);
                 }
     
+                // Check BM role
+                $isBM = false;
+                
+                if (method_exists($authUser, 'hasRole')) {
+                    $isBM = $authUser->hasRole('BM.');
+                }
+                
+                if (!$isBM && $authUser->relationLoaded('roles')) {
+                    $roles = $authUser->roles->pluck('name');
+                    $isBM = $roles->contains('BM.');
+                }
+                
                 $query = SecondaryCustomer::with([
                     'country', 'state', 'district', 'city', 'pincode', 'beat', 'distributor'
                 ])
                 ->where('type', $type)
-                ->where('active', 'Y')
-                ->where(function ($q) use ($visibleUserIds) {
-                    $q->whereIn('created_by', $visibleUserIds)
-                      ->orWhereIn('employee_id', $visibleUserIds);
-                })
-                ->select('secondary_customers.*');
+                ->where('active', 'Y');
+                
+                if ($isBM) {
+                
+                    // Get all users of same branch
+                    $branchUserIds = User::where('branch_id', $authUser->branch_id)
+                        ->pluck('id')
+                        ->toArray();
+                
+                    $query->where(function ($q) use ($branchUserIds) {
+                        $q->whereIn('created_by', $branchUserIds)
+                          ->orWhereIn('employee_id', $branchUserIds);
+                    });
+                
+                } else {
+                
+                    $query->where(function ($q) use ($visibleUserIds) {
+                        $q->whereIn('created_by', $visibleUserIds)
+                          ->orWhereIn('employee_id', $visibleUserIds);
+                    });
+                }
+                
+                $query->select('secondary_customers.*');
             }
 
             // Global search
@@ -914,10 +943,35 @@ if (!empty($validated['gps_location'])) {
                     in_array('subAdmin', (array)$userTypes, true);
             }
             
+            $isBM = false;
+
+            // BM Role Check
+            if (method_exists($authUser, 'hasRole')) {
+                $isBM = $authUser->hasRole('BM.');
+            }
+            
+            if (!$isBM && $authUser->relationLoaded('roles')) {
+                $roles = $authUser->roles->pluck('name');
+                $isBM = $roles->contains('BM.');
+            }
+            
             if ($isSuperAdmin) {
-                $allIds = User::pluck('id')->toArray(); // ALL users
+            
+                // Superadmin → all users
+                $allIds = User::pluck('id')->toArray();
+            
+            } elseif ($isBM) {
+            
+                // BM → all users of same branch
+                $allIds = User::where('branch_id', $authUser->branch_id)
+                    ->pluck('id')
+                    ->toArray();
+            
             } else {
+            
+                // Normal hierarchy flow
                 $allIds = [$authUser->id];
+            
                 $this->collectDownlineIds($authUser->id, $allIds);
             }
     
