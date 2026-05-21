@@ -1290,7 +1290,7 @@ public function counterVisitReportDownload(Request $request)
     // dd($request);
     return Excel::download(
         new CounterVisitReportExport($request), // ✅ pura request bhejo
-        'Beat_Adherence_Report.xlsx'
+        'Asr_performance_report.xlsx'
     );
 }
 

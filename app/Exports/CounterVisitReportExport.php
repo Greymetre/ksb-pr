@@ -76,163 +76,436 @@ public function __construct($request)
 //     }
 
     public function collection()
-    {
-        $userids = getUsersReportingToAuth();
-        
-       $users = User::with(['getdivision', 'getbranch', 'getdesignation', 'reportinginfo' ])
-    ->whereIn('id', $userids)
+{
+    $userids = getUsersReportingToAuth();
 
-    ->when($this->employee_id, function ($q) {
-        $q->where('id', $this->employee_id);
-    })
+    /*
+    |--------------------------------------------------------------------------
+    | USERS
+    |--------------------------------------------------------------------------
+    */
+    $users = User::with([
+            'getdivision',
+            'getbranch',
+            'getdesignation',
+            'reportinginfo'
+        ])
+        ->whereIn('id', $userids)
 
-    ->when($this->division_id, function ($q) {
-        $q->where('division_id', $this->division_id);
-    })
+        ->when($this->employee_id, function ($q) {
+            $q->where('id', $this->employee_id);
+        })
 
-    ->when($this->branch_id, function ($q) {
-        $q->where('branch_id', $this->branch_id);
-    })
+        ->when($this->division_id, function ($q) {
+            $q->where('division_id', $this->division_id);
+        })
 
-    ->when($this->designation_id, function ($q) {
-        $q->where('designation_id', $this->designation_id);
-    })
+        ->when($this->branch_id, function ($q) {
+            $q->where('branch_id', $this->branch_id);
+        })
 
-    ->get();
-        // $users = User::whereIn('id', $userids)
-        //     ->select('id', 'name')
-        //     ->get();
+        ->when($this->designation_id, function ($q) {
+            $q->where('designation_id', $this->designation_id);
+        })
 
-        $userIds = $users->pluck('id');
-        
-        $schedules = BeatSchedule::whereBetween('beat_date', [$this->start_date, $this->end_date])
-            ->whereIn('user_id', $userIds)
-            ->get();
+        ->get();
 
-        $orders = Order::whereBetween('order_date', [$this->start_date, $this->end_date])
-            ->whereIn('executive_id', $userIds)
-            ->get();
+    /*
+    |--------------------------------------------------------------------------
+    | SORT USERS BRANCH WISE
+    |--------------------------------------------------------------------------
+    */
+    $users = $users->sortBy(function ($u) {
+        return $u->getbranch->branch_name ?? '';
+    });
 
-        $allReportingIds = $users->pluck('reportingid')
-            ->filter()
-            ->flatMap(fn($ids) => explode(',', $ids))
-            ->map(fn($id) => trim($id))
-            ->unique();
+    $userIds = $users->pluck('id');
 
-            $reportingUsers = User::whereIn('id', $allReportingIds)
+    /*
+    |--------------------------------------------------------------------------
+    | ORDERS
+    |--------------------------------------------------------------------------
+    */
+    $orders = Order::whereBetween('order_date', [$this->start_date, $this->end_date])
+        ->whereIn('executive_id', $userIds)
+        ->get();
+
+    /*
+    |--------------------------------------------------------------------------
+    | REPORTING USERS
+    |--------------------------------------------------------------------------
+    */
+    $allReportingIds = $users->pluck('reportingid')
+        ->filter()
+        ->flatMap(fn($ids) => explode(',', $ids))
+        ->map(fn($id) => trim($id))
+        ->unique();
+
+    $reportingUsers = User::whereIn('id', $allReportingIds)
         ->pluck('name', 'id');
 
-        // dd($allReportingIds);
-        // dd($reportingUsers);
+    /*
+    |--------------------------------------------------------------------------
+    | ROWS COLLECTION
+    |--------------------------------------------------------------------------
+    */
+    $rows = collect();
 
-        return $users->map(function ($user) use ($schedules, $orders, $reportingUsers ) {
+    $currentBranch = null;
 
+    /*
+    |--------------------------------------------------------------------------
+    | BRANCH TOTALS
+    |--------------------------------------------------------------------------
+    */
+    $branchTotals = [
+        'workingDays' => 0,
+        'visitTarget' => 0,
+        'visited' => 0,
+        'productive' => 0,
+        'newCounter' => 0,
+        'orderQty' => 0,
+        'orderValue' => 0,
+        'sku' => 0,
+        'cumulative' => 0,
+    ];
 
-            $presentDays = CheckIn::where('user_id', $user->id)
-        ->whereBetween('checkin_date', [$this->start_date, $this->end_date])
-        ->select(DB::raw('DATE(checkin_date) as date'))
-        ->distinct()
-        ->count();
-            $visited = CheckIn::where('user_id', $user->id)
-                ->whereBetween('checkin_date', [$this->start_date, $this->end_date])
-                ->select(DB::raw('COALESCE(entity_id, customer_id) as visit_id'))
-                ->distinct()
-                ->count();
+    /*
+    |--------------------------------------------------------------------------
+    | GRAND TOTALS
+    |--------------------------------------------------------------------------
+    */
+    $grandTotals = [
+        'workingDays' => 0,
+        'visitTarget' => 0,
+        'visited' => 0,
+        'productive' => 0,
+        'newCounter' => 0,
+        'orderQty' => 0,
+        'orderValue' => 0,
+        'sku' => 0,
+        'cumulative' => 0,
+    ];
 
-            $userOrders = $orders->where('executive_id', $user->id);
-            $productivityCount = $userOrders->count();
+    /*
+    |--------------------------------------------------------------------------
+    | LOOP USERS
+    |--------------------------------------------------------------------------
+    */
+    foreach ($users as $user) {
 
-            $workingDays = Attendance::where('user_id', $user->id)
-                ->whereBetween('punchin_date', [
-                    Carbon::parse($this->start_date)->startOfDay(),
-                    Carbon::parse($this->end_date)->endOfDay()
-                ])
-                ->select(DB::raw('DATE(punchin_date) as date'))
-                ->distinct()
-                ->count();
+        $branchName = $user->getbranch->branch_name ?? 'No Branch';
+
+        /*
+        |--------------------------------------------------------------------------
+        | ADD SUBTOTAL ROW ON BRANCH CHANGE
+        |--------------------------------------------------------------------------
+        */
+        if ($currentBranch !== null && $currentBranch != $branchName) {
+
+            $rows->push([
                 
-            $dailyTarget      = 15;
-            $totalVisitTarget = $dailyTarget * $workingDays;
+    '',
+    'SUBTOTAL - ' . $currentBranch,
+    '',
 
-            $adherence = $totalVisitTarget > 0 
-                ? round(($visited * 100) / $totalVisitTarget, 1) 
-                : 0;
+    $branchTotals['workingDays'],
 
-            $productivity = $visited > 0 
-                ? round(($productivityCount * 100) / $visited, 1) 
-                : 0;
+    $branchTotals['visitTarget'],
 
-            $orderIds = $userOrders->pluck('id');
+    $branchTotals['visited'],
 
-            $uniqueSkuCount = DB::table('order_details')
-                ->whereIn('order_id', $orderIds)
-                ->distinct('product_id')
-                ->count('product_id');
+    $branchTotals['visitTarget'] > 0
+        ? round(($branchTotals['visited'] * 100) / $branchTotals['visitTarget'], 1) . ' %'
+        : '0 %',
 
-            $totalOrderQty   = $userOrders->sum('total_qty') ?? 0;
-            $totalOrderValue = $userOrders->sum('grand_total') ?? 0;
+    $branchTotals['productive'],
 
-            $newCounterAdded = SecondaryCustomer::where('created_by', $user->id)
+    $branchTotals['visited'] > 0
+        ? round(($branchTotals['productive'] * 100) / $branchTotals['visited'], 1) . ' %'
+        : '0 %',
+                $branchTotals['newCounter'],
+                $branchTotals['orderQty'],
+                $branchTotals['orderValue'],
+                $branchTotals['sku'],
+                $branchTotals['cumulative'],
+                '',
+                '',
+                '',
+                '',
+            ]);
+
+            // RESET BRANCH TOTALS
+            $branchTotals = [
+                'workingDays' => 0,
+                'visitTarget' => 0,
+                'visited' => 0,
+                'productive' => 0,
+                'newCounter' => 0,
+                'orderQty' => 0,
+                'orderValue' => 0,
+                'sku' => 0,
+                'cumulative' => 0,
+            ];
+        }
+
+        $currentBranch = $branchName;
+
+        /*
+        |--------------------------------------------------------------------------
+        | VISITED
+        |--------------------------------------------------------------------------
+        */
+        $visited = CheckIn::where('user_id', $user->id)
+            ->whereBetween('checkin_date', [$this->start_date, $this->end_date])
+            ->select(DB::raw('COALESCE(entity_id, customer_id) as visit_id'))
+            ->distinct()
+            ->count();
+
+        /*
+        |--------------------------------------------------------------------------
+        | USER ORDERS
+        |--------------------------------------------------------------------------
+        */
+        $userOrders = $orders->where('executive_id', $user->id);
+
+        $productivityCount = $userOrders->count();
+
+        /*
+        |--------------------------------------------------------------------------
+        | WORKING DAYS
+        |--------------------------------------------------------------------------
+        */
+        $workingDays = Attendance::where('user_id', $user->id)
+            ->whereBetween('punchin_date', [
+                Carbon::parse($this->start_date)->startOfDay(),
+                Carbon::parse($this->end_date)->endOfDay()
+            ])
+            ->select(DB::raw('DATE(punchin_date) as date'))
+            ->distinct()
+            ->count();
+
+        /*
+        |--------------------------------------------------------------------------
+        | TARGETS
+        |--------------------------------------------------------------------------
+        */
+        $dailyTarget = 15;
+
+        $totalVisitTarget = $dailyTarget * $workingDays;
+
+        /*
+        |--------------------------------------------------------------------------
+        | ADHERENCE
+        |--------------------------------------------------------------------------
+        */
+        $adherence = $totalVisitTarget > 0
+            ? round(($visited * 100) / $totalVisitTarget, 1)
+            : 0;
+
+        /*
+        |--------------------------------------------------------------------------
+        | PRODUCTIVITY %
+        |--------------------------------------------------------------------------
+        */
+        $productivity = $visited > 0
+            ? round(($productivityCount * 100) / $visited, 1)
+            : 0;
+
+        /*
+        |--------------------------------------------------------------------------
+        | ORDER DETAILS
+        |--------------------------------------------------------------------------
+        */
+        $orderIds = $userOrders->pluck('id');
+
+        $uniqueSkuCount = DB::table('order_details')
+            ->whereIn('order_id', $orderIds)
+            ->distinct('product_id')
+            ->count('product_id');
+
+        $totalOrderQty = $userOrders->sum('total_qty') ?? 0;
+
+        $totalOrderValue = $userOrders->sum('grand_total') ?? 0;
+
+        /*
+        |--------------------------------------------------------------------------
+        | NEW COUNTER
+        |--------------------------------------------------------------------------
+        */
+        $newCounterAdded = SecondaryCustomer::where('created_by', $user->id)
             ->whereBetween('created_at', [
                 Carbon::parse($this->start_date)->startOfDay(),
                 Carbon::parse($this->end_date)->endOfDay()
             ])
             ->count();
 
-            // $reportingNames = '';
+        /*
+        |--------------------------------------------------------------------------
+        | REPORTING NAMES
+        |--------------------------------------------------------------------------
+        */
+        $reportingNames = '';
 
-            // if (!empty($user->reporting_id)) {
-            //     $reportingIds = explode(',', $user->reporting_id);
+        if (!empty($user->reportingid)) {
 
-            //     $reportingNames = User::whereIn('id', $reportingIds)
-            //         ->pluck('name')
-            //         ->implode(', ');
-            // }
+            $ids = explode(',', $user->reportingid);
 
-            $reportingNames = '';
+            $reportingNames = collect($ids)
+                ->map(function ($id) use ($reportingUsers) {
 
-                if (!empty($user->reportingid)) {
-                    $ids = explode(',', $user->reportingid);
-                    // dd($user->reportingids);
-                    $reportingNames = collect($ids)
-                        ->map(function ($id) use ($reportingUsers) {
-                            $id = (int) trim($id);   // 🔥 IMPORTANT FIX
-                            return $reportingUsers->get($id);
-                        })
-                        ->filter()
-                        ->implode(', ');
+                    $id = (int) trim($id);
 
-                      
-                }
+                    return $reportingUsers->get($id);
 
-            // dd($reportingNames);
+                })
+                ->filter()
+                ->implode(', ');
+        }
 
-            $totalCumulativeCounter = SecondaryCustomer::where('employee_id', $user->id)
-                ->count();
+        /*
+        |--------------------------------------------------------------------------
+        | TOTAL COUNTER
+        |--------------------------------------------------------------------------
+        */
+        $totalCumulativeCounter = SecondaryCustomer::where('employee_id', $user->id)
+            ->count();
 
-            return [
-                (int) ($user->id ?? 0),
-                (string) ($user->name ?? ''),
-                $dailyTarget,
-                $workingDays,
-                $totalVisitTarget,
-                $visited,
-                $adherence . ' %',
-                $productivityCount,
-                $productivity . ' %',
-                $newCounterAdded,
-                $totalOrderQty,
-                $totalOrderValue,
-                $uniqueSkuCount,
-                $totalCumulativeCounter,
-                (string) ($user->getdivision->division_name ?? ''),
-                (string) ($user->getbranch->branch_name ?? ''),
-                (string) ($user->getdesignation->designation_name ?? ''),
-                // (string) ($user->reportinginfo->name ?? ''),
-                (string) $reportingNames,
-            ];
-        });
+        /*
+        |--------------------------------------------------------------------------
+        | USER ROW
+        |--------------------------------------------------------------------------
+        */
+        $rows->push([
+            (int) ($user->id ?? 0),
+            (string) ($user->name ?? ''),
+            $dailyTarget,
+            $workingDays,
+            $totalVisitTarget,
+            $visited,
+            $adherence . ' %',
+            $productivityCount,
+            $productivity . ' %',
+            $newCounterAdded,
+            $totalOrderQty,
+            $totalOrderValue,
+            $uniqueSkuCount,
+            $totalCumulativeCounter,
+            (string) ($user->getdivision->division_name ?? ''),
+            (string) ($branchName ?? ''),
+            (string) ($user->getdesignation->designation_name ?? ''),
+            (string) $reportingNames,
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | UPDATE BRANCH TOTALS
+        |--------------------------------------------------------------------------
+        */
+        $branchTotals['workingDays'] += $workingDays;
+        $branchTotals['visitTarget'] += $totalVisitTarget;
+        $branchTotals['visited'] += $visited;
+        $branchTotals['productive'] += $productivityCount;
+        $branchTotals['newCounter'] += $newCounterAdded;
+        $branchTotals['orderQty'] += $totalOrderQty;
+        $branchTotals['orderValue'] += $totalOrderValue;
+        $branchTotals['sku'] += $uniqueSkuCount;
+        $branchTotals['cumulative'] += $totalCumulativeCounter;
+
+        /*
+        |--------------------------------------------------------------------------
+        | UPDATE GRAND TOTALS
+        |--------------------------------------------------------------------------
+        */
+        $grandTotals['workingDays'] += $workingDays;
+        $grandTotals['visitTarget'] += $totalVisitTarget;
+        $grandTotals['visited'] += $visited;
+        $grandTotals['productive'] += $productivityCount;
+        $grandTotals['newCounter'] += $newCounterAdded;
+        $grandTotals['orderQty'] += $totalOrderQty;
+        $grandTotals['orderValue'] += $totalOrderValue;
+        $grandTotals['sku'] += $uniqueSkuCount;
+        $grandTotals['cumulative'] += $totalCumulativeCounter;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | LAST BRANCH SUBTOTAL
+    |--------------------------------------------------------------------------
+    */
+    if ($currentBranch !== null) {
+
+        $rows->push([
+            '',
+            'SUBTOTAL - ' . $currentBranch,
+            '',
+
+            $branchTotals['workingDays'],
+
+            $branchTotals['visitTarget'],
+
+            $branchTotals['visited'],
+
+            $branchTotals['visitTarget'] > 0
+                ? round(($branchTotals['visited'] * 100) / $branchTotals['visitTarget'], 1) . ' %'
+                : '0 %',
+
+            $branchTotals['productive'],
+
+            $branchTotals['visited'] > 0
+                ? round(($branchTotals['productive'] * 100) / $branchTotals['visited'], 1) . ' %'
+                : '0 %',
+            $branchTotals['newCounter'],
+            $branchTotals['orderQty'],
+            $branchTotals['orderValue'],
+            $branchTotals['sku'],
+            $branchTotals['cumulative'],
+            '',
+            '',
+            '',
+            '',
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | GRAND TOTAL ROW
+    |--------------------------------------------------------------------------
+    */
+    $rows->push(
+        [
+        '',
+        'GRAND TOTAL',
+        '',
+
+        $grandTotals['workingDays'],
+
+        $grandTotals['visitTarget'],
+
+        $grandTotals['visited'],
+
+        $grandTotals['visitTarget'] > 0
+            ? round(($grandTotals['visited'] * 100) / $grandTotals['visitTarget'], 1) . ' %'
+            : '0 %',
+
+        $grandTotals['productive'],
+
+        $grandTotals['visited'] > 0
+            ? round(($grandTotals['productive'] * 100) / $grandTotals['visited'], 1) . ' %'
+            : '0 %',
+        $grandTotals['newCounter'],
+        $grandTotals['orderQty'],
+        $grandTotals['orderValue'],
+        $grandTotals['sku'],
+        $grandTotals['cumulative'],
+        '',
+        '',
+        '',
+        '',
+    ]);
+
+    return $rows;
+}
 
     public function headings(): array
     {
@@ -262,43 +535,97 @@ public function __construct($request)
      * Register Events for Styling
      */
     public function registerEvents(): array
-    {
-        return [
-            AfterSheet::class => function(AfterSheet $event) {
-                $sheet = $event->sheet->getDelegate();
+{
+    return [
+        AfterSheet::class => function(AfterSheet $event) {
 
-                // 1. Style the Heading Row (Row 1)
-                $cellRange = 'A1:R1';   // Adjust N if you add/remove columns
-                $sheet->getStyle($cellRange)->applyFromArray([
-                    'font' => [
-                        'bold' => true,
-                        'size' => 12,
-                        'color' => ['rgb' => 'FFFFFF'],   // White text
-                    ],
-                    'fill' => [
-                        'fillType'   => Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => '1E88E5'], // Nice blue color (change as you like)
-                    ],
-                    'alignment' => [
-                        'horizontal' => Alignment::HORIZONTAL_CENTER,
-                        'vertical'   => Alignment::VERTICAL_CENTER,
-                    ],
-                ]);
+            $sheet = $event->sheet->getDelegate();
 
-                // 2. Center align from Column C (3rd column) to the last column
-                $lastColumn = 'Q';   // Change to your last column letter if needed
-                $dataRange = 'C2:' . $lastColumn . ($event->sheet->getHighestRow());
+            /*
+            |--------------------------------------------------------------------------
+            | HEADER STYLE
+            |--------------------------------------------------------------------------
+            */
+            $cellRange = 'A1:R1';
 
-                $sheet->getStyle($dataRange)->applyFromArray([
-                    'alignment' => [
-                        'horizontal' => Alignment::HORIZONTAL_CENTER,
-                        'vertical'   => Alignment::VERTICAL_CENTER,
-                    ],
-                ]);
+            $sheet->getStyle($cellRange)->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'size' => 12,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'fillType'   => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '1E88E5'],
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical'   => Alignment::VERTICAL_CENTER,
+                ],
+            ]);
 
-                // Optional: Make header row height a bit taller
-                $sheet->getRowDimension(1)->setRowHeight(25);
-            },
-        ];
-    }
+            /*
+            |--------------------------------------------------------------------------
+            | CENTER ALIGN DATA
+            |--------------------------------------------------------------------------
+            */
+            $lastColumn = 'R';
+
+            $dataRange = 'C2:' . $lastColumn . ($sheet->getHighestRow());
+
+            $sheet->getStyle($dataRange)->applyFromArray([
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical'   => Alignment::VERTICAL_CENTER,
+                ],
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | ROW HEIGHT
+            |--------------------------------------------------------------------------
+            */
+            $sheet->getRowDimension(1)->setRowHeight(25);
+
+            /*
+            |--------------------------------------------------------------------------
+            | HIGHLIGHT SUBTOTAL & GRAND TOTAL ROWS
+            |--------------------------------------------------------------------------
+            */
+            $highestRow = $sheet->getHighestRow();
+
+            for ($row = 2; $row <= $highestRow; $row++) {
+
+                $cellValue = $sheet->getCell('B' . $row)->getValue();
+
+                if (
+                    str_contains($cellValue, 'SUBTOTAL')
+                    || str_contains($cellValue, 'GRAND TOTAL')
+                ) {
+
+                    $sheet->getStyle('A' . $row . ':R' . $row)
+                        ->applyFromArray([
+                            'font' => [
+                                'bold' => true,
+                            ],
+
+                            'fill' => [
+                                'fillType' => Fill::FILL_SOLID,
+
+                                // YELLOW COLOR
+                                'startColor' => [
+                                    'rgb' => 'FFF59D'
+                                ],
+                            ],
+
+                            'alignment' => [
+                                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                                'vertical'   => Alignment::VERTICAL_CENTER,
+                            ],
+                        ]);
+                }
+            }
+        },
+    ];
+}
 }
