@@ -412,6 +412,9 @@ class NewInvoiceController extends Controller
     {
         $query = SecondaryCustomer::query()->with('city');
 
+        if (auth()->user()->hasRole('Distributor')) {
+            $query->where('distributor_name', auth()->user()->customerid);
+        }
         if (Schema::hasColumn('secondary_customers', 'active')) {
             $query->where('active', 'Y');
         }

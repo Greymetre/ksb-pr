@@ -140,6 +140,7 @@ class SecondaryCustomersExport implements
             'Shop Photo',
             'GST Attachment',
             'PAN Attachment',
+            'Zone',
         ];
     }
 
@@ -151,6 +152,7 @@ class SecondaryCustomersExport implements
         $employeeCodes = [];
         $employeeDesignations = [];
         $reportingManagerNames = [];
+        $employeeZones = [];
 
         if (!empty($row->employee_id)) {
             $employeeIds = array_filter(array_map('trim', explode(',', $row->employee_id)));
@@ -162,6 +164,7 @@ class SecondaryCustomersExport implements
                 $employeeNames[] = Str::title($emp->name ?? '-');
                 $employeeCodes[] = $emp->employee_codes ?? '-';
                 $employeeDesignations[] = Str::title($emp->getdesignation?->designation_name ?? '-');
+                $employeeZones[] = Str::title($emp->getdivision?->division_name ?? '-');
 
                 if (!empty($emp->reportingid)) {
                     $managerIds = array_filter(array_map('trim', explode(',', $emp->reportingid)));
@@ -226,6 +229,7 @@ class SecondaryCustomersExport implements
             $this->getHyperlink($row->shop_photo, 'View Shop Photo'),
             $this->getHyperlink($row->gst_attachment, 'View GST Attachment'),
             $this->getHyperlink($row->pan_attachment, 'View PAN Attachment'),
+            implode(', ', $employeeZones) ?: '-',
         ];
     }
 
