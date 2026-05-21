@@ -223,7 +223,7 @@ protected $reportingUsers;
         if ($this->dividion_id == '1') {
             return ['Order Date', 'Order No', 'Employee Name','Reporting Manager','Designation',  'Branch','Retailer Name','Distributor Name','Distributor Code', 'Product Code', 'Product Name',  'Quantity','Rate', 'Total Order Value',
             // 'Status', 
-            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family', 'id', 
+            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family', 'id', 'Zone',
             //  'Division', 
              
             //   'Customer', 
@@ -244,7 +244,7 @@ protected $reportingUsers;
         } elseif ($this->dividion_id == '2') {
             return [ 'Order Date', 'Order No', 'Employee Name','Reporting Manager','Designation',  'Branch','Retailer Name', 'Distributor Name','Distributor Code',  'Product Code', 'Product Name', 'Quantity','Rate', 'Total Order Value',
             // 'Status', 
-            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family','id', 
+            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family','id', 'Zone',
             // 'Division', 'Designation', 
             
             //  'Customer', 
@@ -262,7 +262,7 @@ protected $reportingUsers;
         } else {
             return [ 'Order Date', 'Order No','Employee Name','Reporting Manager','Designation',  'Branch','Retailer Name','Distributor Name','Distributor Code', 'Product Code', 'Product Name', 'Quantity','Rate', 'Total Order Value',
             // 'Status', 
-            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family','id', 
+            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family','id', 'Zone',
             //  'Division', 'Designation', 
              
             //  'Customer', 
@@ -346,6 +346,7 @@ protected $reportingUsers;
                 isset($data['products']['categories']['category_name']) ? $data['products']['categories']['category_name'] : '',
                 isset($data['products']['subcategories']['subcategory_name']) ? $data['products']['subcategories']['subcategory_name'] : '',
                 $data['id'],
+                isset($data['orders']['getuserdetails']['getdivision']['division_name']) ? $data['orders']['getuserdetails']['getdivision']['division_name'] : '',
                 // isset($data['orders']['getuserdetails']['getdivision']['division_name']) ? $data['orders']['getuserdetails']['getdivision']['division_name'] : '',
                 
                 // isset($data['orders']['buyers']['customertypes']['customertype_name']) ? $data['orders']['buyers']['customertypes']['customertype_name'] : '',
@@ -418,7 +419,7 @@ protected $reportingUsers;
                 isset($data['products']['subcategories']['subcategory_name']) ? $data['products']['subcategories']['subcategory_name'] : '',
 
                 $data['id'],
-                // isset($data['orders']['getuserdetails']['getdivision']['division_name']) ? $data['orders']['getuserdetails']['getdivision']['division_name'] : '',
+                isset($data['orders']['getuserdetails']['getdivision']['division_name']) ? $data['orders']['getuserdetails']['getdivision']['division_name'] : '',
                 
                 
                 // isset($data['orders']['buyers']['customertypes']['customertype_name']) ? $data['orders']['buyers']['customertypes']['customertype_name'] : '',
@@ -484,7 +485,7 @@ protected $reportingUsers;
                 isset($data['products']['subcategories']['subcategory_name']) ? $data['products']['subcategories']['subcategory_name'] : '',
                 
                 $data['id'],
-                // isset($data['orders']['getuserdetails']['getdivision']['division_name']) ? $data['orders']['getuserdetails']['getdivision']['division_name'] : '',
+                isset($data['orders']['getuserdetails']['getdivision']['division_name']) ? $data['orders']['getuserdetails']['getdivision']['division_name'] : '',
                 
                 
                 // isset($data['orders']['buyers']['customertypes']['customertype_name']) ? $data['orders']['buyers']['customertypes']['customertype_name'] : '',

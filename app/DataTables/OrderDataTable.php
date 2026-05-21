@@ -17,8 +17,6 @@ class OrderDataTable extends DataTable
 
     public function dataTable($query)
     {
-
-    
         return datatables()
             ->eloquent($query)
             ->addIndexColumn()
@@ -87,13 +85,18 @@ class OrderDataTable extends DataTable
     {
         $userids = getUsersReportingToAuth();
 
-        $query = $model->with('executive.getdesignation', 'executive.getbranch','sellers', 'buyers', 'statusname', 'createdbyname');
+        $query = $model->with('executive.getdesignation', 'executive.getbranch', 'sellers', 'buyers', 'statusname', 'createdbyname');
 
-        if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin') && !Auth::user()->hasRole('Sub_Admin') && !Auth::user()->hasRole('Sub billing')  && !Auth::user()->hasRole('Customer Dealer')) {
-            $query->where(function ($subQuery) use ($userids) {
-                $subQuery->whereIn('executive_id', $userids)
-                    ->orWhereIn('created_by', $userids);
-            });
+        if (auth()->user()->hasRole('Distributor')) {
+            $query->where('seller_id', auth()->user()->customerid);
+        } else {
+
+            if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin') && !Auth::user()->hasRole('Sub_Admin') && !Auth::user()->hasRole('Sub billing')  && !Auth::user()->hasRole('Customer Dealer')) {
+                $query->where(function ($subQuery) use ($userids) {
+                    $subQuery->whereIn('executive_id', $userids)
+                        ->orWhereIn('created_by', $userids);
+                });
+            }
         }
         // $query->whereHas('buyers', function ($query) {
         //     if (request()->has('customer_type_id') && request()->get('customer_type_id') != '') {
@@ -116,7 +119,7 @@ class OrderDataTable extends DataTable
             $query->where('order_date', '<=', request()->get('enddate'));
         }
         if (request()->get('user_id')) {
-            $query->where('created_by',request()->get('user_id'));
+            $query->where('created_by', request()->get('user_id'));
         }
 
         if (request()->filled('division_id')) {
@@ -138,7 +141,7 @@ class OrderDataTable extends DataTable
             $designationIds = request()->designation_id;
 
             $userIds = \App\Models\User::whereIn('designation_id', $designationIds)
-                        ->pluck('id');
+                ->pluck('id');
 
             $query->whereIn('created_by', $userIds); // 👈 check column if needed
         }
@@ -155,12 +158,12 @@ class OrderDataTable extends DataTable
             $query->where('seller_id', request()->get('distributor_id'));
         }
 
-    
+
         if (request()->has('retailers_id') && request()->get('retailers_id') != '') {
             $query->where('buyer_id', request()->get('retailers_id'));
         }
 
-         return $query;
+        return $query;
     }
 
 
