@@ -66,7 +66,8 @@ class User extends Authenticatable implements HasMedia
     'date_of_joining',
     'last_leave_accrual_date',
     'earned_leave_claim_activated_at',
-    'claimable_earned_leave_balance'
+    'claimable_earned_leave_balance',
+    'isDeleted'
 
     ];
 
