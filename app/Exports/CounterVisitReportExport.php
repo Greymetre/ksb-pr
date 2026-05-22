@@ -116,7 +116,7 @@ public function __construct($request)
     |--------------------------------------------------------------------------
     */
     $users = $users->sortBy(function ($u) {
-        return $u->getbranch->branch_name ?? '';
+        return ($u->getdivision->division_name ?? '') . '_' . ($u->getbranch->branch_name ?? '');
     });
 
     $userIds = $users->pluck('id');
@@ -152,6 +152,7 @@ public function __construct($request)
     $rows = collect();
 
     $currentBranch = null;
+    $currentDivision = null;
 
     /*
     |--------------------------------------------------------------------------
@@ -169,6 +170,18 @@ public function __construct($request)
         'sku' => 0,
         'cumulative' => 0,
     ];
+
+    $divisionTotals = [
+    'workingDays' => 0,
+    'visitTarget' => 0,
+    'visited' => 0,
+    'productive' => 0,
+    'newCounter' => 0,
+    'orderQty' => 0,
+    'orderValue' => 0,
+    'sku' => 0,
+    'cumulative' => 0,
+];
 
     /*
     |--------------------------------------------------------------------------
@@ -193,7 +206,7 @@ public function __construct($request)
     |--------------------------------------------------------------------------
     */
     foreach ($users as $user) {
-
+        $divisionName = $user->getdivision->division_name ?? 'No Zone';
         $branchName = $user->getbranch->branch_name ?? 'No Branch';
 
         /*
@@ -201,29 +214,85 @@ public function __construct($request)
         | ADD SUBTOTAL ROW ON BRANCH CHANGE
         |--------------------------------------------------------------------------
         */
-        if ($currentBranch !== null && $currentBranch != $branchName) {
+        // if ($currentBranch !== null && $currentBranch != $branchName) {
 
-            $rows->push([
+        //     $rows->push([
                 
-    '',
-    'SUBTOTAL - ' . $currentBranch,
-    '',
+        //     '',
+        //     'SUBTOTAL - ' . $currentBranch,
+        //     '',
 
-    $branchTotals['workingDays'],
+        //     $branchTotals['workingDays'],
 
-    $branchTotals['visitTarget'],
+        //     $branchTotals['visitTarget'],
 
-    $branchTotals['visited'],
+        //     $branchTotals['visited'],
 
-    $branchTotals['visitTarget'] > 0
-        ? round(($branchTotals['visited'] * 100) / $branchTotals['visitTarget'], 1) . ' %'
-        : '0 %',
+        //     $branchTotals['visitTarget'] > 0
+        //         ? round(($branchTotals['visited'] * 100) / $branchTotals['visitTarget'], 1) . ' %'
+        //         : '0 %',
 
-    $branchTotals['productive'],
+        //     $branchTotals['productive'],
 
-    $branchTotals['visited'] > 0
-        ? round(($branchTotals['productive'] * 100) / $branchTotals['visited'], 1) . ' %'
-        : '0 %',
+        //     $branchTotals['visited'] > 0
+        //     ? round(($branchTotals['productive'] * 100) / $branchTotals['visited'], 1) . ' %'
+        //     : '0 %',
+        //         $branchTotals['newCounter'],
+        //         $branchTotals['orderQty'],
+        //         $branchTotals['orderValue'],
+        //         $branchTotals['sku'],
+        //         $branchTotals['cumulative'],
+        //         '',
+        //         '',
+        //         '',
+        //         '',
+        //     ]);
+
+        //     // RESET BRANCH TOTALS
+        //     $branchTotals = [
+        //         'workingDays' => 0,
+        //         'visitTarget' => 0,
+        //         'visited' => 0,
+        //         'productive' => 0,
+        //         'newCounter' => 0,
+        //         'orderQty' => 0,
+        //         'orderValue' => 0,
+        //         'sku' => 0,
+        //         'cumulative' => 0,
+        //     ];
+        // }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | DIVISION CHANGE
+        |--------------------------------------------------------------------------
+        */
+        if ($currentDivision !== null && $currentDivision != $divisionName) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | LAST BRANCH SUBTOTAL
+            |--------------------------------------------------------------------------
+            */
+            $rows->push([
+                '',
+                'SUBTOTAL - ' . $currentBranch,
+                '',
+                $branchTotals['workingDays'],
+                $branchTotals['visitTarget'],
+                $branchTotals['visited'],
+
+                $branchTotals['visitTarget'] > 0
+                    ? round(($branchTotals['visited'] * 100) / $branchTotals['visitTarget'], 1) . ' %'
+                    : '0 %',
+
+                $branchTotals['productive'],
+
+                $branchTotals['visited'] > 0
+                    ? round(($branchTotals['productive'] * 100) / $branchTotals['visited'], 1) . ' %'
+                    : '0 %',
+
                 $branchTotals['newCounter'],
                 $branchTotals['orderQty'],
                 $branchTotals['orderValue'],
@@ -235,7 +304,116 @@ public function __construct($request)
                 '',
             ]);
 
-            // RESET BRANCH TOTALS
+            /*
+            |--------------------------------------------------------------------------
+            | DIVISION TOTAL
+            |--------------------------------------------------------------------------
+            */
+            $rows->push([
+                '',
+                'ZONE TOTAL - ' . $currentDivision,
+                '',
+                $divisionTotals['workingDays'],
+                $divisionTotals['visitTarget'],
+                $divisionTotals['visited'],
+
+                $divisionTotals['visitTarget'] > 0
+                    ? round(($divisionTotals['visited'] * 100) / $divisionTotals['visitTarget'], 1) . ' %'
+                    : '0 %',
+
+                $divisionTotals['productive'],
+
+                $divisionTotals['visited'] > 0
+                    ? round(($divisionTotals['productive'] * 100) / $divisionTotals['visited'], 1) . ' %'
+                    : '0 %',
+
+                $divisionTotals['newCounter'],
+                $divisionTotals['orderQty'],
+                $divisionTotals['orderValue'],
+                $divisionTotals['sku'],
+                $divisionTotals['cumulative'],
+                '',
+                '',
+                '',
+                '',
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | RESET BRANCH TOTALS
+            |--------------------------------------------------------------------------
+            */
+            $branchTotals = [
+                'workingDays' => 0,
+                'visitTarget' => 0,
+                'visited' => 0,
+                'productive' => 0,
+                'newCounter' => 0,
+                'orderQty' => 0,
+                'orderValue' => 0,
+                'sku' => 0,
+                'cumulative' => 0,
+            ];
+
+            /*
+            |--------------------------------------------------------------------------
+            | RESET DIVISION TOTALS
+            |--------------------------------------------------------------------------
+            */
+            $divisionTotals = [
+                'workingDays' => 0,
+                'visitTarget' => 0,
+                'visited' => 0,
+                'productive' => 0,
+                'newCounter' => 0,
+                'orderQty' => 0,
+                'orderValue' => 0,
+                'sku' => 0,
+                'cumulative' => 0,
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | ONLY BRANCH CHANGE
+        |--------------------------------------------------------------------------
+        */
+        elseif ($currentBranch !== null && $currentBranch != $branchName) {
+
+            $rows->push([
+                '',
+                'SUBTOTAL - ' . $currentBranch,
+                '',
+                $branchTotals['workingDays'],
+                $branchTotals['visitTarget'],
+                $branchTotals['visited'],
+
+                $branchTotals['visitTarget'] > 0
+                    ? round(($branchTotals['visited'] * 100) / $branchTotals['visitTarget'], 1) . ' %'
+                    : '0 %',
+
+                $branchTotals['productive'],
+
+                $branchTotals['visited'] > 0
+                    ? round(($branchTotals['productive'] * 100) / $branchTotals['visited'], 1) . ' %'
+                    : '0 %',
+
+                $branchTotals['newCounter'],
+                $branchTotals['orderQty'],
+                $branchTotals['orderValue'],
+                $branchTotals['sku'],
+                $branchTotals['cumulative'],
+                '',
+                '',
+                '',
+                '',
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | RESET BRANCH TOTALS
+            |--------------------------------------------------------------------------
+            */
             $branchTotals = [
                 'workingDays' => 0,
                 'visitTarget' => 0,
@@ -248,6 +426,8 @@ public function __construct($request)
                 'cumulative' => 0,
             ];
         }
+
+        $currentDivision = $divisionName;
 
         $currentBranch = $branchName;
 
@@ -412,6 +592,17 @@ public function __construct($request)
         $branchTotals['sku'] += $uniqueSkuCount;
         $branchTotals['cumulative'] += $totalCumulativeCounter;
 
+
+        $divisionTotals['workingDays'] += $workingDays;
+        $divisionTotals['visitTarget'] += $totalVisitTarget;
+        $divisionTotals['visited'] += $visited;
+        $divisionTotals['productive'] += $productivityCount;
+        $divisionTotals['newCounter'] += $newCounterAdded;
+        $divisionTotals['orderQty'] += $totalOrderQty;
+        $divisionTotals['orderValue'] += $totalOrderValue;
+        $divisionTotals['sku'] += $uniqueSkuCount;
+        $divisionTotals['cumulative'] += $totalCumulativeCounter;
+
         /*
         |--------------------------------------------------------------------------
         | UPDATE GRAND TOTALS
@@ -433,39 +624,68 @@ public function __construct($request)
     | LAST BRANCH SUBTOTAL
     |--------------------------------------------------------------------------
     */
-    if ($currentBranch !== null) {
+    $rows->push([
+        '',
+        'SUBTOTAL - ' . $currentBranch,
+        '',
+        $branchTotals['workingDays'],
+        $branchTotals['visitTarget'],
+        $branchTotals['visited'],
 
-        $rows->push([
-            '',
-            'SUBTOTAL - ' . $currentBranch,
-            '',
+        $branchTotals['visitTarget'] > 0
+            ? round(($branchTotals['visited'] * 100) / $branchTotals['visitTarget'], 1) . ' %'
+            : '0 %',
 
-            $branchTotals['workingDays'],
+        $branchTotals['productive'],
 
-            $branchTotals['visitTarget'],
+        $branchTotals['visited'] > 0
+            ? round(($branchTotals['productive'] * 100) / $branchTotals['visited'], 1) . ' %'
+            : '0 %',
 
-            $branchTotals['visited'],
+        $branchTotals['newCounter'],
+        $branchTotals['orderQty'],
+        $branchTotals['orderValue'],
+        $branchTotals['sku'],
+        $branchTotals['cumulative'],
+        '',
+        '',
+        '',
+        '',
+    ]);
 
-            $branchTotals['visitTarget'] > 0
-                ? round(($branchTotals['visited'] * 100) / $branchTotals['visitTarget'], 1) . ' %'
-                : '0 %',
+    /*
+    |--------------------------------------------------------------------------
+    | LAST DIVISION TOTAL
+    |--------------------------------------------------------------------------
+    */
+    $rows->push([
+        '',
+        'ZONE TOTAL - ' . $currentDivision,
+        '',
+        $divisionTotals['workingDays'],
+        $divisionTotals['visitTarget'],
+        $divisionTotals['visited'],
 
-            $branchTotals['productive'],
+        $divisionTotals['visitTarget'] > 0
+            ? round(($divisionTotals['visited'] * 100) / $divisionTotals['visitTarget'], 1) . ' %'
+            : '0 %',
 
-            $branchTotals['visited'] > 0
-                ? round(($branchTotals['productive'] * 100) / $branchTotals['visited'], 1) . ' %'
-                : '0 %',
-            $branchTotals['newCounter'],
-            $branchTotals['orderQty'],
-            $branchTotals['orderValue'],
-            $branchTotals['sku'],
-            $branchTotals['cumulative'],
-            '',
-            '',
-            '',
-            '',
-        ]);
-    }
+        $divisionTotals['productive'],
+
+        $divisionTotals['visited'] > 0
+            ? round(($divisionTotals['productive'] * 100) / $divisionTotals['visited'], 1) . ' %'
+            : '0 %',
+
+        $divisionTotals['newCounter'],
+        $divisionTotals['orderQty'],
+        $divisionTotals['orderValue'],
+        $divisionTotals['sku'],
+        $divisionTotals['cumulative'],
+        '',
+        '',
+        '',
+        '',
+    ]);
 
     /*
     |--------------------------------------------------------------------------
@@ -524,7 +744,7 @@ public function __construct($request)
             'Total Order Value',
             'Unique SKU Ordered',
             'Total Cumulative Counter',
-            'Division',
+            'ZONE',
             'Branch',
             'Designation',
             'Reporting Manager', 
@@ -598,13 +818,82 @@ public function __construct($request)
 
                 $cellValue = $sheet->getCell('B' . $row)->getValue();
 
-                if (
-                    str_contains($cellValue, 'SUBTOTAL')
-                    || str_contains($cellValue, 'GRAND TOTAL')
-                ) {
+                /*
+                |--------------------------------------------------------------------------
+                | DIVISION TOTAL ROW → RED
+                |--------------------------------------------------------------------------
+                */
+                if (str_contains($cellValue, 'ZONE TOTAL')) {
 
                     $sheet->getStyle('A' . $row . ':R' . $row)
                         ->applyFromArray([
+
+                            'font' => [
+                                'bold' => true,
+                                'color' => [
+                                    'rgb' => 'FFFFFF'
+                                ],
+                            ],
+
+                            'fill' => [
+                                'fillType' => Fill::FILL_SOLID,
+
+                                // RED COLOR
+                                'startColor' => [
+                                    'rgb' => 'E53935'
+                                ],
+                            ],
+
+                            'alignment' => [
+                                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                                'vertical'   => Alignment::VERTICAL_CENTER,
+                            ],
+                        ]);
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | GRAND TOTAL ROW → GREEN
+                |--------------------------------------------------------------------------
+                */
+                elseif (str_contains($cellValue, 'GRAND TOTAL')) {
+
+                    $sheet->getStyle('A' . $row . ':R' . $row)
+                        ->applyFromArray([
+
+                            'font' => [
+                                'bold' => true,
+                                'color' => [
+                                    'rgb' => 'FFFFFF'
+                                ],
+                            ],
+
+                            'fill' => [
+                                'fillType' => Fill::FILL_SOLID,
+
+                                // GREEN COLOR
+                                'startColor' => [
+                                    'rgb' => '43A047'
+                                ],
+                            ],
+
+                            'alignment' => [
+                                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                                'vertical'   => Alignment::VERTICAL_CENTER,
+                            ],
+                        ]);
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | SUBTOTAL ROW → YELLOW
+                |--------------------------------------------------------------------------
+                */
+                elseif (str_contains($cellValue, 'SUBTOTAL')) {
+
+                    $sheet->getStyle('A' . $row . ':R' . $row)
+                        ->applyFromArray([
+
                             'font' => [
                                 'bold' => true,
                             ],
