@@ -50,27 +50,27 @@ class AttendanceController extends Controller
             $pageSize = $request->input('pageSize');
             $query = $this->attendances
                 ->where(function ($query) use ($user_id) {
-                $query->where('user_id', '=', $user_id);
-            })
+                    $query->where('user_id', '=', $user_id);
+                })
                 ->select(
-                    'id', 
-                    'punchin_date', 
-                    'punchin_time', 
-                    'punchin_longitude', 
-                    'punchin_latitude', 
-                    'punchin_address', 
-                    'punchin_image', 
-                    'punchout_date', 
-                    'punchout_time', 
-                    'punchout_latitude', 
-                    'punchout_longitude', 
-                    'punchout_address', 
-                    'flag', 
-                    'punchout_image', 
+                    'id',
+                    'punchin_date',
+                    'punchin_time',
+                    'punchin_longitude',
+                    'punchin_latitude',
+                    'punchin_address',
+                    'punchin_image',
+                    'punchout_date',
+                    'punchout_time',
+                    'punchout_latitude',
+                    'punchout_longitude',
+                    'punchout_address',
+                    'flag',
+                    'punchout_image',
                     'working_type'
-                    )
-                    ->orderBy('punchin_date', 'desc')
-                    ->whereDate('punchin_date', Carbon::today());
+                )
+                ->orderBy('punchin_date', 'desc')
+                ->whereDate('punchin_date', Carbon::today());
             $db_data = (!empty($pageSize)) ? $query->paginate($pageSize) : $query->get();
             $data = collect([]);
             if ($db_data->isNotEmpty()) {
@@ -100,7 +100,7 @@ class AttendanceController extends Controller
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], $this->internalError);
         }
     }
-    
+
     /**
      * Format tour details using comma separated tour IDs
      */
@@ -109,24 +109,24 @@ class AttendanceController extends Controller
         if (empty($tourIdString)) {
             return [];
         }
-    
+
         $tourIds = array_filter(explode(',', $tourIdString));
-    
+
         $tourDetails = \App\Models\TourProgramme::whereIn('id', $tourIds)->get();
-    
+
         if ($tourDetails->isEmpty()) {
             return [];
         }
-    
+
         $townIds = $tourDetails->pluck('town')->unique()->filter();
         $districtIds = $tourDetails->pluck('district')->unique()->filter();
-    
+
         $cities = \App\Models\City::whereIn('id', $townIds)
             ->pluck('city_name', 'id');
-    
+
         $districts = \App\Models\District::whereIn('id', $districtIds)
             ->pluck('district_name', 'id');
-    
+
         return $tourDetails->map(function ($item) use ($cities, $districts) {
             return [
                 'id' => $item->id,
@@ -343,7 +343,7 @@ class AttendanceController extends Controller
             } else {
                 $punchout_time = getcurentTime();
             }
-            $request['punchout_address'] = getLatLongToAddress( $request['punchout_longitude'], $request['punchout_latitude']);
+            $request['punchout_address'] = getLatLongToAddress($request['punchout_longitude'], $request['punchout_latitude']);
             $punchout = Attendance::where('id', $request->punchin_id)->where('user_id', $user->id)->first();
             $punchout->punchout_date = getcurentDate();
             $punchout->punchout_time = $punchout_time;
@@ -385,36 +385,38 @@ class AttendanceController extends Controller
         try {
             $user = $request->user();
             $user_id = $user->id;
-    
+
             $pageSize        = $request->input('pageSize');
             $search_name     = $request->input('search_name');
             $search_branches = $request->input('search_branches');
             $start_date      = $request->input('start_date');
             $end_date        = $request->input('end_date');
             $filterType      = $request->input('type');
-    
+
             $validator = Validator::make($request->all(), [
                 'end_date' => 'required_with:start_date',
             ]);
-    
+
             if ($validator->fails()) {
                 return response()->json(['status' => 'error', 'message' => $validator->errors()], 400);
             }
-    
+
             // Get reporting users
             if ($search_name && $search_name != '') {
                 $all_reporting_user_ids = [$search_name];
             } else {
                 $all_reporting_user_ids = getUsersReportingToAuth($user_id);
             }
-    
+
             // Branch logic
             $all_user_branches = User::with('getbranch')
+                ->whereDoesntHave('roles', function ($q) {
+                    $q->whereIn('id', config('constants.customer_roles'));
+                })
                 ->whereIn('id', getUsersReportingToAuth($user_id))
-                ->excludeCustomerRoles()
                 ->orderBy('branch_id')
                 ->get();
-    
+
             $branches = [];
             $all_branch = [];
             $bkey = 0;
@@ -426,32 +428,34 @@ class AttendanceController extends Controller
                     $bkey++;
                 }
             }
-    
+
             if ($search_branches && count($search_branches) > 0 && $search_branches[0] != null) {
                 $all_reporting_user_ids = User::whereIn('id', $all_reporting_user_ids)
                     ->whereIn('branch_id', $search_branches)
-                    ->excludeCustomerRoles()
+                    ->whereDoesntHave('roles', function ($q) {
+                        $q->whereIn('id', config('constants.customer_roles'));
+                    })
                     ->pluck('id')
                     ->toArray();
             }
-    
+
             // Pre-calculate hierarchy levels
             $hierarchyLevels = [];
             foreach ($all_reporting_user_ids as $uid) {
                 $hierarchyLevels[$uid] = getHierarchyLevel($uid, $user_id);
             }
-    
+
             // Main Query
             $all_punch_in_out = Attendance::with('users')
                 ->whereIn('user_id', $all_reporting_user_ids);
-    
+
             // Date filter
             if ($start_date && $start_date != '' && $start_date != null) {
                 $start_date = date('Y-m-d', strtotime($start_date));
                 $end_date   = date('Y-m-d', strtotime($end_date));
                 $all_punch_in_out->whereBetween('punchin_date', [$start_date, $end_date]);
             }
-    
+
             // Leave / Normal filter
             $leaveTypes = ['Full Day Leave', 'First Half Leave', 'Second Half Leave'];
             if ($filterType === 'leave') {
@@ -459,44 +463,46 @@ class AttendanceController extends Controller
             } elseif ($filterType === 'normal') {
                 $all_punch_in_out->where(function ($q) use ($leaveTypes) {
                     $q->whereNotIn('working_type', $leaveTypes)
-                      ->orWhereNull('working_type');
+                        ->orWhereNull('working_type');
                 });
             }
-    
+
             $all_punch_in_out->orderBy('punchin_date', 'desc');
-    
+
             if ($request->status != null) {
                 $all_punch_in_out->where('attendance_status', $request->status);
             }
-    
-            $all_punch_in_out = !empty($pageSize) 
-                ? $all_punch_in_out->paginate($pageSize) 
+
+            $all_punch_in_out = !empty($pageSize)
+                ? $all_punch_in_out->paginate($pageSize)
                 : $all_punch_in_out->paginate(100);
-    
+
             // Users list
             $all_user_details = User::with('getbranch')
                 ->whereDoesntHave('roles', function ($query) {
                     $query->where('id', 29);
                 })
-                ->excludeCustomerRoles()
+                ->whereDoesntHave('roles', function ($q) {
+                    $q->whereIn('id', config('constants.customer_roles'));
+                })
                 ->whereIn('id', $all_reporting_user_ids)
                 ->orderBy('name', 'asc')
                 ->get();
-    
+
             $all_users = [];
             foreach ($all_user_details as $k => $val) {
                 $all_users[$k]['id']   = $val->id;
                 $all_users[$k]['name'] = $val->name;
             }
-    
+
             // Build Response Data - FIXED VERSION
             $data = [];
             foreach ($all_punch_in_out as $key => $checkIn) {
                 $attendanceUser = $checkIn->users;           // Get the related user
                 $userId         = $attendanceUser ? $attendanceUser->id : null;
-    
+
                 $hierarchyLevel = $userId ? ($hierarchyLevels[$userId] ?? -1) : -1;
-    
+
                 $data[$key] = [
                     'attendance_id'    => $checkIn->id,
                     'name'             => $attendanceUser ? $attendanceUser->name : 'N/A',
@@ -504,27 +510,27 @@ class AttendanceController extends Controller
                     'punch_in'         => $checkIn->punchin_time ?? '',
                     'punch_out'        => $checkIn->punchout_time ?? '',
                     'working_type'     => $checkIn->working_type ?? '',
-                    'status'           => match($checkIn->attendance_status) {
+                    'status'           => match ($checkIn->attendance_status) {
                         1 => 'Approve',
                         2 => 'Rejected',
                         default => 'Pending'
                     },
                     'self'             => ($userId == $user_id),
                     'hierarchy_level'  => $hierarchyLevel,
-                    'hierarchy_label'  => match($hierarchyLevel) {
+                    'hierarchy_label'  => match ($hierarchyLevel) {
                         0   => 'Self',
                         -1  => 'Not in Hierarchy',
                         default => 'Level ' . $hierarchyLevel
                     }
                 ];
             }
-    
+
             $all_status = [
                 ['id' => '0', 'name' => 'Pending'],
                 ['id' => '1', 'name' => 'Approved'],
                 ['id' => '2', 'name' => 'Rejected']
             ];
-    
+
             return response()->json([
                 'status'      => 'success',
                 'message'     => count($data) > 0 ? 'Data retrieved successfully.' : 'No Record Found.',
@@ -534,7 +540,6 @@ class AttendanceController extends Controller
                 'all_status'  => $all_status,
                 'data'        => $data
             ], count($data) > 0 ? $this->successStatus : $this->badrequest);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => 'error',
@@ -595,7 +600,7 @@ class AttendanceController extends Controller
 
         $attendance_id = $request->input('attendance_id');
         $attendance = Attendance::with('users')->find($attendance_id);
-        
+
 
         if ($attendance) {
 
@@ -605,11 +610,11 @@ class AttendanceController extends Controller
             if (!empty($attendance->city)) {
                 $cityIds = explode(',', $attendance->city);
             }
-    
+
             // ✅ STEP 2: Fetch cities from DB
             $cities = \App\Models\City::whereIn('id', $cityIds)
                 ->pluck('city_name', 'id'); // [id => name]
-    
+
             // ✅ STEP 3: Maintain order + build array
             $cityNamesArray = [];
             foreach ($cityIds as $id) {
@@ -617,7 +622,7 @@ class AttendanceController extends Controller
                     $cityNamesArray[] = $cities[$id];
                 }
             }
-    
+
             // ✅ STEP 4: Convert to comma separated string
             $cityNamesString = implode(', ', $cityNamesArray);
             // response
@@ -628,7 +633,6 @@ class AttendanceController extends Controller
                 'tour_details' => $tourDetails,
                 'city_names_string' => $cityNamesString // comma separated
             ], $this->successStatus);
-    
         } else {
             return response([
                 'status' => 'error',
@@ -636,7 +640,7 @@ class AttendanceController extends Controller
             ], $this->badrequest);
         }
     }
-    
+
     public function getTodayMyTeamAttendanceSummary(Request $request)
     {
         try {
@@ -647,9 +651,9 @@ class AttendanceController extends Controller
             $currentMonthEnd   = Carbon::now()->endOfMonth()->format('Y-m-d');
             $currentYearStart  = Carbon::now()->startOfYear()->format('Y-m-d');
             $currentYearEnd    = Carbon::now()->endOfYear()->format('Y-m-d');
-    
+
             $myTeamUserIds = getUsersReportingToAuth($user_id);
-    
+
             if (empty($myTeamUserIds)) {
                 return response()->json([
                     'status' => 'success',
@@ -689,26 +693,34 @@ class AttendanceController extends Controller
                     ]
                 ], $this->successStatus);
             }
-    
+
             $totalUsers = count($myTeamUserIds);
-    
+
             // ===================== Attendance Summary =====================
             $totalPunchInToday = Attendance::whereIn('user_id', $myTeamUserIds)
                 ->whereDate('punchin_date', $today)
                 ->whereNotNull('punchin_time')
                 ->distinct('user_id')
                 ->count('user_id');
-                
-            
-    
+
+
+
             $totalNotPunchInToday = $totalUsers - $totalPunchInToday;
-    
-            $totalAsr = User::whereIn('id', $myTeamUserIds)->excludeCustomerRoles()->where('designation_id', 3)->count();
-            $totalDsr = User::whereIn('id', $myTeamUserIds)->excludeCustomerRoles()->where('designation_id', 6)->count();
-    
-            $asrUserIds = User::whereIn('id', $myTeamUserIds)->excludeCustomerRoles()->where('designation_id', 3)->pluck('id')->toArray();
-            $dsrUserIds = User::whereIn('id', $myTeamUserIds)->excludeCustomerRoles()->where('designation_id', 6)->pluck('id')->toArray();
-            
+
+            $totalAsr = User::whereIn('id', $myTeamUserIds)->whereDoesntHave('roles', function ($q) {
+                $q->whereIn('id', config('constants.customer_roles'));
+            })->where('designation_id', 3)->count();
+            $totalDsr = User::whereIn('id', $myTeamUserIds)->whereDoesntHave('roles', function ($q) {
+                $q->whereIn('id', config('constants.customer_roles'));
+            })->where('designation_id', 6)->count();
+
+            $asrUserIds = User::whereIn('id', $myTeamUserIds)->whereDoesntHave('roles', function ($q) {
+                $q->whereIn('id', config('constants.customer_roles'));
+            })->where('designation_id', 3)->pluck('id')->toArray();
+            $dsrUserIds = User::whereIn('id', $myTeamUserIds)->whereDoesntHave('roles', function ($q) {
+                $q->whereIn('id', config('constants.customer_roles'));
+            })->where('designation_id', 6)->pluck('id')->toArray();
+
             $currentMonthName = Carbon::now()->format('M'); // Apr
             $currentYear = Carbon::now()->year;
             // ===================== LEAVE COUNT (ASR) =====================
@@ -739,7 +751,7 @@ class AttendanceController extends Controller
                     ) as total_leave
                 "))->first();
             // ===================== TARGET SUMMARY =====================
-            
+
             // ASR Target
             $asrTargetData = SalesTargetUsers::whereIn('user_id', $asrUserIds)
                 ->where('type', 'secondary') // ✅ FIXED
@@ -750,7 +762,7 @@ class AttendanceController extends Controller
                     DB::raw('COALESCE(SUM(achievement),0) as total_achievement')
                 )
                 ->first();
-                
+
             $asrQtyTargetData = SalesTargetUsers::whereIn('user_id', $asrUserIds)
                 ->where('type', 'secondary') // ✅ FIXED
                 ->where('month', $currentMonthName) // ✅ FIXED
@@ -760,7 +772,7 @@ class AttendanceController extends Controller
                     DB::raw('COALESCE(SUM(qunatity_achievement),0) as total_qty_achievement')
                 )
                 ->first();
-            
+
             // DSR Target
             $dsrTargetData = SalesTargetUsers::whereIn('user_id', $dsrUserIds)
                 ->where('type', 'secondary') // ✅ FIXED
@@ -781,7 +793,7 @@ class AttendanceController extends Controller
                     DB::raw('COALESCE(SUM(qunatity_achievement),0) as total_qty_achievement')
                 )
                 ->first();
-            
+
             // Calculate %
             $asrAchievementPercent = $asrTargetData->total_target > 0
                 ? round(($asrTargetData->total_achievement / $asrTargetData->total_target) * 100, 2)
@@ -789,25 +801,25 @@ class AttendanceController extends Controller
             $asrQtyAchievementPercent = ($asrQtyTargetData->total_qty_target ?? 0) > 0
                 ? round(($asrQtyTargetData->total_qty_achievement / $asrQtyTargetData->total_qty_target) * 100, 2)
                 : 0;
-            
+
             $dsrAchievementPercent = $dsrTargetData->total_target > 0
                 ? round(($dsrTargetData->total_achievement / $dsrTargetData->total_target) * 100, 2)
                 : 0;
             $dsrQtyAchievementPercent = ($dsrQtyTargetData->total_qty_target ?? 0) > 0
                 ? round(($dsrQtyTargetData->total_qty_achievement / $dsrQtyTargetData->total_qty_target) * 100, 2)
                 : 0;
-    
+
             $checkedInUserIds = Attendance::whereIn('user_id', $myTeamUserIds)
                 ->whereDate('punchin_date', $today)
                 ->whereNotNull('punchin_time')
                 ->pluck('user_id')->toArray();
-    
+
             $asrCheckedIn = count(array_intersect($asrUserIds, $checkedInUserIds));
             $asrNotCheckedIn = $totalAsr - $asrCheckedIn;
-    
+
             $dsrCheckedIn = count(array_intersect($dsrUserIds, $checkedInUserIds));
             $dsrNotCheckedIn = $totalDsr - $dsrCheckedIn;
-    
+
             // ===================== Punchout Remaining Today (ASR & DSR) =====================
             // Users who punched in today but have NOT punched out yet
             $punchoutRemainingAsr = Attendance::whereIn('user_id', $asrUserIds)
@@ -815,37 +827,37 @@ class AttendanceController extends Controller
                 ->whereNotNull('punchin_time')
                 ->whereNull('punchout_time')           // Punchout not done
                 ->count();
-    
+
             $punchoutRemainingDsr = Attendance::whereIn('user_id', $dsrUserIds)
                 ->whereDate('punchin_date', $today)
                 ->whereNotNull('punchin_time')
                 ->whereNull('punchout_time')
                 ->count();
-            
+
             // ===================== Secondary Customer Summary =====================
             $visibleUserIds = array_merge([$user_id], $myTeamUserIds); // You + All assigned users
-    
+
             // 1. Secondary Customers registered AND approved today
             $secondaryRegisteredApprovedToday = SecondaryCustomer::whereIn('created_by', $visibleUserIds)
                 ->whereDate('created_at', $today)
                 ->where('status', 'approved')        // Adjust if your approved status is different
                 ->where('active', 'Y')
                 ->count();
-            
+
             // 1.5 Registered & Approved in CURRENT YEAR (New as per your request)
             $secondaryRegisteredApprovedCurrentYear = SecondaryCustomer::whereIn('created_by', $visibleUserIds)
                 ->whereBetween('created_at', [$currentYearStart, $currentYearEnd])
                 ->where('status', 'approved')
                 ->where('active', 'Y')
                 ->count();
-    
+
             // 2. Unique Secondary Customers who gave at least one order in current year
             $secondaryWithOrderCurrentYear = SecondaryCustomer::whereHas('orders', function ($q) use ($currentYearStart, $currentYearEnd) {
-                    $q->whereBetween('order_date', [$currentYearStart, $currentYearEnd]);
-                })
+                $q->whereBetween('order_date', [$currentYearStart, $currentYearEnd]);
+            })
                 ->whereIn('created_by', $visibleUserIds)   // Only customers created by your team
                 ->count();
-    
+
             // 3. Total Orders, Quantity & Value in Current Year (by your team)
             $orderStatsCurrentYear = DB::table('orders')
                 ->whereIn('created_by', $visibleUserIds)
@@ -856,11 +868,11 @@ class AttendanceController extends Controller
                     DB::raw('COALESCE(SUM(grand_total), 0) as total_value')
                 )
                 ->first();
-            
+
             // ===================== Order Summary (You + ASR) =====================
             $relevantUserIds = array_merge([$user_id], $asrUserIds);
             $relevantDsrUserIds = $dsrUserIds;
-    
+
             $todayOrders = DB::table('orders')
                 ->whereIn('created_by', $relevantUserIds)
                 ->whereDate('order_date', $today)
@@ -868,7 +880,7 @@ class AttendanceController extends Controller
                     DB::raw('COALESCE(SUM(total_qty), 0) as today_quantity'),
                     DB::raw('COALESCE(SUM(grand_total), 0) as today_value')
                 )->first();
-    
+
             $currentMonthOrders = DB::table('orders')
                 ->whereIn('created_by', $relevantUserIds)
                 ->whereBetween('order_date', [$currentMonthStart, $currentMonthEnd])
@@ -876,7 +888,7 @@ class AttendanceController extends Controller
                     DB::raw('COALESCE(SUM(total_qty), 0) as month_quantity'),
                     DB::raw('COALESCE(SUM(grand_total), 0) as month_value')
                 )->first();
-                
+
             $todayOrdersDsr = DB::table('orders')
                 ->whereIn('created_by', $relevantDsrUserIds)
                 ->whereDate('order_date', $today)
@@ -891,7 +903,7 @@ class AttendanceController extends Controller
                     DB::raw('COALESCE(SUM(total_qty), 0) as month_quantity'),
                     DB::raw('COALESCE(SUM(grand_total), 0) as month_value')
                 )->first();
-    
+
             // Unique Buyers from ASR - Current Month
             $uniqueBuyersFromAsr = DB::table('orders')
                 ->whereIn('orders.created_by', $asrUserIds)
@@ -899,7 +911,7 @@ class AttendanceController extends Controller
                 ->whereNotNull('orders.buyer_id')
                 ->distinct('orders.buyer_id')
                 ->count('orders.buyer_id');
-            
+
             // Unique Buyers from DSR - Current Month
             $uniqueBuyersFromDsr = DB::table('orders')
                 ->whereIn('orders.created_by', $dsrUserIds)
@@ -907,11 +919,11 @@ class AttendanceController extends Controller
                 ->whereNotNull('orders.buyer_id')
                 ->distinct('orders.buyer_id')
                 ->count('orders.buyer_id');
-    
+
             // ===================== Working Type - ASR =====================
             $baseAsr = Attendance::whereIn('user_id', $asrUserIds)
                 ->whereNotNull('working_type')->where('working_type', '!=', '');
-    
+
             // $wtAsrToday = (clone $baseAsr)->whereDate('punchin_date', $today)
             //     ->select([
             //         DB::raw("SUM(CASE WHEN FIND_IN_SET('Retailer Visit', working_type) > 0 THEN 1 ELSE 0 END) as retailer_visit"),
@@ -922,7 +934,7 @@ class AttendanceController extends Controller
             //                                   OR FIND_IN_SET('Nukkad Meet', working_type) > 0 
             //                                   OR FIND_IN_SET('Field Demo', working_type) > 0) THEN 1 ELSE 0 END) as other")
             //     ])->first();
-                
+
             $wtAsrToday = (clone $baseAsr)->whereDate('punchin_date', $today)
                 ->select([
 
@@ -934,7 +946,7 @@ class AttendanceController extends Controller
                             END
                         ) as retailer_visit
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -943,7 +955,7 @@ class AttendanceController extends Controller
                             END
                         ) as retailer_meet
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -952,7 +964,7 @@ class AttendanceController extends Controller
                             END
                         ) as nukkad_meet
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -961,7 +973,7 @@ class AttendanceController extends Controller
                             END
                         ) as field_demo
                     "),
-            
+
                     DB::raw("
                     SUM(
                         CASE
@@ -1005,9 +1017,9 @@ class AttendanceController extends Controller
                         END
                     ) as other
                     ")
-            
+
                 ])->first();
-    
+
             $wtAsrMonth = (clone $baseAsr)->whereBetween('punchin_date', [$currentMonthStart, $currentMonthEnd])
                 ->select([
 
@@ -1019,7 +1031,7 @@ class AttendanceController extends Controller
                             END
                         ) as retailer_visit
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1028,7 +1040,7 @@ class AttendanceController extends Controller
                             END
                         ) as retailer_meet
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1037,7 +1049,7 @@ class AttendanceController extends Controller
                             END
                         ) as nukkad_meet
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1046,7 +1058,7 @@ class AttendanceController extends Controller
                             END
                         ) as field_demo
                     "),
-            
+
                     DB::raw("
                     SUM(
                         CASE
@@ -1090,9 +1102,9 @@ class AttendanceController extends Controller
                         END
                     ) as other
                     ")
-            
+
                 ])->first();
-    
+
             $wtAsrYear = (clone $baseAsr)->whereBetween('punchin_date', [$currentYearStart, $currentYearEnd])
                 ->select([
 
@@ -1104,7 +1116,7 @@ class AttendanceController extends Controller
                             END
                         ) as retailer_visit
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1113,7 +1125,7 @@ class AttendanceController extends Controller
                             END
                         ) as retailer_meet
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1122,7 +1134,7 @@ class AttendanceController extends Controller
                             END
                         ) as nukkad_meet
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1131,7 +1143,7 @@ class AttendanceController extends Controller
                             END
                         ) as field_demo
                     "),
-            
+
                     DB::raw("
                     SUM(
                         CASE
@@ -1175,13 +1187,13 @@ class AttendanceController extends Controller
                         END
                     ) as other
                     ")
-            
+
                 ])->first();
-    
+
             // ===================== Working Type - DSR =====================
             $baseDsr = Attendance::whereIn('user_id', $dsrUserIds)
                 ->whereNotNull('working_type')->where('working_type', '!=', '');
-    
+
             $wtDsrToday = (clone $baseDsr)->whereDate('punchin_date', $today)
                 ->select([
 
@@ -1193,7 +1205,7 @@ class AttendanceController extends Controller
                             END
                         ) as retailer_visit
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1202,7 +1214,7 @@ class AttendanceController extends Controller
                             END
                         ) as retailer_meet
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1211,7 +1223,7 @@ class AttendanceController extends Controller
                             END
                         ) as nukkad_meet
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1220,7 +1232,7 @@ class AttendanceController extends Controller
                             END
                         ) as field_demo
                     "),
-            
+
                     DB::raw("
                     SUM(
                         CASE
@@ -1264,9 +1276,9 @@ class AttendanceController extends Controller
                         END
                     ) as other
                     ")
-            
+
                 ])->first();
-    
+
             $wtDsrMonth = (clone $baseDsr)->whereBetween('punchin_date', [$currentMonthStart, $currentMonthEnd])
                 ->select([
 
@@ -1278,7 +1290,7 @@ class AttendanceController extends Controller
                             END
                         ) as retailer_visit
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1287,7 +1299,7 @@ class AttendanceController extends Controller
                             END
                         ) as retailer_meet
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1296,7 +1308,7 @@ class AttendanceController extends Controller
                             END
                         ) as nukkad_meet
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1305,7 +1317,7 @@ class AttendanceController extends Controller
                             END
                         ) as field_demo
                     "),
-            
+
                     DB::raw("
                     SUM(
                         CASE
@@ -1349,9 +1361,9 @@ class AttendanceController extends Controller
                         END
                     ) as other
                     ")
-            
+
                 ])->first();
-    
+
             $wtDsrYear = (clone $baseDsr)->whereBetween('punchin_date', [$currentYearStart, $currentYearEnd])
                 ->select([
 
@@ -1363,7 +1375,7 @@ class AttendanceController extends Controller
                             END
                         ) as retailer_visit
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1372,7 +1384,7 @@ class AttendanceController extends Controller
                             END
                         ) as retailer_meet
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1381,7 +1393,7 @@ class AttendanceController extends Controller
                             END
                         ) as nukkad_meet
                     "),
-            
+
                     DB::raw("
                         SUM(
                             CASE 
@@ -1390,7 +1402,7 @@ class AttendanceController extends Controller
                             END
                         ) as field_demo
                     "),
-            
+
                     DB::raw("
                     SUM(
                         CASE
@@ -1434,9 +1446,9 @@ class AttendanceController extends Controller
                         END
                     ) as other
                     ")
-            
+
                 ])->first();
-            
+
             $top5Products = DB::table('order_details')
                 ->join('orders', 'order_details.order_id', '=', 'orders.id')
                 ->join('products', 'order_details.product_id', '=', 'products.id')
@@ -1453,11 +1465,11 @@ class AttendanceController extends Controller
                 ->orderBy('total_quantity', 'desc')
                 ->limit(5)
                 ->get();
-    
+
             // Calculate total of top 5
             $top5TotalQuantity = $top5Products->sum('total_quantity');
             $top5TotalValue    = $top5Products->sum('total_value');
-            
+
             $top5ProductsValueWise = DB::table('order_details')
                 ->join('orders', 'order_details.order_id', '=', 'orders.id')
                 ->join('products', 'order_details.product_id', '=', 'products.id')
@@ -1474,10 +1486,10 @@ class AttendanceController extends Controller
                 ->orderBy('total_value', 'desc')
                 ->limit(5)
                 ->get();
-            
+
             $top5ProductsValueWiseTotalQty = $top5ProductsValueWise->sum('total_quantity');
             $top5ProductsValueWiseTotalValue = $top5ProductsValueWise->sum('total_value');
-            
+
             $top5MonthValueWise = DB::table('order_details')
                 ->join('orders', 'order_details.order_id', '=', 'orders.id')
                 ->join('products', 'order_details.product_id', '=', 'products.id')
@@ -1492,17 +1504,17 @@ class AttendanceController extends Controller
                 ->orderBy('total_value', 'desc')
                 ->limit(5)
                 ->get();
-            
+
             $top5MonthValueWiseTotalQty = $top5MonthValueWise->sum('total_quantity');
             $top5MonthValueWiseTotalValue = $top5MonthValueWise->sum('total_value');
-            
+
             // Total Unique Buyers in Current Year (New as requested)
             $totalUniqueBuyersCurrentYear = DB::table('orders')
                 ->whereIn('created_by', $visibleUserIds)
                 ->whereBetween('order_date', [$currentMonthStart, $currentMonthEnd])
                 ->distinct('buyer_id')
                 ->count('buyer_id');
-    
+
             // ===================== Top 5 Products - Current Month =====================
             $top5Month = DB::table('order_details')
                 ->join('orders', 'order_details.order_id', '=', 'orders.id')
@@ -1518,10 +1530,10 @@ class AttendanceController extends Controller
                 ->orderBy('total_quantity', 'desc')
                 ->limit(5)
                 ->get();
-    
+
             $top5MonthTotalQty = $top5Month->sum('total_quantity');
             $top5MonthTotalValue = $top5Month->sum('total_value');
-    
+
             // ===================== Top 5 Products - Current Year =====================
             $top5Year = DB::table('order_details')
                 ->join('orders', 'order_details.order_id', '=', 'orders.id')
@@ -1537,10 +1549,10 @@ class AttendanceController extends Controller
                 ->orderBy('total_quantity', 'desc')
                 ->limit(5)
                 ->get();
-    
+
             $top5YearTotalQty = $top5Year->sum('total_quantity');
             $top5YearTotalValue = $top5Year->sum('total_value');
-    
+
             $summary = [
                 'total_users'        => $totalUsers,
                 'total_punch_in'     => $totalPunchInToday,
@@ -1553,18 +1565,18 @@ class AttendanceController extends Controller
                     'checked_in_today'     => $asrCheckedIn,
                     'not_checked_in_today' => $asrNotCheckedIn,
                 ],
-    
+
                 'dsr' => [
                     'total'                => $totalDsr,
                     'checked_in_today'     => $dsrCheckedIn,
                     'not_checked_in_today' => $dsrNotCheckedIn,
                 ],
-    
+
                 'today_orders' => [
                     'quantity' => (int) ($todayOrders->today_quantity ?? 0),
                     'value'    => round($todayOrders->today_value ?? 0, 2),
                 ],
-    
+
                 'current_month_orders' => [
                     'quantity' => (int) ($currentMonthOrders->month_quantity ?? 0),
                     'value'    => round($currentMonthOrders->month_value ?? 0, 2),
@@ -1584,21 +1596,21 @@ class AttendanceController extends Controller
                     'achievement_percent' => $asrAchievementPercent,
                     'target_qty' => (int) ($asrQtyTargetData->total_qty_target ?? 0),
                 ],
-                
+
                 'dsr_target' => [
                     'target' => (int) ($dsrTargetData->total_target ?? 0),
                     'achievement' => (int) ($dsrTargetData->total_achievement ?? 0),
                     'achievement_percent' => $dsrAchievementPercent,
                     'target_qty' => (int) ($dsrQtyTargetData->total_qty_target ?? 0),
                 ],
-    
+
                 'unique_buyers_from_asr' => $uniqueBuyersFromAsr,
                 'unique_buyers_from_dsr' => $uniqueBuyersFromDsr,
                 'total_unique_buyers_current_year' => $totalUniqueBuyersCurrentYear,
                 // Punchout Remaining Today
                 'punchout_remaining_asr_today' => $punchoutRemainingAsr,
                 'punchout_remaining_dsr_today' => $punchoutRemainingDsr,
-                
+
                 // New Secondary Customer Metrics
                 'secondary_customers_registered_approved_today' => $secondaryRegisteredApprovedToday,
                 'secondary_customers_registered_approved_current_year' => $secondaryRegisteredApprovedCurrentYear,   // ← New Field
@@ -1612,18 +1624,18 @@ class AttendanceController extends Controller
                     'quantity'     => (int) $item->total_quantity,
                     'value'        => round($item->total_value, 2),
                 ])->toArray(),
-    
+
                 'top_5_products_current_year' => $top5Year->map(fn($item) => [
                     'product_name' => $item->product_name ?? 'N/A',
                     'quantity'     => (int) $item->total_quantity,
                     'value'        => round($item->total_value, 2),
                 ])->toArray(),
-    
+
                 'top_5_products_total_current_month' => [
                     'quantity' => (int) $top5MonthTotalQty,
                     'value'    => round($top5MonthTotalValue, 2),
                 ],
-    
+
                 'top_5_products_total_current_year' => [
                     'quantity' => (int) $top5YearTotalQty,
                     'value'    => round($top5YearTotalValue, 2),
@@ -1636,12 +1648,12 @@ class AttendanceController extends Controller
                         'value'        => round($item->total_value, 2),
                     ];
                 })->toArray(),
-    
+
                 'top_5_products_total' => [
                     'quantity' => (int) $top5TotalQuantity,
                     'value'    => round($top5TotalValue, 2),
                 ],
-                
+
                 'top_5_products_value_wise' => $top5ProductsValueWise->map(function ($item) {
                     return [
                         'product_name' => $item->product_name ?? 'N/A',
@@ -1649,12 +1661,12 @@ class AttendanceController extends Controller
                         'value'        => round($item->total_value, 2),
                     ];
                 })->toArray(),
-                
+
                 'top_5_products_total_value_wise' => [
                     'quantity' => (int) $top5ProductsValueWiseTotalQty,
                     'value'    => round($top5ProductsValueWiseTotalValue, 2),
                 ],
-                
+
                 'top_5_products_current_month_value_wise' => $top5MonthValueWise->map(function ($item) {
                     return [
                         'product_name' => $item->product_name ?? 'N/A',
@@ -1662,12 +1674,12 @@ class AttendanceController extends Controller
                         'value'        => round($item->total_value, 2),
                     ];
                 })->toArray(),
-                
+
                 'top_5_products_total_current_month_value_wise' => [
                     'quantity' => (int) $top5MonthValueWiseTotalQty,
                     'value'    => round($top5MonthValueWiseTotalValue, 2),
                 ],
-    
+
                 // Working Type - ASR
                 'working_type_asr_today' => [
                     'retailer_visit' => (int) ($wtAsrToday->retailer_visit ?? 0),
@@ -1690,7 +1702,7 @@ class AttendanceController extends Controller
                     'field_demo'     => (int) ($wtAsrYear->field_demo ?? 0),
                     'other'          => (int) ($wtAsrYear->other ?? 0),
                 ],
-    
+
                 // Working Type - DSR
                 'working_type_dsr_today' => [
                     'retailer_visit' => (int) ($wtDsrToday->retailer_visit ?? 0),
@@ -1714,13 +1726,12 @@ class AttendanceController extends Controller
                     'other'          => (int) ($wtDsrYear->other ?? 0),
                 ]
             ];
-    
+
             return response()->json([
                 'status'  => 'success',
                 'message' => "Today's team attendance & order summary retrieved successfully.",
                 'data'    => $summary
             ], $this->successStatus);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => 'error',
@@ -1728,46 +1739,46 @@ class AttendanceController extends Controller
             ], $this->internalError);
         }
     }
-    
+
     private function getUserIdsFromTree($users)
     {
         $ids = [];
-    
+
         foreach ($users as $user) {
             $ids[] = $user->id;
-    
+
             if (!empty($user->children)) {
                 $ids = array_merge($ids, $this->getUserIdsFromTree($user->children));
             }
         }
-    
+
         return $ids;
     }
-    
+
     public function getTodayTeamAttendanceList(Request $request)
     {
         try {
             $user = $request->user();
             $user_id = $user->id;
-    
+
             $today = now()->toDateString();
-    
+
             // ✅ Assigned users
             $myTeamUserIds = getUsersReportingToAuth($user_id);
             $myTeamUserIds = array_unique(array_merge([$user_id], $myTeamUserIds ?? []));
-    
+
             // ✅ Params
             $designation = strtolower($request->get('designation'));
             $branch = $request->get('branch');
             $zone = $request->get('zone');
             $userFilter = $request->get('user_id');
             $status = $request->get('status'); // punch_in / not_punch_in
-    
+
             // ✅ designation mapping
             $designationIds = [];
             if ($designation == 'asr') $designationIds = [3];
             if ($designation == 'dsr') $designationIds = [6];
-    
+
             // 🔥 BASE QUERY
             $query = DB::table('users')
                 ->leftJoin('users as reporting_user', 'users.reportingid', '=', 'reporting_user.id')
@@ -1775,31 +1786,31 @@ class AttendanceController extends Controller
                 ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
                 ->leftJoin('attendances', function ($join) use ($today) {
                     $join->on('users.id', '=', 'attendances.user_id')
-                         ->whereDate('attendances.punchin_date', $today);
+                        ->whereDate('attendances.punchin_date', $today);
                 })
                 ->whereIn('users.id', $myTeamUserIds)
                 ->where('users.active', 'Y');
-    
+
             // =========================
             // ✅ APPLY FILTERS
             // =========================
-    
+
             if (!empty($designationIds)) {
                 $query->whereIn('users.designation_id', $designationIds);
             }
-    
+
             if (!empty($branch)) {
                 $query->where('branches.branch_name', 'LIKE', "%$branch%");
             }
-    
+
             if (!empty($zone)) {
                 $query->where('divisions.division_name', 'LIKE', "%$zone%");
             }
-    
+
             if (!empty($userFilter)) {
                 $query->where('users.id', $userFilter);
             }
-    
+
             // 🔥 SELECT
             $data = $query->select(
                 'users.id',
@@ -1812,20 +1823,20 @@ class AttendanceController extends Controller
                 'attendances.working_type',
                 DB::raw('CASE WHEN attendances.id IS NOT NULL THEN 1 ELSE 0 END as punchin')
             )
-            ->orderBy('reporting_user.name', 'ASC')
-            ->orderBy('users.name', 'ASC')
-            ->get();
-    
+                ->orderBy('reporting_user.name', 'ASC')
+                ->orderBy('users.name', 'ASC')
+                ->get();
+
             // =========================
             // 🔥 STATUS FILTER (AFTER QUERY)
             // =========================
-    
+
             if ($status == 'punch_in') {
                 $data = $data->where('punchin', 1)->values();
             } elseif ($status == 'not_punch_in') {
                 $data = $data->where('punchin', 0)->values();
             }
-    
+
             // =========================
             // 🔥 FORMAT RESPONSE
             // =========================
@@ -1835,16 +1846,16 @@ class AttendanceController extends Controller
             $totalPunchIn = 0;
             $totalLeave = 0;
             foreach ($data as $row) {
-    
+
                 $zoneName = $row->division_name ?? 'Unknown';
-    
+
                 if (!isset($result[$zoneName])) {
                     $result[$zoneName] = [
                         'zone' => $zoneName,
                         'users' => [],
                     ];
                 }
-    
+
                 $isPunchIn = (bool)$row->punchin;
                 // ✅ CHECK LEAVE
                 $isLeave = false;
@@ -1871,7 +1882,7 @@ class AttendanceController extends Controller
                     ],
                     'punchin' => $isPunchIn,
                     'not_punchin' => !$isPunchIn,
-            
+
                     // ✅ NEW TAGS
                     'on_leave' => $isLeave,
                     'working' => $isWorking,
@@ -1883,7 +1894,7 @@ class AttendanceController extends Controller
                 //     'punchin' => $isPunchIn,
                 //     'not_punchin' => !$isPunchIn,
                 // ];
-    
+
                 $totalUsers++;
 
                 if ($isPunchIn && !$isLeave) {
@@ -1891,7 +1902,7 @@ class AttendanceController extends Controller
                 }
                 if ($isLeave) $totalLeave++;
             }
-    
+
             return response()->json([
                 'success' => true,
                 'message' => 'Today team attendance fetched successfully',
@@ -1906,7 +1917,6 @@ class AttendanceController extends Controller
                     ]
                 ]
             ]);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -1915,17 +1925,17 @@ class AttendanceController extends Controller
             ]);
         }
     }
-    
+
     public function getAssignedUsersBasicList(Request $request)
     {
         try {
             $user = $request->user();
             $user_id = $user->id;
-    
+
             // ✅ Assigned users
             $myTeamUserIds = getUsersReportingToAuth($user_id);
             $myTeamUserIds = array_unique(array_merge([$user_id], $myTeamUserIds ?? []));
-    
+
             // 🔥 MAIN QUERY (NO attendance join)
             $data = DB::table('users')
                 ->leftJoin('divisions', 'users.division_id', '=', 'divisions.id')
@@ -1939,34 +1949,34 @@ class AttendanceController extends Controller
                     'branches.branch_name'
                 )
                 ->get();
-    
+
             // =========================
             // 🔥 PREPARE LISTS
             // =========================
-    
+
             $users = [];
             $zones = [];
             $branches = [];
-    
+
             foreach ($data as $row) {
-    
+
                 // ✅ Users list
                 $users[] = [
                     'id' => $row->id,
                     'name' => $row->name
                 ];
-    
+
                 // ✅ Unique zones
                 if ($row->division_name && !in_array($row->division_name, $zones)) {
                     $zones[] = $row->division_name;
                 }
-    
+
                 // ✅ Unique branches
                 if ($row->branch_name && !in_array($row->branch_name, $branches)) {
                     $branches[] = $row->branch_name;
                 }
             }
-    
+
             return response()->json([
                 'success' => true,
                 'message' => 'Assigned users basic list fetched successfully',
@@ -1976,7 +1986,6 @@ class AttendanceController extends Controller
                     'branches' => array_values($branches)
                 ]
             ]);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -1985,34 +1994,34 @@ class AttendanceController extends Controller
             ]);
         }
     }
-    
+
     public function getTodayTeamSalesList(Request $request)
     {
         try {
             $user = $request->user();
             $user_id = $user->id;
-    
+
             $today = now()->toDateString();
             $monthStart = now()->startOfMonth()->toDateString();
             $monthEnd = now()->endOfMonth()->toDateString();
-    
+
             $currentMonthName = now()->format('M');
             $currentYear = now()->year;
-    
+
             // ✅ Team users
             $teamUserIds = getUsersReportingToAuth($user_id);
             $teamUserIds = array_unique(array_merge([$user_id], $teamUserIds ?? []));
-    
+
             // ✅ Filters
             $designation = strtolower($request->get('designation'));
             $branch = $request->get('branch');
             $zone = $request->get('zone');
             $userFilter = $request->get('user_id');
-    
+
             $designationIds = [];
             if ($designation == 'asr') $designationIds = [3];
             if ($designation == 'dsr') $designationIds = [6];
-    
+
             // =========================
             // 🔥 BASE USER QUERY
             // =========================
@@ -2022,23 +2031,23 @@ class AttendanceController extends Controller
                 ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
                 ->whereIn('users.id', $teamUserIds)
                 ->where('users.active', 'Y');
-    
+
             if (!empty($designationIds)) {
                 $query->whereIn('users.designation_id', $designationIds);
             }
-    
+
             if (!empty($branch)) {
                 $query->where('branches.branch_name', 'LIKE', "%$branch%");
             }
-    
+
             if (!empty($zone)) {
                 $query->where('divisions.division_name', 'LIKE', "%$zone%");
             }
-    
+
             if (!empty($userFilter)) {
                 $query->where('users.id', $userFilter);
             }
-    
+
             $users = $query->select(
                 'users.id',
                 'users.name',
@@ -2048,10 +2057,10 @@ class AttendanceController extends Controller
                 'branches.branch_name',
                 'divisions.division_name'
             )
-            ->orderBy('reporting_user.name', 'ASC') // A to Z by reporting name
-            ->orderBy('users.name', 'ASC') // optional secondary sorting
-            ->get();
-    
+                ->orderBy('reporting_user.name', 'ASC') // A to Z by reporting name
+                ->orderBy('users.name', 'ASC') // optional secondary sorting
+                ->get();
+
             // =========================
             // 🔥 PRELOAD TARGETS (FAST)
             // =========================
@@ -2069,7 +2078,7 @@ class AttendanceController extends Controller
                 ->select('user_id', DB::raw('SUM(qunatity_target) as qunatity_target'))
                 ->groupBy('user_id')
                 ->pluck('qunatity_target', 'user_id');
-    
+
             $result = [];
             $summary = [
                 'total_users' => 0,
@@ -2084,11 +2093,11 @@ class AttendanceController extends Controller
                 'month_unique_retailer_visits' => 0,
                 'total_unique_retailers_month' => 0
             ];
-    
+
             foreach ($users as $row) {
-    
+
                 $uid = $row->id;
-    
+
                 // ================= ORDERS =================
                 $todayOrders = DB::table('orders')
                     ->where('created_by', $uid)
@@ -2098,7 +2107,7 @@ class AttendanceController extends Controller
                         DB::raw('COALESCE(SUM(total_qty),0) as qty'),
                         DB::raw('COALESCE(SUM(grand_total),0) as value')
                     )->first();
-    
+
                 $monthOrders = DB::table('orders')
                     ->where('created_by', $uid)
                     ->whereBetween('order_date', [$monthStart, $monthEnd])
@@ -2108,14 +2117,14 @@ class AttendanceController extends Controller
                         DB::raw('COALESCE(SUM(grand_total),0) as value'),
                         DB::raw('COUNT(DISTINCT buyer_id) as unique_retailers')
                     )->first();
-    
+
                 // ================= VISITS =================
                 $todayVisits = DB::table('check_in')
                     ->where('user_id', $uid)
                     ->where('entity_type', 'secondary_customer')
                     ->whereDate('checkin_date', $today)
                     ->count();
-    
+
                 $monthVisitData = DB::table('check_in')
                     ->where('user_id', $uid)
                     ->where('entity_type', 'secondary_customer')
@@ -2124,20 +2133,20 @@ class AttendanceController extends Controller
                         DB::raw('COUNT(*) as total_visits'),
                         DB::raw('COUNT(DISTINCT entity_id) as unique_visits')
                     )->first();
-                
+
                 $monthVisits = (int) ($monthVisitData->total_visits ?? 0);
                 $monthUniqueVisits = (int) ($monthVisitData->unique_visits ?? 0);
-    
+
                 // ================= RETAILERS =================
                 $registeredRetailers = DB::table('secondary_customers')
                     ->where('created_by', $uid)
                     ->where('status', 'approved')
                     ->count();
-    
+
                 // ================= TARGET =================
                 $target = (int) ($targets[$uid] ?? 0);
                 $targetQty = (int) ($targetsQty[$uid] ?? 0);
-    
+
                 // ================= ACHIEVEMENT =================
                 $achievement = $target > 0
                     ? round(($monthOrders->value / $target) * 100, 2)
@@ -2145,9 +2154,9 @@ class AttendanceController extends Controller
                 $achievementQty = $targetQty > 0
                     ? round(($monthOrders->qty / $targetQty) * 100, 2)
                     : 0;
-    
+
                 $zoneName = $row->division_name ?? 'Unknown';
-    
+
                 if (!isset($result[$zoneName])) {
                     $result[$zoneName] = [
                         'zone' => $zoneName,
@@ -2159,7 +2168,7 @@ class AttendanceController extends Controller
                         ]
                     ];
                 }
-    
+
                 $result[$zoneName]['users'][] = [
                     'id' => $uid,
                     'name' => $row->name,
@@ -2170,33 +2179,33 @@ class AttendanceController extends Controller
                         'name' => $row->reporting_name,
                         'mobile' => $row->reporting_mobile,
                     ],
-    
+
                     'registered_retailers' => $registeredRetailers,
                     'target' => $target,
                     'targetQty' => $targetQty,
                     'today_order_value' => (float)$todayOrders->value,
                     'today_order_qty' => (int)$todayOrders->qty,
                     'today_order_count' => (int)$todayOrders->total_orders,
-    
+
                     'month_order_value' => (float)$monthOrders->value,
                     'month_order_qty' => (int)$monthOrders->qty,
                     'month_order_count' => (int)$monthOrders->total_orders,
-    
+
                     'achievement_percent' => $achievement,
                     'achievement_percent_qty' => $achievementQty,
-    
+
                     'today_visits' => $todayVisits,
                     'month_visits' => $monthVisits,
                     'month_unique_retailer_visits' => $monthUniqueVisits,
-    
+
                     'unique_retailers_month' => (int)$monthOrders->unique_retailers
                 ];
-    
+
                 // Zone totals
                 $result[$zoneName]['totals']['target'] += $target;
                 $result[$zoneName]['totals']['month_value'] += $monthOrders->value;
                 $result[$zoneName]['totals']['today_value'] += $todayOrders->value;
-    
+
                 // Summary
                 $summary['total_users']++;
                 $summary['total_target'] += $target;
@@ -2210,7 +2219,7 @@ class AttendanceController extends Controller
                 $summary['month_unique_retailer_visits'] += $monthUniqueVisits;
                 $summary['total_unique_retailers_month'] += $monthOrders->unique_retailers;
             }
-    
+
             return response()->json([
                 'success' => true,
                 'message' => 'Today team sales fetched successfully',
@@ -2219,7 +2228,6 @@ class AttendanceController extends Controller
                     'summary' => $summary
                 ]
             ]);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

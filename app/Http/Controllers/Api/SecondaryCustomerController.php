@@ -12,31 +12,34 @@ use App\Exports\SecondaryCustomersExport;
 use App\Exports\SecondaryCustomersTemplateExport;
 use Illuminate\Validation\Rule;   // ← this line is MISSING or commented out
 use App\Models\User;
+
 class SecondaryCustomerController extends Controller
 {
-    
+
     private function getVisibleUserIds(User $user): array
     {
         $allIds = [$user->id];           // include myself
-    
+
         $this->collectDownlineIds($user->id, $allIds);
-    
+
         return array_unique($allIds);
     }
-    
+
     /**
      * Recursively collect all user IDs in the downline
      */
     private function collectDownlineIds(int $managerId, array &$ids): void
     {
-        $directReports = User::where('reportingid', $managerId)
+        $directReports = User::where('reportingid', $managerId)->whereDoesntHave('roles', function ($q) {
+            $q->whereIn('id', config('constants.customer_roles'));
+        })
             ->pluck('id')
             ->toArray();
-    
+
         if (empty($directReports)) {
             return;
         }
-    
+
         foreach ($directReports as $reportId) {
             if (!in_array($reportId, $ids)) {   // prevent potential cycles (rare)
                 $ids[] = $reportId;
@@ -44,7 +47,7 @@ class SecondaryCustomerController extends Controller
             }
         }
     }
-    
+
     public function index(Request $request)
     {
         $type = $request->query('type');
@@ -65,30 +68,30 @@ class SecondaryCustomerController extends Controller
                     'message' => 'Unauthenticated - please provide valid token',
                 ], 401);
             }
-            
+
 
             $today = now()->startOfDay()->toDateString(); // e.g. '2026-02-25'
             // ────────────────────────────────────────────────
             // SUPERADMIN CHECK (Only change is here)
             // ────────────────────────────────────────────────
             $isSuperAdmin = false;
-    
+
             // First try: Spatie hasRole (most accurate)
             if (method_exists($authUser, 'hasRole')) {
-                $isSuperAdmin = 
-                    $authUser->hasRole('superadmin') || 
+                $isSuperAdmin =
+                    $authUser->hasRole('superadmin') ||
                     $authUser->hasRole('subAdmin');
             }
-    
+
             // Fallback: Check roles relation if loaded
             if (!$isSuperAdmin && $authUser->relationLoaded('roles')) {
                 $roles = $authUser->roles->pluck('name');
-            
-                $isSuperAdmin = 
-                    $roles->contains('superadmin') || 
+
+                $isSuperAdmin =
+                    $roles->contains('superadmin') ||
                     $roles->contains('subAdmin');
             }
-    
+
             // Final fallback: Check user_type (as sent in login response)
             // if (!$isSuperAdmin && !empty($authUser->user_type)) {
             //     $userTypes = $authUser->user_type;
@@ -99,40 +102,48 @@ class SecondaryCustomerController extends Controller
             // }
             if (!$isSuperAdmin && !empty($authUser->user_type)) {
                 $userTypes = $authUser->user_type;
-            
+
                 if (is_string($userTypes)) {
                     $userTypes = json_decode($userTypes, true) ?? [];
                 }
-            
-                $isSuperAdmin = 
+
+                $isSuperAdmin =
                     in_array('superadmin', (array)$userTypes, true) ||
                     in_array('subAdmin', (array)$userTypes, true);
             }
-            
-            
+
+
             if ($isSuperAdmin) {
                 $query = SecondaryCustomer::with([
-                    'country', 'state', 'district', 'city', 'pincode', 'beat', 'distributor'
+                    'country',
+                    'state',
+                    'district',
+                    'city',
+                    'pincode',
+                    'beat',
+                    'distributor'
                 ])
-                ->where('type', $type)
-                ->where('active', 'Y')
-                ->select('secondary_customers.*');
-    
+                    ->where('type', $type)
+                    ->where('active', 'Y')
+                    ->select('secondary_customers.*');
+
                 // If for_user_id is provided → show only that user's customers
                 if ($request->filled('for_user_id')) {
                     $targetUserId = $request->for_user_id;
-    
-                    $targetUser = User::find($targetUserId);
+
+                    $targetUser = User::find($targetUserId)->whereDoesntHave('roles', function ($q) {
+                        $q->whereIn('id', config('constants.customer_roles'));
+                    });
                     if (!$targetUser) {
                         return response()->json([
                             'status' => false,
                             'message' => 'Requested user not found',
                         ], 404);
                     }
-    
+
                     $query->where(function ($q) use ($targetUserId) {
                         $q->where('created_by', $targetUserId)
-                          ->orWhere('employee_id', $targetUserId);
+                            ->orWhere('employee_id', $targetUserId);
                     });
                 }
                 // Else → Superadmin sees ALL customers (no restriction)
@@ -141,72 +152,82 @@ class SecondaryCustomerController extends Controller
                 // Normal User / Hierarchy Logic (Existing)
                 // ────────────────────────────────────────────────
                 $targetUserId = $request->query('for_user_id');
-    
+
                 if ($targetUserId) {
-                    $targetUser = User::find($targetUserId);
+                    $targetUser = User::find($targetUserId)->whereDoesntHave('roles', function ($q) {
+                        $q->whereIn('id', config('constants.customer_roles'));
+                    });
                     if (!$targetUser) {
                         return response()->json([
                             'status' => false,
                             'message' => 'Requested user not found',
                         ], 404);
                     }
-    
+
                     $myVisibleIds = $this->getVisibleUserIds($authUser);
                     $myVisibleIds[] = $authUser->id;
                     $myVisibleIds = array_unique($myVisibleIds);
-    
+
                     if (!in_array($targetUserId, $myVisibleIds)) {
                         return response()->json([
                             'status' => false,
                             'message' => 'You do not have permission to view this user\'s customers',
                         ], 403);
                     }
-    
+
                     $visibleUserIds = [$targetUserId];
                 } else {
                     $visibleUserIds = $this->getVisibleUserIds($authUser);
                     $visibleUserIds[] = $authUser->id;
                     $visibleUserIds = array_unique($visibleUserIds);
                 }
-    
+
                 // Check BM role
                 $isBM = false;
-                
+
                 if (method_exists($authUser, 'hasRole')) {
                     $isBM = $authUser->hasRole('BM.');
                 }
-                
+
                 if (!$isBM && $authUser->relationLoaded('roles')) {
                     $roles = $authUser->roles->pluck('name');
                     $isBM = $roles->contains('BM.');
                 }
-                
+
                 $query = SecondaryCustomer::with([
-                    'country', 'state', 'district', 'city', 'pincode', 'beat', 'distributor'
+                    'country',
+                    'state',
+                    'district',
+                    'city',
+                    'pincode',
+                    'beat',
+                    'distributor'
                 ])
-                ->where('type', $type)
-                ->where('active', 'Y');
-                
+                    ->where('type', $type)
+                    ->where('active', 'Y');
+
                 if ($isBM) {
-                
+
                     // Get all users of same branch
                     $branchUserIds = User::where('branch_id', $authUser->branch_id)
+                        ->whereDoesntHave('roles', function ($q) {
+                            $q->whereIn('id', config('constants.customer_roles'));
+                        })
                         ->pluck('id')
                         ->toArray();
-                
+
                     $query->where(function ($q) use ($branchUserIds) {
                         $q->whereIn('created_by', $branchUserIds)
-                          ->orWhereIn('employee_id', $branchUserIds);
+                            ->orWhereIn('employee_id', $branchUserIds);
                     });
-                
                 } else {
-                
+
                     $query->where(function ($q) use ($visibleUserIds) {
                         $q->whereIn('created_by', $visibleUserIds)
-                          ->orWhereIn('employee_id', $visibleUserIds);
+                            ->orWhereIn('employee_id', $visibleUserIds);
                     });
                 }
-                
+
                 $query->select('secondary_customers.*');
             }
 
@@ -215,8 +236,8 @@ class SecondaryCustomerController extends Controller
                 $search = $request->global_search;
                 $query->where(function ($q) use ($search) {
                     $q->where('owner_name', 'like', "%{$search}%")
-                    ->orWhere('shop_name', 'like', "%{$search}%")
-                    ->orWhere('mobile_number', 'like', "%{$search}%");
+                        ->orWhere('shop_name', 'like', "%{$search}%")
+                        ->orWhere('mobile_number', 'like', "%{$search}%");
                 });
             }
             if ($request->filled('status')) {
@@ -317,7 +338,7 @@ class SecondaryCustomerController extends Controller
                     ->where('entity_type', 'secondary_customer')
                     ->where('user_id', $authUser->id)
                     ->whereDate('checkout_date', $today),
-                    
+
                 'last_checkin_id' => \App\Models\CheckIn::select('id')
                     ->whereColumn('entity_id', 'secondary_customers.id')
                     ->where('entity_type', 'secondary_customer')
@@ -352,7 +373,6 @@ class SecondaryCustomerController extends Controller
                 'data'    => $cleanData,
                 // 'cities'  => $cities
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => false,
@@ -361,28 +381,27 @@ class SecondaryCustomerController extends Controller
             ], 500);
         }
     }
-    
+
     public function getUsedCities()
     {
         try {
             $cities = \App\Models\City::whereIn('id', function ($query) {
-                    $query->select('city_id')
-                          ->from('secondary_customers')
-                          ->where('active', 'Y') // optional but recommended
-                          ->whereNotNull('city_id')
-                          ->distinct();
-                })
+                $query->select('city_id')
+                    ->from('secondary_customers')
+                    ->where('active', 'Y') // optional but recommended
+                    ->whereNotNull('city_id')
+                    ->distinct();
+            })
                 ->where('active', 'Y')
                 ->select('id', 'city_name')
                 ->orderBy('city_name')
                 ->get();
-    
+
             return response()->json([
                 'status' => true,
                 'message' => 'Cities retrieved successfully',
                 'data' => $cities
             ]);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -406,7 +425,14 @@ class SecondaryCustomerController extends Controller
 
             // Load the secondary customer with its relationships
             $customer = SecondaryCustomer::with([
-                'country', 'state', 'district', 'city', 'pincode', 'beat', 'distributor', 'creator'
+                'country',
+                'state',
+                'district',
+                'city',
+                'pincode',
+                'beat',
+                'distributor',
+                'creator'
             ])->find($id);
 
             if (!$customer) {
@@ -415,19 +441,19 @@ class SecondaryCustomerController extends Controller
                     'message' => 'Customer not found',
                 ], 404);
             }
-            
+
             // ────────────────────────────────────────────────
             // Calculate Hierarchy Level for created_by user
             // ────────────────────────────────────────────────
             $createdById = $customer->created_by;   // Assuming the column name is 'created_by'
-    
+
             $hierarchy_level = 0;   // Default
             $hierarchy_label = 'Self';
-    
+
             if ($createdById && $createdById != $authUser->id) {
                 $hierarchy_level = getHierarchyLevel($createdById, $authUser->id);
-                
-                $hierarchy_label = match($hierarchy_level) {
+
+                $hierarchy_label = match ($hierarchy_level) {
                     0   => 'Self',
                     -1  => 'Not in Hierarchy',
                     default => 'Level ' . $hierarchy_level
@@ -480,8 +506,8 @@ class SecondaryCustomerController extends Controller
                     'checkin_id'       => $lastCheckIn->id,
                     'checkin_datetime' => $lastCheckIn->checkin_date . ' ' . $lastCheckIn->checkin_time,
                     'checkin_address'  => $lastCheckIn->checkin_address,
-                    'checkout_datetime'=> $lastCheckIn->checkout_date 
-                        ? $lastCheckIn->checkout_date . ' ' . $lastCheckIn->checkout_time 
+                    'checkout_datetime' => $lastCheckIn->checkout_date
+                        ? $lastCheckIn->checkout_date . ' ' . $lastCheckIn->checkout_time
                         : null,
                     'checkout_address' => $lastCheckIn->checkout_address,
                     'duration'         => $lastCheckIn->time_interval ?? null,
@@ -497,13 +523,13 @@ class SecondaryCustomerController extends Controller
                     'has_checked_out' => $hasCheckedOutToday,
                 ],
             ];
-            
+
             $linkedDistributors = collect();
 
             if ($customer && $customer->distributor_name) {
                 $ids = array_map('trim', explode(',', $customer->distributor_name));
                 $ids = array_filter($ids, fn($id) => is_numeric($id) && $id !== '');
-            
+
                 if (!empty($ids)) {
                     $linkedDistributors = \App\Models\MasterDistributor::query()
                         ->whereIn('id', $ids)
@@ -523,12 +549,11 @@ class SecondaryCustomerController extends Controller
                 // Hierarchy info for the customer creator (outside data as per your preference)
                 'hierarchy_level' => $hierarchy_level,
                 'hierarchy_label' => $hierarchy_label,
-                
+
                 'data'        => $customer,
-                'check_status'=> $checkData,
+                'check_status' => $checkData,
                 'distributors' => $linkedDistributors,
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => false,
@@ -541,41 +566,41 @@ class SecondaryCustomerController extends Controller
     public function store(Request $request)
     {
         $validated = $this->validateData($request);
-    
+
         DB::beginTransaction();
-    
+
         try {
-            
-                    // ✅ ADD THIS LINE
-        $validated['employee_id'] = $request->user()->id;
-        $validated['created_by'] = $request->user()->id;
 
-        // (optional but recommended)
-\Log::info('RAW REQUEST:', $request->all());
+            // ✅ ADD THIS LINE
+            $validated['employee_id'] = $request->user()->id;
+            $validated['created_by'] = $request->user()->id;
 
-\Log::info('GPS VALUE:', [
-    'gps_location' => $validated['gps_location'] ?? null
-]);
+            // (optional but recommended)
+            \Log::info('RAW REQUEST:', $request->all());
 
-if (!empty($validated['gps_location'])) {
+            \Log::info('GPS VALUE:', [
+                'gps_location' => $validated['gps_location'] ?? null
+            ]);
 
-    $coords = explode(',', $validated['gps_location']);
+            if (!empty($validated['gps_location'])) {
 
-    \Log::info('COORDS:', $coords);
+                $coords = explode(',', $validated['gps_location']);
 
-    if (count($coords) == 2) {
+                \Log::info('COORDS:', $coords);
 
-        $lat = trim($coords[0]);
-        $lng = trim($coords[1]);
+                if (count($coords) == 2) {
 
-        $address = getLatLongToAddress($lng, $lat);
+                    $lat = trim($coords[0]);
+                    $lng = trim($coords[1]);
 
-        \Log::info('ADDRESS:', ['value' => $address]);
+                    $address = getLatLongToAddress($lng, $lat);
 
-        $validated['gmap'] = $address;
-    }
-}
-    
+                    \Log::info('ADDRESS:', ['value' => $address]);
+
+                    $validated['gmap'] = $address;
+                }
+            }
+
             $files = [
                 'owner_photo',
                 'shop_photo',
@@ -583,47 +608,52 @@ if (!empty($validated['gps_location'])) {
                 'pan_attachment',
                 'bank_proof'
             ];
-    
+
             foreach ($files as $file) {
                 if ($request->hasFile($file)) {
                     $validated[$file] = $this->uploadFile($request, $file);
                 }
             }
-    
+
             $customer = SecondaryCustomer::create($validated);
-    
+
             DB::commit();
-    
+
             return response()->json([
                 'status' => true,
                 'message' => 'Secondary customer created successfully',
                 'data' => $customer->load([
-                    'country','state','district','city','pincode','beat','distributor'
+                    'country',
+                    'state',
+                    'district',
+                    'city',
+                    'pincode',
+                    'beat',
+                    'distributor'
                 ])
-            ],201);
-    
+            ], 201);
         } catch (\Exception $e) {
-    
+
             DB::rollBack();
-    
+
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to create customer',
                 'error' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
-   public function update(Request $request, $id)
+    public function update(Request $request, $id)
     {
         $customer = SecondaryCustomer::findOrFail($id);
-    
+
         $validated = $this->validateData($request, $id);
-    
+
         DB::beginTransaction();
-    
+
         try {
-    
+
             $files = [
                 'owner_photo',
                 'shop_photo',
@@ -631,51 +661,56 @@ if (!empty($validated['gps_location'])) {
                 'pan_attachment',
                 'bank_proof'
             ];
-            
+
             if (!empty($validated['gps_location'])) {
                 $coords = explode(',', $validated['gps_location']);
-    
+
                 if (count($coords) == 2) {
                     $lat = trim($coords[0]);
                     $lng = trim($coords[1]);
-    
+
                     $validated['gmap'] = getLatLongToAddress($lng, $lat);
                 }
             }
-    
+
             foreach ($files as $file) {
-    
+
                 if ($request->hasFile($file)) {
-    
+
                     if ($customer->$file && Storage::disk('public')->exists($customer->$file)) {
                         Storage::disk('public')->delete($customer->$file);
                     }
-    
+
                     $validated[$file] = $this->uploadFile($request, $file);
                 }
             }
-    
+
             $customer->update($validated);
-    
+
             DB::commit();
-    
+
             return response()->json([
                 'status' => true,
                 'message' => 'Secondary customer updated successfully',
                 'data' => $customer->load([
-                    'country','state','district','city','pincode','beat','distributor'
+                    'country',
+                    'state',
+                    'district',
+                    'city',
+                    'pincode',
+                    'beat',
+                    'distributor'
                 ])
-            ],200);
-    
+            ], 200);
         } catch (\Exception $e) {
-    
+
             DB::rollBack();
-    
+
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to update customer',
                 'error' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
@@ -704,7 +739,6 @@ if (!empty($validated['gps_location'])) {
                 'status'  => true,
                 'message' => 'Customer deleted successfully',
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => false,
@@ -717,89 +751,89 @@ if (!empty($validated['gps_location'])) {
     private function validateData(Request $request, $id = null)
     {
         return $request->validate([
-    
+
             'type' => 'required|in:RETAILER,WORKSHOP,MECHANIC,GARAGE',
             'sub_type' => 'nullable|string|max:100',
-    
+
             'owner_name' => 'required|string|max:255',
             'shop_name' => 'required|string|max:255',
-    
-        'mobile_number' => [
-        'required',
-        function ($attribute, $value, $fail) use ($id) {
-    
-            $numbers = explode(',', $value);
-    
-            foreach ($numbers as $number) {
-    
-                $number = trim($number);
-    
-                if (!preg_match('/^[0-9]{10}$/', $number)) {
-                    $fail('Each mobile number must be 10 digits.');
-                    return;
+
+            'mobile_number' => [
+                'required',
+                function ($attribute, $value, $fail) use ($id) {
+
+                    $numbers = explode(',', $value);
+
+                    foreach ($numbers as $number) {
+
+                        $number = trim($number);
+
+                        if (!preg_match('/^[0-9]{10}$/', $number)) {
+                            $fail('Each mobile number must be 10 digits.');
+                            return;
+                        }
+
+                        // ✅ UNIQUE CHECK
+                        $exists = \App\Models\SecondaryCustomer::where('mobile_number', 'like', "%$number%")
+                            ->when($id, function ($q) use ($id) {
+                                $q->where('id', '!=', $id);
+                            })
+                            ->exists();
+
+                        if ($exists) {
+                            $fail($number . ' mobile number already exists');
+                            return;
+                        }
+                    }
                 }
-    
-                // ✅ UNIQUE CHECK
-                $exists = \App\Models\SecondaryCustomer::where('mobile_number', 'like', "%$number%")
-                    ->when($id, function ($q) use ($id) {
-                        $q->where('id', '!=', $id);
-                    })
-                    ->exists();
-    
-                if ($exists) {
-                    $fail($number . ' mobile number already exists');
-                    return;
-                }
-            }
-        }
-    ],
+            ],
 
-        'whatsapp_number' => 'nullable|digits:10',
+            'whatsapp_number' => 'nullable|digits:10',
 
-        'vehicle_segment' => 'nullable|string|max:100',
-        'address_line' => 'required|string|max:500',
+            'vehicle_segment' => 'nullable|string|max:100',
+            'address_line' => 'required|string|max:500',
 
-        'belt_area_market_name' => 'nullable|string|max:150',
+            'belt_area_market_name' => 'nullable|string|max:150',
 
-        'gps_location' => 'nullable|string|max:100',
+            'gps_location' => 'nullable|string|max:100',
 
-        'country_id' => 'required|exists:countries,id',
-        'state_id' => 'required|exists:states,id',
-        'district_id' => 'required|exists:districts,id',
-        'city_id' => 'required|exists:cities,id',
-        'pincode_id' => 'required|exists:pincodes,id',
+            'country_id' => 'required|exists:countries,id',
+            'state_id' => 'required|exists:states,id',
+            'district_id' => 'required|exists:districts,id',
+            'city_id' => 'required|exists:cities,id',
+            'pincode_id' => 'required|exists:pincodes,id',
 
-        'beat_id' => 'nullable|exists:beats,id',
-        'distributor_name' => 'nullable|exists:master_distributors,id',
-        'agri_distributor' => 'nullable|exists:master_distributors,id',
-        // 'opportunity_status' => 'required|in:HOT,WARM,COLD,LOST',
+            'beat_id' => 'nullable|exists:beats,id',
+            'distributor_name' => 'nullable|exists:master_distributors,id',
+            'agri_distributor' => 'nullable|exists:master_distributors,id',
+            // 'opportunity_status' => 'required|in:HOT,WARM,COLD,LOST',
 
-        'nistha_awareness_status' => 'nullable|in:Done,Not Done',
-        'saathi_awareness_status' => 'nullable|in:Done,Not Done',
+            'nistha_awareness_status' => 'nullable|in:Done,Not Done',
+            'saathi_awareness_status' => 'nullable|in:Done,Not Done',
 
-        // GST + PAN
-        'gst_number' => 'nullable|string|max:50',
-        'pan_number' => 'nullable|string|max:50',
+            // GST + PAN
+            'gst_number' => 'nullable|string|max:50',
+            'pan_number' => 'nullable|string|max:50',
 
-        // Bank details
-        'bank_account_type' => 'nullable|string|max:50',
-        'bank_account_number' => 'nullable|string|max:50',
-        'bank_name' => 'nullable|string|max:100',
-        'ifsc_code' => 'nullable|string|max:20',
-        'account_holder_name' => 'nullable|string|max:255',
+            // Bank details
+            'bank_account_type' => 'nullable|string|max:50',
+            'bank_account_number' => 'nullable|string|max:50',
+            'bank_name' => 'nullable|string|max:100',
+            'ifsc_code' => 'nullable|string|max:20',
+            'account_holder_name' => 'nullable|string|max:255',
 
-        // Files
-        'owner_photo' => 'nullable|file|max:10240',
-        'shop_photo' => 'nullable|file|max:10240',
-        'gst_attachment' => 'nullable|file|max:10240',
-        'pan_attachment' => 'nullable|file|max:10240',
-        'bank_proof' => 'nullable|file|max:10240',
+            // Files
+            'owner_photo' => 'nullable|file|max:10240',
+            'shop_photo' => 'nullable|file|max:10240',
+            'gst_attachment' => 'nullable|file|max:10240',
+            'pan_attachment' => 'nullable|file|max:10240',
+            'bank_proof' => 'nullable|file|max:10240',
 
-        'status' => 'nullable|string',
-        'active' => 'nullable|string'
+            'status' => 'nullable|string',
+            'active' => 'nullable|string'
 
-    ]);
-}
+        ]);
+    }
 
     // ────────────────────────────────────────────────
     //   FILE UPLOAD HELPER  (this was missing)
@@ -825,27 +859,30 @@ if (!empty($validated['gps_location'])) {
     }
 
     // Helper endpoints
-    public function getCities(Request $request) {
+    public function getCities(Request $request)
+    {
         $state_id = $request->state_id;
         if (!$state_id) return response()->json([], 400);
         $cities = \App\Models\City::where('state_id', $state_id)->orderBy('city_name')->get(['id', 'city_name']);
         return response()->json($cities);
     }
 
-    public function downloadExcel(Request $request) {
+    public function downloadExcel(Request $request)
+    {
         $type = $request->query('type');
         if (!$type) return response()->json(['error' => 'Missing type'], 400);
         $filename = strtolower($type) . 's_' . now()->format('Y-m-d') . '.xlsx';
         return Excel::download(new SecondaryCustomersExport($request->all(), $type), $filename);
     }
 
-    public function downloadTemplate(Request $request) {
+    public function downloadTemplate(Request $request)
+    {
         $type = $request->query('type');
         if (!$type) return response()->json(['error' => 'Missing type'], 400);
         $filename = 'template_' . strtolower($type) . 's_upload.xlsx';
         return Excel::download(new SecondaryCustomersTemplateExport($type), $filename);
     }
-    
+
     /**
      * Change approval status of a secondary customer (with optional remark)
      *
@@ -859,12 +896,12 @@ if (!empty($validated['gps_location'])) {
         if (!$customer) {
             return response()->json(['status' => false, 'message' => 'Not found'], 404);
         }
-    
+
         $validated = $request->validate([
             'status' => 'required|in:PENDING,APPROVED,REJECTED',
             'remark' => 'nullable|string|max:500',
         ]);
-    
+
         // ── Debug ────────────────────────────────────────
         \Log::info('ChangeStatus input', [
             'raw_remark'   => $request->input('remark'),
@@ -873,16 +910,16 @@ if (!empty($validated['gps_location'])) {
             'user_id'      => auth()->id(),
         ]);
         // ─────────────────────────────────────────────────
-    
+
         $customer->update([
             'status' => $validated['status'],
             'remark' => $validated['remark'] ?? null,
             'approve_reject_by' => auth()->id(),
             'status_updated_at'  => now(),
         ]);
-    
+
         \Log::info('ChangeStatus after', $customer->only(['status', 'remark']));
-    
+
         return response()->json([
             'status'  => true,
             'message' => 'Status updated successfully',
@@ -890,12 +927,12 @@ if (!empty($validated['gps_location'])) {
                 'id'         => $customer->id,
                 'status'     => $customer->status,
                 'remark'     => $customer->remark,           // ← look here
-                'approved_by'=> $customer->approve_reject_by,
+                'approved_by' => $customer->approve_reject_by,
                 'updated_at' => $customer->updated_at,
             ]
         ], 200);
     }
-    
+
     /**
      * GET /api/my-hierarchy-users
      * Returns list of all users in your downline + yourself
@@ -911,7 +948,7 @@ if (!empty($validated['gps_location'])) {
                     'message' => 'Unauthenticated',
                 ], 401);
             }
-            
+
             $isSuperAdmin = false;
 
             // First try: Spatie hasRole
@@ -920,72 +957,78 @@ if (!empty($validated['gps_location'])) {
                     $authUser->hasRole('superadmin') ||
                     $authUser->hasRole('subAdmin');
             }
-            
+
             // Fallback: relation loaded
             if (!$isSuperAdmin && $authUser->relationLoaded('roles')) {
                 $roles = $authUser->roles->pluck('name');
-            
+
                 $isSuperAdmin =
                     $roles->contains('superadmin') ||
                     $roles->contains('subAdmin');
             }
-            
+
             // Final fallback: user_type
             if (!$isSuperAdmin && !empty($authUser->user_type)) {
                 $userTypes = $authUser->user_type;
-            
+
                 if (is_string($userTypes)) {
                     $userTypes = json_decode($userTypes, true) ?? [];
                 }
-            
+
                 $isSuperAdmin =
                     in_array('superadmin', (array)$userTypes, true) ||
                     in_array('subAdmin', (array)$userTypes, true);
             }
-            
+
             $isBM = false;
 
             // BM Role Check
             if (method_exists($authUser, 'hasRole')) {
                 $isBM = $authUser->hasRole('BM.');
             }
-            
+
             if (!$isBM && $authUser->relationLoaded('roles')) {
                 $roles = $authUser->roles->pluck('name');
                 $isBM = $roles->contains('BM.');
             }
-            
+
             if ($isSuperAdmin) {
-            
+
                 // Superadmin → all users
-                $allIds = User::pluck('id')->toArray();
-            
+                $allIds = User::whereDoesntHave('roles', function ($q) {
+                    $q->whereIn('id', config('constants.customer_roles'));
+                })->pluck('id')->toArray();
             } elseif ($isBM) {
-            
+
                 // BM → all users of same branch
                 $allIds = User::where('branch_id', $authUser->branch_id)
+                    ->whereDoesntHave('roles', function ($q) {
+                        $q->whereIn('id', config('constants.customer_roles'));
+                    })
                     ->pluck('id')
                     ->toArray();
-            
             } else {
-            
+
                 // Normal hierarchy flow
                 $allIds = [$authUser->id];
-            
+
                 $this->collectDownlineIds($authUser->id, $allIds);
             }
-    
+
             // $allIds   = [$authUser->id];
             // $this->collectDownlineIds($authUser->id, $allIds);
-    
+
             $users = User::whereIn('id', $allIds)
+                ->whereDoesntHave('roles', function ($q) {
+                    $q->whereIn('id', config('constants.customer_roles'));
+                })
                 ->select('id', 'name', 'mobile', 'designation_id', 'reportingid') // add more fields if needed
                 ->orderByRaw("FIELD(id, " . implode(',', $allIds) . ")") // try to keep roughly hierarchical order
                 ->get();
-    
+
             // Optional: Build a simple tree structure if frontend wants nested view
             // $tree = $this->buildSimpleTree($users, $authUser->id);
-    
+
             return response()->json([
                 'status'       => true,
                 'message'      => 'Hierarchy users retrieved',
@@ -1005,7 +1048,6 @@ if (!empty($validated['gps_location'])) {
                 }),
                 // 'tree'      => $tree,   // uncomment if you want nested structure
             ], 200);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => false,

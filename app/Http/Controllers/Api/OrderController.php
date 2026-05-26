@@ -57,7 +57,7 @@ class OrderController extends Controller
         return $this->belongsTo(SecondaryCustomer::class, 'buyer_id');
     }
 
-    public function seller() 
+    public function seller()
     {
         return $this->belongsTo(MasterDistributor::class, 'seller_id');
     }
@@ -76,7 +76,7 @@ class OrderController extends Controller
             $user_ids = getUsersReportingToAuth($user->id);
             $pageSize = $request->input('pageSqueryize');
             $query = $this->orders->latest()
-    ->with(['buyer', 'seller', 'orderdetails.products']);
+                ->with(['buyer', 'seller', 'orderdetails.products']);
             $start_date = $request->startdate ?? '';
             $end_date   = $request->enddate ?? '';
             $selecteduser_id = $request->user_id ?? '';
@@ -115,13 +115,13 @@ class OrderController extends Controller
             // dd($request->all());
             $db_data = (!empty($pageSize)) ? $query->paginate($pageSize) : $query->get();
             $data = collect([]);
-            $users = User::whereDoesntHave('roles', function ($query) {
-                $query->where('id', 29);
+            $users = User::whereDoesntHave('roles', function ($q) {
+                $q->whereIn('id', config('constants.customer_roles'));
             })->where('active', 'Y')->whereIn('id', $user_ids)->select('id', 'name')->orderBy('name', 'asc')->get();
             $all_status = [['id' => '0', 'name' => 'Pending'], ['id' => '1', 'name' => 'Dispatched'], ['id' => '2', 'name' => 'Partially Dispatched'], ['id' => '3', 'name' => 'Full Dispatch'], ['id' => '4', 'name' => 'Cancel']];
             if ($db_data->isNotEmpty()) {
                 foreach ($db_data as $key => $value) {
-                    
+
 
                     $order_details = [];
 
@@ -129,9 +129,9 @@ class OrderController extends Controller
 
                     if ($value->orderdetails) {
                         foreach ($value->orderdetails as $detail) {
-                
+
                             $line_total = $detail->line_total ?? 0;
-                
+
                             $order_details[] = [
                                 'order_detail_id' => $detail->id,
                                 'product_id' => $detail->product_id,
@@ -140,7 +140,7 @@ class OrderController extends Controller
                                 'price' => $detail->price ?? 0,
                                 'line_total' => $line_total,
                             ];
-                
+
                             // 👇 add all line_total
                             $grand_total += $line_total;
                         }
@@ -149,13 +149,13 @@ class OrderController extends Controller
                     $data->push([
                         'order_id' => isset($value['id']) ? $value['id'] : 0,
                         'seller_id'    => $value->seller_id ?? null,
-                        'seller_name'  => $value->seller?->trade_name 
-                                    ?? $value->seller?->legal_name 
-                                    ?? '',
+                        'seller_name'  => $value->seller?->trade_name
+                            ?? $value->seller?->legal_name
+                            ?? '',
                         'buyer_id'     => $value->buyer_id ?? null,
-                        'buyer_name'   => $value->buyer?->shop_name 
-                                    ?? $value->buyer?->owner_name 
-                                    ?? '',
+                        'buyer_name'   => $value->buyer?->shop_name
+                            ?? $value->buyer?->owner_name
+                            ?? '',
                         // 'total_qty' => isset($value['total_qty']) ? $value['total_qty'] : 0,
                         'total_qty' => $value->orderdetails->sum('quantity') ?? 0,
                         'shipped_qty' => isset($value['shipped_qty']) ? $value['shipped_qty'] : 0,
@@ -294,21 +294,21 @@ class OrderController extends Controller
         }
     }
 
-   public function insertOrder(Request $request)
+    public function insertOrder(Request $request)
     {
         DB::beginTransaction();
-    
+
         try {
             $user = $request->user();
             $request['created_by'] = $user->id;
             $request['order_remark'] = $request['remark'] ?? '';
-    
+
             // Set product category from first product
             if (!empty($request->orderdetail[0]['product_id'])) {
                 $fprodu = Product::find($request->orderdetail[0]['product_id']);
                 $request['product_cat_id'] = $fprodu ? $fprodu->category_id : null;
             }
-    
+
             // ========================
             // Order Type & Defaults
             // ========================
@@ -319,7 +319,7 @@ class OrderController extends Controller
             $request['order_taking'] = 'MobileApp';
             $request['executive_id'] = $user->id;
             $request['order_date']   = now()->toDateString();
-    
+
             // ========================
             // Create Order First (without orderno)
             // ========================
@@ -342,43 +342,43 @@ class OrderController extends Controller
                 'grand_total'    => 0,
                 // 'customer_type'  => $request['customer_type']
             ]);
-    
+
             // ========================
             // Generate Proper Order No
             // ========================
-            $order->orderno = date('Y') 
-                . '-' . ($order->seller_id ?? 0) 
-                . '-' . ($order->buyer_id ?? 0) 
+            $order->orderno = date('Y')
+                . '-' . ($order->seller_id ?? 0)
+                . '-' . ($order->buyer_id ?? 0)
                 . '-' . $order->id;
-    
+
             $order->save();
-    
+
             // ========================
             // Insert Order Details + Calculate Totals
             // ========================
             $orderDetailsData = [];
             $sub_total = 0;
             $total_gst = 0;
-    
+
             foreach ($request->orderdetail as $rows) {
                 $product = Product::with('productpriceinfo')->find($rows['product_id']);
-    
+
                 $gst_percent = 0;
                 $gst_amount  = 0;
-    
+
                 if ($product && $product->productpriceinfo) {
                     $gst_percent = (int)$product->productpriceinfo->gst ?? 0;
                     $base_amount = $rows['quantity'] * ($rows['price'] ?? 0);
                     $gst_amount  = ($base_amount * $gst_percent) / 100;
                 }
-    
+
                 // Use line_total from payload, fallback to calculation
-                $line_total = $rows['line_total'] ?? 
-                             ($rows['quantity'] * ($rows['price'] ?? 0));
-    
+                $line_total = $rows['line_total'] ??
+                    ($rows['quantity'] * ($rows['price'] ?? 0));
+
                 // Grand total per line = line_total + gst_amount
                 $line_grand_total = $line_total + $gst_amount;
-    
+
                 $orderDetailsData[] = [
                     'active'            => 'Y',
                     'order_id'          => $order->id,
@@ -397,67 +397,66 @@ class OrderController extends Controller
                     'category_id'       => $product->category_id ?? null,
                     'subcategory_id'    => $product->subcategory_id ?? null,
                 ];
-    
+
                 $sub_total += $line_total;
                 $total_gst += $gst_amount;
             }
-    
+
             // Insert all order details
             if (!empty($orderDetailsData)) {
                 OrderDetails::insert($orderDetailsData);
             }
-    
+
             // ========================
             // Calculate & Update Grand Total in Order
             // ========================
             $grand_total = $sub_total + $total_gst;
-    
+
             $order->update([
                 'sub_total'   => round($sub_total, 2),
                 'total_gst'   => round($total_gst, 2),
                 'grand_total' => round($grand_total, 2),
                 'total_qty'   => array_sum(array_column($request->orderdetail, 'quantity')) ?? 0,
             ]);
-    
+
             DB::commit();
-    
+
             // ========================
             // Excel Export (Optional)
             // ========================
             $exportData = new Request();
             $exportData->merge(['order_id' => $order->id]);
             Excel::store(new OrderEmailExport($exportData), '/assets/orderDetails.xlsx', 'local');
-    
+
             // ========================
             // Notifications
             // ========================
             $buyerName = SecondaryCustomer::where('id', $request->buyer_id)
-                            ->value('shop_name') ?? 'Unknown Buyer';
-    
+                ->value('shop_name') ?? 'Unknown Buyer';
+
             $adminnotify = collect([
                 'title' => 'Order collected',
                 'body'  => $user->name . ' has collected order at ' . $buyerName
             ]);
             sendNotification(39, $adminnotify);
-    
+
             $zsmnotify = collect([
                 'title' => 'Order collected',
                 'body'  => $user->name . ' has collected order at ' . $buyerName
             ]);
             sendNotification($user->reportingid ?? 0, $zsmnotify);
-    
+
             return response()->json([
                 'status'     => 'success',
                 'message'    => 'Order created successfully',
                 'order_id'   => $order->id,
                 'orderno'    => $order->orderno,
-                'grand_total'=> round($grand_total, 2)
+                'grand_total' => round($grand_total, 2)
             ], 200);
-    
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('API Order Insert Error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'status'  => 'error',
                 'message' => $e->getMessage()
@@ -598,7 +597,7 @@ class OrderController extends Controller
             }
             $all_status = [['id' => '0', 'name' => 'Pending'], ['id' => '1', 'name' => 'Approved'], ['id' => '2', 'name' => 'Reject']];
             $users = User::whereDoesntHave('roles', function ($query) {
-                $query->where('id', 29);
+                $query->whereIn('id', config('constants.customer_roles'));
             })->where('active', 'Y')->whereIn('id', $user_ids)->select('id', 'name')->orderBy('name', 'asc')->get();
             $db_data = (!empty($pageSize)) ? $query->paginate($pageSize) : $query->get();
             $data = collect([]);
@@ -668,8 +667,8 @@ class OrderController extends Controller
                 $query->where('discount_status', $selectedstatus_id);
             }
             $all_status = [['id' => '0', 'name' => 'Pending'], ['id' => '1', 'name' => 'Approved'], ['id' => '2', 'name' => 'Reject']];
-            $users = User::whereDoesntHave('roles', function ($query) {
-                $query->where('id', 29);
+            $users = User::whereDoesntHave('roles', function ($q) {
+                $q->whereIn('id', config('constants.customer_roles'));
             })->where('active', 'Y')->whereIn('id', $user_ids)->select('id', 'name')->orderBy('name', 'asc')->get();
             $db_data = (!empty($pageSize)) ? $query->paginate($pageSize) : $query->get();
             $data = collect([]);
@@ -787,7 +786,7 @@ class OrderController extends Controller
             }
 
             $orderid = $request['order_id'];
-            
+
             $status_id = Status::where('status_name', '=', 'Dispatched')->pluck('id')->first();
             // Order::where('id', '=', $orderid)->update(['status_id' => $status_id, 'cash_discount' => $request->cash_discount, 'cash_amount' => $request->cash_amount, 'sub_total' => $request->sub_total, 'grand_total' => $request->grand_total, 'order_remark' => $request->order_remark]);
             $orders = $this->orders->with('orderdetails')->find($orderid);
@@ -801,8 +800,8 @@ class OrderController extends Controller
             $orders['status_id'] = $status_id;
             $orders['saledetail'] = $orders['orderdetails'];
             $data = collect([$orders]);
-            
-            
+
+
             // dd($data);
             $response = insertSales($data);
             if ($response['status'] == 'success') {
@@ -842,7 +841,7 @@ class OrderController extends Controller
             }
 
             $order = Order::where('id', '=', $request['order_id'])->first();
-            
+
             $request['orderno'] = $order->orderno;
             $request['saledetail'] = $request['orderdetail'];
             // $request['status_id'] = status_id;
@@ -871,12 +870,11 @@ class OrderController extends Controller
                 return response(['status' => 'success', 'message' => 'Order Partially Dispatched Successfully.'], 200);
             }
             return response(['status' => 'error', 'message' => 'Order Status Not Updated.'], 200);
-
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], $this->internalError);
         }
     }
-    
+
     /**
      * Get list of buyers that have at least one order
      * 
@@ -887,7 +885,7 @@ class OrderController extends Controller
         try {
             $user = $request->user();
             $user_ids = getUsersReportingToAuth($user->id);
-    
+
             $buyers = Order::query()
                 ->whereIn('created_by', $user_ids)
                 ->whereNotNull('buyer_id')
@@ -901,13 +899,12 @@ class OrderController extends Controller
                 ->distinct()
                 ->orderBy('name', 'asc')
                 ->get();
-    
+
             return response()->json([
                 'status'  => 'success',
                 'message' => $buyers->isNotEmpty() ? 'Buyers retrieved' : 'No buyers found',
                 'data'    => $buyers
             ], 200);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => 'error',
@@ -915,7 +912,7 @@ class OrderController extends Controller
             ], 500);
         }
     }
-    
+
     /**
      * Get list of sellers (master distributors) that have at least one order
      * 
@@ -926,7 +923,7 @@ class OrderController extends Controller
         try {
             $user = $request->user();
             $user_ids = getUsersReportingToAuth($user->id);
-    
+
             $sellers = Order::query()
                 ->whereIn('created_by', $user_ids)
                 ->whereNotNull('seller_id')
@@ -940,13 +937,12 @@ class OrderController extends Controller
                 ->distinct()
                 ->orderBy('name', 'asc')
                 ->get();
-    
+
             return response()->json([
                 'status'  => 'success',
                 'message' => $sellers->isNotEmpty() ? 'Sellers retrieved' : 'No sellers found',
                 'data'    => $sellers
             ], 200);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => 'error',
@@ -954,8 +950,8 @@ class OrderController extends Controller
             ], 500);
         }
     }
-    
-    
+
+
     public function getHierarchyOrderStats(Request $request)
     {
         try {
@@ -963,22 +959,22 @@ class OrderController extends Controller
             if (!$authUser) {
                 return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
             }
-    
+
             $targetUserId = $request->query('user_id'); // optional
-    
+
             // ── Determine visible user IDs ─────────────────────────────
             if ($targetUserId) {
                 $visibleIds = getUsersReportingToAuth($authUser->id);
                 $visibleIds[] = $authUser->id;
                 $visibleIds = array_unique($visibleIds);
-    
+
                 if (!in_array($targetUserId, $visibleIds)) {
                     return response()->json([
                         'status' => 'error',
                         'message' => 'You do not have permission to view this user\'s stats'
                     ], 403);
                 }
-    
+
                 $userIds = [$targetUserId];
                 $isSingleUser = true;
             } else {
@@ -987,30 +983,30 @@ class OrderController extends Controller
                 $userIds = array_unique($userIds);
                 $isSingleUser = false;
             }
-    
+
             // Check if target user is End User (Role ID 29)
             $isEndUser = false;
             if ($isSingleUser) {
                 $isEndUser = User::where('id', $targetUserId)
-                    ->whereHas('roles', fn($q) => $q->where('id', 29))
+                    ->whereHas('roles', fn($q) => $q->whereIn('id', config('constants.customer_roles')))
                     ->exists();
             }
-    
+
             // ── Date Filter ────────────────────────────────────────────
             $start_date = $request->startdate;
             $end_date = $request->enddate;
-    
+
             $dateFilter = [];
             if ($start_date && $end_date) {
                 $start = date('Y-m-d', strtotime($start_date));
                 $end = date('Y-m-d', strtotime($end_date));
                 $dateFilter = [$start, $end];
             }
-    
+
             // ── 1. Orders Stats (Existing) ─────────────────────────────
             $orderQuery = $this->orders->query()
                 ->with(['buyer', 'seller', 'orderdetails', 'createdbyname']);
-    
+
             if ($isSingleUser) {
                 if ($isEndUser) {
                     $orderQuery->where('created_by', $targetUserId);
@@ -1020,67 +1016,69 @@ class OrderController extends Controller
             } else {
                 $orderQuery->whereIn('created_by', $userIds);
             }
-    
+
             if (!empty($dateFilter)) {
                 $orderQuery->whereDate('order_date', '>=', $dateFilter[0])
-                           ->whereDate('order_date', '<=', $dateFilter[1]);
+                    ->whereDate('order_date', '<=', $dateFilter[1]);
             }
-    
+
             $orders = $orderQuery->get();
-    
+
             $total_orders = $orders->count();
-            $total_order_value = $orders->sum(fn($order) => 
+            $total_order_value = $orders->sum(
+                fn($order) =>
                 $order->orderdetails ? $order->orderdetails->sum('line_total') : 0
             );
-            $total_quantity = $orders->sum(fn($order) => 
+            $total_quantity = $orders->sum(
+                fn($order) =>
                 $order->orderdetails ? $order->orderdetails->sum('quantity') : 0
             );
-    
+
             $buyers = $orders->pluck('buyer_id')->filter()->unique();
             $sellers = $orders->pluck('seller_id')->filter()->unique();
             $total_customers = $buyers->merge($sellers)->unique()->count();
-    
+
             // ── 2. Check-ins Stats ─────────────────────────────────────
             $checkInQuery = CheckIn::whereIn('user_id', $userIds);
-    
+
             if ($isSingleUser && $isEndUser) {
                 $checkInQuery->where('user_id', $targetUserId);
             }
-    
+
             if (!empty($dateFilter)) {
                 $checkInQuery->whereBetween('checkin_date', $dateFilter);
             }
-    
+
             $total_checkins = $checkInQuery->count();
-    
+
             // ── 3. Secondary Customer Creations ────────────────────────
             $secondaryCustomerQuery = SecondaryCustomer::whereIn('created_by', $userIds);
-    
+
             if ($isSingleUser && $isEndUser) {
                 $secondaryCustomerQuery->where('created_by', $targetUserId);
             }
-    
+
             if (!empty($dateFilter)) {
                 $secondaryCustomerQuery->whereDate('created_at', '>=', $dateFilter[0])
-                                       ->whereDate('created_at', '<=', $dateFilter[1]);
+                    ->whereDate('created_at', '<=', $dateFilter[1]);
             }
-    
+
             $total_secondary_customers = $secondaryCustomerQuery->count();
-    
+
             // ── 4. Master Distributor Creations ────────────────────────
             $masterDistributorQuery = MasterDistributor::whereIn('created_by', $userIds);
-    
+
             if ($isSingleUser && $isEndUser) {
                 $masterDistributorQuery->where('created_by', $targetUserId);
             }
-    
+
             if (!empty($dateFilter)) {
                 $masterDistributorQuery->whereDate('created_at', '>=', $dateFilter[0])
-                                       ->whereDate('created_at', '<=', $dateFilter[1]);
+                    ->whereDate('created_at', '<=', $dateFilter[1]);
             }
-    
+
             $total_master_distributors = $masterDistributorQuery->count();
-    
+
             // ── Per User Breakdown (Optional - can be extended later) ──
             $perUser = $orders->groupBy('created_by')->map(function ($group) {
                 return [
@@ -1091,7 +1089,7 @@ class OrderController extends Controller
                     'quantity' => $group->sum(fn($o) => $o->orderdetails ? $o->orderdetails->sum('quantity') : 0),
                 ];
             })->values();
-    
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Hierarchy stats retrieved successfully',
@@ -1099,22 +1097,21 @@ class OrderController extends Controller
                     'is_single_user' => $isSingleUser,
                     'is_end_user' => $isEndUser,
                     'target_user_id' => $targetUserId ?: null,
-    
+
                     // Main Stats
                     'total_customers' => $total_customers,           // From Orders
                     'total_orders' => $total_orders,
                     'total_order_value' => $total_order_value,
                     'total_quantity' => $total_quantity,
-    
+
                     // NEW STATS
                     'total_checkins' => $total_checkins,
                     'total_secondary_customers' => $total_secondary_customers,
                     'total_master_distributors' => $total_master_distributors,
-    
+
                     'per_user_breakdown' => $perUser,
                 ]
             ], 200);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',

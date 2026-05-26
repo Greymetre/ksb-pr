@@ -104,9 +104,9 @@ class TourPlanController extends Controller
             ]
         ], 200);
     }
-    
+
     //------------------------
-    
+
     private function addTourLog($tourId, $action, $status, $remark = null)
     {
         TourLog::create([
@@ -117,7 +117,7 @@ class TourPlanController extends Controller
             'remark'            => $remark,
         ]);
     }
-    
+
     //------------------------
 
     public function user_list(Request $request)
@@ -165,8 +165,12 @@ class TourPlanController extends Controller
         // ────────────────────────────────────────────────
         $query = User::query()
             ->whereIn('id', $reportingUserIds)
-            ->whereDoesntHave('roles', fn($q) => $q->where('id', 61)) // exclude role 29
-            ->with(['getbranch' => fn($q) => $q->select('id', 'branch_name')])
+            ->whereDoesntHave('roles', function ($q) {
+                $q->whereIn('id', config('constants.customer_roles'));
+            })
+            ->with([
+                'getbranch' => fn($q) => $q->select('id', 'branch_name')
+            ])
             ->select('id', 'name', 'branch_id');
 
         // Apply branch filter (multiple branches supported)
@@ -227,7 +231,7 @@ class TourPlanController extends Controller
             'district'    => 'required|array',
             'district.*'  => 'nullable', // or 'required' if you want to force it
             'objectives'  => 'required|array',
-            'objectives.*'=> 'nullable|string',
+            'objectives.*' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -268,7 +272,7 @@ class TourPlanController extends Controller
             //         'updated_at'  => now(),         // force fresh timestamp
             //     ]
             // );
-            
+
             $tour = TourProgramme::create([
                 'userid'     => $user_id,
                 'date'       => $date,
@@ -280,7 +284,7 @@ class TourPlanController extends Controller
             ]);
 
             // if ($tour->wasRecentlyCreated) {
-                $createdCount++;
+            $createdCount++;
             // } else {
             //     $updatedCount++;
             // }
@@ -293,8 +297,8 @@ class TourPlanController extends Controller
 
             if ($city) {
                 $lastVisited = TourDetail::whereHas('tourinfo', function ($q) use ($user_id) {
-                        $q->where('userid', $user_id);
-                    })
+                    $q->where('userid', $user_id);
+                })
                     ->where('visited_cityid', $city->id)
                     ->whereNotNull('visited_date')
                     ->latest('visited_date')
@@ -361,7 +365,7 @@ class TourPlanController extends Controller
         $start_date     = $request->input('start_date');
         $end_date       = $request->input('end_date');
         $search_user_id = $request->input('user_id');
-        
+
         $authUserId = auth()->id();   // Current logged-in user (from token)
         // If search_user_id is provided, we calculate hierarchy for that user
         $targetUserId = $search_user_id ? $search_user_id : $authUserId;
@@ -383,11 +387,11 @@ class TourPlanController extends Controller
 
         $perPage    = $request->input('per_page', 30);
         $tour_plans = $query->paginate($perPage);
-        
+
         // Pre-calculate hierarchy levels for all users in current page (Best for performance)
         $hierarchy_level = getHierarchyLevel($targetUserId, $authUserId);
 
-        $hierarchy_label = match($hierarchy_level) {
+        $hierarchy_label = match ($hierarchy_level) {
             0   => 'Self',
             -1  => 'Not in Hierarchy',
             default => 'Level ' . $hierarchy_level
@@ -418,7 +422,7 @@ class TourPlanController extends Controller
         // Format the response (add town_name & district_name)
         // ────────────────────────────────────────────────
         $formatted = $tour_plans->through(function ($plan) use ($cities, $districts) {
-            
+
             $plan->date = date('d-m-Y', strtotime($plan->date));
 
             $plan->status = match ($plan->status) {
@@ -432,7 +436,7 @@ class TourPlanController extends Controller
             // Add names (fallback to ID if not found)
             $plan->town_name     = $cities[$plan->town]     ?? (string) $plan->town;
             $plan->district_name = $districts[$plan->district] ?? (string) $plan->district;
-            
+
 
             return $plan;
         });
@@ -451,7 +455,7 @@ class TourPlanController extends Controller
             ]
         ], 200);
     }
-    
+
     public function changeStatus(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -459,49 +463,49 @@ class TourPlanController extends Controller
             'status'  => 'required|in:0,1,2',
             'remark'  => 'nullable|string'
         ]);
-    
+
         // Extra validation: remark required if rejected
         $validator->after(function ($validator) use ($request) {
             if ($request->status == 2 && empty($request->remark)) {
                 $validator->errors()->add('remark', 'Remark is required when rejecting.');
             }
         });
-    
+
         if ($validator->fails()) {
             return response()->json([
                 'status'  => 'error',
                 'message' => $validator->errors()->first(),
             ], 400);
         }
-    
+
         $tour = TourProgramme::find($request->tour_id);
-    
+
         $tour->status = $request->status;
-    
+
         // Save remark only if rejected
         if ($request->status == 2) {
             $tour->remark = $request->remark;
         } else {
             $tour->remark = null; // optional: clear remark on approve
         }
-    
+
         $tour->save();
-        
+
         //------------------------
-        
+
         $statusLabels = [
             0 => 'Pending',
             1 => 'Approved',
             2 => 'Rejected',
         ];
-        
+
         $action = match ((int)$request->status) {
             1 => 'approved',
             2 => 'rejected',
             0 => 'pending',
             default => 'status_changed',
         };
-        
+
         $this->addTourLog(
             $tour->id,
             $action,
@@ -510,9 +514,9 @@ class TourPlanController extends Controller
                 ? $request->remark
                 : 'Status changed to ' . ($statusLabels[$request->status] ?? 'Unknown')
         );
-        
+
         //------------------------
-    
+
         return response()->json([
             'status'  => 'success',
             'message' => 'Status updated successfully.',
