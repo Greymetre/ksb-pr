@@ -17,6 +17,7 @@ use App\DataTables\TourProgrammeDataTable;
 use App\Models\TourDetail;
 use App\Models\User; 
 use App\Models\City;
+use App\Models\TourLog;
 use App\Imports\TourImport;
 use App\Exports\TourExport;
 use App\Models\Division;
@@ -49,6 +50,17 @@ class TourController extends Controller
     //                         })->select('id','name')->orderBy('id','desc')->get();
     //     return $dataTable->render('tours.index',compact('users'));
     // }
+
+    private function addTourLog($tourId, $action, $status, $remark = null)
+    {
+        TourLog::create([
+            'tour_programme_id' => $tourId,
+            'action'            => $action,
+            'status'            => $status,
+            'performed_by'      => auth()->id(),
+            'remark'            => $remark,
+        ]);
+    }
 
 
         public function index(Request $request)
@@ -224,10 +236,18 @@ class TourController extends Controller
                               //             </div>';
                               // }
 
+                              $btn = $btn.'
+                                <a href="'.route('tour.activities', $query->id).'" 
+                                class="btn btn-primary btn-just-icon btn-sm" 
+                                title="View Activities">
+                                    <i class="material-icons">timeline</i>
+                                </a>';
+
                               return '<div class="btn-group btn-group-sm" role="group" aria-label="Small button group">
                                             '.$btn.'
                                         </div>'.$activebtn;
                         })
+
                 
                         ->rawColumns(['action', 'stauts','checkbox'])
                     ->make(true);
@@ -298,6 +318,14 @@ public function store(Request $request)
             ]
         );
 
+        $this->addTourLog(
+            $tour->id,
+            'created',
+            'pending',
+            'Tour created'
+        );
+
+
         // Optional: still try to link TourDetail if city name exists
         $city = City::where('city_name', trim($data['city'] ?? ''))->first();
 
@@ -345,6 +373,8 @@ public function update(Request $request)
             ->whereNotNull('visited_date')
             ->latest('visited_date')
             ->value('visited_date');
+
+            $this->addTourLog($tour->id, 'updated', 'pending', 'Tour updated');
 
         TourDetail::updateOrCreate(
             [
@@ -458,21 +488,46 @@ public function edit($id)
         // }else{
         //     return response()->json(["status"=>false]);
         // }
+    // dd($request->status);
+         if (!$request->id) {
+        return response()->json(["status" => false]);
+    }
 
-        if($request->id){
-        $tours = TourProgramme::whereIn('id',$request->id)->get();
-        if($tours){  
-            foreach($tours as $tour){
-              $tour->update(['status'=>$request->status]);    
-            }
-            return response()->json(["status"=>"success"]);
-        }else{
-            return response()->json(["status"=>false]);
-        }   
+    $tours = TourProgramme::whereIn('id', $request->id)->get();
 
-        }else{
-           return response()->json(["status"=>false]);
-        }
+    if ($tours->isEmpty()) {
+        return response()->json(["status" => false]);
+    }
+
+    foreach ($tours as $tour) {
+
+        $oldStatus = $tour->status;
+
+        $tour->update([
+            'status' => $request->status
+        ]);
+
+        // Decide action name based on status
+        $action = match ((int)$request->status) {
+            1 => 'approved',
+            2 => 'rejected',
+            0 => 'pending',
+            default => 'status_changed',
+        };
+
+        $oldLabel = $statusLabels[$oldStatus] ?? 'Unknown';
+        $newLabel = $statusLabels[$request->status] ?? 'Unknown';   
+
+        // Create log
+        $this->addTourLog(
+            $tour->id,
+            $action,
+            $request->status,
+            "Status changed from $oldLabel to $newLabel"
+        );
+    }
+
+    return response()->json(["status" => "success"]);
 
 
     }
@@ -613,6 +668,14 @@ public function ajaxUserCitiesByDistrict(Request $request)
         ->get();
 
     return response()->json(['cities' => $cities]);
+}
+
+
+public function activities($id)
+{
+    $tour = TourProgramme::with(['logs.user'])->findOrFail($id);
+
+    return view('tours.activities', compact('tour'));
 }
 
 }

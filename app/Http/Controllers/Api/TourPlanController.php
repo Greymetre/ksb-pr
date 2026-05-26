@@ -8,9 +8,11 @@ use App\Models\City;
 use App\Models\TourDetail;
 use App\Models\TourProgramme;
 use App\Models\User;
+use App\Models\TourLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\District;
+use Illuminate\Support\Facades\Auth;
 
 class TourPlanController extends Controller
 {
@@ -102,6 +104,21 @@ class TourPlanController extends Controller
             ]
         ], 200);
     }
+    
+    //------------------------
+    
+    private function addTourLog($tourId, $action, $status, $remark = null)
+    {
+        TourLog::create([
+            'tour_programme_id' => $tourId,
+            'action'            => $action,
+            'status'            => $status,
+            'performed_by'      => Auth::id(),
+            'remark'            => $remark,
+        ]);
+    }
+    
+    //------------------------
 
     public function user_list(Request $request)
     {
@@ -148,7 +165,7 @@ class TourPlanController extends Controller
         // ────────────────────────────────────────────────
         $query = User::query()
             ->whereIn('id', $reportingUserIds)
-            ->whereDoesntHave('roles', fn($q) => $q->where('id', 29)) // exclude role 29
+            ->whereDoesntHave('roles', fn($q) => $q->where('id', 61)) // exclude role 29
             ->with(['getbranch' => fn($q) => $q->select('id', 'branch_name')])
             ->select('id', 'name', 'branch_id');
 
@@ -469,6 +486,32 @@ class TourPlanController extends Controller
         }
     
         $tour->save();
+        
+        //------------------------
+        
+        $statusLabels = [
+            0 => 'Pending',
+            1 => 'Approved',
+            2 => 'Rejected',
+        ];
+        
+        $action = match ((int)$request->status) {
+            1 => 'approved',
+            2 => 'rejected',
+            0 => 'pending',
+            default => 'status_changed',
+        };
+        
+        $this->addTourLog(
+            $tour->id,
+            $action,
+            $request->status,
+            $request->remark
+                ? $request->remark
+                : 'Status changed to ' . ($statusLabels[$request->status] ?? 'Unknown')
+        );
+        
+        //------------------------
     
         return response()->json([
             'status'  => 'success',

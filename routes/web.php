@@ -1022,6 +1022,8 @@ Route::post('secondary-customers/toggle-active',
 // Route::post('ajax/user-cities', [TourController::class, 'ajaxUserCities'])->name('ajax.user.cities');
     Route::get('tours/ajax-user-cities', [TourController::class, 'ajaxUserCities'])
     ->name('tours.ajaxUserCities');
+    Route::get('/tour/{id}/activities', [TourController::class, 'activities'])
+    ->name('tour.activities');
 
     
 

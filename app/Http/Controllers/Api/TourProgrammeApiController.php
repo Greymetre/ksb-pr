@@ -7,6 +7,7 @@ use App\Models\TourProgramme;
 use App\Models\TourDetail;
 use App\Models\City;
 use App\Models\District;
+use App\Models\TourLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -23,6 +24,24 @@ class TourProgrammeApiController extends Controller
      * GET /api/tour-plans
      * List upcoming / recent tour plans of the logged-in user
      */
+     
+     
+    //---------------------------
+    
+    private function addTourLog($tourId, $action, $status, $remark = null)
+    {
+        TourLog::create([
+            'tour_programme_id' => $tourId,
+            'action'            => $action,
+            'status'            => $status,
+            'performed_by'      => Auth::id(),
+            'remark'            => $remark,
+        ]);
+    }
+    
+    //---------------------------
+    
+    
     public function index(Request $request)
     {
         $perPage = $request->input('per_page', 15);
@@ -97,6 +116,13 @@ class TourProgrammeApiController extends Controller
                 'type'       => $item['type'] ?? 'field_visit',
                 'status'     => 0, // pending
             ]);
+            
+            $this->addTourLog(
+                $tour->id,
+                'created',
+                0,
+                'Tour plan created'
+            );
 
             // Optional: create TourDetail if city was resolved
             if ($city) {
@@ -106,6 +132,8 @@ class TourProgrammeApiController extends Controller
                     // 'last_visited' etc...
                 ]);
             }
+            
+            
 
             $created[] = $tour->load(['city', 'districtRelation']);
         }
@@ -167,6 +195,13 @@ class TourProgrammeApiController extends Controller
         }
 
         $tour->update($updateData);
+        
+        $this->addTourLog(
+            $tour->id,
+            'updated',
+            $tour->status,
+            'Tour plan updated'
+        );
 
         return response()->json([
             'status'  => 'success',

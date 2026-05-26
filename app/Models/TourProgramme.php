@@ -11,7 +11,7 @@ class TourProgramme extends Model
 
     protected $table = 'tour_programmes';
 
-    protected $fillable = [ 'date', 'userid', 'town','district', 'objectives', 'type', 'status', 'deleted_at', 'created_at', 'updated_at', 'remark'];
+    protected $fillable = [ 'date', 'userid', 'town','district', 'objectives', 'type', 'status', 'deleted_at', 'created_at', 'updated_at'];
 
     public function userinfo()
     {
@@ -47,6 +47,12 @@ public function districtRelation() {
     return $this->belongsTo(District::class, 'district', 'id');
 }
 
+
+public function logs()
+{
+    return $this->hasMany(TourLog::class, 'tour_programme_id', 'id')
+                ->orderBy('id', 'desc');
+}
 
 // public function districtRelation()
 // {

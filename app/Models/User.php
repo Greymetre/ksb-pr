@@ -245,4 +245,13 @@ class User extends Authenticatable implements HasMedia
     {
         return $this->belongsTo('App\Models\WareHouse', 'warehouse_id', 'id');
     }
+    
+    public function scopeExcludeCustomerRoles($query)
+    {
+        $customerRoleIds = config('constant.customer_roles', []);
+    
+        return $query->whereHas('roles')->whereDoesntHave('roles', function ($q) use ($customerRoleIds) {
+            $q->whereIn('roles.id', $customerRoleIds);
+        });
+    }
 }

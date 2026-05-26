@@ -411,6 +411,7 @@ class AttendanceController extends Controller
             // Branch logic
             $all_user_branches = User::with('getbranch')
                 ->whereIn('id', getUsersReportingToAuth($user_id))
+                ->excludeCustomerRoles()
                 ->orderBy('branch_id')
                 ->get();
     
@@ -429,6 +430,7 @@ class AttendanceController extends Controller
             if ($search_branches && count($search_branches) > 0 && $search_branches[0] != null) {
                 $all_reporting_user_ids = User::whereIn('id', $all_reporting_user_ids)
                     ->whereIn('branch_id', $search_branches)
+                    ->excludeCustomerRoles()
                     ->pluck('id')
                     ->toArray();
             }
@@ -476,6 +478,7 @@ class AttendanceController extends Controller
                 ->whereDoesntHave('roles', function ($query) {
                     $query->where('id', 29);
                 })
+                ->excludeCustomerRoles()
                 ->whereIn('id', $all_reporting_user_ids)
                 ->orderBy('name', 'asc')
                 ->get();
@@ -700,11 +703,11 @@ class AttendanceController extends Controller
     
             $totalNotPunchInToday = $totalUsers - $totalPunchInToday;
     
-            $totalAsr = User::whereIn('id', $myTeamUserIds)->where('designation_id', 3)->count();
-            $totalDsr = User::whereIn('id', $myTeamUserIds)->where('designation_id', 6)->count();
+            $totalAsr = User::whereIn('id', $myTeamUserIds)->excludeCustomerRoles()->where('designation_id', 3)->count();
+            $totalDsr = User::whereIn('id', $myTeamUserIds)->excludeCustomerRoles()->where('designation_id', 6)->count();
     
-            $asrUserIds = User::whereIn('id', $myTeamUserIds)->where('designation_id', 3)->pluck('id')->toArray();
-            $dsrUserIds = User::whereIn('id', $myTeamUserIds)->where('designation_id', 6)->pluck('id')->toArray();
+            $asrUserIds = User::whereIn('id', $myTeamUserIds)->excludeCustomerRoles()->where('designation_id', 3)->pluck('id')->toArray();
+            $dsrUserIds = User::whereIn('id', $myTeamUserIds)->excludeCustomerRoles()->where('designation_id', 6)->pluck('id')->toArray();
             
             $currentMonthName = Carbon::now()->format('M'); // Apr
             $currentYear = Carbon::now()->year;

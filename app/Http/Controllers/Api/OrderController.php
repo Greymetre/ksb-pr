@@ -57,7 +57,7 @@ class OrderController extends Controller
         return $this->belongsTo(SecondaryCustomer::class, 'buyer_id');
     }
 
-    public function seller()
+    public function seller() 
     {
         return $this->belongsTo(MasterDistributor::class, 'seller_id');
     }
