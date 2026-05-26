@@ -98,6 +98,74 @@
                     </div>
                 </div>
                 </div>
+                <div id="dealerCard" style="display:none;">
+                    <div class="card-header card-header-icon card-header-theme">
+                    <div class="card-icon">
+                        <i class="material-icons">perm_identity</i>
+                    </div>
+                    <h4 class="card-title ">Dealer Productivity Report
+                        <span class="pull-right">
+                            <div class="btn-group">
+
+                            </div>
+                        </span>
+                    </h4>
+                </div>
+                <div class=" mb-4">
+                    <div class="card-header ">
+                        
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h5 class="card-title mb-0">Filters</h5>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <button type="button" id="dealerDownloadReportBtn" class="btn btn-success">
+                                    <i class="material-icons">get_app</i> Download Excel Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label>Designation</label>
+                                <select class="form-control selectpicker" 
+                                    id="designation_id_dealer" 
+                                    name="designation_id" 
+                                    data-style="select-with-transition"
+                                    title="Select Designation"
+                                    >
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="bmd-label-floating">Employee Name</label>
+                                <select class="form-control select2" id="dealer_employee_id" name="employee_id">
+                                    <option value="">All Employees</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="bmd-label-floating">Dealer Name</label>
+                                <select class="form-control select2" id="dealer_id" name="dealer_id">
+                                    <option value="">All Dealers</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="bmd-label-floating">Year</label>
+                                <select class="form-control" id="dealer_year" name="year">
+                                    <option value="">All Years</option>
+                                    @for($y = date('Y'); $y >= 2020; $y--)
+                                        <option value="{{ $y }}">{{ $y }}</option>
+                                    @endfor
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
                 <div id="asrCard" style="display:none;">
                 <div class="card-header card-header-icon card-header-theme">
                     <div class="card-icon">
@@ -173,8 +241,7 @@
                             <!-- Designation -->
                             <div class="col-md-3">
                                 <label>Designation</label>
-                                <select class="form-control selectpicker" id="designation_id_asr" name="designation_id[]" 
-                                    multiple
+                                <select class="form-control selectpicker" id="designation_id_asr" name="designation_id"
                                     data-style="select-with-transition"
                                     title="Select Designation"
                                     >
@@ -315,11 +382,12 @@ $.get("{{ url('getBranches') }}", function(data) {
 $.get("{{ url('getDesignations') }}", function(data) {
 
     let retailerOptions = '';
+    let dealerOptions = '';
     let asrOptions = '';
 
     data.forEach(item => {
 
-        let selected = (item.designation_name === 'ASR' || item.designation_name === 'DSR') 
+        let selected = (item.designation_name === 'ASR') 
             ? 'selected' 
             : '';
 
@@ -329,17 +397,27 @@ $.get("{{ url('getDesignations') }}", function(data) {
                             </option>`;
 
         // ✅ ASR (MULTIPLE bhi hai tumhara)
+        dealerOptions += `<option value="${item.id}" ${selected}>
+                                ${item.designation_name}
+                            </option>`;
+
         asrOptions += `<option value="${item.id}" ${selected}>
                             ${item.designation_name}
                        </option>`;
     });
 
     $('#designation_id_retailer').html(retailerOptions);
+    $('#designation_id_dealer').html(dealerOptions);
     $('#designation_id_asr').html(asrOptions);
 
     // 🔥 VERY IMPORTANT for selectpicker
     $('#designation_id_retailer').selectpicker('refresh');
+    $('#designation_id_dealer').selectpicker('refresh');
     $('#designation_id_asr').selectpicker('refresh');
+
+    setTimeout(function () {
+        $('#designation_id_dealer').trigger('change');
+    }, 0);
 });
     var table = $('#getattendance').DataTable({
         'destroy': true,
@@ -510,6 +588,27 @@ $('#downloadReportBtn').on('click', function() {
 let downloadUrl = "{{ route('retailer.productivity.export') }}" + (queryString ? '?' + queryString : '');
     window.location.href = downloadUrl;
 });
+
+$('#dealerDownloadReportBtn').on('click', function() {
+    let params = {
+        start_date:     $('#start_date').val(),
+        end_date:       $('#end_date').val(),
+        employee_id:    $('#dealer_employee_id').val(),
+        dealer_id:      $('#dealer_id').val(),
+        year:           $('#dealer_year').val(),
+        division_id:    $('#division_id').val(),
+        branch_id:      $('#branch_id').val(),
+        designation_id: $('#designation_id_dealer').val()
+    };
+
+    params = Object.fromEntries(
+        Object.entries(params).filter(([_, v]) => v != null && v !== '')
+    );
+
+    let queryString = $.param(params);
+    let downloadUrl = "{{ route('dealer.productivity.export') }}" + (queryString ? '?' + queryString : '');
+    window.location.href = downloadUrl;
+});
 $(document).ready(function () {
 
 
@@ -518,15 +617,43 @@ $(document).ready(function () {
 
     if (type === 'retailer') {
         $('#retailerCard').show();
+        $('#dealerCard').hide();
+        $('#asrCard').hide();
+    } 
+    else if (type === 'dealer') {
+        $('#dealerCard').show();
+        $('#retailerCard').hide();
         $('#asrCard').hide();
     } 
     else if (type === 'asr') {
         $('#asrCard').show();
         $('#retailerCard').hide();
+        $('#dealerCard').hide();
     } 
     else {
         // default (optional)
         $('#retailerCard').show();
+        $('#dealerCard').hide();
+        $('#asrCard').hide();
+    }
+
+    function loadDealerEmployees() {
+        $.ajax({
+            url: "{{ url('getUserList') }}",
+            type: "GET",
+            data: {
+                designation_id: $('#designation_id_dealer').val()
+            },
+            success: function (data) {
+                let options = '<option value="">All Employees</option>';
+
+                data.forEach(function (item) {
+                    options += `<option value="${item.id}">${item.name}</option>`;
+                });
+
+                $('#dealer_employee_id').html(options).trigger('change.select2');
+            }
+        });
     }
 
     // Employee list
@@ -545,6 +672,8 @@ $(document).ready(function () {
         }
     });
 
+    loadDealerEmployees();
+
     $.ajax({
     url: "{{ url('getRetailerlist') }}",
     type: "GET",
@@ -552,6 +681,7 @@ $(document).ready(function () {
 
         let retailerOptions = '<option value="">All Retailers</option>';
         let distributorOptions = '<option value="">All Distributors</option>';
+        let dealerOptions = '<option value="">All Dealers</option>';
 
         data.forEach(function (item) {
 
@@ -561,16 +691,22 @@ $(document).ready(function () {
 
             if (item.type === 'distributor') {
                 distributorOptions += `<option value="${item.id}">${item.name}</option>`;
+                dealerOptions += `<option value="${item.id}">${item.name}</option>`;
             }
 
         });
 
         $('#retailer_id').html(retailerOptions);
         $('#distributor_id').html(distributorOptions);
+        $('#dealer_id').html(dealerOptions);
     }
 });
 
-$('#employee_id, #retailer_id, #distributor_id, #year').change(function () {
+$('#designation_id_dealer').on('changed.bs.select change', function () {
+    loadDealerEmployees();
+});
+
+$('#employee_id, #retailer_id, #distributor_id, #year, #dealer_employee_id, #dealer_id, #dealer_year').change(function () {
     table.draw();
 });
 

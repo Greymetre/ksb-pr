@@ -2680,12 +2680,19 @@
                                         <div class="d-none mobile_hide">Retailer</div>
                                 </a>
                             </li>
-                                    @if(auth()->user()->can('retailer_productivity_report'))
-                            <li class="nav-link-btn {{ request()->is('reports/adherencesummary*') ? 'active' : '' }}">
+                            @if(auth()->user()->can('retailer_productivity_report'))
+                            <li class="nav-link-btn {{ request()->is('reports/adherencesummary*') && request('type') === 'retailer' ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('reports/adherencesummary?type=retailer') }}">
                                     <i class="material-icons icon">summarize</i>
-                                    <span>Retailer Performance</span>
-                                    <div class="d-none mobile_hide"> Adherence Summary</div>
+                                    <span>Retailer Productivity Report</span>
+                                    <div class="d-none mobile_hide">Retailer Productivity Report</div>
+                                </a>
+                            </li>
+                            <li class="nav-link-btn {{ request()->is('reports/adherencesummary*') && request('type') === 'dealer' ? 'active' : '' }}">
+                                <a class="hoveradd2" href="{{ url('reports/adherencesummary?type=dealer') }}">
+                                    <i class="material-icons icon">summarize</i>
+                                    <span>Dealer Productivity Report</span>
+                                    <div class="d-none mobile_hide">Dealer Productivity Report</div>
                                 </a>
                             </li>
                             @endif

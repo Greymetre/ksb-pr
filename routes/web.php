@@ -313,6 +313,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::any('reports/customer_outstanting/download', [ReportController::class, 'customer_outstanting_download'])->name('reports.customer_outstanting.download');
     Route::any('reports/customer_outstanting', [ReportController::class, 'customer_outstanting'])->name('reports.customer_outstanting');
     Route::get('/retailer-productivity-export', [ReportController::class, 'retailerProductivityExport'])->name('retailer.productivity.export');
+    Route::get('/dealer-productivity-export', [ReportController::class, 'dealerProductivityExport'])->name('dealer.productivity.export');
     
     //Marketing
     Route::get('marketings', [MarketingController::class, 'index'])->name('marketing.index');

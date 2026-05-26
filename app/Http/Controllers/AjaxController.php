@@ -378,6 +378,7 @@ class AjaxController extends Controller
             $payroll = $request->input('payroll');
             $branch_id = $request->input('branch_id');
             $division_id = $request->input('division_id');
+            $designation_id = $request->input('designation_id');
             $roles = $request->input('roles');
             $userids = getUsersReportingToAuth();
             $login_userid = Auth::user()->id;
@@ -385,7 +386,7 @@ class AjaxController extends Controller
             $userinfo = User::where('id', '=', $login_userid)->first();
             $data = User::whereDoesntHave('roles', function ($query) {
                 $query->where('id', 29);
-            })->where(function ($query) use ($beat_id, $userids, $payroll, $userinfo, $branch_id, $division_id, $roles) {
+            })->where(function ($query) use ($beat_id, $userids, $payroll, $userinfo, $branch_id, $division_id, $designation_id, $roles) {
                 if (isset($beat_id)) {
                     $query->whereHas('userbeats', function ($query) use ($beat_id) {
                         $query->where('beat_id', '=', $beat_id);
@@ -405,6 +406,10 @@ class AjaxController extends Controller
                 }
                 if (isset($division_id)) {
                     $query->where('division_id', '=', $division_id);
+                }
+                if (isset($designation_id) && $designation_id !== '') {
+                    $designationIds = is_array($designation_id) ? $designation_id : [$designation_id];
+                    $query->whereIn('designation_id', array_filter($designationIds));
                 }
                 if (!$userinfo->hasRole('superadmin') && !$userinfo->hasRole('Admin') && !$userinfo->hasRole('Sub_Admin') && !$userinfo->hasRole('HR_Admin') && !$userinfo->hasRole('HO_Account')  && !$userinfo->hasRole('Sub_Support') && !$userinfo->hasRole('Accounts Order') && !$userinfo->hasRole('Service Admin') && !$userinfo->hasRole('All Customers')) {
                     $query->whereIn('id', $userids);

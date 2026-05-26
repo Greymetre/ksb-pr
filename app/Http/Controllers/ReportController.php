@@ -72,6 +72,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\MasterDistributor;
 use App\Models\SecondaryCustomer;
 use App\Exports\RetailerProductivityExport;
+use App\Exports\DealerProductivityExport;
 
 
 class ReportController extends Controller
@@ -377,6 +378,32 @@ public function retailerProductivityExport(Request $request)
     return Excel::download(
         new RetailerProductivityExport($filters),
         'Retailer_Productivity_Report_' . now()->format('Y-m-d_His') . '.xlsx'
+    );
+}
+
+public function dealerProductivityExport(Request $request)
+{
+    $filters = $request->only([
+        'start_date',
+        'end_date',
+        'employee_id',
+        'dealer_id',
+        'distributor_id',
+        'year',
+        'division_id',
+        'branch_id',
+        'designation_id',
+    ]);
+
+    $allowedUserIds = getUsersReportingToAuth();
+
+    if (!auth()->user()->hasRole('superadmin')) {
+        $filters['allowed_user_ids'] = $allowedUserIds;
+    }
+
+    return Excel::download(
+        new DealerProductivityExport($filters),
+        'Dealer_Productivity_Report_' . now()->format('Y-m-d_His') . '.xlsx'
     );
 }
 
