@@ -146,11 +146,11 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
             ];
 
             foreach ($monthlyValues as $value) {
-                $row[] = ((float) $value == 0.0) ? '0' : round((float) $value, 2);
+                $row[] = ((float) $value == 0.0) ? '0' : round((float) $value, 0);
             }
 
             $yearTotal = array_sum($monthlyValues);
-            $row[] = ((float) $yearTotal == 0.0) ? '0' : round((float) $yearTotal, 2);
+            $row[] = ((float) $yearTotal == 0.0) ? '0' : round((float) $yearTotal, 0);
 
             return [
                 'zone' => $zoneName,
@@ -212,7 +212,7 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
 
                 $sheet->getStyle("G3:{$highestColumn}{$highestRow}")
                     ->getNumberFormat()
-                    ->setFormatCode('#,##0.00;-#,##0.00;0');
+                    ->setFormatCode('#,##0;-#,##0;0');
 
                 for ($row = 3; $row <= $highestRow; $row++) {
                     $label = (string) $sheet->getCell('B' . $row)->getValue();
@@ -294,7 +294,7 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
     private function totalRow(string $label, array $totals): array
     {
         $monthlyTotals = array_map(
-            fn ($value) => ((float) $value == 0.0) ? '0' : round((float) $value, 2),
+            fn ($value) => ((float) $value == 0.0) ? '0' : round((float) $value, 0),
             array_values($totals)
         );
         $yearTotal = array_sum($totals);
@@ -302,7 +302,7 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
         return array_merge(
             ['', Str::title($label), '', '', '', ''],
             $monthlyTotals,
-            [((float) $yearTotal == 0.0) ? '0' : round((float) $yearTotal, 2)]
+            [((float) $yearTotal == 0.0) ? '0' : round((float) $yearTotal, 0)]
         );
     }
 

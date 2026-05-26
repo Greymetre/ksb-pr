@@ -1770,6 +1770,7 @@ class AttendanceController extends Controller
     
             // 🔥 BASE QUERY
             $query = DB::table('users')
+                ->leftJoin('users as reporting_user', 'users.reportingid', '=', 'reporting_user.id')
                 ->leftJoin('divisions', 'users.division_id', '=', 'divisions.id')
                 ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
                 ->leftJoin('attendances', function ($join) use ($today) {
@@ -1803,11 +1804,17 @@ class AttendanceController extends Controller
             $data = $query->select(
                 'users.id',
                 'users.name',
+                'users.reportingid',
+                'reporting_user.name as reporting_name',
+                'reporting_user.mobile as reporting_mobile',
                 'branches.branch_name',
                 'divisions.division_name',
                 'attendances.working_type',
                 DB::raw('CASE WHEN attendances.id IS NOT NULL THEN 1 ELSE 0 END as punchin')
-            )->get();
+            )
+            ->orderBy('reporting_user.name', 'ASC')
+            ->orderBy('users.name', 'ASC')
+            ->get();
     
             // =========================
             // 🔥 STATUS FILTER (AFTER QUERY)
@@ -1857,7 +1864,11 @@ class AttendanceController extends Controller
                     'id' => $row->id,
                     'name' => $row->name,
                     'branch' => $row->branch_name ?? 'N/A',
-            
+                    'reporting' => [
+                        'id' => $row->reportingid,
+                        'name' => $row->reporting_name,
+                        'mobile' => $row->reporting_mobile,
+                    ],
                     'punchin' => $isPunchIn,
                     'not_punchin' => !$isPunchIn,
             
