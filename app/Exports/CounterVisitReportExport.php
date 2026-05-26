@@ -41,6 +41,28 @@ public function __construct($request)
     $this->designation_id= $request->designation_id;
 }
 
+private function zoneSortOrder(?string $divisionName): int
+{
+    $divisionName = strtolower(trim((string) $divisionName));
+
+    $zones = [
+        1 => ['north', 'norrth'],
+        2 => ['east'],
+        3 => ['west'],
+        4 => ['south'],
+    ];
+
+    foreach ($zones as $order => $aliases) {
+        foreach ($aliases as $alias) {
+            if ($divisionName === $alias || preg_match('/\b' . preg_quote($alias, '/') . '\b/', $divisionName)) {
+                return $order;
+            }
+        }
+    }
+
+    return 99;
+}
+
 //     private function getWorkingDays($start_date, $end_date)
 //     {
 //         $start = Carbon::parse($start_date);
@@ -105,7 +127,11 @@ public function __construct($request)
         })
 
         ->when($this->designation_id, function ($q) {
-            $q->where('designation_id', $this->designation_id);
+            $designationIds = is_array($this->designation_id)
+                ? $this->designation_id
+                : [$this->designation_id];
+
+            $q->whereIn('designation_id', array_filter($designationIds));
         })
 
         ->get();
@@ -116,7 +142,15 @@ public function __construct($request)
     |--------------------------------------------------------------------------
     */
     $users = $users->sortBy(function ($u) {
-        return ($u->getdivision->division_name ?? '') . '_' . ($u->getbranch->branch_name ?? '');
+        $divisionName = $u->getdivision->division_name ?? '';
+        $branchName = $u->getbranch->branch_name ?? '';
+
+        return sprintf(
+            '%02d_%s_%s',
+            $this->zoneSortOrder($divisionName),
+            strtolower($divisionName),
+            strtolower($branchName)
+        );
     });
 
     $userIds = $users->pluck('id');
@@ -760,6 +794,13 @@ public function __construct($request)
         AfterSheet::class => function(AfterSheet $event) {
 
             $sheet = $event->sheet->getDelegate();
+            $lastColumn = 'R';
+            $highestRow = $sheet->getHighestRow();
+
+            $sheet->getStyle('A1:' . $lastColumn . $highestRow)
+                ->getFont()
+                ->setName('Calibri')
+                ->setSize(9);
 
             /*
             |--------------------------------------------------------------------------
@@ -771,7 +812,8 @@ public function __construct($request)
             $sheet->getStyle($cellRange)->applyFromArray([
                 'font' => [
                     'bold' => true,
-                    'size' => 12,
+                    'name' => 'Calibri',
+                    'size' => 9,
                     'color' => ['rgb' => 'FFFFFF'],
                 ],
                 'fill' => [
@@ -789,8 +831,6 @@ public function __construct($request)
             | CENTER ALIGN DATA
             |--------------------------------------------------------------------------
             */
-            $lastColumn = 'R';
-
             $dataRange = 'C2:' . $lastColumn . ($sheet->getHighestRow());
 
             $sheet->getStyle($dataRange)->applyFromArray([
@@ -812,8 +852,6 @@ public function __construct($request)
             | HIGHLIGHT SUBTOTAL & GRAND TOTAL ROWS
             |--------------------------------------------------------------------------
             */
-            $highestRow = $sheet->getHighestRow();
-
             for ($row = 2; $row <= $highestRow; $row++) {
 
                 $cellValue = $sheet->getCell('B' . $row)->getValue();
