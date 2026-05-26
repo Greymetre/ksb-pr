@@ -33,48 +33,20 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
 
     public function collection()
     {
+        $reportUserIds = $this->reportUserIds();
+
+        if ($reportUserIds->isEmpty()) {
+            return $this->headerRows();
+        }
+
         $query = MasterDistributor::with(['supervisor.getbranch', 'supervisor.getdivision', 'billingCity', 'city']);
 
-        if (!empty($this->filters['allowed_user_ids'])) {
-            $this->whereAssignedToUsers($query, $this->filters['allowed_user_ids']);
-        }
-
-        if (!empty($this->filters['employee_id'])) {
-            $this->whereAssignedToUsers($query, [$this->filters['employee_id']]);
-        }
+        $this->whereAssignedToUsers($query, $reportUserIds->all());
 
         $dealerId = $this->filters['dealer_id'] ?? $this->filters['distributor_id'] ?? null;
 
         if (!empty($dealerId)) {
             $query->where('id', $dealerId);
-        }
-
-        if (!empty($this->filters['designation_id'])) {
-            $designationIds = is_array($this->filters['designation_id'])
-                ? $this->filters['designation_id']
-                : [$this->filters['designation_id']];
-
-            $userIds = User::whereIn('designation_id', array_filter($designationIds))->pluck('id')->all();
-
-            if (!empty($userIds)) {
-                $this->whereAssignedToUsers($query, $userIds);
-            }
-        }
-
-        if (!empty($this->filters['branch_id'])) {
-            $userIds = User::where('branch_id', $this->filters['branch_id'])->pluck('id')->all();
-
-            if (!empty($userIds)) {
-                $this->whereAssignedToUsers($query, $userIds);
-            }
-        }
-
-        if (!empty($this->filters['division_id'])) {
-            $userIds = User::where('division_id', $this->filters['division_id'])->pluck('id')->all();
-
-            if (!empty($userIds)) {
-                $this->whereAssignedToUsers($query, $userIds);
-            }
         }
 
         $distributors = $query->get();
@@ -83,14 +55,8 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
             return $this->headerRows();
         }
 
-        $assignedUserIds = $distributors
-            ->flatMap(fn ($distributor) => $this->assignedUserIds($distributor))
-            ->merge($distributors->pluck('supervisor_id')->filter())
-            ->unique()
-            ->values();
-
         $users = User::with(['getbranch', 'getdivision'])
-            ->whereIn('id', $assignedUserIds)
+            ->whereIn('id', $reportUserIds)
             ->get()
             ->keyBy('id');
 
@@ -106,6 +72,7 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
         $reportingUsers = User::whereIn('id', $reportingIds)->pluck('name', 'id');
 
         $orders = Order::whereIn('seller_id', $distributors->pluck('id'))
+            ->whereIn('executive_id', $reportUserIds)
             ->when(!empty($this->filters['year']), function ($q) {
                 $q->whereYear('order_date', $this->filters['year']);
             })
@@ -115,20 +82,30 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
             ->when(!empty($this->filters['end_date']), function ($q) {
                 $q->whereDate('order_date', '<=', $this->filters['end_date']);
             })
-            ->select('seller_id', 'order_date', 'grand_total')
+            ->select('seller_id', 'executive_id', 'order_date', 'grand_total')
             ->get()
             ->groupBy('seller_id');
 
-        $preparedRows = $distributors->map(function ($distributor) use ($users, $orders, $reportingUsers) {
-            $employeeIds = $this->assignedUserIds($distributor);
-            $employeeCollection = collect($employeeIds)->map(fn ($id) => $users->get($id))->filter();
-            $primaryEmployee = $employeeCollection->first() ?: $users->get($distributor->supervisor_id);
+        $preparedRows = $distributors->map(function ($distributor) use ($users, $orders, $reportingUsers, $reportUserIds) {
+            $distributorUserIds = collect($this->assignedUserIds($distributor))
+                ->push($distributor->supervisor_id)
+                ->map(fn ($id) => (int) $id)
+                ->filter()
+                ->unique()
+                ->intersect($reportUserIds)
+                ->values();
+
+            $employeeCollection = $distributorUserIds->map(fn ($id) => $users->get($id))->filter();
+            $primaryEmployee = $employeeCollection->first();
             $distributorOrders = $orders->get($distributor->id, collect());
             $monthlyValues = [];
 
             foreach (array_keys($this->months) as $month) {
                 $monthlyValues[$month] = $distributorOrders
-                    ->filter(fn ($order) => Carbon::parse($order->order_date)->month === $month)
+                    ->filter(function ($order) use ($month, $distributorUserIds) {
+                        return Carbon::parse($order->order_date)->month === $month
+                            && $distributorUserIds->contains((int) $order->executive_id);
+                    })
                     ->sum('grand_total');
             }
 
@@ -163,14 +140,17 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
                 $distributor->distributor_code ?? '',
                 $distributor->trade_name ?: $distributor->legal_name,
                 $this->locationName($distributor),
-                $employeeCodes ?: ($primaryEmployee->employee_codes ?? ''),
-                $employeeNames ?: ($primaryEmployee ? Str::title($primaryEmployee->name) : ''),
+                $employeeCodes,
+                $employeeNames,
                 $reportingNames ?: ($distributor->supervisor ? Str::title($distributor->supervisor->name) : ''),
             ];
 
             foreach ($monthlyValues as $value) {
                 $row[] = ((float) $value == 0.0) ? '0' : round((float) $value, 2);
             }
+
+            $yearTotal = array_sum($monthlyValues);
+            $row[] = ((float) $yearTotal == 0.0) ? '0' : round((float) $yearTotal, 2);
 
             return [
                 'zone' => $zoneName,
@@ -230,7 +210,7 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
                     ],
                 ]);
 
-                $sheet->getStyle("G3:R{$highestRow}")
+                $sheet->getStyle("G3:{$highestColumn}{$highestRow}")
                     ->getNumberFormat()
                     ->setFormatCode('#,##0.00;-#,##0.00;0');
 
@@ -243,7 +223,7 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
                         $this->styleTotalRow(
                             $sheet,
                             $row,
-                            $this->isZoneTotal($label) ? 'E53935' : 'FFF59D',
+                            $this->isZoneTotal($label) ? '004a88' : 'FFF59D',
                             $this->isZoneTotal($label)
                         );
                     }
@@ -299,7 +279,7 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
     private function headerRows(): Collection
     {
         return collect([
-            array_merge(array_fill(0, 6, ''), array_values($this->months)),
+            array_merge(array_fill(0, 6, ''), array_values($this->months), ['Total']),
             array_merge([
                 'Distributor Code',
                 'Distributor Name',
@@ -307,21 +287,60 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
                 'Employees Code',
                 'Employees Name',
                 'Reporting Manager',
-            ], array_fill(0, 12, 'Secondary Val')),
+            ], array_fill(0, 13, 'Secondary Val')),
         ]);
     }
 
     private function totalRow(string $label, array $totals): array
     {
-        return array_merge(['', Str::title($label), '', '', '', ''], array_map(
+        $monthlyTotals = array_map(
             fn ($value) => ((float) $value == 0.0) ? '0' : round((float) $value, 2),
             array_values($totals)
-        ));
+        );
+        $yearTotal = array_sum($totals);
+
+        return array_merge(
+            ['', Str::title($label), '', '', '', ''],
+            $monthlyTotals,
+            [((float) $yearTotal == 0.0) ? '0' : round((float) $yearTotal, 2)]
+        );
     }
 
     private function emptyMonthlyTotals(): array
     {
         return array_fill_keys(array_keys($this->months), 0);
+    }
+
+    private function reportUserIds(): Collection
+    {
+        $query = User::query();
+
+        $designationIds = $this->selectedDesignationIds();
+
+        if (!empty($designationIds)) {
+            $query->whereIn('designation_id', $designationIds);
+        }
+
+        if (!empty($this->filters['employee_id'])) {
+            $query->where('id', $this->filters['employee_id']);
+        }
+
+        if (!empty($this->filters['branch_id'])) {
+            $query->where('branch_id', $this->filters['branch_id']);
+        }
+
+        if (!empty($this->filters['division_id'])) {
+            $query->where('division_id', $this->filters['division_id']);
+        }
+
+        if (!empty($this->filters['allowed_user_ids'])) {
+            $query->whereIn('id', collect($this->filters['allowed_user_ids'])->filter()->all());
+        }
+
+        return $query->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
     }
 
     private function assignedUserIds(MasterDistributor $distributor): array
@@ -338,6 +357,22 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
         }
 
         return collect($ids)->map(fn ($id) => (int) $id)->filter()->unique()->values()->all();
+    }
+
+    private function selectedDesignationIds(): array
+    {
+        $designationId = $this->filters['designation_id'] ?? null;
+
+        if (empty($designationId)) {
+            return [];
+        }
+
+        return collect(is_array($designationId) ? $designationId : [$designationId])
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function whereAssignedToUsers(Builder $query, $userIds): void
@@ -404,6 +439,8 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
             $style['font']['color'] = ['rgb' => 'FFFFFF'];
         }
 
-        $sheet->getStyle('A' . $row . ':R' . $row)->applyFromArray($style);
+        $highestColumn = $sheet->getHighestColumn();
+
+        $sheet->getStyle('A' . $row . ':' . $highestColumn . $row)->applyFromArray($style);
     }
 }

@@ -2691,8 +2691,8 @@
                             <li class="nav-link-btn {{ request()->is('reports/adherencesummary*') && request('type') === 'dealer' ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('reports/adherencesummary?type=dealer') }}">
                                     <i class="material-icons icon">summarize</i>
-                                    <span>Dealer Productivity Report</span>
-                                    <div class="d-none mobile_hide">Dealer Productivity Report</div>
+                                    <span>Distributors Productivity Report</span>
+                                    <div class="d-none mobile_hide">Distributors Productivity Report</div>
                                 </a>
                             </li>
                             @endif

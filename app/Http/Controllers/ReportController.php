@@ -395,6 +395,10 @@ public function dealerProductivityExport(Request $request)
         'designation_id',
     ]);
 
+    if (empty($filters['designation_id'])) {
+        $filters['designation_id'] = Designation::where('designation_name', 'ASR')->value('id');
+    }
+
     $allowedUserIds = getUsersReportingToAuth();
 
     if (!auth()->user()->hasRole('superadmin')) {
@@ -403,7 +407,7 @@ public function dealerProductivityExport(Request $request)
 
     return Excel::download(
         new DealerProductivityExport($filters),
-        'Dealer_Productivity_Report_' . now()->format('Y-m-d_His') . '.xlsx'
+        'Distributors_Productivity_Report_' . now()->format('Y-m-d_His') . '.xlsx'
     );
 }
 

@@ -103,7 +103,7 @@
                     <div class="card-icon">
                         <i class="material-icons">perm_identity</i>
                     </div>
-                    <h4 class="card-title ">Dealer Productivity Report
+                    <h4 class="card-title ">Distributors Productivity Report
                         <span class="pull-right">
                             <div class="btn-group">
 
@@ -147,9 +147,9 @@
                             </div>
 
                             <div class="col-md-3">
-                                <label class="bmd-label-floating">Dealer Name</label>
+                                <label class="bmd-label-floating">Distributor Name</label>
                                 <select class="form-control select2" id="dealer_id" name="dealer_id">
-                                    <option value="">All Dealers</option>
+                                    <option value="">All Distributors</option>
                                 </select>
                             </div>
 
@@ -681,7 +681,7 @@ $(document).ready(function () {
 
         let retailerOptions = '<option value="">All Retailers</option>';
         let distributorOptions = '<option value="">All Distributors</option>';
-        let dealerOptions = '<option value="">All Dealers</option>';
+        let dealerOptions = '<option value="">All Distributors</option>';
 
         data.forEach(function (item) {
 
