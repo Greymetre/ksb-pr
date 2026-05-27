@@ -95,7 +95,7 @@ Route::any('insert_sap_sell', [SapStockController::class, 'insertSapSell']);
 Route::get('master-distributors/supervisors', [MasterDistributorApiController::class, 'getSupervisors']);
 Route::get('master-distributors/contact-personss', [MasterDistributorApiController::class, 'contactPersonList']);
 Route::get('/master-distributors/cities', [MasterDistributorApiController::class, 'distributorCities']);
-
+Route::post('/delete-user', [UserController::class, 'deleteUser']);
 Route::any('emailExists', [CustomController::class, 'emailExists']);
 
 Route::post('/exotel/make-call', [ExotelApiController::class, 'makeCall']);

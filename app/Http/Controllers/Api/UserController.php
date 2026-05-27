@@ -262,6 +262,40 @@ class UserController extends Controller
             return response()->json(['status' => 'error','message' => $e->getMessage() ], $this->internalError);
         }        
     }
+    
+    public function deleteUser(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+    
+        $user = User::find($request->user_id);
+    
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+    
+        $user->update([
+            'deleted_at' => now(),
+            'active' => 'N',
+            'isDeleted' => true,
+        ]);
+    
+        return response()->json([
+            'status' => true,
+            'message' => 'User deleted successfully'
+        ]);
+    }
 
     public function userCityList(Request $request)
     {
