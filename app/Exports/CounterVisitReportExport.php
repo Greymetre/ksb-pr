@@ -495,6 +495,7 @@ private function zoneSortOrder(?string $divisionName): int
                 Carbon::parse($this->start_date)->startOfDay(),
                 Carbon::parse($this->end_date)->endOfDay()
             ])
+            ->whereNot('working_type', 'Full Day Leave')
             ->select(DB::raw('DATE(punchin_date) as date'))
             ->distinct()
             ->count();
