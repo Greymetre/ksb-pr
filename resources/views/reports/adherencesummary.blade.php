@@ -243,7 +243,7 @@
                                 <label>Designation</label>
                                 <select class="form-control selectpicker" id="designation_id_asr" name="designation_id"
                                     data-style="select-with-transition"
-                                    title="Select Designation"
+                                    title="Select Designation" required
                                     >
                                 </select>
                             </div>
@@ -384,12 +384,18 @@ $.get("{{ url('getDesignations') }}", function(data) {
     let retailerOptions = '';
     let dealerOptions = '';
     let asrOptions = '';
+    let asrDesignationId = '';
 
     data.forEach(item => {
 
-        let selected = (item.designation_name === 'ASR') 
+        let isAsr = $.trim(item.designation_name).toUpperCase() === 'ASR';
+        let selected = isAsr
             ? 'selected' 
             : '';
+
+        if (isAsr) {
+            asrDesignationId = item.id;
+        }
 
         // ✅ Retailer (MULTIPLE)
         retailerOptions += `<option value="${item.id}" ${selected}>
@@ -410,7 +416,13 @@ $.get("{{ url('getDesignations') }}", function(data) {
     $('#designation_id_dealer').html(dealerOptions);
     $('#designation_id_asr').html(asrOptions);
 
-    // 🔥 VERY IMPORTANT for selectpicker
+    if (asrDesignationId) {
+        $('#designation_id_retailer').val([asrDesignationId]);
+        $('#designation_id_dealer').val(asrDesignationId);
+        $('#designation_id_asr').val(asrDesignationId);
+    }
+
+    // Refresh bootstrap-select after dynamic options are inserted.
     $('#designation_id_retailer').selectpicker('refresh');
     $('#designation_id_dealer').selectpicker('refresh');
     $('#designation_id_asr').selectpicker('refresh');
