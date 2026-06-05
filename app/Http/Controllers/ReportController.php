@@ -4609,7 +4609,7 @@ public function counterVisitReportDownload(Request $request)
                 DB::raw('ROUND(SUM(amount), 2) as total_amounts'),
                 DB::raw('GROUP_CONCAT(amount) as amounts'),
                 DB::raw('GROUP_CONCAT(days) as days'),
-                DB::raw('JSON_OBJECTAGG(days, amount) as day_amount_pairs'),
+                // DB::raw('JSON_OBJECTAGG(days, amount) as day_amount_pairs'),
             );
 
             if ($request->customer_id && !empty($request->customer_id)) {

@@ -2220,6 +2220,25 @@ class AttendanceController extends Controller
                 $summary['total_unique_retailers_month'] += $monthOrders->unique_retailers;
             }
 
+            $getZoneSortOrder = function ($zoneName) {
+                $zoneOrder = ['north', 'east', 'west', 'south'];
+                $zoneName = strtolower($zoneName);
+
+                foreach ($zoneOrder as $index => $zone) {
+                    if (strpos($zoneName, $zone) !== false) {
+                        return $index;
+                    }
+                }
+
+                return count($zoneOrder);
+            };
+
+            uksort($result, function ($firstZone, $secondZone) use ($getZoneSortOrder) {
+                $orderComparison = $getZoneSortOrder($firstZone) <=> $getZoneSortOrder($secondZone);
+
+                return $orderComparison ?: strcasecmp($firstZone, $secondZone);
+            });
+
             return response()->json([
                 'success' => true,
                 'message' => 'Today team sales fetched successfully',
