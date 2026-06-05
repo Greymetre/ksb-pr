@@ -2255,4 +2255,204 @@ class AttendanceController extends Controller
             ]);
         }
     }
+
+    public function getRetailerSalesSummary(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $user_id = $user->id;
+
+            $today = now()->toDateString();
+            $yearStart = now()->startOfYear()->toDateString();
+
+            $teamUserIds = getUsersReportingToAuth($user_id);
+            $teamUserIds = array_unique(array_merge([$user_id], $teamUserIds ?? []));
+
+            $designation = strtolower($request->get('designation'));
+            $branch = $request->get('branch');
+            $zone = $request->get('zone');
+            $userFilter = $request->get('user_id');
+
+            $designationIds = [];
+            if ($designation == 'asr') $designationIds = [3];
+            if ($designation == 'dsr') $designationIds = [6];
+
+            $query = DB::table('users')
+                ->leftJoin('users as reporting_user', 'users.reportingid', '=', 'reporting_user.id')
+                ->leftJoin('divisions', 'users.division_id', '=', 'divisions.id')
+                ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
+                ->whereIn('users.id', $teamUserIds)
+                ->where('users.active', 'Y');
+
+            if (!empty($designationIds)) {
+                $query->whereIn('users.designation_id', $designationIds);
+            }
+
+            if (!empty($branch)) {
+                $query->where('branches.branch_name', 'LIKE', "%$branch%");
+            }
+
+            if (!empty($zone)) {
+                $query->where('divisions.division_name', 'LIKE', "%$zone%");
+            }
+
+            if (!empty($userFilter)) {
+                $query->where('users.id', $userFilter);
+            }
+
+            $users = $query->select(
+                'users.id',
+                'users.name',
+                'users.reportingid',
+                'reporting_user.name as reporting_name',
+                'reporting_user.mobile as reporting_mobile',
+                'branches.branch_name',
+                'divisions.division_name'
+            )
+                ->orderBy('reporting_user.name', 'ASC')
+                ->orderBy('users.name', 'ASC')
+                ->get();
+
+            $result = [];
+            $summary = [
+                'total_users' => 0,
+                'total_registered_retailers' => 0,
+                'total_today_registered_retailers' => 0,
+                'total_unique_orders' => 0,
+                'total_orders' => 0,
+                'total_order_qty' => 0,
+                'total_order_value' => '0L'
+            ];
+
+            $totalOrderQty = 0;
+            $totalOrderValue = 0;
+            $zoneOrderQty = [];
+            $zoneOrderValue = [];
+
+            foreach ($users as $row) {
+                $uid = $row->id;
+
+                $registeredRetailers = DB::table('secondary_customers')
+                    ->where('created_by', $uid)
+                    ->where('status', 'approved')
+                    ->count();
+
+                $todayRegisteredRetailers = DB::table('secondary_customers')
+                    ->where('created_by', $uid)
+                    ->where('status', 'approved')
+                    ->whereDate('created_at', $today)
+                    ->count();
+
+                $orderData = DB::table('orders')
+                    ->where('executive_id', $uid)
+                    ->whereBetween('order_date', [$yearStart, $today])
+                    ->select(
+                        DB::raw('COUNT(DISTINCT buyer_id) as unique_orders'),
+                        DB::raw('COUNT(*) as total_orders'),
+                        DB::raw('COALESCE(SUM(grand_total),0) as total_value')
+                    )->first();
+
+                $orderQty = (float) DB::table('order_details')
+                    ->join('orders', 'order_details.order_id', '=', 'orders.id')
+                    ->where('orders.executive_id', $uid)
+                    ->whereBetween('orders.order_date', [$yearStart, $today])
+                    ->sum('order_details.quantity');
+
+                $orderValue = (float) ($orderData->total_value ?? 0);
+                $orderQty = (int) $orderQty;
+                $orderValueInLacs = (int) round($orderValue / 100000);
+
+                $zoneName = $row->division_name ?? 'Unknown';
+
+                if (!isset($result[$zoneName])) {
+                    $zoneOrderQty[$zoneName] = 0;
+                    $zoneOrderValue[$zoneName] = 0;
+
+                    $result[$zoneName] = [
+                        'zone' => $zoneName,
+                        'users' => [],
+                        'totals' => [
+                            'registered_retailers' => 0,
+                            'today_registered_retailers' => 0,
+                            'unique_orders' => 0,
+                            'total_orders' => 0,
+                            'order_total_qty' => 0,
+                            'order_total_value' => '0L'
+                        ]
+                    ];
+                }
+
+                $result[$zoneName]['users'][] = [
+                    'id' => $uid,
+                    'name' => $row->name,
+                    'branch' => $row->branch_name ?? 'N/A',
+                    'reporting' => [
+                        'id' => $row->reportingid,
+                        'name' => $row->reporting_name,
+                        'mobile' => $row->reporting_mobile,
+                    ],
+                    'registered_retailers' => $registeredRetailers,
+                    'today_registered_retailers' => $todayRegisteredRetailers,
+                    'unique_orders' => (int) ($orderData->unique_orders ?? 0),
+                    'total_orders' => (int) ($orderData->total_orders ?? 0),
+                    'order_total_qty' => $orderQty,
+                    'order_total_value' => $orderValueInLacs . 'L'
+                ];
+
+                $result[$zoneName]['totals']['registered_retailers'] += $registeredRetailers;
+                $result[$zoneName]['totals']['today_registered_retailers'] += $todayRegisteredRetailers;
+                $result[$zoneName]['totals']['unique_orders'] += (int) ($orderData->unique_orders ?? 0);
+                $result[$zoneName]['totals']['total_orders'] += (int) ($orderData->total_orders ?? 0);
+                $zoneOrderQty[$zoneName] += $orderQty;
+                $zoneOrderValue[$zoneName] += $orderValue;
+                $result[$zoneName]['totals']['order_total_qty'] = (int) $zoneOrderQty[$zoneName];
+                $result[$zoneName]['totals']['order_total_value'] = ((int) round($zoneOrderValue[$zoneName] / 100000)) . 'L';
+
+                $summary['total_users']++;
+                $summary['total_registered_retailers'] += $registeredRetailers;
+                $summary['total_today_registered_retailers'] += $todayRegisteredRetailers;
+                $summary['total_unique_orders'] += (int) ($orderData->unique_orders ?? 0);
+                $summary['total_orders'] += (int) ($orderData->total_orders ?? 0);
+                $totalOrderQty += $orderQty;
+                $totalOrderValue += $orderValue;
+            }
+
+            $summary['total_order_qty'] = (int) $totalOrderQty;
+            $summary['total_order_value'] = ((int) round($totalOrderValue / 100000)) . 'L';
+
+            $getZoneSortOrder = function ($zoneName) {
+                $zoneOrder = ['north', 'east', 'west', 'south'];
+                $zoneName = strtolower($zoneName);
+
+                foreach ($zoneOrder as $index => $zone) {
+                    if (strpos($zoneName, $zone) !== false) {
+                        return $index;
+                    }
+                }
+
+                return count($zoneOrder);
+            };
+
+            uksort($result, function ($firstZone, $secondZone) use ($getZoneSortOrder) {
+                $orderComparison = $getZoneSortOrder($firstZone) <=> $getZoneSortOrder($secondZone);
+
+                return $orderComparison ?: strcasecmp($firstZone, $secondZone);
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Retailer sales summary fetched successfully',
+                'data' => [
+                    'zones' => array_values($result),
+                    'summary' => $summary
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => []
+            ]);
+        }
+    }
 }
