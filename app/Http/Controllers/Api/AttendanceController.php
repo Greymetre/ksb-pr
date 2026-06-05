@@ -2321,13 +2321,16 @@ class AttendanceController extends Controller
                 'total_unique_orders' => 0,
                 'total_orders' => 0,
                 'total_order_qty' => 0,
-                'total_order_value' => '0L'
+                'total_order_value' => 0
             ];
 
             $totalOrderQty = 0;
             $totalOrderValue = 0;
             $zoneOrderQty = [];
             $zoneOrderValue = [];
+            $formatQuantityInThousands = function ($quantity) {
+                return number_format($quantity / 1000, 2, '.', '');
+            };
 
             foreach ($users as $row) {
                 $uid = $row->id;
@@ -2377,7 +2380,7 @@ class AttendanceController extends Controller
                             'unique_orders' => 0,
                             'total_orders' => 0,
                             'order_total_qty' => 0,
-                            'order_total_value' => '0L'
+                            'order_total_value' => 0
                         ]
                     ];
                 }
@@ -2395,8 +2398,8 @@ class AttendanceController extends Controller
                     'today_registered_retailers' => $todayRegisteredRetailers,
                     'unique_orders' => (int) ($orderData->unique_orders ?? 0),
                     'total_orders' => (int) ($orderData->total_orders ?? 0),
-                    'order_total_qty' => $orderQty,
-                    'order_total_value' => $orderValueInLacs . 'L'
+                    'order_total_qty' => $formatQuantityInThousands($orderQty),
+                    'order_total_value' => $orderValueInLacs
                 ];
 
                 $result[$zoneName]['totals']['registered_retailers'] += $registeredRetailers;
@@ -2405,8 +2408,8 @@ class AttendanceController extends Controller
                 $result[$zoneName]['totals']['total_orders'] += (int) ($orderData->total_orders ?? 0);
                 $zoneOrderQty[$zoneName] += $orderQty;
                 $zoneOrderValue[$zoneName] += $orderValue;
-                $result[$zoneName]['totals']['order_total_qty'] = (int) $zoneOrderQty[$zoneName];
-                $result[$zoneName]['totals']['order_total_value'] = ((int) round($zoneOrderValue[$zoneName] / 100000)) . 'L';
+                $result[$zoneName]['totals']['order_total_qty'] = $formatQuantityInThousands($zoneOrderQty[$zoneName]);
+                $result[$zoneName]['totals']['order_total_value'] = ((int) round($zoneOrderValue[$zoneName] / 100000));
 
                 $summary['total_users']++;
                 $summary['total_registered_retailers'] += $registeredRetailers;
@@ -2417,8 +2420,8 @@ class AttendanceController extends Controller
                 $totalOrderValue += $orderValue;
             }
 
-            $summary['total_order_qty'] = (int) $totalOrderQty;
-            $summary['total_order_value'] = ((int) round($totalOrderValue / 100000)) . 'L';
+            $summary['total_order_qty'] = $formatQuantityInThousands($totalOrderQty);
+            $summary['total_order_value'] = ((int) round($totalOrderValue / 100000));
 
             $getZoneSortOrder = function ($zoneName) {
                 $zoneOrder = ['north', 'east', 'west', 'south'];
