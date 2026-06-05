@@ -53,7 +53,7 @@ class ProductExport implements FromCollection,WithHeadings,ShouldAutoSize,WithMa
             $data['subcategory_id'],
             $data['subcategories']['subcategory_name'],
             $data['category_id'],
-            $data['categories']['category_name'],
+            $data['categories']?['category_name'] : '-',
             $data['brand_id'],
             $data['brands']?$data['brands']['brand_name']:'',
             $data['product_image'],
