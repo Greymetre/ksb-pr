@@ -93,46 +93,97 @@ class SalesTargetUsersImport implements ToCollection, WithValidation, WithHeadin
 
         for ($i = 0; $i < $count; $i++) {
 
-            $key = $keys[$i];
-            $value = $data[$key];
+    $key   = trim((string) $keys[$i]);
+    $value = $data[$keys[$i]];
 
-            // skip base fields
-            if (in_array($key, ['user_id','branch_id','user_name','type'])) {
-                continue;
-            }
+    if (in_array($key, ['user_id', 'branch_id', 'user_name', 'type'])) {
+        continue;
+    }
 
-           
-            if (is_numeric($key) && $key > 40000) {
+    $date = null;
 
-                $date = \Carbon\Carbon::createFromTimestamp(($key - 25569) * 86400);
-                $month = $date->format('M');
-                $year  = $date->format('Y');
+    /*
+    |--------------------------------------------------------------------------
+    | Case 1 : 0626
+    |--------------------------------------------------------------------------
+    */
+    if (preg_match('/^\d{4}$/', $key)) {
 
-                $target = (float) $value;
+        $monthNo = substr($key, 0, 2);
+        $yearNo  = substr($key, 2, 2);
 
-               
-                $quantity = 0;
+        $date = Carbon::createFromFormat('m y', "$monthNo $yearNo")
+            ->startOfMonth();
 
-                if (isset($keys[$i + 1])) {
-                    $nextKey = $keys[$i + 1];
+        $target   = (float) $value;
+        $quantity = 0;
 
-                    if (str_contains($nextKey, '_qty')) {
-                        $quantity = (float) $data[$nextKey];
-                    }
-                }
-
-                SalesTargetUsers::updateOrCreate([
-                    'user_id'   => $user_id,
-                    'branch_id' => $branchId,
-                    'month'     => $month,
-                    'year'      => $year,
-                ], [
-                    'type'            => $type,
-                    'target'          => $target,
-                    'qunatity_target' => $quantity,
-                ]);
-            }
+        if (isset($data[$key . '_qty'])) {
+            $quantity = (float) $data[$key . '_qty'];
         }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Case 2 : 0626_qty
+    |--------------------------------------------------------------------------
+    */
+    elseif (preg_match('/^(\d{4})_qty$/', $key, $matches)) {
+
+        $monthYear = $matches[1];
+
+        $monthNo = substr($monthYear, 0, 2);
+        $yearNo  = substr($monthYear, 2, 2);
+
+        $date = Carbon::createFromFormat('m y', "$monthNo $yearNo")
+            ->startOfMonth();
+
+        $quantity = (float) $value;
+
+        $target = isset($data[$monthYear])
+            ? (float) $data[$monthYear]
+            : 0;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Case 3 : Excel serial date
+    |--------------------------------------------------------------------------
+    */
+    elseif (is_numeric($key) && (int)$key > 40000) {
+
+        $date = Carbon::createFromTimestamp(
+            ((int)$key - 25569) * 86400
+        );
+
+        $target = (float) $value;
+
+        $quantity = isset($data[$key . '_qty'])
+            ? (float) $data[$key . '_qty']
+            : 0;
+    }
+
+    if (!$date) {
+        continue;
+    }
+
+    $month = $date->format('M');
+    $year  = $date->format('Y');
+
+    SalesTargetUsers::updateOrCreate(
+        [
+            'user_id'   => $user_id,
+            'branch_id' => $branchId,
+            'month'     => $month,
+            'year'      => $year,
+        ],
+        [
+            'type'            => $type,
+            'target'          => $target,
+            'qunatity_target' => $quantity,
+        ]
+    );
+}
     
     }
     

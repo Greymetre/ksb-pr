@@ -64,14 +64,20 @@ class SalesTargetUsersExport implements FromCollection, WithHeadings, ShouldAuto
             $all_ids_array = User::pluck('id')->toArray();
         }
         $data = SalesTargetUsers::with(['user', 'user.getdesignation', 'user.getdivision', 'branch'])->whereIn('user_id', $all_ids_array)->select([
-            DB::raw('GROUP_CONCAT(target) as targets'),
-            DB::raw('GROUP_CONCAT(achievement) as achievements'),
-            DB::raw('GROUP_CONCAT(month) as months'),
-            DB::raw('GROUP_CONCAT(year) as years'),
-            DB::raw('GROUP_CONCAT(achievement_percent) as achievement_percents'),
-            DB::raw('GROUP_CONCAT(qunatity_target) as quantity_targets'),
-            DB::raw('GROUP_CONCAT(qunatity_achievement) as quantity_achievements'),
-            DB::raw('GROUP_CONCAT(qunatity_achievement_percent) as quantity_achievement_percents'),
+           DB::raw('GROUP_CONCAT(month ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) as months'),
+
+DB::raw('GROUP_CONCAT(target ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) as targets'),
+
+DB::raw('GROUP_CONCAT(achievement ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) as achievements'),
+
+DB::raw('GROUP_CONCAT(achievement_percent ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) as achievement_percents'),
+
+DB::raw('GROUP_CONCAT(COALESCE(qunatity_target,0) ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) as quantity_targets'),
+DB::raw('GROUP_CONCAT(COALESCE(qunatity_achievement,0) ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) as quantity_achievements'),
+
+DB::raw('GROUP_CONCAT(COALESCE(qunatity_achievement_percent,0) ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) as quantity_achievement_percents'),
+
+DB::raw('GROUP_CONCAT(year ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) as years'),
             DB::raw('user_id'),
             DB::raw('branch_id'),
             DB::raw('type'),
@@ -119,6 +125,11 @@ class SalesTargetUsersExport implements FromCollection, WithHeadings, ShouldAuto
         if ($this->type && $this->type != '' && $this->type != null) {
             $data->where('type', $this->type);
         }
+        
+        // dd(
+        //     $data->groupBy('user_id', 'branch_id')
+        //          ->first()
+        // );
         // dd($data->toSql(), $f_year_array,  $this->type);
         $data = $data->groupBy('user_id', 'branch_id')->orderBy('month')->get();
 

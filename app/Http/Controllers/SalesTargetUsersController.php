@@ -66,7 +66,11 @@ class SalesTargetUsersController extends Controller
                 
                 if ($orders_total > 1) {
                     $achiv = ($orders_total - ($orders_total / 100)) / 100000;
-                    $achiv_per = (100 * $achiv) / $value->target;
+                    if (!empty($value->target) && $value->target != 0) {
+                        $achiv_per = (100 * $achiv) / $value->target;
+                    } else {
+                        $achiv_per = 0;
+                    }
                     $achiv_odr = $orders_total_qty;
                     if (!empty($value->qunatity_target) && $value->qunatity_target != 0) {
                         $achiv_odr_per = (100 * $achiv_odr) / $value->qunatity_target;
