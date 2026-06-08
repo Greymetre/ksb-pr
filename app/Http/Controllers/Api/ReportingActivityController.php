@@ -73,7 +73,7 @@ class ReportingActivityController extends Controller
 
         // Main Query for Attendance / Activity
         $date_checkIn = Attendance::select('punchin_date', 'user_id')
-            ->with('users')   // assuming you have users relationship in Attendance model
+            ->with('users.reportinginfo')
             ->whereIn('user_id', $all_reporting_user_ids);
 
         if ($start_date && $end_date) {
@@ -111,6 +111,7 @@ class ReportingActivityController extends Controller
                 'user_id' => $checkIn->users->id ?? null,
                 'name'    => $checkIn->users->name ?? null,
                 'date'    => $checkIn->punchin_date ? date('d/m/Y', strtotime($checkIn->punchin_date)) : null,
+                'reportingManagerName' => optional(optional($checkIn->users)->reportinginfo)->name,
             ];
         }
 
