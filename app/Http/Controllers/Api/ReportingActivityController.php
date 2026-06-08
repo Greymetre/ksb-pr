@@ -112,6 +112,7 @@ class ReportingActivityController extends Controller
                 'name'    => $checkIn->users->name ?? null,
                 'date'    => $checkIn->punchin_date ? date('d/m/Y', strtotime($checkIn->punchin_date)) : null,
                 'reportingManagerName' => optional(optional($checkIn->users)->reportinginfo)->name,
+                'reportingManagerMobile' => optional(optional($checkIn->users)->reportinginfo)->mobile,
             ];
         }
 

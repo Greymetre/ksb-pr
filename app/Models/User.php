@@ -132,7 +132,7 @@ class User extends Authenticatable implements HasMedia
 
     public function reportinginfo()
     {
-        return $this->belongsTo('App\Models\User', 'reportingid', 'id')->select('id', 'name');
+        return $this->belongsTo('App\Models\User', 'reportingid', 'id')->select('id', 'name', 'mobile');
     }
 
     public function getbranch()
