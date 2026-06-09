@@ -853,7 +853,7 @@ class ExpensesController extends Controller
 
     public function all_map(Request $request)
     {
-        if ($request->submit == 'Track') {
+        if ($request->submit == 'Track Activity') {
             $rules = [
                 'user_id'   => 'required',
             ];
@@ -875,7 +875,6 @@ class ExpensesController extends Controller
                     'time' => $check->time,
                 ];
             }
-
             return view('map.track', compact('coordinates'));
 
         } else {
