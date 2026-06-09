@@ -163,17 +163,37 @@ class UserController extends Controller
             if ($validator->fails()) {
                 return response()->json(['status' => 'error','message' =>  $validator->errors()], $this->badrequest); 
             }
+            $lastLocation = UserLiveLocation::where('userid', $userid)
+                ->orderBy('time', 'desc')
+                ->orderBy('id', 'desc')
+                ->first();
+
             if(is_array($request['locations']))
             {
                 $collection = array();
                 foreach ($request['locations'] as $key => $row) {
-                    array_push($collection,array("active"   =>  "Y","userid" => $userid, 'latitude' => $row['latitude'], 'longitude' => $row['longitude'], 'time' => date('Y-m-d H:i:s',strtotime($row['time'])), 'created_at' => date('Y-m-d H:i:s') ));
+                    $locationTime = date('Y-m-d H:i:s', strtotime($row['time']));
+                    if (!$this->shouldStoreLiveLocation($lastLocation, $row['latitude'], $row['longitude'], $locationTime)) {
+                        continue;
+                    }
+
+                    $location = array("active"   =>  "Y","userid" => $userid, 'latitude' => $row['latitude'], 'longitude' => $row['longitude'], 'time' => $locationTime, 'created_at' => date('Y-m-d H:i:s') );
+                    array_push($collection, $location);
+                    $lastLocation = (object) $location;
                 }
             }
             else
             {
-                $collection = array('active'  =>  'Y', 'userid' => $userid, 'latitude' => $request['latitude'], 'longitude' => $request['longitude'], 'time' => date('Y-m-d H:i:s',strtotime($request['time'])), 'created_at' => date('Y-m-d H:i:s') );
+                $locationTime = date('Y-m-d H:i:s', strtotime($request['time']));
+                $collection = [];
+                if ($this->shouldStoreLiveLocation($lastLocation, $request['latitude'], $request['longitude'], $locationTime)) {
+                    $collection = array('active'  =>  'Y', 'userid' => $userid, 'latitude' => $request['latitude'], 'longitude' => $request['longitude'], 'time' => $locationTime, 'created_at' => date('Y-m-d H:i:s') );
+                }
             }
+            if (empty($collection)) {
+                return response()->json(['status' => 'success','message' => 'Live location skipped. Last location is same or less than 10 minutes old.' ], $this->successStatus);
+            }
+
             if(UserLiveLocation::insert($collection))
             {
                 return response()->json(['status' => 'success','message' => 'Data inserted successfully.' ], $this->successStatus);
@@ -185,6 +205,30 @@ class UserController extends Controller
             return response()->json(['status' => 'error','message' => $e->getMessage() ], $this->internalError);
         }        
     }
+
+    private function shouldStoreLiveLocation($lastLocation, $latitude, $longitude, $locationTime)
+    {
+        if (empty($lastLocation)) {
+            return true;
+        }
+
+        $lastLatitude = (string) $lastLocation->latitude;
+        $lastLongitude = (string) $lastLocation->longitude;
+        $newLatitude = (string) $latitude;
+        $newLongitude = (string) $longitude;
+
+        if ($lastLatitude === $newLatitude && $lastLongitude === $newLongitude) {
+            return false;
+        }
+
+        $lastTime = $lastLocation->time ?? $lastLocation->created_at ?? null;
+        if (empty($lastTime)) {
+            return true;
+        }
+
+        return abs(strtotime($locationTime) - strtotime($lastTime)) >= 600;
+    }
+
      public function addTourProgramme(Request $request)
     {
         try
