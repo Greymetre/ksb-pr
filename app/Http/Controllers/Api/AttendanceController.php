@@ -1936,16 +1936,64 @@ class AttendanceController extends Controller
             $myTeamUserIds = getUsersReportingToAuth($user_id);
             $myTeamUserIds = array_unique(array_merge([$user_id], $myTeamUserIds ?? []));
 
+            $zone = $request->get('zone');
+            $zoneId = $request->get('zone_id');
+            $branch = $request->get('branch');
+            $branchId = $request->get('branch_id');
+            $branchIds = [];
+            $branchNameIds = [];
+            $branchNameFilterRequested = false;
+
+            if (!empty($branchId)) {
+                $branchIds = is_array($branchId) ? $branchId : explode(',', $branchId);
+                $branchIds = array_values(array_filter(array_map('trim', $branchIds), fn($value) => $value !== ''));
+            }
+
+            if (empty($branchIds) && !empty($branch)) {
+                $branchNameFilterRequested = true;
+                $branchNameIds = DB::table('branches')
+                    ->where('branch_name', 'LIKE', "%{$branch}%")
+                    ->pluck('id')
+                    ->map(fn($id) => (string) $id)
+                    ->toArray();
+            }
+
             // 🔥 MAIN QUERY (NO attendance join)
             $data = DB::table('users')
                 ->leftJoin('divisions', 'users.division_id', '=', 'divisions.id')
                 ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
                 ->whereIn('users.id', $myTeamUserIds)
                 ->where('users.active', 'Y')
+                ->when(!empty($zoneId), function ($q) use ($zoneId) {
+                    $q->where('users.division_id', $zoneId);
+                })
+                ->when(empty($zoneId) && !empty($zone), function ($q) use ($zone) {
+                    $q->where('divisions.division_name', 'LIKE', "%{$zone}%");
+                })
+                ->when(!empty($branchIds), function ($q) use ($branchIds) {
+                    $q->where(function ($branchQuery) use ($branchIds) {
+                        $branchQuery->whereIn('users.branch_id', $branchIds);
+                        foreach ($branchIds as $id) {
+                            $branchQuery->orWhereRaw('FIND_IN_SET(?, users.branch_id)', [$id]);
+                        }
+                    });
+                })
+                ->when(empty($branchIds) && $branchNameFilterRequested, function ($q) use ($branchNameIds) {
+                    $q->where(function ($branchQuery) use ($branchNameIds) {
+                        $branchQuery->whereIn('users.branch_id', $branchNameIds);
+                        foreach ($branchNameIds as $id) {
+                            $branchQuery->orWhereRaw('FIND_IN_SET(?, users.branch_id)', [$id]);
+                        }
+                    });
+                })
                 ->select(
                     'users.id',
                     'users.name',
+                    'users.division_id',
+                    'users.branch_id',
+                    'divisions.id as zone_id',
                     'divisions.division_name',
+                    'branches.id as branch_master_id',
                     'branches.branch_name'
                 )
                 ->get();
@@ -1957,6 +2005,9 @@ class AttendanceController extends Controller
             $users = [];
             $zones = [];
             $branches = [];
+            $seenZones = [];
+            $branchZonePairs = [];
+            $allBranchIds = [];
 
             foreach ($data as $row) {
 
@@ -1967,17 +2018,41 @@ class AttendanceController extends Controller
                 ];
 
                 // ✅ Unique zones
-                if ($row->division_name && !in_array($row->division_name, $zones)) {
-                    $zones[] = $row->division_name;
+                if ($row->zone_id && !in_array($row->zone_id, $seenZones)) {
+                    $seenZones[] = $row->zone_id;
+                    $zones[] = [
+                        'id' => $row->zone_id,
+                        'name' => $row->division_name
+                    ];
                 }
 
-                // ✅ Unique branches
-                if ($row->branch_name && !in_array($row->branch_name, $branches)) {
-                    $branches[] = $row->branch_name;
+                foreach (explode(',', (string) $row->branch_id) as $userBranchId) {
+                    $userBranchId = trim($userBranchId);
+                    if ($userBranchId !== '') {
+                        $allBranchIds[] = $userBranchId;
+                        $branchZonePairs[$userBranchId] = $row->zone_id;
+                    }
+                }
+            }
+
+            if (!empty($allBranchIds)) {
+                $branchMasters = DB::table('branches')
+                    ->whereIn('id', array_values(array_unique($allBranchIds)))
+                    ->orderBy('branch_name')
+                    ->select('id', 'branch_name')
+                    ->get();
+
+                foreach ($branchMasters as $branchMaster) {
+                    $branches[] = [
+                        'id' => $branchMaster->id,
+                        'name' => $branchMaster->branch_name,
+                        'zone_id' => $branchZonePairs[$branchMaster->id] ?? null
+                    ];
                 }
             }
 
             return response()->json([
+                'status' => true,
                 'success' => true,
                 'message' => 'Assigned users basic list fetched successfully',
                 'data' => [
@@ -1988,6 +2063,7 @@ class AttendanceController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json([
+                'status' => false,
                 'success' => false,
                 'message' => $e->getMessage(),
                 'data' => []

@@ -12,6 +12,7 @@ use App\Models\Customers;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Designation;
+use App\Models\Division;
 use App\Models\SecondaryCustomer;
 use App\Models\MasterDistributor;
 use Validator;
@@ -28,8 +29,16 @@ class ReportingActivityController extends Controller
         $search_name = $request->input('search_name');           // single user id
         $search_branches = $request->input('search_branches');   // array or comma?
         $designation = $request->input('designation');           // comma separated ids e.g. "3,4"
+        $zone = $request->input('zone');
+        $zone_id = $request->input('zone_id');
+        $branch = $request->input('branch');
+        $branch_id = $request->input('branch_id');
         $start_date = $request->input('start_date');
         $end_date = $request->input('end_date');
+        $search_branches = is_array($search_branches)
+            ? $search_branches
+            : explode(',', (string) $search_branches);
+        $search_branches = array_values(array_filter(array_map('trim', $search_branches), fn($value) => $value !== ''));
 
         $validator = Validator::make($request->all(), [
             'end_date' => 'required_with:start_date|date',
@@ -37,6 +46,10 @@ class ReportingActivityController extends Controller
             'page' => 'integer|min:1',
             'pageSize' => 'integer|min:1|max:100',
             'designation' => 'nullable|string',   // new
+            'zone' => 'nullable|string',
+            'zone_id' => 'nullable',
+            'branch' => 'nullable|string',
+            'branch_id' => 'nullable',
         ]);
 
         if ($validator->fails()) {
@@ -63,10 +76,65 @@ class ReportingActivityController extends Controller
             }
         }
 
-        // Filter by branches (if provided)
-        if ($search_branches && count($search_branches) > 0 && $search_branches[0] != null) {
+        if (!empty($zone_id)) {
             $all_reporting_user_ids = User::whereIn('id', $all_reporting_user_ids)
-                ->whereIn('branch_id', $search_branches)
+                ->whereDoesntHave('roles', function ($q) {
+                    $q->whereIn('id', config('constants.customer_roles'));
+                })
+                ->where('division_id', $zone_id)
+                ->pluck('id')
+                ->toArray();
+        } elseif (!empty($zone)) {
+            $zoneIds = Division::where('division_name', 'LIKE', "%{$zone}%")->pluck('id')->toArray();
+            $all_reporting_user_ids = User::whereIn('id', $all_reporting_user_ids)
+                ->whereDoesntHave('roles', function ($q) {
+                    $q->whereIn('id', config('constants.customer_roles'));
+                })
+                ->whereIn('division_id', $zoneIds)
+                ->pluck('id')
+                ->toArray();
+        }
+
+        if (!empty($branch_id)) {
+            $branchIds = is_array($branch_id) ? $branch_id : explode(',', $branch_id);
+            $branchIds = array_values(array_filter(array_map('trim', $branchIds), fn($value) => $value !== ''));
+            $all_reporting_user_ids = User::whereIn('id', $all_reporting_user_ids)
+                ->whereDoesntHave('roles', function ($q) {
+                    $q->whereIn('id', config('constants.customer_roles'));
+                })
+                ->where(function ($q) use ($branchIds) {
+                    $q->whereIn('branch_id', $branchIds);
+                    foreach ($branchIds as $branchId) {
+                        $q->orWhereRaw('FIND_IN_SET(?, branch_id)', [$branchId]);
+                    }
+                })
+                ->pluck('id')
+                ->toArray();
+        } elseif (!empty($branch)) {
+            $branchIds = Branch::where('branch_name', 'LIKE', "%{$branch}%")->pluck('id')->toArray();
+            $all_reporting_user_ids = User::whereIn('id', $all_reporting_user_ids)
+                ->whereDoesntHave('roles', function ($q) {
+                    $q->whereIn('id', config('constants.customer_roles'));
+                })
+                ->where(function ($q) use ($branchIds) {
+                    $q->whereIn('branch_id', $branchIds);
+                    foreach ($branchIds as $branchId) {
+                        $q->orWhereRaw('FIND_IN_SET(?, branch_id)', [$branchId]);
+                    }
+                })
+                ->pluck('id')
+                ->toArray();
+        }
+
+        // Filter by branches (if provided)
+        if (!empty($search_branches)) {
+            $all_reporting_user_ids = User::whereIn('id', $all_reporting_user_ids)
+                ->where(function ($q) use ($search_branches) {
+                    $q->whereIn('branch_id', $search_branches);
+                    foreach ($search_branches as $branchId) {
+                        $q->orWhereRaw('FIND_IN_SET(?, branch_id)', [$branchId]);
+                    }
+                })
                 ->pluck('id')
                 ->toArray();
         }
@@ -93,6 +161,32 @@ class ReportingActivityController extends Controller
                 $q->whereIn('id', config('constants.customer_roles'));
             })
             ->whereIn('id', $dropdown_user_ids)
+            ->when(!empty($zone_id), function ($q) use ($zone_id) {
+                $q->where('division_id', $zone_id);
+            })
+            ->when(empty($zone_id) && !empty($zone), function ($q) use ($zone) {
+                $zoneIds = Division::where('division_name', 'LIKE', "%{$zone}%")->pluck('id')->toArray();
+                $q->whereIn('division_id', $zoneIds);
+            })
+            ->when(!empty($branch_id), function ($q) use ($branch_id) {
+                $branchIds = is_array($branch_id) ? $branch_id : explode(',', $branch_id);
+                $branchIds = array_values(array_filter(array_map('trim', $branchIds), fn($value) => $value !== ''));
+                $q->where(function ($branchQuery) use ($branchIds) {
+                    $branchQuery->whereIn('branch_id', $branchIds);
+                    foreach ($branchIds as $branchId) {
+                        $branchQuery->orWhereRaw('FIND_IN_SET(?, branch_id)', [$branchId]);
+                    }
+                });
+            })
+            ->when(empty($branch_id) && !empty($branch), function ($q) use ($branch) {
+                $branchIds = Branch::where('branch_name', 'LIKE', "%{$branch}%")->pluck('id')->toArray();
+                $q->where(function ($branchQuery) use ($branchIds) {
+                    $branchQuery->whereIn('branch_id', $branchIds);
+                    foreach ($branchIds as $branchId) {
+                        $branchQuery->orWhereRaw('FIND_IN_SET(?, branch_id)', [$branchId]);
+                    }
+                });
+            })
             ->orderBy('name', 'asc')
             ->get();
 
@@ -103,6 +197,7 @@ class ReportingActivityController extends Controller
 
         // Get branches
         $branches = $this->getUniqueBranches($all_user_details);
+        $zones = $this->getUniqueZones($all_user_details);
 
         // Prepare response data
         $data = [];
@@ -120,6 +215,7 @@ class ReportingActivityController extends Controller
             'status' => 'success',
             'message' => 'Data retrieved successfully.',
             'users' => $all_users,
+            'zones' => $zones,
             'branches' => $branches,
             'data' => $data,
             'pagination' => [
@@ -135,21 +231,46 @@ class ReportingActivityController extends Controller
     // Helper function to get branches
     private function getUniqueBranches($users)
     {
-        $branches = [];
-        $seen = [];
-
+        $branchZoneIds = [];
         foreach ($users as $user) {
-            if ($user->getbranch && !in_array($user->getbranch->id, $seen)) {
-                $seen[] = $user->getbranch->id;
-                $branches[] = [
-                    'id' => $user->getbranch->id,
-                    'name' => $user->getbranch->branch_name,
-                ];
+            foreach (explode(',', (string) $user->branch_id) as $branchId) {
+                $branchId = trim($branchId);
+                if ($branchId !== '' && !isset($branchZoneIds[$branchId])) {
+                    $branchZoneIds[$branchId] = $user->division_id;
+                }
             }
         }
 
-        usort($branches, fn($a, $b) => strcmp($a['name'], $b['name']));
-        return $branches;
+        $branchIds = $users->pluck('branch_id')
+            ->flatMap(fn($branchId) => explode(',', (string) $branchId))
+            ->map(fn($branchId) => trim($branchId))
+            ->filter()
+            ->unique()
+            ->values();
+
+        return Branch::whereIn('id', $branchIds)
+            ->orderBy('branch_name')
+            ->get()
+            ->map(fn($branch) => [
+                'id' => $branch->id,
+                'name' => $branch->branch_name,
+                'zone_id' => $branchZoneIds[$branch->id] ?? null,
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    private function getUniqueZones($users)
+    {
+        return Division::whereIn('id', $users->pluck('division_id')->filter()->unique()->values())
+            ->orderBy('division_name')
+            ->get()
+            ->map(fn($zone) => [
+                'id' => $zone->id,
+                'name' => $zone->division_name,
+            ])
+            ->values()
+            ->toArray();
     }
 
 

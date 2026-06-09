@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\City;
+use App\Models\Division;
 use App\Models\TourDetail;
 use App\Models\TourProgramme;
 use App\Models\User;
@@ -126,9 +127,16 @@ class TourPlanController extends Controller
         $authUserId = $authUser->id;
 
         // Input parameters
-        $pageSize     = $request->input('pageSize', 20);           // better default than 100
+        $pageSize     = $request->input('per_page', $request->input('pageSize', 20));
         $search_name  = trim($request->input('search_name') ?? '');
         $search_branches = $request->input('search_branches', []); // expect array of branch IDs
+        $zone = trim($request->input('zone') ?? '');
+        $zoneId = $request->input('zone_id');
+        $branch = trim($request->input('branch') ?? '');
+        $branchId = $request->input('branch_id');
+        $branchIds = [];
+        $branchNameIds = [];
+        $branchNameFilterRequested = false;
 
         // Get all users reporting to the authenticated user
         $reportingUserIds = getUsersReportingToAuth($authUserId);
@@ -142,6 +150,19 @@ class TourPlanController extends Controller
                 'data'     => [],
                 'page_count' => 1,
             ], 200);
+        }
+
+        if (!empty($branchId)) {
+            $branchIds = is_array($branchId) ? $branchId : explode(',', $branchId);
+            $branchIds = array_values(array_filter(array_map('trim', $branchIds), fn($value) => $value !== ''));
+        }
+
+        if (empty($branchIds) && $branch !== '') {
+            $branchNameFilterRequested = true;
+            $branchNameIds = Branch::where('branch_name', 'LIKE', "%{$branch}%")
+                ->pluck('id')
+                ->map(fn($id) => (string) $id)
+                ->toArray();
         }
 
         // ────────────────────────────────────────────────
@@ -171,7 +192,30 @@ class TourPlanController extends Controller
             ->with([
                 'getbranch' => fn($q) => $q->select('id', 'branch_name')
             ])
-            ->select('id', 'name', 'branch_id');
+            ->select('id', 'name', 'branch_id', 'division_id');
+
+        if (!empty($zoneId)) {
+            $query->where('division_id', $zoneId);
+        } elseif ($zone !== '') {
+            $zoneIds = Division::where('division_name', 'LIKE', "%{$zone}%")->pluck('id')->toArray();
+            $query->whereIn('division_id', $zoneIds);
+        }
+
+        if (!empty($branchIds)) {
+            $query->where(function ($q) use ($branchIds) {
+                $q->whereIn('branch_id', $branchIds);
+                foreach ($branchIds as $id) {
+                    $q->orWhereRaw('FIND_IN_SET(?, branch_id)', [$id]);
+                }
+            });
+        } elseif ($branchNameFilterRequested) {
+            $query->where(function ($q) use ($branchNameIds) {
+                $q->whereIn('branch_id', $branchNameIds);
+                foreach ($branchNameIds as $id) {
+                    $q->orWhereRaw('FIND_IN_SET(?, branch_id)', [$id]);
+                }
+            });
+        }
 
         // Apply branch filter (multiple branches supported)
         if (!empty($search_branches) && is_array($search_branches)) {
