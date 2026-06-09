@@ -154,9 +154,9 @@ class UserController extends Controller
                 $collection = array();
                 foreach ($request['locations'] as $key => $row) {
                     $locationTime = date('Y-m-d H:i:s', strtotime($row['time']));
-                    if (!$this->shouldStoreLiveLocation($lastLocation, $row['latitude'], $row['longitude'], $locationTime)) {
-                        continue;
-                    }
+                    // if (!$this->shouldStoreLiveLocation($lastLocation, $row['latitude'], $row['longitude'], $locationTime)) {
+                    //     continue;
+                    // }
 
                     $location = array("active"   =>  "Y", "userid" => $userid, 'latitude' => $row['latitude'], 'longitude' => $row['longitude'], 'time' => $locationTime, 'created_at' => date('Y-m-d H:i:s'));
                     array_push($collection, $location);
@@ -165,9 +165,9 @@ class UserController extends Controller
             } else {
                 $locationTime = date('Y-m-d H:i:s', strtotime($request['time']));
                 $collection = [];
-                if ($this->shouldStoreLiveLocation($lastLocation, $request['latitude'], $request['longitude'], $locationTime)) {
+                // if ($this->shouldStoreLiveLocation($lastLocation, $request['latitude'], $request['longitude'], $locationTime)) {
                     $collection = array('active'  =>  'Y', 'userid' => $userid, 'latitude' => $request['latitude'], 'longitude' => $request['longitude'], 'time' => $locationTime, 'created_at' => date('Y-m-d H:i:s'));
-                }
+                // }
             }
             if (empty($collection)) {
                 return response()->json(['status' => 'success', 'message' => 'Live location skipped. Last location is same or less than 4 minutes old.'], $this->successStatus);
