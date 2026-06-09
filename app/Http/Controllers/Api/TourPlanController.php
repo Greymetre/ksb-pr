@@ -134,9 +134,11 @@ class TourPlanController extends Controller
         $zoneId = $request->input('zone_id');
         $branch = trim($request->input('branch') ?? '');
         $branchId = $request->input('branch_id');
+        $designation = $request->input('designation');
         $branchIds = [];
         $branchNameIds = [];
         $branchNameFilterRequested = false;
+        $designationIds = [];
 
         // Get all users reporting to the authenticated user
         $reportingUserIds = getUsersReportingToAuth($authUserId);
@@ -163,6 +165,11 @@ class TourPlanController extends Controller
                 ->pluck('id')
                 ->map(fn($id) => (string) $id)
                 ->toArray();
+        }
+
+        if (!empty($designation)) {
+            $designationIds = is_array($designation) ? $designation : explode(',', $designation);
+            $designationIds = array_values(array_filter(array_map('trim', $designationIds), fn($value) => $value !== ''));
         }
 
         // ────────────────────────────────────────────────
@@ -192,7 +199,11 @@ class TourPlanController extends Controller
             ->with([
                 'getbranch' => fn($q) => $q->select('id', 'branch_name')
             ])
-            ->select('id', 'name', 'branch_id', 'division_id');
+            ->select('id', 'name', 'branch_id', 'division_id', 'designation_id');
+
+        if (!empty($designationIds)) {
+            $query->whereIn('designation_id', $designationIds);
+        }
 
         if (!empty($zoneId)) {
             $query->where('division_id', $zoneId);
