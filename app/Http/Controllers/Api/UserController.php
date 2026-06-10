@@ -137,6 +137,7 @@ class UserController extends Controller
     }
     public function updateLiveLocation(Request $request)
     {
+        \Log::info('Live location update request received', ['request' => $request->all(), 'User ID' => $request->user()->id]);
         try {
             $userid = $request->user()->id;
             $validator = Validator::make($request->all(), [
