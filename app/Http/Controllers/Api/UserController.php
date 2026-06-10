@@ -19,7 +19,6 @@ use App\Models\{State, District, City, Pincode, Country, Beat};
 use App\Models\UserCityAssign;
 use App\Models\UserActivity;
 use App\Models\Notification;
-use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -185,6 +184,7 @@ class UserController extends Controller
 
     private function shouldStoreLiveLocation($lastLocation, $latitude, $longitude, $locationTime)
     {
+        \Log::info("Checking if should store live location. Last Location: " . json_encode($lastLocation) . ", New Latitude: " . $latitude . ", New Longitude: " . $longitude . ", New Location Time: " . $locationTime);
         if (empty($lastLocation)) {
             return true;
         }
