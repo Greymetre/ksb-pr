@@ -184,7 +184,6 @@ class UserController extends Controller
 
     private function shouldStoreLiveLocation($lastLocation, $latitude, $longitude, $locationTime)
     {
-        \Log::info("Checking if should store live location. Last Location: " . json_encode($lastLocation) . ", New Latitude: " . $latitude . ", New Longitude: " . $longitude . ", New Location Time: " . $locationTime);
         if (empty($lastLocation)) {
             return true;
         }
@@ -194,17 +193,14 @@ class UserController extends Controller
         $newLatitude = (string) $latitude;
         $newLongitude = (string) $longitude;
 
-        if ($lastLatitude === $newLatitude && $lastLongitude === $newLongitude) {
-            return false;
-        }
+        // if ($lastLatitude === $newLatitude && $lastLongitude === $newLongitude) {
+        //     return false;
+        // }
 
         $lastTime = $lastLocation->time ?? $lastLocation->created_at ?? null;
         if (empty($lastTime)) {
             return true;
         }
-
-        Log::info("Last Location Time: " . strtotime($lastTime) . ", New Location Time: " . strtotime($locationTime));
-
         return abs(strtotime($locationTime) - strtotime($lastTime)) >= 120;
     }
 
