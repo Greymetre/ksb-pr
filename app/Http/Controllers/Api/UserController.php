@@ -202,7 +202,7 @@ class UserController extends Controller
         if (empty($lastTime)) {
             return true;
         }
-        return abs(strtotime($locationTime) - strtotime($lastTime)) >= 300;
+        return abs(strtotime($locationTime) - strtotime($lastTime)) >= 170;
     }
 
     public function addTourProgramme(Request $request)
