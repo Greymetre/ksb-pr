@@ -579,12 +579,6 @@ if (! function_exists('getUsersReportingToAuth')) {
         $userid = !empty($userid) ? $userid : Auth::user()->id;
         $userinfo = User::where('id', '=', $userid)->first();
 
-        Log::info('User Branch Info', [
-            'user_id' => $userinfo->id,
-            'branch_show' => $userinfo->branch_show,
-            'branch_id' => $userinfo->branch_id,
-        ]);
-
         $all_users = User::whereDoesntHave('roles', function ($query) {
             $query->whereIn('id', config('constants.customer_roles'));
         })->where('active', 'Y')->get();
@@ -671,8 +665,6 @@ if (! function_exists('getUsersReportingToAuth')) {
 
         } elseif (!$userinfo->hasRole('superadmin') && !$userinfo->hasRole ('Admin') && !$userinfo->hasRole('ZONAL') && !$userinfo->hasRole('subAdmin') && !$userinfo->hasRole('GM.') && !$userinfo->hasRole('CRM') && !$userinfo->hasRole('HR_Admin') && !$userinfo->hasRole('HO_Account')  && !$userinfo->hasRole('Sub_Support') && !$userinfo->hasRole('Accounts Order') && !$userinfo->hasRole('Service Admin') && !$userinfo->hasRole('All Customers') && !$userinfo->hasRole('Sub billing') && !$userinfo->hasRole('Sales Admin') && !$userinfo->hasRole('Marketing_Admin') && !$userinfo->hasRole('MIS_ADMIN') && !$userinfo->hasRole('Marketing Team') && !$userinfo->hasRole('Data_Crm')) {
 
-            Log::info('FIRST IF EXECUTED');
-
             $all_ids_array = array($userid);
 
             $test = getAllChild(array($userid), $all_users);
@@ -696,9 +688,6 @@ if (! function_exists('getUsersReportingToAuth')) {
                 $query->where('id', 34);
             })->pluck('id')->toArray();
         }
-
-                Log::info('User Roles', $userinfo->getRoleNames()->toArray());
-        Log::info('Accessible User IDs', $all_ids_array);
         return $all_ids_array;
     }
 }
