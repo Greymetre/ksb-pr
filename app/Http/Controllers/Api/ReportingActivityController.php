@@ -19,6 +19,33 @@ use Validator;
 
 class ReportingActivityController extends Controller
 {
+    private function getZoneSortOrder($zoneName)
+    {
+        $zoneOrder = ['north', 'east', 'west', 'south'];
+        $zoneName = strtolower((string) $zoneName);
+
+        foreach ($zoneOrder as $index => $zone) {
+            if (strpos($zoneName, $zone) !== false) {
+                return $index;
+            }
+        }
+
+        return count($zoneOrder);
+    }
+
+    private function sortZoneList(array $zones)
+    {
+        usort($zones, function ($firstZone, $secondZone) {
+            $firstName = $firstZone['name'] ?? $firstZone['zone'] ?? '';
+            $secondName = $secondZone['name'] ?? $secondZone['zone'] ?? '';
+            $orderComparison = $this->getZoneSortOrder($firstName) <=> $this->getZoneSortOrder($secondName);
+
+            return $orderComparison ?: strcasecmp($firstName, $secondName);
+        });
+
+        return $zones;
+    }
+
     public function allReportingUsers(Request $request)
     {
         $user = $request->user();
@@ -262,8 +289,7 @@ class ReportingActivityController extends Controller
 
     private function getUniqueZones($users)
     {
-        return Division::whereIn('id', $users->pluck('division_id')->filter()->unique()->values())
-            ->orderBy('division_name')
+        $zones = Division::whereIn('id', $users->pluck('division_id')->filter()->unique()->values())
             ->get()
             ->map(fn($zone) => [
                 'id' => $zone->id,
@@ -271,6 +297,8 @@ class ReportingActivityController extends Controller
             ])
             ->values()
             ->toArray();
+
+        return $this->sortZoneList($zones);
     }
 
 

@@ -42,6 +42,44 @@ class AttendanceController extends Controller
         $this->path = 'attendances';
     }
 
+    private function getZoneSortOrder($zoneName)
+    {
+        $zoneOrder = ['north', 'east', 'west', 'south'];
+        $zoneName = strtolower((string) $zoneName);
+
+        foreach ($zoneOrder as $index => $zone) {
+            if (strpos($zoneName, $zone) !== false) {
+                return $index;
+            }
+        }
+
+        return count($zoneOrder);
+    }
+
+    private function sortZoneBuckets(array $zones)
+    {
+        uksort($zones, function ($firstZone, $secondZone) {
+            $orderComparison = $this->getZoneSortOrder($firstZone) <=> $this->getZoneSortOrder($secondZone);
+
+            return $orderComparison ?: strcasecmp($firstZone, $secondZone);
+        });
+
+        return $zones;
+    }
+
+    private function sortZoneList(array $zones)
+    {
+        usort($zones, function ($firstZone, $secondZone) {
+            $firstName = $firstZone['name'] ?? $firstZone['zone'] ?? '';
+            $secondName = $secondZone['name'] ?? $secondZone['zone'] ?? '';
+            $orderComparison = $this->getZoneSortOrder($firstName) <=> $this->getZoneSortOrder($secondName);
+
+            return $orderComparison ?: strcasecmp($firstName, $secondName);
+        });
+
+        return $zones;
+    }
+
     public function getPunchin(Request $request)
     {
         try {
@@ -1903,6 +1941,8 @@ class AttendanceController extends Controller
                 if ($isLeave) $totalLeave++;
             }
 
+            $result = $this->sortZoneBuckets($result);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Today team attendance fetched successfully',
@@ -2034,6 +2074,8 @@ class AttendanceController extends Controller
                     }
                 }
             }
+
+            $zones = $this->sortZoneList($zones);
 
             if (!empty($allBranchIds)) {
                 $branchMasters = DB::table('branches')
@@ -2296,24 +2338,7 @@ class AttendanceController extends Controller
                 $summary['total_unique_retailers_month'] += $monthOrders->unique_retailers;
             }
 
-            $getZoneSortOrder = function ($zoneName) {
-                $zoneOrder = ['north', 'east', 'west', 'south'];
-                $zoneName = strtolower($zoneName);
-
-                foreach ($zoneOrder as $index => $zone) {
-                    if (strpos($zoneName, $zone) !== false) {
-                        return $index;
-                    }
-                }
-
-                return count($zoneOrder);
-            };
-
-            uksort($result, function ($firstZone, $secondZone) use ($getZoneSortOrder) {
-                $orderComparison = $getZoneSortOrder($firstZone) <=> $getZoneSortOrder($secondZone);
-
-                return $orderComparison ?: strcasecmp($firstZone, $secondZone);
-            });
+            $result = $this->sortZoneBuckets($result);
 
             return response()->json([
                 'success' => true,
@@ -2499,24 +2524,7 @@ class AttendanceController extends Controller
             $summary['total_order_qty'] = $formatQuantityInThousands($totalOrderQty);
             $summary['total_order_value'] = ((int) round($totalOrderValue / 100000));
 
-            $getZoneSortOrder = function ($zoneName) {
-                $zoneOrder = ['north', 'east', 'west', 'south'];
-                $zoneName = strtolower($zoneName);
-
-                foreach ($zoneOrder as $index => $zone) {
-                    if (strpos($zoneName, $zone) !== false) {
-                        return $index;
-                    }
-                }
-
-                return count($zoneOrder);
-            };
-
-            uksort($result, function ($firstZone, $secondZone) use ($getZoneSortOrder) {
-                $orderComparison = $getZoneSortOrder($firstZone) <=> $getZoneSortOrder($secondZone);
-
-                return $orderComparison ?: strcasecmp($firstZone, $secondZone);
-            });
+            $result = $this->sortZoneBuckets($result);
 
             return response()->json([
                 'success' => true,
