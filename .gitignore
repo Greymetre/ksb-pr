@@ -18,3 +18,4 @@ yarn-error.log
 /public/pdf/orders
 /padmin
 /netProject
+*.DS_Store

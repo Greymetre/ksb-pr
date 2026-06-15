@@ -280,6 +280,7 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
     Route::post('userPunchin', [AttendanceController::class, 'userPunchin']);
     Route::post('userPunchout', [AttendanceController::class, 'userPunchout']);
     Route::any('getPunchin', [AttendanceController::class, 'getPunchin']);
+    Route::get('getAllAttendance', [AttendanceController::class, 'getAllUserPunchInOut']);
     Route::any('getAllUserPunchInOut', [AttendanceController::class, 'getAllUserPunchInOut']);
     Route::any('attendance/changeStatus', [AttendanceController::class, 'changeStatus']);
     Route::any('showAttendance', [AttendanceController::class, 'showAttendance']);

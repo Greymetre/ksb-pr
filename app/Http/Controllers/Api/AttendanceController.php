@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Validator;
 use Gate;
 use App\Models\Attendance;
+use App\Models\Branch;
 use App\Models\TourProgramme;
 use App\Models\BeatSchedule;
 use App\Models\Beat;
@@ -20,6 +21,7 @@ use App\Models\CompOffLeave;
 use App\Models\Holiday;
 use App\Models\TourDetail;
 use App\Models\User;
+use App\Models\Division;
 use App\Models\SalesTargetUsers;
 use App\Models\SecondaryCustomer;
 use Carbon\Carbon;
@@ -427,12 +429,31 @@ class AttendanceController extends Controller
             $pageSize        = $request->input('pageSize');
             $search_name     = $request->input('search_name');
             $search_branches = $request->input('search_branches');
+            $designation     = $request->input('designation');
+            $zone            = $request->input('zone');
+            $zone_id         = $request->input('zone_id');
+            $branch          = $request->input('branch');
+            $branch_id       = $request->input('branch_id');
             $start_date      = $request->input('start_date');
             $end_date        = $request->input('end_date');
             $filterType      = $request->input('type');
+            $normalizeIds = function ($value) {
+                $ids = is_array($value) ? $value : explode(',', (string) $value);
+
+                return array_values(array_filter(array_map('trim', $ids), fn($id) => $id !== ''));
+            };
+            $search_branches = $normalizeIds($search_branches);
+            $designationIds = $normalizeIds($designation);
+            $branchIds = $normalizeIds($branch_id);
 
             $validator = Validator::make($request->all(), [
-                'end_date' => 'required_with:start_date',
+                'end_date' => 'required_with:start_date|date',
+                'start_date' => 'nullable|date',
+                'designation' => 'nullable',
+                'zone' => 'nullable|string',
+                'zone_id' => 'nullable',
+                'branch' => 'nullable|string',
+                'branch_id' => 'nullable',
             ]);
 
             if ($validator->fails()) {
@@ -444,6 +465,64 @@ class AttendanceController extends Controller
                 $all_reporting_user_ids = [$search_name];
             } else {
                 $all_reporting_user_ids = getUsersReportingToAuth($user_id);
+            }
+
+            if (!empty($designationIds)) {
+                $all_reporting_user_ids = User::whereIn('id', $all_reporting_user_ids)
+                    ->whereDoesntHave('roles', function ($q) {
+                        $q->whereIn('id', config('constants.customer_roles'));
+                    })
+                    ->whereIn('designation_id', $designationIds)
+                    ->pluck('id')
+                    ->toArray();
+            }
+
+            if (!empty($zone_id)) {
+                $all_reporting_user_ids = User::whereIn('id', $all_reporting_user_ids)
+                    ->whereDoesntHave('roles', function ($q) {
+                        $q->whereIn('id', config('constants.customer_roles'));
+                    })
+                    ->where('division_id', $zone_id)
+                    ->pluck('id')
+                    ->toArray();
+            } elseif (!empty($zone)) {
+                $zoneIds = Division::where('division_name', 'LIKE', "%{$zone}%")->pluck('id')->toArray();
+                $all_reporting_user_ids = User::whereIn('id', $all_reporting_user_ids)
+                    ->whereDoesntHave('roles', function ($q) {
+                        $q->whereIn('id', config('constants.customer_roles'));
+                    })
+                    ->whereIn('division_id', $zoneIds)
+                    ->pluck('id')
+                    ->toArray();
+            }
+
+            if (!empty($branchIds)) {
+                $all_reporting_user_ids = User::whereIn('id', $all_reporting_user_ids)
+                    ->whereDoesntHave('roles', function ($q) {
+                        $q->whereIn('id', config('constants.customer_roles'));
+                    })
+                    ->where(function ($q) use ($branchIds) {
+                        $q->whereIn('branch_id', $branchIds);
+                        foreach ($branchIds as $branchId) {
+                            $q->orWhereRaw('FIND_IN_SET(?, branch_id)', [$branchId]);
+                        }
+                    })
+                    ->pluck('id')
+                    ->toArray();
+            } elseif (!empty($branch)) {
+                $branchNameIds = Branch::where('branch_name', 'LIKE', "%{$branch}%")->pluck('id')->toArray();
+                $all_reporting_user_ids = User::whereIn('id', $all_reporting_user_ids)
+                    ->whereDoesntHave('roles', function ($q) {
+                        $q->whereIn('id', config('constants.customer_roles'));
+                    })
+                    ->where(function ($q) use ($branchNameIds) {
+                        $q->whereIn('branch_id', $branchNameIds);
+                        foreach ($branchNameIds as $branchId) {
+                            $q->orWhereRaw('FIND_IN_SET(?, branch_id)', [$branchId]);
+                        }
+                    })
+                    ->pluck('id')
+                    ->toArray();
             }
 
             // Branch logic
@@ -467,9 +546,14 @@ class AttendanceController extends Controller
                 }
             }
 
-            if ($search_branches && count($search_branches) > 0 && $search_branches[0] != null) {
+            if (!empty($search_branches)) {
                 $all_reporting_user_ids = User::whereIn('id', $all_reporting_user_ids)
-                    ->whereIn('branch_id', $search_branches)
+                    ->where(function ($q) use ($search_branches) {
+                        $q->whereIn('branch_id', $search_branches);
+                        foreach ($search_branches as $branchId) {
+                            $q->orWhereRaw('FIND_IN_SET(?, branch_id)', [$branchId]);
+                        }
+                    })
                     ->whereDoesntHave('roles', function ($q) {
                         $q->whereIn('id', config('constants.customer_roles'));
                     })
