@@ -276,6 +276,7 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
   {
     return [
       //'name' => 'required|string|regex:/[a-zA-Z0-9\s]+/',
+      'password' => strongPasswordRules(null, false),
     ];
   }
 

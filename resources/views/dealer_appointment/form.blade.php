@@ -1306,8 +1306,8 @@
     <div class="baseurl" data-baseurl="{{ url('/')}}">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
         <script src="https://silver.fieldkonnect.io//public/assets/plugins/select2/js/select2.full.min.js"></script>
-        <script src="{{ url('/').'/'.asset('assets/js/core/jquery.validate.js') }}"></script>
-        <script src="{{ url('/').'/'.asset('assets/js/plugins/jquery.validate.min.js') }}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.21.0/jquery.validate.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.21.0/additional-methods.min.js"></script>
         <script src="{{ url('/').'/'.asset('assets/js/validation_dealer_appointment.js?') }}"></script>
         <script>
             $(document).ready(function() {

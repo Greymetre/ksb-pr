@@ -133,7 +133,7 @@
                                             <input
                                                 class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
                                                 type="password" name="password" id="password"
-                                                value="{{ old('password') }}" minlength="6" maxlength="200">
+                                                value="{{ old('password') }}" minlength="12" maxlength="200">
                                             @if ($errors->has('password'))
                                             <label class="error">{{ $errors->first('password') }}</label>
                                             @endif

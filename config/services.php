@@ -38,5 +38,8 @@ return [
         'virtual_number' => env('EXOTEL_VIRTUAL_NUMBER'),
     ],
 
+    'google' => [
+        'maps_api_key' => env('GOOGLE_MAPS_API_KEY'),
+    ],
 
 ];

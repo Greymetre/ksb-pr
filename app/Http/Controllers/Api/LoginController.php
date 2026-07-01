@@ -168,7 +168,7 @@ class LoginController extends Controller
                         'unique:users,email',
                     ],
     
-                    'password' => 'required|min:6',
+                    'password' => strongPasswordRules(),
                 ],
     
                 // =========================================
@@ -187,7 +187,7 @@ class LoginController extends Controller
                     'email.unique' => 'This email address is already registered.',
     
                     'password.required' => 'Password is required.',
-                    'password.min' => 'Password must be at least 6 characters.',
+                    'password.min' => 'Password must be at least 12 characters.',
                 ]
             );
     
@@ -780,7 +780,7 @@ class LoginController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'email'       => 'required|email|unique:customers,email',
-                'password'    => 'required|min:6',
+                'password'    => strongPasswordRules(),
                 'name'        => 'required|string|min:2|max:100',
                 'shop_name'   => 'required|string|min:2|max:100',
                 'mobile'      => 'required|numeric|digits_between:10,13|unique:customers,mobile',

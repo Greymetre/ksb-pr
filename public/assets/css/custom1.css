@@ -27,3 +27,166 @@ body .card .card-header-theme .card-icon,body  .card .card-header-theme:not(.car
     color: #6f42c1 !important; /* Purple for active tab to match theme */
     font-weight: bold;
 }
+
+/* Global DataTables controls */
+div.dataTables_wrapper {
+    width: 100%;
+}
+
+div.dataTables_wrapper > .row:first-child,
+div.dataTables_wrapper .top {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 0 0 18px;
+}
+
+div.dataTables_wrapper > .row:first-child > [class*="col-"] {
+    display: flex;
+    align-items: center;
+}
+
+div.dataTables_wrapper > .row:first-child > [class*="col-"]:first-child {
+    justify-content: flex-start;
+}
+
+div.dataTables_wrapper > .row:first-child > [class*="col-"]:last-child {
+    justify-content: flex-end;
+}
+
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter {
+    margin: 0;
+}
+
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: #212529 !important;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+div.dataTables_wrapper div.dataTables_length select,
+div.dataTables_wrapper div.dataTables_length select.custom-select,
+div.dataTables_wrapper div.dataTables_length select.form-control {
+    width: 78px !important;
+    min-width: 78px;
+    height: 38px;
+    margin: 0 2px;
+    padding: 6px 28px 6px 10px;
+    border: 1px solid #d7dce2 !important;
+    border-radius: 6px !important;
+    background-color: #fff;
+    box-shadow: none !important;
+    color: #212529;
+}
+
+div.dataTables_wrapper div.dataTables_filter input,
+div.dataTables_wrapper div.dataTables_filter input.form-control {
+    width: 260px !important;
+    max-width: 100%;
+    height: 38px;
+    margin-left: 0;
+    padding: 6px 12px;
+    border: 1px solid #d7dce2 !important;
+    border-radius: 6px !important;
+    background-color: #fff;
+    box-shadow: none !important;
+    color: #212529;
+}
+
+div.dataTables_wrapper div.dataTables_filter input:focus,
+div.dataTables_wrapper div.dataTables_length select:focus {
+    border-color: #3860a4 !important;
+    box-shadow: 0 0 0 3px rgba(56, 96, 164, 0.12) !important;
+    outline: 0;
+}
+
+div.dataTables_wrapper .bottom,
+div.dataTables_wrapper > .row:last-child {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+}
+
+div.dataTables_wrapper div.dataTables_info {
+    padding: 0;
+    margin: 0;
+    color: #4a4a4a !important;
+    font-size: 14px;
+    white-space: normal;
+}
+
+div.dataTables_wrapper div.dataTables_paginate {
+    margin: 0;
+}
+
+div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin: 0;
+    flex-wrap: wrap;
+}
+
+div.dataTables_wrapper .pagination .page-link,
+div.dataTables_wrapper .pagination .paginate_button a {
+    min-width: 34px;
+    min-height: 34px;
+    padding: 7px 10px;
+    border-radius: 6px !important;
+    border: 1px solid #d7dce2;
+    color: #212529 !important;
+    line-height: 1.2;
+    text-align: center;
+}
+
+div.dataTables_wrapper .pagination .active .page-link,
+div.dataTables_wrapper .pagination .paginate_button.active a {
+    border-color: #3860a4 !important;
+    background: linear-gradient(45deg, #3860a4 0%, #3694cc 100%) !important;
+    color: #fff !important;
+}
+
+@media (max-width: 767px) {
+    div.dataTables_wrapper > .row:first-child,
+    div.dataTables_wrapper .top,
+    div.dataTables_wrapper .bottom,
+    div.dataTables_wrapper > .row:last-child {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    div.dataTables_wrapper > .row:first-child > [class*="col-"],
+    div.dataTables_wrapper > .row:last-child > [class*="col-"] {
+        justify-content: flex-start !important;
+        width: 100%;
+    }
+
+    div.dataTables_wrapper div.dataTables_length label,
+    div.dataTables_wrapper div.dataTables_filter label {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    div.dataTables_wrapper div.dataTables_filter input,
+    div.dataTables_wrapper div.dataTables_filter input.form-control {
+        width: 100% !important;
+    }
+
+    div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+        justify-content: flex-start;
+    }
+}

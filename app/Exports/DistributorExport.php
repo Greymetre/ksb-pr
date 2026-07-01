@@ -32,7 +32,7 @@ class DistributorExport implements FromCollection,WithHeadings,ShouldAutoSize,Wi
                                     $query->whereIn('executive_id', $this->userids);
                                 }
                             })
-                        ->select('id','name', 'first_name', 'last_name', 'mobile', 'email', 'password', 'notification_id', 'latitude', 'longitude', 'device_type', 'gender', 'profile_image', 'customer_code', 'status_id','customertype', 'firmtype','created_at','created_by')
+                        ->select('id','name', 'first_name', 'last_name', 'mobile', 'email', 'notification_id', 'latitude', 'longitude', 'device_type', 'gender', 'profile_image', 'customer_code', 'status_id','customertype', 'firmtype','created_at','created_by')
                         ->latest()->get();   
     }
 

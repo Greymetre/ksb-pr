@@ -81,6 +81,44 @@
     .btn-lg{
       border-radius: 30px;
     }
+    .captcha-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .captcha-box img {
+      border: 1px solid #ced4da;
+      border-radius: 5px;
+      height: 42px;
+    }
+
+    .password-field {
+      position: relative;
+    }
+
+    .password-field .form-control {
+      padding-right: 44px;
+    }
+
+    .password-toggle {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      border: 0;
+      background: transparent;
+      color: #6c757d;
+      padding: 0;
+      line-height: 1;
+      cursor: pointer;
+      z-index: 3;
+    }
+
+    .password-toggle:focus {
+      outline: none;
+      color: #007bff;
+    }
   </style>
 </head>
 
@@ -92,30 +130,6 @@
         <!-- <img src="{{ url('/').'/'.asset('assets/img/login_side.png') }}" alt="" class="side-img" width="100%"> -->
       </div>
       <div class="col-md-6 right-side text-center">
-        @if(session()->has('error'))
-        <div class="alert alert-danger">
-          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-            <i class="material-icons">close</i>
-          </button>
-          <span>
-            {{ session()->get('error') }}
-          </span>
-        </div>
-        @endif
-        @if (session('status'))
-        <div class="alert alert-success">
-          {{ session('status') }}
-        </div>
-        @endif
-        @if($errors->any())
-        <div>
-          <ul class="alert alert-danger">
-            @foreach($errors->all() as $error)
-            <li>{{ $error }}</li>
-            @endforeach
-          </ul>
-        </div>
-        @endif
         <div class="logo mb-3"><img src="{{asset('assets/img/brand_logo.png') }}" alt="" width="100%"></div>
         <div class="login-box">
           <div class="german-logo-cont">
@@ -123,39 +137,85 @@
             <!--<img src="{{ url('/').'/'.asset('assets/img/silver.png') }}" alt="" class="german-logo">-->
           </div>
           <p class="mb-3 font-weight-bold text-primary">Please log in to your account</p>
+          @php
+          $loginValue = old('email', session('login_captcha_login'));
+          $showCaptcha = loginCaptchaRequired($loginValue, request()->ip());
+          @endphp
           <form method="POST" action="{{ route('login') }}">
             @csrf
             <div class="form-group text-left">
               <label for="email">Email address</label>
-              <input type="email" class="form-control" id="email" name="email" placeholder="Enter email">
+              <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ $loginValue }}" placeholder="Enter email">
+              @error('email')
+              <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
             </div>
             <div class="form-group text-left">
               <label for="password">Password</label>
-              <input type="password" class="form-control" id="password" name="password" placeholder="Password">
+              <div class="password-field">
+                <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="Password">
+                <button type="button" class="password-toggle" data-toggle-password="#password" aria-label="Show password" title="Show password">
+                  <span class="material-symbols-outlined">visibility</span>
+                </button>
+              </div>
+              @error('password')
+              <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
             </div>
+            @if (Route::has('password.request'))
+            <div class="form-group text-right mb-3">
+              <a href="{{ route('password.request') }}" class="text-primary" style="font-size: 14px; text-decoration: none;">Forgot Password?</a>
+            </div>
+            @endif
+            @if ($showCaptcha)
+            <div class="form-group text-left">
+              <label for="captcha">Security Code</label>
+              <div class="captcha-box mb-2">
+                <span id="captcha-image">{!! loginCaptchaImage() !!}</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="refresh-captcha">Refresh</button>
+              </div>
+              <input type="text" class="form-control @error('captcha') is-invalid @enderror" id="captcha" name="captcha" placeholder="Enter 5-character code">
+              @error('captcha')
+              <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+            </div>
+            @endif
             <button type="submit" class="btn btn-primary btn-block btn-lg">Login</button>
+            @if(session()->has('error'))
+            <div class="alert alert-danger mt-3 mb-0 text-left">
+              {{ session()->get('error') }}
+            </div>
+            @endif
+            @if (session('status'))
+            <div class="alert alert-success mt-3 mb-0 text-left">
+              {{ session('status') }}
+            </div>
+            @endif
           </form>
         </div>
-        <div class="footer text-primary">&copy; 2025 Field Konnect. All rights reserved</div>
+        <div class="footer text-primary">&copy; {{ date('Y') }} Field Konnect. All rights reserved</div>
       </div>
     </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script>
-    $("#pass-seen").on('click', function() {
-      let currentText = $(this).text();
-      let passwordField = $("#password");
+    $('[data-toggle-password]').on('click', function() {
+      let passwordField = $($(this).data('toggle-password'));
+      let icon = $(this).find('.material-symbols-outlined');
+      let isHidden = passwordField.attr('type') === 'password';
 
-      if (currentText === 'visibility') {
-        $(this).text('visibility_off');
-        $(this).attr('title', 'Show');
-        passwordField.attr("type", "password");
-      } else {
-        $(this).text('visibility');
-        $(this).attr('title', 'Hide');
-        passwordField.attr("type", "text");
-      }
+      passwordField.attr('type', isHidden ? 'text' : 'password');
+      icon.text(isHidden ? 'visibility_off' : 'visibility');
+      $(this).attr('aria-label', isHidden ? 'Hide password' : 'Show password');
+      $(this).attr('title', isHidden ? 'Hide password' : 'Show password');
+    });
+
+    $("#refresh-captcha").on('click', function() {
+      $.get("{{ url('/captcha-refresh') }}", function(data) {
+        $("#captcha-image").html(data.captcha);
+        $("#captcha").val('');
+      });
     });
   </script>
 

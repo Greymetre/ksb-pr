@@ -428,6 +428,7 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
         return [
             'user_name' => 'required|string|regex:/[a-zA-Z0-9\s]+/',
             'primary_branch_id' => 'nullable|exists:branches,id',
+            'password' => strongPasswordRules(null, false),
         ];
     }
 

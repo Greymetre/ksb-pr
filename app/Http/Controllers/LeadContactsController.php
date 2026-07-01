@@ -37,8 +37,10 @@ class LeadContactsController extends Controller
         $lead_contacts = LeadContact::with(['lead']); 
         if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
             $user_ids = getUsersReportingToAuth();
-            $lead_ids = Lead::where('assign_to', $user_ids)->pluck('id');
-            $lead_contacts->where('lead_id', $lead_ids);
+            $lead_ids = Lead::whereIn('assign_to', $user_ids)
+                ->orWhereIn('created_by', $user_ids)
+                ->pluck('id');
+            $lead_contacts->whereIn('lead_id', $lead_ids);
         }
         $lead_contacts = $lead_contacts->select(\DB::raw(with(new LeadContact)->getTable().'.*'))->groupBy('id');
         return DataTables::of($lead_contacts)
@@ -68,7 +70,14 @@ class LeadContactsController extends Controller
         $page_number = intval($request->input('page_number'));
         $page_result = ($page_number-1) * $results_per_page;
 
-        $lead_contacts = LeadContact::with(['lead']); 
+        $lead_contacts = LeadContact::with(['lead']);
+        if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
+            $user_ids = getUsersReportingToAuth();
+            $lead_ids = Lead::whereIn('assign_to', $user_ids)
+                ->orWhereIn('created_by', $user_ids)
+                ->pluck('id');
+            $lead_contacts->whereIn('lead_id', $lead_ids);
+        }
         $lead_contacts = $lead_contacts->get();
         $data = $lead_contacts->map(function ($item, $key) {
 

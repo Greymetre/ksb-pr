@@ -39,6 +39,7 @@ class UserRequest extends FormRequest
                     'pincode_id'    => 'nullable|numeric|exists:pincodes,id',
                     'status_id'     => 'nullable|numeric|exists:statuses,id',
                     'image'        => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                    'password'      => strongPasswordRules(User::find($this->id), false),
                 ];
                 
                 break;
@@ -57,6 +58,7 @@ class UserRequest extends FormRequest
                     'pincode_id'    => 'nullable|numeric|exists:pincodes,id',
                     'status_id'     => 'nullable|numeric|exists:statuses,id',
                     'image'        => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                    'password'      => strongPasswordRules(null, true),
                 ];
                 break;
         }

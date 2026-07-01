@@ -6,6 +6,8 @@ use App\Models\CustomerType;
 use App\Models\LoyaltyAppSetting;
 use App\Models\Media;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 class LoyaltyAppSettingController extends Controller
 {
@@ -22,6 +24,8 @@ class LoyaltyAppSettingController extends Controller
      */
     public function index()
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('loyalty_app_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $this->loyalty_app_setting = LoyaltyAppSetting::first();
         $customer_types = CustomerType::where('active', 'Y')->get();
         return view('loyalty_app_setting.index', compact('customer_types'))->with('loyalty_app_setting', $this->loyalty_app_setting);
@@ -45,6 +49,8 @@ class LoyaltyAppSettingController extends Controller
      */
     public function store(Request $request)
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('loyalty_app_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         if ($request->id && $request->id != '' && $request->id != NULL) {
             $loyaltyAppSetting = LoyaltyAppSetting::find($request->id);
             $loyaltyAppSetting->customer_types = implode(',', $request->customer_types);

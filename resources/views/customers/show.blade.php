@@ -772,7 +772,7 @@
          </div>
       </div>
    </div>
-   <script src="https://maps.google.com/maps/api/js?key=AIzaSyAVSDwHbKULnZa93kYpYINTqX4eaWy9q18" type="text/javascript"></script>
+   <script src="https://maps.google.com/maps/api/js?key={{ config('services.google.maps_api_key') }}" type="text/javascript"></script>
    <script type="text/javascript">
       $(function() {
          $.ajaxSetup({

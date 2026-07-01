@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
+use Throwable;
 
 class PasswordResetLinkController extends Controller
 {
@@ -32,16 +34,25 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        try {
+            $status = Password::sendResetLink($request->only('email'));
+        } catch (Throwable $exception) {
+            Log::error('Password reset email could not be sent.', [
+                'email' => $request->input('email'),
+                'error' => $exception->getMessage(),
+            ]);
 
-        return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                            ->withErrors(['email' => __($status)]);
+            return back()
+                ->withInput($request->only('email'))
+                ->with('error', 'We could not send the password reset email right now. Please try again later.');
+        }
+
+        if ($status !== Password::RESET_LINK_SENT && $status !== Password::INVALID_USER) {
+            return back()
+                ->withInput($request->only('email'))
+                ->with('error', 'We could not send the password reset email right now. Please try again later.');
+        }
+
+        return back()->with('status', 'If an account exists for this email address, a password reset link will be sent.');
     }
 }

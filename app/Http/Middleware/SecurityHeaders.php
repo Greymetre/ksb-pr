@@ -30,6 +30,10 @@ class SecurityHeaders
         | Add security headers for normal responses
         |--------------------------------------------------------------------------
         */
+        if (function_exists('header_remove')) {
+            header_remove('X-Powered-By');
+        }
+
         return $response->withHeaders([
 
             'X-Content-Type-Options' => 'nosniff',
@@ -39,6 +43,9 @@ class SecurityHeaders
 
             'Strict-Transport-Security' =>
                 'max-age=31536000; includeSubDomains; preload',
+
+            'Content-Security-Policy' =>
+                "frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
 
             'Permissions-Policy' =>
                 'camera=(), microphone=(), geolocation=(), fullscreen=(self)',

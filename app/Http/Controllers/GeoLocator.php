@@ -18,11 +18,16 @@ use App\Models\Status;
 use App\Models\CustomerCustomField;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class GeoLocator extends Controller
 {
     public function geo_locator_setting(Request $request)
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('geo_locator_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $setting = GeoLocatorSetting::first();
 
         return view('geolocator.setting', compact('setting'));
@@ -30,6 +35,8 @@ class GeoLocator extends Controller
 
     public function geo_locator_setting_store(Request $request)
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('geo_locator_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $geoLocator = GeoLocatorSetting::updateOrCreate(
             ['id' => 1], // always maintain single record
             [
@@ -43,6 +50,8 @@ class GeoLocator extends Controller
 
     public function map()
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('geo_locator_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $setting = GeoLocatorSetting::first();
         $cutom_fields = CustomerCustomField::all();
         return view('geolocator.map', compact('setting', 'cutom_fields'));
@@ -50,7 +59,14 @@ class GeoLocator extends Controller
 
     public function data(Request $request)
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('geo_locator_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $customers = Customers::whereNotNull('latitude')->whereNotNull('longitude')->where('latitude', '!=', '')->where('longitude', '!=', '')->select('id', 'name', 'first_name', 'last_name', 'mobile', 'latitude', 'longitude', 'customertype')->with('customeraddress', 'customertypes', 'customerdetails');
+        if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
+            $userIds = getUsersReportingToAuth();
+            $customerIds = EmployeeDetail::whereIn('user_id', $userIds)->pluck('customer_id');
+            $customers->whereIn('id', $customerIds);
+        }
         if ($request->type == '1') {
 
             if (isset($request->filter_by) && !empty($request->filter_by)) {
@@ -115,6 +131,9 @@ class GeoLocator extends Controller
             $customers = $customers->get();
         } else {
             $customers = Lead::whereNotNull('latitude')->whereNotNull('longitude')->where('latitude', '!=', '')->where('longitude', '!=', '')->select('id', 'company_name', 'lead_source', 'latitude', 'longitude', 'status', 'assign_to')->with('address', 'contacts', 'status_is', 'assign_user', 'opportunities.status_is');
+            if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
+                $customers->whereIn('assign_to', getUsersReportingToAuth());
+            }
 
             if ($request->filter_by == 'City') {
                 $city_id = City::where('city_name', $request->filter)->pluck('id')->first();
@@ -166,6 +185,8 @@ class GeoLocator extends Controller
 
     public function filter_data(Request $request)
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('geo_locator_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $data = [];
         if ($request->type == '1') {
             $custom_field = filter_var($request->custom_field, FILTER_VALIDATE_BOOLEAN);

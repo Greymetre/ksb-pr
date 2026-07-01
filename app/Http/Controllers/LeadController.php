@@ -544,6 +544,8 @@ class LeadController extends Controller
      */
     public function create(Request $request)
     {
+        $this->abortIfPermissionDenied('lead_create');
+
         $userids = getUsersReportingToAuth();
         $users = User::where('active', '=', 'Y')->whereDoesntHave('roles', function ($query) {
             $query->whereIn('id', config('constants.customer_roles'));
@@ -566,6 +568,8 @@ class LeadController extends Controller
      */
     public function store(Request $request)
     {
+        $this->abortIfPermissionDenied('lead_create');
+
         $rules = [
             'status' => 'required',
             'company_name' => 'required',
@@ -575,6 +579,8 @@ class LeadController extends Controller
         ];
 
         $request->validate($rules);
+        abort_unless($this->canAssignLeadTo((int) $request->assign_to), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         if ($request->other) {
             $otherData = [
                 'others' => $request->other,
@@ -666,6 +672,8 @@ class LeadController extends Controller
      */
     public function show(Request $request, Lead $lead)
     {
+        abort_unless($this->canAccessLead($lead), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $userids = getUsersReportingToAuth();
         $users = User::whereDoesntHave('roles', function ($query) {
             $query->whereIn('id', config('constants.customer_roles'));
@@ -748,6 +756,8 @@ class LeadController extends Controller
      */
     public function edit(Request $request, Lead $lead)
     {
+        abort_unless($this->canAccessLead($lead), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $userids = getUsersReportingToAuth();
         $users = User::where('active', '=', 'Y')->whereDoesntHave('roles', function ($query) {
             $query->whereIn('id', config('constants.customer_roles'));
@@ -772,6 +782,9 @@ class LeadController extends Controller
      */
     public function update(Request $request, Lead $lead)
     {
+        abort_unless($this->canAccessLead($lead), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        abort_unless($this->canAssignLeadTo((int) $request->assign_to), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         if ($request->other) {
             $otherData = [
                 'others' => $request->other,
@@ -843,10 +856,16 @@ class LeadController extends Controller
 
     public function assignLead(Request $request)
     {
-        $update = Lead::whereIn('id', $request->lead_id)->update(['assign_to' => $request->user_id]);
+        $this->abortIfPermissionDenied('lead_edit');
+
+        $leadIds = (array) $request->lead_id;
+        abort_unless($this->canAssignLeadTo((int) $request->user_id), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        abort_unless($this->canAccessLeadIds($leadIds), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $update = Lead::whereIn('id', $leadIds)->update(['assign_to' => $request->user_id]);
         if ($update) {
-            SendPushNotification($request->user_id, '🟢 You have been assigned ' . count($request->lead_id) . ' new lead.', 'lead');
-            StoreLeadNotification(null, 'Assigned Lead', '🟢 You have been assigned ' . count($request->lead_id) . ' new lead.', $request->user_id, 'lead');
+            SendPushNotification($request->user_id, '🟢 You have been assigned ' . count($leadIds) . ' new lead.', 'lead');
+            StoreLeadNotification(null, 'Assigned Lead', '🟢 You have been assigned ' . count($leadIds) . ' new lead.', $request->user_id, 'lead');
             return response()->json(['status' => 'success', 'message' => 'Lead assigned successfully.']);
         } else {
             return response()->json(['status' => 'error', 'message' => 'Something went wrong.']);
@@ -856,7 +875,12 @@ class LeadController extends Controller
     //Multiple delete
     public function deleteLead(Request $request)
     {
-        $lead = Lead::whereIn('id', $request->lead_id)->delete();
+        $this->abortIfPermissionDenied('lead_delete');
+
+        $leadIds = (array) $request->lead_id;
+        abort_unless($this->canAccessLeadIds($leadIds), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $lead = Lead::whereIn('id', $leadIds)->delete();
         if ($lead) {
             return response()->json(['status' => 'success', 'message' => 'Lead deleted successfully.']);
         } else {
@@ -867,6 +891,8 @@ class LeadController extends Controller
     public function changeStatus(Request $request)
     {
         $lead = Lead::where('id', $request->lead_id)->first();
+        abort_unless($lead && $this->canAccessLead($lead), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $old_status = Status::where('id', $lead->status)->first();
         $new_status = Status::where('id', $request->status)->first();
         $msg = 'Lead move from ' . $old_status->display_name . ' to ' . $new_status->display_name .
@@ -905,8 +931,15 @@ class LeadController extends Controller
 
     public function convert_lead(Request $request)
     {
-        foreach ($request->lead_id as $lead_id) {
+        $this->abortIfPermissionDenied('lead_edit');
+
+        $leadIds = (array) $request->lead_id;
+        abort_unless($this->canAccessLeadIds($leadIds), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        foreach ($leadIds as $lead_id) {
             $lead = Lead::where('id', $lead_id)->first();
+            abort_unless($lead, Response::HTTP_NOT_FOUND, 'Lead not found');
+
             $len = $lead->contacts && count($lead->contacts) > 0 ? strlen(preg_replace('/\s+/', '', $lead->contacts[0]->phone_number)) : 0;
             $phone = $lead->contacts && count($lead->contacts) > 0 ? $lead->contacts[0]->phone_number : '';
             if (($len === 12 && substr($phone, 0, 2) === '91') ||
@@ -948,6 +981,60 @@ class LeadController extends Controller
             } else {
                 return response()->json(['status' => 'error', 'message' => 'Something went wrong.']);
             }
+        }
+    }
+
+    protected function canAssignLeadTo(int $userId): bool
+    {
+        return in_array($userId, array_map('intval', getUsersReportingToAuth()), true);
+    }
+
+    protected function canAccessLeadIds(array $leadIds): bool
+    {
+        $leadIds = array_values(array_filter($leadIds));
+
+        if (empty($leadIds)) {
+            return false;
+        }
+
+        $allowedCount = Lead::whereIn('id', $leadIds)
+            ->where(function ($query) {
+                $this->scopeLeadsToCurrentUser($query);
+            })
+            ->count();
+
+        return $allowedCount === count(array_unique($leadIds));
+    }
+
+    protected function canAccessLead(Lead $lead): bool
+    {
+        return Lead::where('id', $lead->id)
+            ->where(function ($query) {
+                $this->scopeLeadsToCurrentUser($query);
+            })
+            ->exists();
+    }
+
+    protected function scopeLeadsToCurrentUser($query): void
+    {
+        if (Auth::user()->hasRole('superadmin') || Auth::user()->hasRole('Admin')) {
+            return;
+        }
+
+        $userIds = getUsersReportingToAuth();
+
+        $query->where(function ($q) use ($userIds) {
+            $q->whereIn('assign_to', $userIds)
+                ->orWhereIn('created_by', $userIds);
+        });
+    }
+
+    protected function abortIfPermissionDenied(string $ability): void
+    {
+        $gate = Gate::getFacadeRoot();
+
+        if (method_exists($gate, 'has') && Gate::has($ability)) {
+            abort_if(Gate::denies($ability), Response::HTTP_FORBIDDEN, '403 Forbidden');
         }
     }
 

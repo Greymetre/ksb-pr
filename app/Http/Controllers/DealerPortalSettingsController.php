@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\DealerPortalSettings;
 use App\Models\Media;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 use Validator;
 
 class DealerPortalSettingsController extends Controller
@@ -23,6 +25,8 @@ class DealerPortalSettingsController extends Controller
      */
     public function index(Request $request)
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('dealer_portal_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         // if($request->ip() != '111.118.252.250'){
         //     return view('work_in_progress');
         // }
@@ -48,6 +52,8 @@ class DealerPortalSettingsController extends Controller
      */
     public function store(Request $request)
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('dealer_portal_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $validator = Validator::make($request->all(), [
             'slider' => 'required',
         ]);
@@ -119,6 +125,8 @@ class DealerPortalSettingsController extends Controller
      */
     public function destroy($id)
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('dealer_portal_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $dealer_portal_setting_media = Media::find($id);
         if ($dealer_portal_setting_media) {
             $dealer_portal_setting_media->delete();

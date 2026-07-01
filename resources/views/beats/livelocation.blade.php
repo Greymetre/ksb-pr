@@ -1,5 +1,5 @@
 <x-app-layout>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVSDwHbKULnZa93kYpYINTqX4eaWy9q18" type="text/javascript"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}" type="text/javascript"></script>
     <div class="row mt-4">
         <div class="col-lg-12">
             <div class="card mt-4" data-animation="true">

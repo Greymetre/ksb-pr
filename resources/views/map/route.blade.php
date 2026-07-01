@@ -9,9 +9,8 @@
             width: 100%;
         }
     </style>
-    <!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCaQE4KPeMlUtOToahksBb7k7TUNx7MISo"></script> -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVSDwHbKULnZa93kYpYINTqX4eaWy9q18"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVSDwHbKULnZa93kYpYINTqX4eaWy9q18&libraries=marker"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}&libraries=marker"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-marker-clusterer/1.0.0/markerclusterer.js"></script>
 
 </head>

@@ -98,7 +98,7 @@ class SalesTargetUsersController extends Controller
         $all_users = User::whereDoesntHave('roles', function ($query) {
             $query->where('id', 29);
         })->get();
-        if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && !auth()->user()->hasRole('Sub_Admin') && !auth()->user()->hasRole('HR_Admin') && !auth()->user()->hasRole('HO_Account')  && !auth()->user()->hasRole('Sub_Support') && !auth()->user()->hasRole('Accounts Order') && !auth()->user()->hasRole('Service Admin') && !auth()->user()->hasRole('All Customers') && !auth()->user()->hasRole('Sub billing') && !auth()->user()->hasRole('Sales Admin'))
+        if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && !auth()->user()->hasRole('subAdmin') && !auth()->user()->hasRole('HR_Admin') && !auth()->user()->hasRole('HO_Account')  && !auth()->user()->hasRole('Sub_Support') && !auth()->user()->hasRole('Accounts Order') && !auth()->user()->hasRole('Service Admin') && !auth()->user()->hasRole('All Customers') && !auth()->user()->hasRole('Sub billing') && !auth()->user()->hasRole('Sales Admin'))
         {
             $all_ids_array = array($userid);
             $test = getAllChild(array($userid), $all_users);

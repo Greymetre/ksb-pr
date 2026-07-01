@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\PowerBiSetting;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 class PowerBiSettingController extends Controller
 {
@@ -14,6 +16,8 @@ class PowerBiSettingController extends Controller
      */
     public function index()
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('power_bi_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $all_settings = PowerBiSetting::all()->pluck('value', 'key')->toArray();
         return view('powerbi.index', compact('all_settings'));
     }
@@ -36,6 +40,8 @@ class PowerBiSettingController extends Controller
      */
     public function store(Request $request)
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('power_bi_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $data = $request->except('_token');
         foreach ($data as $key => $value) {
             PowerBiSetting::updateOrCreate(['key' => $key], ['value' => $value]);

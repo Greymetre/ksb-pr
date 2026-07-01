@@ -577,7 +577,7 @@
 </div> -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://silver.fieldkonnect.io//public/assets/js/core/jquery.validate.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.21.0/jquery.validate.min.js"></script>
 <script src="{{ asset('assets/js/jquery.custom.js') }}"></script>
 
 <!-- <script src="{{ asset('public/assets/js/jquery.beat.js') }}"></script> -->

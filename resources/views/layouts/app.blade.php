@@ -15,7 +15,7 @@
     <link href="{{ asset('assets/css/custom1.css?v=' . now()->timestamp) }}" rel="stylesheet" />
     <!-- CSS Just for demo purpose, don't include it in your project -->
     <link href="{{ asset('assets/demo/demo.css?v=' . now()->timestamp) }}" rel="stylesheet" />
-    <link href="{{ asset('assets/css/jquery-ui.css') }}" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.3/themes/base/jquery-ui.min.css" rel="stylesheet" />
     <link href="{{ asset('assets/css/responsive.bootstrap4.css?v=' . now()->timestamp) }}" rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('assets/plugins/select2/css/select2.css?v=' . now()->timestamp) }}">
     <!-- <link href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css" rel="stylesheet"> -->
@@ -23,9 +23,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.5.2/js/fileinput.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.5.2/css/fileinput.min.css"
         rel="stylesheet" />
-    <script src="{{ asset('assets/js/core/jquery.min.js') }}"></script>
-    <script src="{{ asset('assets/js/core/jquery-ui.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/moment.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.3/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment.min.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
@@ -2904,24 +2904,24 @@
             </div>
         </div>
     </div>
-    <script src="{{ asset('assets/js/core/jquery.validate.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.21.0/jquery.validate.min.js"></script>
     <!-- Bootstrap -->
     <script src="{{ asset('assets/js/core/popper.min.js') }}"></script>
     <!-- overlayScrollbars -->
     <script src="{{ asset('assets/js/core/bootstrap-material-design.min.js') }}"></script>
     <!-- DataTables -->
-    <script src="{{ asset('assets/js/plugins/jquery.dataTables.min.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/dataTables.responsive.min.js') }}"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
     <script src="{{ asset('assets/js/plugins/bootstrap-tagsinput.js') }}"></script>
     <!-- OPTIONAL SCRIPTS -->
     <!-- Select2 -->
     <script src="{{ asset('assets/plugins/select2/js/select2.full.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugins/perfect-scrollbar.jquery.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugins/sweetalert2.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/jquery.validate.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.21.0/additional-methods.min.js"></script>
     <!-- jquery-validation -->
     <script src="{{ asset('assets/js/plugins/jquery.bootstrap-wizard.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/bootstrap-selectpicker.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.18/js/bootstrap-select.min.js"></script>
     <script src="{{ asset('assets/js/plugins/bootstrap-datetimepicker.min.js') }}"></script>
     <!-- OPTIONAL SCRIPTS -->
     <script src="{{ asset('assets/js/plugins/chartist.min.js') }}"></script>

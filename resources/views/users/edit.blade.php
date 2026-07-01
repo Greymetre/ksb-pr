@@ -104,7 +104,7 @@
                            <label class="col-md-3 col-form-label">{{ trans('panel.user.fields.password') }}</label>
                            <div class="col-md-9">
                               <div class="form-group has-default bmd-form-group">
-                                 <input type="password" name="password" class="form-control">
+                                 <input type="password" name="password" class="form-control" minlength="12" maxlength="200">
                                  @if ($errors->has('password'))
                                  <div class="error col-lg-12">
                                     <p class="text-danger">{{ $errors->first('password') }}</p>

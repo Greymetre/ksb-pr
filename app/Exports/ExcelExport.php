@@ -26,7 +26,7 @@ class ExcelExport implements FromArray, WithHeadings, ShouldAutoSize, WithEvents
 
     public function array(): array
     {
-        return $this->data;
+        return array_map('sanitizeForExcel', $this->data);
     }
 
     public function registerEvents(): array

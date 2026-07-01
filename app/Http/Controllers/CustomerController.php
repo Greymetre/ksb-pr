@@ -853,11 +853,15 @@ class CustomerController extends Controller
 
     public function active(Request $request)
     {
+        abort_if(Gate::denies('customer_active'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $customer = Customers::find($request['id']);
 
         if (!$customer) {
             return response()->json(['status' => 'error', 'message' => 'Customer not found']);
         }
+
+        abort_unless($this->canAccessCustomer($customer), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         // Toggle status
         $newStatus = ($request['active'] == 'Y') ? 'N' : 'Y';
@@ -891,6 +895,44 @@ class CustomerController extends Controller
         }
 
         return response()->json(['status' => 'error', 'message' => 'Error in Status Update']);
+    }
+
+    protected function canAccessCustomer(Customers $customer): bool
+    {
+        if ($this->canAccessAllCustomers()) {
+            return true;
+        }
+
+        if (auth()->user()->hasRole('Customer Dealer')) {
+            $customerIds = ParentDetail::where('parent_id', auth()->user()->customerid)
+                ->pluck('customer_id')
+                ->toArray();
+            $customerIds[] = auth()->user()->customerid;
+            $customerIds = array_map('intval', $customerIds);
+
+            return in_array((int) $customer->id, $customerIds, true);
+        }
+
+        $userIds = array_map('intval', getUsersReportingToAuth());
+
+        return in_array((int) $customer->executive_id, $userIds, true)
+            || in_array((int) $customer->created_by, $userIds, true);
+    }
+
+    protected function canAccessAllCustomers(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'superadmin',
+            'Admin',
+            'Sub_Support',
+            'HO_Account',
+            'HR_Admin',
+            'Service Admin',
+            'All Customers',
+            'Sub_Admin',
+            'Data_Crm',
+            'Sub billing',
+        ]);
     }
 
     public function customersLogin(CustomerLoginDataTable $dataTable)

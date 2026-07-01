@@ -4,6 +4,7 @@ use App\Models\Attachment;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 // use Mail;
 use Illuminate\Support\Facades\Storage;
 // use Image;
@@ -1630,7 +1631,10 @@ if (!function_exists('numberToWords')) {
 
 function getRoadDistance($lat1,$lng1,$lat2,$lng2)
 {
-    $apiKey = "AIzaSyAVSDwHbKULnZa93kYpYINTqX4eaWy9q18";
+    $apiKey = env('GOOGLE_MAPS_API_KEY');
+    if (empty($apiKey)) {
+        return '';
+    }
 
     $url = "https://maps.googleapis.com/maps/api/distancematrix/json?origins=".$lat1.",".$lng1."&destinations=".$lat2.",".$lng2."&key=".$apiKey;
 
@@ -1656,5 +1660,112 @@ function getRoadDistance($lat1,$lng1,$lat2,$lng2)
     }
 
     return '';
+}
+
+if (! function_exists('sanitizeForExcel')) {
+    function sanitizeForExcel($value)
+    {
+        if (is_array($value)) {
+            return array_map('sanitizeForExcel', $value);
+        }
+
+        if (! is_string($value)) {
+            return $value;
+        }
+
+        $value = strip_tags($value);
+        $trimmed = ltrim($value);
+
+        if ($trimmed !== '' && in_array($trimmed[0], ['=', '+', '-', '@', '"'], true)) {
+            return "'" . $value;
+        }
+
+        return $value;
+    }
+}
+
+if (! function_exists('loginCaptchaImage')) {
+    function loginCaptchaImage(): Illuminate\Support\HtmlString
+    {
+        $captcha = app('captcha')->create('default', true);
+        $value = Illuminate\Support\Facades\Cache::get('captcha_' . md5($captcha['key']));
+        $code = is_array($value) ? implode('', $value) : (string) $value;
+
+        session([
+            'login_captcha_hash' => Illuminate\Support\Facades\Hash::make(Illuminate\Support\Str::upper($code)),
+        ]);
+
+        return new Illuminate\Support\HtmlString('<img src="' . e($captcha['img']) . '" alt="captcha">');
+    }
+}
+
+if (! function_exists('loginThrottleKey')) {
+    function loginThrottleKey(?string $login = null, ?string $ip = null): string
+    {
+        $login = $login ?? request()->input('email') ?? request()->input('mobile') ?? '';
+        $ip = $ip ?? request()->ip();
+
+        return Str::transliterate(Str::lower($login) . '|' . $ip);
+    }
+}
+
+if (! function_exists('loginCaptchaRequired')) {
+    function loginCaptchaRequired(?string $login = null, ?string $ip = null): bool
+    {
+        if (! filled($login)) {
+            return false;
+        }
+
+        $sessionLogin = session('login_captcha_login');
+        $sessionAttempts = (int) session('login_failed_attempts', 0);
+
+        if (
+            filled($sessionLogin)
+            && hash_equals(Str::lower((string) $sessionLogin), Str::lower((string) $login))
+            && $sessionAttempts >= 3
+        ) {
+            return true;
+        }
+
+        return RateLimiter::attempts(loginThrottleKey($login, $ip)) >= 3;
+    }
+}
+
+if (! function_exists('loginCaptchaCheck')) {
+    function loginCaptchaCheck(string $value): bool
+    {
+        $hash = session('login_captcha_hash');
+
+        if (! $hash) {
+            return false;
+        }
+
+        return Illuminate\Support\Facades\Hash::check(Illuminate\Support\Str::upper(trim($value)), $hash);
+    }
+}
+
+if (! function_exists('strongPasswordRules')) {
+    function strongPasswordRules($user = null, bool $required = true): array
+    {
+        $rules = [
+            $required ? 'required' : 'nullable',
+            'string',
+            Illuminate\Validation\Rules\Password::min(12)
+                ->mixedCase()
+                ->numbers()
+                ->symbols()
+                ->uncompromised(),
+        ];
+
+        if ($user && ! empty($user->password)) {
+            $rules[] = function ($attribute, $value, $fail) use ($user) {
+                if (! empty($value) && Illuminate\Support\Facades\Hash::check($value, $user->password)) {
+                    $fail('The new password must be different from the current password.');
+                }
+            };
+        }
+
+        return $rules;
+    }
 }
 

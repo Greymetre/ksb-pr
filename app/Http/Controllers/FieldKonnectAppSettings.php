@@ -6,6 +6,8 @@ use App\Models\Division;
 use Illuminate\Http\Request;
 use App\Models\FieldKonnectAppSetting;
 use App\Models\Media;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 use Validator;
 
 class FieldKonnectAppSettings extends Controller
@@ -24,6 +26,8 @@ class FieldKonnectAppSettings extends Controller
 
     public function index()
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('field_konnect_app_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $this->field_konnect_app_setting =  FieldKonnectAppSetting::first();
         $divisions = Division::all();
         return view('field_connect_app_setting.index', compact('divisions'))->with('field_konnect_app_setting', $this->field_konnect_app_setting);
@@ -48,6 +52,8 @@ class FieldKonnectAppSettings extends Controller
      */
     public function store(Request $request)
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('field_konnect_app_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $validator = Validator::make($request->all(), [
             'app_version' => 'required',
         ]);
@@ -117,6 +123,8 @@ class FieldKonnectAppSettings extends Controller
      */
     public function destroy($id)
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('field_konnect_app_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $field_konnect_app_setting_media = Media::find($id);
         if ($field_konnect_app_setting_media) {
             $field_konnect_app_setting_media->delete();

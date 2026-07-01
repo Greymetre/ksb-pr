@@ -151,7 +151,7 @@
                               <label class="col-form-label">{{ trans('panel.user.fields.password') }}<span class="text-danger"> *</span></label>
                           
                                  <div class="form-group has-default bmd-form-group" id="pass-div">
-                                    <input class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}" type="text" name="password" id="password" value="{{ old('password', $user->password_string) }}" minlength="6" maxlength="200" required>
+                                    <input class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}" type="text" name="password" id="password" value="{{ old('password', $user->password_string) }}" minlength="12" maxlength="200" required>
                                     <span class="material-icons" title="Show" id="pass-seen">visibility</span>
                                     @if ($errors->has('password'))
                                     <label class="error">{{ $errors->first('password') }}</label>

@@ -16,8 +16,10 @@ use App\Models\State;
 use App\Models\TaxInvoiceTax;
 use App\Models\TaxInvoiceTds;
 use App\Models\User;
+use Illuminate\Http\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\In;
 use Maatwebsite\Excel\Facades\Excel;
@@ -341,6 +343,8 @@ class TaxInvoiceController extends Controller
 
     public function invoice_setting(Request $request)
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('invoice_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $invoice_setting = InvoiceSetting::with('labels')->first();
         $states = State::where('active', 'Y')->select('id', 'state_name')->get();
         return view('taxinvoice.invoice_setting', compact('invoice_setting', 'states'));
@@ -348,6 +352,8 @@ class TaxInvoiceController extends Controller
 
     public function invoice_setting_store(Request $request)
     {
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('invoice_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $request->validate([
             'invoice_logo' => 'nullable|image|mimes:png,jpg,jpeg|max:9048',
             'invoice_esign' => 'nullable|image|mimes:png,jpg,jpeg|max:9048',

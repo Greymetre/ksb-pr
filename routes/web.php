@@ -142,6 +142,16 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
+Route::get('/captcha-refresh', function () {
+    return response()->json([
+        'captcha' => (string) loginCaptchaImage(),
+    ]);
+});
+
+Route::options('{any}', function () {
+    abort(405);
+})->where('any', '.*');
+
 Route::get('aboutus', function () {
     return view('aboutus');
 });
@@ -175,7 +185,7 @@ Route::post('/dealer-appointment-submit', [DealerAppointmentController::class, '
 Route::post('/dealer-appointment-kyc-submit', [DealerAppointmentController::class, 'kyc_store'])->name('dealer-appointment-kyc-form.store');
 
 
-Route::group(['middleware' => ['auth']], function () {
+Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     Route::get('/dealer_account_statement', function () {
         abort_if(Gate::denies('dealer_account_statement'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         return view('work_in_progress');
