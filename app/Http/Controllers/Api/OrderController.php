@@ -52,6 +52,38 @@ class OrderController extends Controller
         $this->internalError = 500;
     }
 
+    private function applyOrderAccessScope($query, User $user)
+    {
+        if (method_exists($user, 'hasRole') && $user->hasRole('Distributor')) {
+            return $query->where('seller_id', $user->customerid);
+        }
+
+        if (method_exists($user, 'hasRole') && $user->hasRole('Customer Dealer')) {
+            return $query->where('seller_id', $user->customerid);
+        }
+
+        if (method_exists($user, 'hasRole') && (
+            $user->hasRole('superadmin') ||
+            $user->hasRole('Admin') ||
+            $user->hasRole('Sub_Admin') ||
+            $user->hasRole('Sub billing')
+        )) {
+            return $query;
+        }
+
+        $userIds = getUsersReportingToAuth($user->id);
+
+        return $query->where(function ($q) use ($userIds) {
+            $q->whereIn('created_by', $userIds)
+                ->orWhereIn('executive_id', $userIds);
+        });
+    }
+
+    private function findAccessibleOrder($id, User $user): ?Order
+    {
+        return $this->applyOrderAccessScope(Order::query(), $user)->find($id);
+    }
+
     public function buyer()
     {
         return $this->belongsTo(SecondaryCustomer::class, 'buyer_id');
@@ -96,7 +128,7 @@ class OrderController extends Controller
                 });
             }
 
-            if (!empty($selecteduser_id)) {
+            if (!empty($selecteduser_id) && in_array((int) $selecteduser_id, array_map('intval', $user_ids), true)) {
                 $query->where('created_by', $selecteduser_id);
             } else {
                 $query->whereIn('created_by', $user_ids);
@@ -191,7 +223,14 @@ class OrderController extends Controller
             $user = $request->user();
             $user_id = $user->id;
             $order_id = $request->input('order_id');
-            $data = $this->orders->with('orderdetails', 'orderdetails.products', 'statusname', 'orderdetails.productdetails', 'createdbyname', 'getsalesdetail', 'seller', 'buyer',)->where('id', $order_id)->first();
+            $data = $this->applyOrderAccessScope($this->orders->with('orderdetails', 'orderdetails.products', 'statusname', 'orderdetails.productdetails', 'createdbyname', 'getsalesdetail', 'seller', 'buyer'), $user)
+                ->where('id', $order_id)
+                ->first();
+
+            if (!$data) {
+                return response()->json(['status' => 'error', 'message' => 'Order not found.'], $this->notFound);
+            }
+
             $salesdetails = Sales::where('order_id', $order_id)->first() ?? [];
             // Later when preparing response:
             $data['seller_name']    = $data->seller?->trade_name ?? $data->seller?->legal_name ?? '';
@@ -714,7 +753,7 @@ class OrderController extends Controller
             if ($validator->fails()) {
                 return response()->json(['status' => 'error', 'message' =>  $validator->errors()], $this->badrequest);
             }
-            $order = Order::find($request->order_id);
+            $order = $this->findAccessibleOrder($request->order_id, $request->user());
             if ($order) {
                 $order->sub_total = $request->sub_total;
                 $order->grand_total = $request->grand_total;
@@ -762,8 +801,14 @@ class OrderController extends Controller
             return response()->json(['status' => 'error', 'message' =>  $validator->errors()], $this->badrequest);
         }
 
-        OrderDetails::where('order_id', $request->order_id)->delete();
-        Order::where('id', $request->order_id)->delete();
+        $order = $this->findAccessibleOrder($request->order_id, $request->user());
+
+        if (!$order) {
+            return response()->json(['status' => 'error', 'message' => 'Order not found.'], $this->notFound);
+        }
+
+        OrderDetails::where('order_id', $order->id)->delete();
+        $order->delete();
 
         return response()->json(['status' => 'success', 'message' => 'Order deleted successfully.'], 200);
     }
@@ -786,10 +831,14 @@ class OrderController extends Controller
             }
 
             $orderid = $request['order_id'];
+            $orders = $this->applyOrderAccessScope($this->orders->with('orderdetails'), $request->user())->find($orderid);
+
+            if (!$orders) {
+                return response()->json(['status' => 'error', 'message' => 'Order not found.'], $this->notFound);
+            }
 
             $status_id = Status::where('status_name', '=', 'Dispatched')->pluck('id')->first();
             // Order::where('id', '=', $orderid)->update(['status_id' => $status_id, 'cash_discount' => $request->cash_discount, 'cash_amount' => $request->cash_amount, 'sub_total' => $request->sub_total, 'grand_total' => $request->grand_total, 'order_remark' => $request->order_remark]);
-            $orders = $this->orders->with('orderdetails')->find($orderid);
             $orders['invoice_date'] = $request['invoice_date'];
             $orders['invoice_no'] = $request['invoice_no'];
             $orders['transport_name'] = $request['transport_name'];
@@ -808,11 +857,11 @@ class OrderController extends Controller
 
                 $status_id = Status::where('status_name', '=', 'Dispatched')->pluck('id')->first();
 
-                Order::where('id', '=', $request['order_id'])->update(['status_id' => $status_id]);
+                Order::where('id', '=', $orders->id)->update(['status_id' => $status_id]);
 
                 return response(['status' => 'success', 'message' => 'Order Dispatched Successfully.'], 200);
             } else {
-                Order::where('id', '=', $orderid)->update(['status_id' => null]);
+                Order::where('id', '=', $orders->id)->update(['status_id' => null]);
                 return response(['status' => 'error', 'message' => 'Order Status Not Updated.'], 200);
             }
         } catch (\Exception $e) {
@@ -840,7 +889,11 @@ class OrderController extends Controller
                 return response()->json(['status' => 'error', 'message' =>  $validator->errors()], $this->badrequest);
             }
 
-            $order = Order::where('id', '=', $request['order_id'])->first();
+            $order = $this->findAccessibleOrder($request['order_id'], $user);
+
+            if (!$order) {
+                return response()->json(['status' => 'error', 'message' => 'Order not found.'], $this->notFound);
+            }
 
             $request['orderno'] = $order->orderno;
             $request['saledetail'] = $request['orderdetail'];
@@ -862,10 +915,10 @@ class OrderController extends Controller
                         }
                     }
                 }
-                if (OrderDetails::where('order_id', '=', $request['order_id'])->where('status_id', '=', $partiallystatus)->exists()) {
-                    Order::where('id', '=', $request['order_id'])->update(['status_id' => $partiallystatus, 'cash_discount' => $request->cash_discount, 'cash_amount' => $request->cash_amount, 'order_remark' => $request->order_remark]);
+                if (OrderDetails::where('order_id', '=', $order->id)->where('status_id', '=', $partiallystatus)->exists()) {
+                    Order::where('id', '=', $order->id)->update(['status_id' => $partiallystatus, 'cash_discount' => $request->cash_discount, 'cash_amount' => $request->cash_amount, 'order_remark' => $request->order_remark]);
                 } else {
-                    Order::where('id', '=', $request['order_id'])->update(['status_id' => $partiallystatus, 'cash_discount' => $request->cash_discount, 'cash_amount' => $request->cash_amount, 'order_remark' => $request->order_remark]);
+                    Order::where('id', '=', $order->id)->update(['status_id' => $partiallystatus, 'cash_discount' => $request->cash_discount, 'cash_amount' => $request->cash_amount, 'order_remark' => $request->order_remark]);
                 }
                 return response(['status' => 'success', 'message' => 'Order Partially Dispatched Successfully.'], 200);
             }

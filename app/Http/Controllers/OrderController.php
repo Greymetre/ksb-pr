@@ -49,6 +49,33 @@
             $this->orders = new Order();
         }
 
+        private function applyAccessScope($query)
+        {
+            if (auth()->user()->hasRole('Distributor')) {
+                return $query->where('seller_id', auth()->user()->customerid);
+            }
+
+            if (auth()->user()->hasRole('Customer Dealer')) {
+                return $query->where('seller_id', auth()->user()->customerid);
+            }
+
+            if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin') && !Auth::user()->hasRole('Sub_Admin') && !Auth::user()->hasRole('Sub billing')) {
+                $userids = getUsersReportingToAuth();
+
+                return $query->where(function ($subQuery) use ($userids) {
+                    $subQuery->whereIn('executive_id', $userids)
+                        ->orWhereIn('created_by', $userids);
+                });
+            }
+
+            return $query;
+        }
+
+        private function findAccessibleOrderOrFail($id): Order
+        {
+            return $this->applyAccessScope(Order::query())->findOrFail($id);
+        }
+
         public function index(OrderDataTable $dataTable)
         {
             abort_if(Gate::denies('order_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
@@ -258,7 +285,7 @@ return view('orders.create', compact(
         {
             abort_if(Gate::denies('order_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
             $id = decrypt($id);
-            $orders = $this->orders->with('sellers', 'createdbyname')->find($id);
+            $orders = $this->applyAccessScope($this->orders->with('sellers', 'createdbyname'))->findOrFail($id);
             $orderdetails = OrderDetails::with('products')->where('order_id', '=', $id)->get();
             if ($orders->product_cat_id == '1') {
                 $totalLP = 0;
@@ -300,7 +327,8 @@ return view('orders.create', compact(
                 'buyers.pincode',
                 'sellers',
                 'orderdetails.products'
-            ])->find($id);
+            ]);
+            $orders = $this->applyAccessScope($orders)->findOrFail($id);
             if ($orders->order_type === 'MASTER_DISTRIBUTER') {
                 $orders->type = 'DISTRIBUTER';
             } else {
@@ -385,7 +413,7 @@ return view('orders.create', compact(
                 $request['buyer_id'] = $request['seller_id'];
             }
 
-            $orders = Order::with('orderdetails.products.subcategories')->find($id);
+            $orders = $this->applyAccessScope(Order::with('orderdetails.products.subcategories'))->findOrFail($id);
             $orders->buyer_id = $request->buyer_id ?? null;
 $orders->seller_id = $request->seller_id ?? null;
 
@@ -497,7 +525,9 @@ $orders->seller_id = $request->seller_id ?? null;
 
                     if (!empty($rows['id'])) {
                         
-                        OrderDetails::where('id', $rows['id'])->update($data);
+                        OrderDetails::where('id', $rows['id'])
+                            ->where('order_id', $id)
+                            ->update($data);
                         $incomingIds[] = $rows['id'];
                     } else {
                      
@@ -520,8 +550,8 @@ $orders->seller_id = $request->seller_id ?? null;
         public function destroy($id)
         {
             abort_if(Gate::denies('order_delete'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+            $product = $this->findAccessibleOrderOrFail($id);
             OrderDetails::where('order_id', $id)->delete();
-            $product = Order::find($id);
             if ($product->delete()) {
                 return response()->json(['status' => 'success', 'message' => 'Order deleted successfully!']);
             }
@@ -530,7 +560,10 @@ $orders->seller_id = $request->seller_id ?? null;
 
         public function active(Request $request)
         {
-            if (Order::where('id', $request['id'])->update(['active' => ($request['active'] == 'Y') ? 'N' : 'Y'])) {
+            $order = $this->findAccessibleOrderOrFail($request['id']);
+            $order->active = ($request['active'] == 'Y') ? 'N' : 'Y';
+
+            if ($order->save()) {
                 $message = ($request['active'] == 'Y') ? 'Inactive' : 'Active';
                 return response()->json(['status' => 'success', 'message' => 'Order ' . $message . ' Successfully!']);
             }
@@ -666,7 +699,7 @@ $orders->seller_id = $request->seller_id ?? null;
             // }
 
             $orderid = decrypt($orderid);
-            $orders = $this->orders->with('orderdetails')->find($orderid);
+            $orders = $this->applyAccessScope($this->orders->with('orderdetails'))->findOrFail($orderid);
             $category = Category::where('active', 'Y')->get();
             return view('orders.full_dispatched', compact('category'))->with('orders', $orders);
         }
@@ -691,6 +724,7 @@ $orders->seller_id = $request->seller_id ?? null;
                 }
 
                 $orderid = $request['order_id'];
+                $this->findAccessibleOrderOrFail($orderid);
                 $status_id = Status::where('status_name', '=', 'Dispatched')->pluck('id')->first();
                 Order::where('id', '=', $orderid)->update(['status_id' => $status_id, 'cash_discount' => $request->cash_discount, 'cash_amount' => $request->cash_amount, 'sub_total' => $request->sub_total, 'grand_total' => $request->grand_total, 'order_remark' => $request->order_remark]);
                 $orders = $this->orders->with('orderdetails')->find($orderid);
@@ -753,7 +787,7 @@ $orders->seller_id = $request->seller_id ?? null;
         public function orderPartiallyDispatched($orderid)
         {
             $orderid = decrypt($orderid);
-            $orders = $this->orders->find($orderid);
+            $orders = $this->findAccessibleOrderOrFail($orderid);
             $category = Category::where('active', 'Y')->get();
             return view('orders.dispatched', compact('category'))->with('orders', $orders);
         }
@@ -761,7 +795,7 @@ $orders->seller_id = $request->seller_id ?? null;
         public function orderCancle($orderid, Request $request)
         {
             $orderid = decrypt($orderid);
-            $orders = $this->orders->with('orderdetails')->find($orderid);
+            $orders = $this->applyAccessScope($this->orders->with('orderdetails'))->findOrFail($orderid);
             if ($orders) {
                 $orders->status_id = '4';
                 $orders->order_remark = $request->remark;
@@ -775,7 +809,7 @@ $orders->seller_id = $request->seller_id ?? null;
         public function orderPendding($orderid, Request $request)
         {
             $orderid = decrypt($orderid);
-            $orders = $this->orders->find($orderid);
+            $orders = $this->findAccessibleOrderOrFail($orderid);
             if ($orders) {
                 $orders->status_id = NULL;
                 // $orders->order_remark = $request->remark;
@@ -810,6 +844,7 @@ $orders->seller_id = $request->seller_id ?? null;
                         ->withInput();
                 }
                 $request['saledetail'] = $request['orderdetail'];
+                $this->findAccessibleOrderOrFail($request['order_id']);
                 $request['status_id'] = 2;
                 $data = collect([$request]);
                 $response = insertSales($data);
@@ -864,7 +899,9 @@ $orders->seller_id = $request->seller_id ?? null;
 
         public function deleteOrderDtails(Request $request)
         {
-            OrderDetails::where('id', $request->detailID)->delete();
+            $detail = OrderDetails::findOrFail($request->detailID);
+            $this->findAccessibleOrderOrFail($detail->order_id);
+            $detail->delete();
 
             return response()->json(['status' => 'success']);
         }

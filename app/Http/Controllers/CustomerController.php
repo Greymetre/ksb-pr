@@ -509,6 +509,9 @@ class CustomerController extends Controller
         }
         ////abort_if(Gate::denies('customer_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $id = decrypt($id);
+        $customers = Customers::findOrFail($id);
+        abort_unless($this->canAccessCustomer($customers), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $thistorys = TransactionHistory::where('customer_id', $id)->get();
         $total_points = TransactionHistory::where('customer_id', $id)->sum('point') ?? 0;
         // $active_points = TransactionHistory::where('customer_id', $id)->where('status', '1')->sum('point')??0;
@@ -526,7 +529,6 @@ class CustomerController extends Controller
         $total_redemption = Redemption::where('customer_id', $id)->whereNot('status', '2')->sum('redeem_amount') ?? 0;
         $total_rejected = Redemption::where('customer_id', $id)->where('status', '2')->sum('redeem_amount') ?? 0;
         $total_balance = (int)$active_points - (int)$total_redemption;
-        $customers = Customers::find($id);
         // dd($customers);
         $customers['due_amount'] = totalDueAmount($id);
         return view('customers.show', compact('total_balance', 'total_points', 'total_redemption', 'active_points', 'provision_points', 'total_rejected', 'kyc'))->with('customers', $customers);
@@ -543,7 +545,9 @@ class CustomerController extends Controller
         ////abort_if(Gate::denies('customer_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $userids = getUsersReportingToAuth();
         $id = decrypt($id);
-        $customers = Customers::with('surveys', 'customershippingaddress')->find($id);
+        $customers = Customers::with('surveys', 'customershippingaddress')->findOrFail($id);
+        abort_unless($this->canAccessCustomer($customers), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         $deals = DealIn::where('customer_id', '=', $id)->get();
         $pincodes = Pincode::where('active', '=', 'Y')->whereHas('assigncitiesusers', function ($query) use ($userids) {
             if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
@@ -602,6 +606,9 @@ class CustomerController extends Controller
                     ->withInput();
             }
             ////abort_if(Gate::denies('customer_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+            $customer = Customers::findOrFail($id);
+            abort_unless($this->canAccessCustomer($customer), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
             $request['updated_by'] = Auth::user()->id;
             $docimages = collect([]);
             if ($request->file('image')) {
@@ -813,6 +820,9 @@ class CustomerController extends Controller
     {
         ////abort_if(Gate::denies('customer_delete'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         try {
+            $customer = Customers::findOrFail($id);
+            abort_unless($this->canAccessCustomer($customer), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
             $walletids = DB::table('wallets')->where('customer_id', '=', $id)->select('id')->get()->pluck('id')->toArray();
             DB::table('wallet_details')->whereIn('wallet_id', $walletids)->delete();
             DB::table('wallets')->where('customer_id', '=', $id)->delete();
@@ -841,7 +851,6 @@ class CustomerController extends Controller
             EmployeeDetail::where('customer_id', $id)->delete();
             ParentDetail::where('customer_id', $id)->delete();
 
-            $customer = Customers::find($id);
             if ($customer->delete()) {
                 return response()->json(['status' => 'success', 'message' => 'Customer deleted successfully!']);
             }

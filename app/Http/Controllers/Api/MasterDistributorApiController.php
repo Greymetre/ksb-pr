@@ -44,6 +44,90 @@ class MasterDistributorApiController extends Controller
             }
         }
     }
+
+    private function hasAnyRole(User $user, array $roles): bool
+    {
+        if (method_exists($user, 'hasRole')) {
+            foreach ($roles as $role) {
+                if ($user->hasRole($role)) {
+                    return true;
+                }
+            }
+        }
+
+        if ($user->relationLoaded('roles')) {
+            return $user->roles->pluck('name')->intersect($roles)->isNotEmpty();
+        }
+
+        if (!empty($user->user_type)) {
+            $userTypes = is_string($user->user_type)
+                ? (json_decode($user->user_type, true) ?? [])
+                : (array) $user->user_type;
+
+            return !empty(array_intersect($roles, $userTypes));
+        }
+
+        return false;
+    }
+
+    private function visibleUserIdsFor(User $user): array
+    {
+        if ($this->hasAnyRole($user, ['BM.', 'Marketing Team'])) {
+            $branches = array_filter(array_map('trim', explode(',', (string) $user->branch_id)));
+
+            if (!empty($branches)) {
+                return User::where('active', 'Y')
+                    ->where(function ($query) use ($branches) {
+                        foreach ($branches as $branch) {
+                            $query->orWhereRaw('FIND_IN_SET(?, branch_id)', [$branch]);
+                        }
+                    })
+                    ->pluck('id')
+                    ->toArray();
+            }
+        }
+
+        $visibleUserIds = $this->getVisibleUserIds($user);
+        $visibleUserIds[] = $user->id;
+
+        return array_values(array_unique($visibleUserIds));
+    }
+
+    private function applyDistributorAccessScope($query, User $user)
+    {
+        if ($this->hasAnyRole($user, ['Distributor'])) {
+            return $query->where('id', $user->customerid);
+        }
+
+        if ($this->hasAnyRole($user, ['superadmin', 'subAdmin'])) {
+            return $query;
+        }
+
+        $visibleUserIds = $this->visibleUserIdsFor($user);
+
+        return $query->where(function ($q) use ($visibleUserIds) {
+            $q->whereIn('created_by', $visibleUserIds)
+                ->orWhereIn('supervisor_id', $visibleUserIds);
+
+            foreach ($visibleUserIds as $userId) {
+                $id = (int) $userId;
+
+                $q->orWhereJsonContains('sales_executive_id', $id)
+                    ->orWhereJsonContains('sales_executive_id', (string) $id)
+                    ->orWhereRaw("JSON_SEARCH(sales_executive_id, 'one', ?) IS NOT NULL", [(string) $id]);
+            }
+        });
+    }
+
+    private function accessibleDistributorQuery(User $user)
+    {
+        return $this->applyDistributorAccessScope(MasterDistributor::query(), $user);
+    }
+
+    private function findAccessibleDistributor($id, User $user): ?MasterDistributor
+    {
+        return $this->accessibleDistributorQuery($user)->find($id);
+    }
     
     public function index(Request $request)
     {
@@ -340,8 +424,8 @@ class MasterDistributorApiController extends Controller
                 ], 401);
             }
 
-            // Load the distributor + real relationship (supervisor)
-            $distributor = MasterDistributor::with([
+            // Load only distributors visible to the authenticated user.
+            $distributor = $this->applyDistributorAccessScope(MasterDistributor::with([
                 'supervisor',
                 // Corrected relationships using your actual column names
                 'billingCity' => function ($query) {
@@ -350,7 +434,7 @@ class MasterDistributorApiController extends Controller
                 'billingPincode' => function ($query) {
                     $query->select('id', 'pincode');
                 },
-            ])->find($id);
+            ]), $authUser)->find($id);
 
             if (!$distributor) {
                 return response()->json([
@@ -529,7 +613,23 @@ class MasterDistributorApiController extends Controller
 
     public function update(Request $request, $id)
     {
-        $distributor = MasterDistributor::findOrFail($id);
+        $authUser = $request->user();
+
+        if (!$authUser) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Unauthenticated',
+            ], 401);
+        }
+
+        $distributor = $this->findAccessibleDistributor($id, $authUser);
+
+        if (!$distributor) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Distributor not found',
+            ], 404);
+        }
 
         $validated = $this->validateData($request, $id);
 
@@ -606,7 +706,16 @@ class MasterDistributorApiController extends Controller
     public function destroy($id)
     {
         try {
-            $distributor = MasterDistributor::find($id);
+            $authUser = request()->user();
+
+            if (!$authUser) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Unauthenticated',
+                ], 401);
+            }
+
+            $distributor = $this->findAccessibleDistributor($id, $authUser);
 
             if (!$distributor) {
                 return response()->json([

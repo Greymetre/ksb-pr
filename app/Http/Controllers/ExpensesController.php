@@ -27,6 +27,36 @@ use App\Models\UserLiveLocation;
 
 class ExpensesController extends Controller
 {
+    private function canAccessAllExpenses(): bool
+    {
+        return Auth::user()->hasRole('superadmin')
+            || Auth::user()->hasRole('Admin')
+            || Auth::user()->hasRole('Sub_Admin')
+            || Auth::user()->hasRole('HR_Admin')
+            || Auth::user()->hasRole('HO_Account');
+    }
+
+    private function abortUnlessCanAccessExpense(Expenses $expense): void
+    {
+        if ($this->canAccessAllExpenses()) {
+            return;
+        }
+
+        abort_unless(
+            in_array((int) $expense->user_id, array_map('intval', getUsersReportingToAuth()), true),
+            403,
+            '403 Forbidden'
+        );
+    }
+
+    private function findAccessibleExpenseOrFail($id): Expenses
+    {
+        $expense = Expenses::findOrFail($id);
+        $this->abortUnlessCanAccessExpense($expense);
+
+        return $expense;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -239,6 +269,7 @@ class ExpensesController extends Controller
      */
     public function show(Expenses $expense, Request $request)
     {
+        $this->abortUnlessCanAccessExpense($expense);
 
         $exce_session = session('executive_id');
         if (!empty($exce_session) && $exce_session != $expense->user_id) {
@@ -274,6 +305,8 @@ class ExpensesController extends Controller
      */
     public function edit(Expenses $expense)
     {
+        $this->abortUnlessCanAccessExpense($expense);
+
         $userids = getUsersReportingToAuth();
         // $users= User::where('active','=','Y')->where(function($query) use($userids){
         //                     if(!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin'))
@@ -306,6 +339,8 @@ class ExpensesController extends Controller
      */
     public function update(Request $request, Expenses $expense)
     {
+        $this->abortUnlessCanAccessExpense($expense);
+
         $dates = Carbon::now();
         $current_date_time = $dates->setTimezone('Asia/Kolkata');
 
@@ -581,8 +616,9 @@ class ExpensesController extends Controller
             $dates = Carbon::now();
             $current_date_time = $dates->setTimezone('Asia/Kolkata');
             $expense_id = $request->expense_id;
+            $expense = $this->findAccessibleExpenseOrFail($expense_id);
             $reason = $request->reason ?? NULL;
-            Expenses::where('id', $expense_id)->update(['reason' => $reason, 'checker_status' => '2', 'approve_reject_by' => Auth::user()->id, 'approve_amount' => NULL]);
+            $expense->update(['reason' => $reason, 'checker_status' => '2', 'approve_reject_by' => Auth::user()->id, 'approve_amount' => NULL]);
             //return redirect(route('expenses.index')); 
 
             if ($expense_id) {
@@ -605,7 +641,7 @@ class ExpensesController extends Controller
     {
         $dates = Carbon::now();
         $current_date_time = $dates->setTimezone('Asia/Kolkata');
-        $expense_detail = Expenses::where('id', $request->expense_new_id)->first();
+        $expense_detail = $this->findAccessibleExpenseOrFail($request->expense_new_id);
         $approve_amnt = $request->approve_amnt;
         $expense_id = $request->expense_new_id;
         $reason = $request->reasons ?? NULL;
@@ -615,7 +651,7 @@ class ExpensesController extends Controller
             // return redirect(route('expenses.show', ["expense" => $expense_id]))->with('success', 'Approve amount greater than to claim amount');
         }
 
-        Expenses::where('id', $expense_id)->update(['reason' => $reason, 'checker_status' => '1', 'approve_reject_by' => Auth::user()->id, 'approve_amount' => $approve_amnt]);
+        $expense_detail->update(['reason' => $reason, 'checker_status' => '1', 'approve_reject_by' => Auth::user()->id, 'approve_amount' => $approve_amnt]);
 
         if ($expense_id) {
             $logdata = array(
@@ -643,8 +679,8 @@ class ExpensesController extends Controller
     public function destroy($id)
     {
         try {
-            ExpenseLog::where('expense_id', $id)->delete();
-            $expenses = Expenses::find($id);
+            $expenses = $this->findAccessibleExpenseOrFail($id);
+            ExpenseLog::where('expense_id', $expenses->id)->delete();
             if ($expenses->delete()) {
                 return response()->json(['status' => 'success', 'message' => 'Expense deleted successfully!']);
             }
@@ -659,7 +695,7 @@ class ExpensesController extends Controller
         $status = $request->status;
         $dates = Carbon::now();
         $current_date_time = $dates->setTimezone('Asia/Kolkata');
-        $expenses = Expenses::find($request->id);
+        $expenses = $this->findAccessibleExpenseOrFail($request->id);
         $expenses->checker_status = $status;
         $expenses->approve_reject_by = Auth::user()->id;
         $expenses->save();
@@ -690,7 +726,7 @@ class ExpensesController extends Controller
     {
         $dates = Carbon::now();
         $current_date_time = $dates->setTimezone('Asia/Kolkata');
-        $expenses = Expenses::find($request->id);
+        $expenses = $this->findAccessibleExpenseOrFail($request->id);
         $expenses->checker_status = '0';
         $expenses->approve_amount = null;
         $expenses->approve_reject_by = Auth::user()->id;
@@ -976,7 +1012,8 @@ $checks = CheckIn::where('user_id', $request->user_id)
             $reason = $request['reason'] ?? 'Checked';
 
             foreach ($ids as $key => $value) {
-                $update = Expenses::where('id', $value)->update(['reason' => $reason, 'checker_status' => '3']);
+                $expense = $this->findAccessibleExpenseOrFail($value);
+                $update = $expense->update(['reason' => $reason, 'checker_status' => '3']);
 
                 if ($update) {
                     $logdata = array(
@@ -1001,7 +1038,8 @@ $checks = CheckIn::where('user_id', $request->user_id)
             $reason = $request['reason'] ?? 'Approved';
 
             foreach ($ids as $key => $value) {
-                $update = Expenses::where('id', $value)->update(['reason' => $reason, 'checker_status' => '1', 'approve_reject_by' => Auth::user()->id, 'approve_amount' => DB::raw('claim_amount')]);
+                $expense = $this->findAccessibleExpenseOrFail($value);
+                $update = $expense->update(['reason' => $reason, 'checker_status' => '1', 'approve_reject_by' => Auth::user()->id, 'approve_amount' => $expense->claim_amount]);
 
                 if ($update) {
                     $logdata = array(
@@ -1025,7 +1063,8 @@ $checks = CheckIn::where('user_id', $request->user_id)
             $ids = explode(',', $request['id']);
             $reason = $request['reason'] ?? 'Rejected';
             foreach ($ids as $key => $value) {
-                $update = Expenses::where('id', $value)->update(['reason' => $reason, 'checker_status' => '2', 'approve_reject_by' => Auth::user()->id, 'approve_amount' => NULL]);
+                $expense = $this->findAccessibleExpenseOrFail($value);
+                $update = $expense->update(['reason' => $reason, 'checker_status' => '2', 'approve_reject_by' => Auth::user()->id, 'approve_amount' => NULL]);
 
                 if ($update) {
                     $logdata = array(

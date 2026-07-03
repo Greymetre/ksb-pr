@@ -22,8 +22,41 @@ use Illuminate\Support\Facades\Auth;
 
 class SecondaryCustomerController extends Controller
 {
+    private function applyAccessScope($query)
+    {
+        if (auth()->user()->hasRole('Distributor')) {
+            return $query->where('distributor_name', auth()->user()->customerid);
+        }
 
+        $userIds = getUsersReportingToAuth();
 
+        return $query->where(function ($q) use ($userIds) {
+            $q->whereIn('created_by', $userIds);
+
+            foreach ($userIds as $userId) {
+                $q->orWhereRaw('FIND_IN_SET(?, employee_id)', [(string) $userId]);
+            }
+        });
+    }
+
+    private function accessibleCustomerQuery()
+    {
+        return $this->applyAccessScope(SecondaryCustomer::query());
+    }
+
+    private function resolveCustomerId($id): int
+    {
+        if (is_numeric($id)) {
+            return (int) $id;
+        }
+
+        return (int) decrypt($id);
+    }
+
+    private function findAccessibleCustomerOrFail($id): SecondaryCustomer
+    {
+        return $this->accessibleCustomerQuery()->findOrFail($this->resolveCustomerId($id));
+    }
 
     public function index(Request $request)
     {
@@ -95,12 +128,7 @@ class SecondaryCustomerController extends Controller
 
 
             $query->where('type', $type);
-            $userIds = getUsersReportingToAuth();
-            if (auth()->user()->hasRole('Distributor')) {
-                $query->where('distributor_name', auth()->user()->customerid);
-            } else {
-                $query->whereIn('created_by', $userIds);
-            }
+            $this->applyAccessScope($query);
 
             // ==================== DATE FILTER (Safe Version) ====================
             if ($request->filled('start_date') && trim($request->start_date) !== '') {
@@ -433,7 +461,7 @@ class SecondaryCustomerController extends Controller
 
     public function edit($id)
     {
-        $customer = SecondaryCustomer::findOrFail(decrypt($id));
+        $customer = $this->findAccessibleCustomerOrFail($id);
 
 
         $type = $customer->type;
@@ -594,7 +622,7 @@ class SecondaryCustomerController extends Controller
     {
 
         // dd($request);
-        $customer = SecondaryCustomer::findOrFail($id);
+        $customer = $this->findAccessibleCustomerOrFail($id);
 
         // Actual type customer ke record se lo (safe)
         $type = $customer->type;
@@ -722,7 +750,13 @@ class SecondaryCustomerController extends Controller
             'pincode',
             'beat',
 
-        ])->findOrFail(decrypt($id));
+        ])->whereKey($this->resolveCustomerId($id))->firstOrFail();
+
+        abort_unless(
+            $this->accessibleCustomerQuery()->whereKey($customer->id)->exists(),
+            403,
+            '403 Forbidden'
+        );
 
         $type = $customer->type;
         $folder = strtolower($type) . 's';
@@ -733,7 +767,7 @@ class SecondaryCustomerController extends Controller
     /* ================= DELETE ================= */
     public function destroy($id)
     {
-        $customer = SecondaryCustomer::findOrFail($id);
+        $customer = $this->findAccessibleCustomerOrFail($id);
         $type = $customer->type;
         $routePrefix = strtolower($type) . 's';
 
@@ -913,7 +947,7 @@ class SecondaryCustomerController extends Controller
             'remark' => 'nullable|string|max:500'
         ]);
 
-        $customer = SecondaryCustomer::findOrFail($request->id);
+        $customer = $this->findAccessibleCustomerOrFail($request->id);
 
         // ✅ Status update
         $customer->status = $request->status;
@@ -954,7 +988,7 @@ class SecondaryCustomerController extends Controller
 
             \Log::info('Validation passed', $validated);
 
-            $customer = SecondaryCustomer::findOrFail($request->id);
+            $customer = $this->findAccessibleCustomerOrFail($request->id);
             $old = $customer->active;
 
             $customer->active = $validated['active'];

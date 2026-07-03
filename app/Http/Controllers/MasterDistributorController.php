@@ -21,6 +21,38 @@ use Illuminate\Support\Facades\Auth;
 
 class MasterDistributorController extends Controller
 {
+    private function applyAccessScope($query)
+    {
+        $user = auth()->user();
+
+        if ($user->hasRole('Distributor')) {
+            return $query->where('id', $user->customerid);
+        }
+
+        $allowedUserIds = getUsersReportingToAuth();
+
+        return $query->where(function ($q) use ($allowedUserIds) {
+            $q->whereIn('created_by', $allowedUserIds)
+                ->orWhereIn('supervisor_id', $allowedUserIds)
+                ->orWhere(function ($sub) use ($allowedUserIds) {
+                    foreach ($allowedUserIds as $id) {
+                        $sub->orWhereJsonContains('sales_executive_id', $id)
+                            ->orWhereJsonContains('sales_executive_id', (string) $id);
+                    }
+                });
+        });
+    }
+
+    private function accessibleDistributorQuery()
+    {
+        return $this->applyAccessScope(MasterDistributor::query());
+    }
+
+    private function findAccessibleDistributorOrFail($id): MasterDistributor
+    {
+        return $this->accessibleDistributorQuery()->findOrFail($id);
+    }
+
     /* ================= INDEX ================= */
     public function index(Request $request)
     {
@@ -37,24 +69,7 @@ class MasterDistributorController extends Controller
                 'business_status',
                 'created_at'
             ]);
-            if (auth()->user()->hasRole('Distributor')) {
-                $query->where('id', auth()->user()->customerid);
-            } else {
-                $allowedUserIds = getUsersReportingToAuth();
-
-                $query->where(function ($q) use ($allowedUserIds) {
-
-                    // supervisor match
-                    $q->whereIn('supervisor_id', $allowedUserIds);
-
-                    // OR sales_executive JSON match
-                    $q->orWhere(function ($sub) use ($allowedUserIds) {
-                        foreach ($allowedUserIds as $id) {
-                            $sub->orWhereJsonContains('sales_executive_id', $id);
-                        }
-                    });
-                });
-            }
+            $this->applyAccessScope($query);
 
             if ($request->filled('global_search')) {
                 $search = $request->global_search;
@@ -197,12 +212,13 @@ class MasterDistributorController extends Controller
 
 
         // View mein dropdown options ke liye data fetch kar rahe hain
+        $filterQuery = $this->accessibleDistributorQuery();
         $filters = [
-            'distributor_codes'  => MasterDistributor::distinct()->orderBy('distributor_code')->pluck('distributor_code')->filter()->values()->toArray(),
-            'legal_names'        => MasterDistributor::distinct()->orderBy('legal_name')->pluck('legal_name')->filter()->values()->toArray(),
-            'trade_names'        => MasterDistributor::distinct()->whereNotNull('trade_name')->orderBy('trade_name')->pluck('trade_name')->filter()->values()->toArray(),
-            'contact_persons'    => MasterDistributor::distinct()->orderBy('contact_person')->pluck('contact_person')->filter()->values()->toArray(),
-            'mobiles'            => MasterDistributor::distinct()->orderBy('mobile')->pluck('mobile')->filter()->values()->toArray(),
+            'distributor_codes'  => (clone $filterQuery)->distinct()->orderBy('distributor_code')->pluck('distributor_code')->filter()->values()->toArray(),
+            'legal_names'        => (clone $filterQuery)->distinct()->orderBy('legal_name')->pluck('legal_name')->filter()->values()->toArray(),
+            'trade_names'        => (clone $filterQuery)->distinct()->whereNotNull('trade_name')->orderBy('trade_name')->pluck('trade_name')->filter()->values()->toArray(),
+            'contact_persons'    => (clone $filterQuery)->distinct()->orderBy('contact_person')->pluck('contact_person')->filter()->values()->toArray(),
+            'mobiles'            => (clone $filterQuery)->distinct()->orderBy('mobile')->pluck('mobile')->filter()->values()->toArray(),
             'billing_cities'     => City::orderBy('city_name')->pluck('city_name', 'id')->toArray(),
             'billing_states'     => State::orderBy('state_name')->pluck('state_name', 'id')->toArray(),
             'business_statuses'  => ['Active', 'Inactive'],
@@ -422,7 +438,7 @@ class MasterDistributorController extends Controller
     public function edit($id)
     {
 
-        $distributor = MasterDistributor::findOrFail($id);
+        $distributor = $this->findAccessibleDistributorOrFail($id);
         $users = User::pluck('name', 'id');
         $beats = Beat::where('active', 'Y')
             ->whereHas('beatusers', function ($q) {
@@ -441,7 +457,7 @@ class MasterDistributorController extends Controller
     {
 
         // dd($request);
-        $distributor = MasterDistributor::findOrFail($id);
+        $distributor = $this->findAccessibleDistributorOrFail($id);
         $beats = Beat::where('active', 'Y')
             ->orderBy('beat_name')
             ->pluck('beat_name', 'id');
@@ -559,14 +575,14 @@ class MasterDistributorController extends Controller
     /* ================= SHOW ================= */
     public function show($id)
     {
-        $distributor = MasterDistributor::findOrFail($id);
+        $distributor = $this->findAccessibleDistributorOrFail($id);
         return view('master_distributors.show', compact('distributor'));
     }
 
     /* ================= DELETE ================= */
     public function destroy($id)
     {
-        $distributor = MasterDistributor::findOrFail($id);
+        $distributor = $this->findAccessibleDistributorOrFail($id);
 
         // Delete associated files
         foreach (['shop_image', 'profile_image', 'cancelled_cheque', 'mou_file'] as $file) {
@@ -647,21 +663,7 @@ class MasterDistributorController extends Controller
     |--------------------------------------------------------------------------
     */
 
-        $allowedUserIds = getUsersReportingToAuth();
-
-        $query->where(function ($q) use ($allowedUserIds) {
-
-            // supervisor match
-            $q->whereIn('supervisor_id', $allowedUserIds);
-
-            // sales executive JSON match
-            $q->orWhere(function ($sub) use ($allowedUserIds) {
-
-                foreach ($allowedUserIds as $id) {
-                    $sub->orWhereJsonContains('sales_executive_id', $id);
-                }
-            });
-        });
+        $this->applyAccessScope($query);
 
         /*
     |--------------------------------------------------------------------------
@@ -791,7 +793,7 @@ class MasterDistributorController extends Controller
     public function toggleStatus(Request $request)
     {
         $id = $request->id;
-        $distributor = MasterDistributor::findOrFail($id);
+        $distributor = $this->findAccessibleDistributorOrFail($id);
 
         // Toggle status
         $distributor->business_status = $distributor->business_status === 'Active' ? 'Inactive' : 'Active';

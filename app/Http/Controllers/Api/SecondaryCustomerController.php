@@ -48,6 +48,74 @@ class SecondaryCustomerController extends Controller
         }
     }
 
+    private function hasAnyRole(User $user, array $roles): bool
+    {
+        if (method_exists($user, 'hasRole')) {
+            foreach ($roles as $role) {
+                if ($user->hasRole($role)) {
+                    return true;
+                }
+            }
+        }
+
+        if ($user->relationLoaded('roles')) {
+            return $user->roles->pluck('name')->intersect($roles)->isNotEmpty();
+        }
+
+        if (!empty($user->user_type)) {
+            $userTypes = is_string($user->user_type)
+                ? (json_decode($user->user_type, true) ?? [])
+                : (array) $user->user_type;
+
+            return !empty(array_intersect($roles, $userTypes));
+        }
+
+        return false;
+    }
+
+    private function visibleUserIdsFor(User $user): array
+    {
+        if ($this->hasAnyRole($user, ['BM.'])) {
+            return User::where('branch_id', $user->branch_id)
+                ->whereDoesntHave('roles', function ($q) {
+                    $q->whereIn('id', config('constants.customer_roles'));
+                })
+                ->pluck('id')
+                ->toArray();
+        }
+
+        $visibleUserIds = $this->getVisibleUserIds($user);
+        $visibleUserIds[] = $user->id;
+
+        return array_values(array_unique($visibleUserIds));
+    }
+
+    private function applyCustomerAccessScope($query, User $user)
+    {
+        if ($this->hasAnyRole($user, ['superadmin', 'subAdmin'])) {
+            return $query;
+        }
+
+        if ($this->hasAnyRole($user, ['Distributor'])) {
+            return $query->where('distributor_name', $user->customerid);
+        }
+
+        $visibleUserIds = $this->visibleUserIdsFor($user);
+
+        return $query->where(function ($q) use ($visibleUserIds) {
+            $q->whereIn('created_by', $visibleUserIds);
+
+            foreach ($visibleUserIds as $userId) {
+                $q->orWhereRaw('FIND_IN_SET(?, employee_id)', [(string) $userId]);
+            }
+        });
+    }
+
+    private function findAccessibleCustomer($id, User $user): ?SecondaryCustomer
+    {
+        return $this->applyCustomerAccessScope(SecondaryCustomer::query(), $user)->find($id);
+    }
+
     public function index(Request $request)
     {
         $type = $request->query('type');
@@ -424,7 +492,7 @@ class SecondaryCustomerController extends Controller
             }
 
             // Load the secondary customer with its relationships
-            $customer = SecondaryCustomer::with([
+            $customer = $this->applyCustomerAccessScope(SecondaryCustomer::with([
                 'country',
                 'state',
                 'district',
@@ -433,7 +501,7 @@ class SecondaryCustomerController extends Controller
                 'beat',
                 'distributor',
                 'creator'
-            ])->find($id);
+            ]), $authUser)->find($id);
 
             if (!$customer) {
                 return response()->json([
@@ -646,7 +714,23 @@ class SecondaryCustomerController extends Controller
 
     public function update(Request $request, $id)
     {
-        $customer = SecondaryCustomer::findOrFail($id);
+        $authUser = $request->user();
+
+        if (!$authUser) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Unauthenticated',
+            ], 401);
+        }
+
+        $customer = $this->findAccessibleCustomer($id, $authUser);
+
+        if (!$customer) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Customer not found',
+            ], 404);
+        }
 
         $validated = $this->validateData($request, $id);
 
@@ -717,7 +801,16 @@ class SecondaryCustomerController extends Controller
     public function destroy($id)
     {
         try {
-            $customer = SecondaryCustomer::find($id);
+            $authUser = request()->user();
+
+            if (!$authUser) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Unauthenticated',
+                ], 401);
+            }
+
+            $customer = $this->findAccessibleCustomer($id, $authUser);
 
             if (!$customer) {
                 return response()->json([
@@ -892,7 +985,16 @@ class SecondaryCustomerController extends Controller
      */
     public function changeStatus(Request $request, $id)
     {
-        $customer = SecondaryCustomer::find($id);
+        $authUser = $request->user();
+
+        if (!$authUser) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Unauthenticated',
+            ], 401);
+        }
+
+        $customer = $this->findAccessibleCustomer($id, $authUser);
         if (!$customer) {
             return response()->json(['status' => false, 'message' => 'Not found'], 404);
         }
