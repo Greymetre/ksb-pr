@@ -3,7 +3,7 @@ name: Deploy to Hostinger
 on:
   push:
     branches:
-      - master
+      - duke
 
 jobs:
   deploy:
@@ -19,12 +19,12 @@ jobs:
           port: ${{ secrets.HOSTINGER_PORT }}
           script_stop: true
           script: |
-            cd "${{ secrets.HOSTINGER_PROJECT_PATH }}"
+            cd "${{ secrets.HOSTINGER_PROJECT_PATH_DUKE }}"
 
             echo "Current path:"
             pwd
 
             echo "Pulling latest code..."
-            git pull origin master
+            git pull origin duke
 
             echo "Deployment completed successfully."
