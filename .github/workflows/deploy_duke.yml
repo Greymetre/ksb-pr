@@ -1,4 +1,4 @@
-name: Deploy to Hostinger
+name: Deploy Duke to Hostinger
 
 on:
   push:
