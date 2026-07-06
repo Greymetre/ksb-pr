@@ -37,7 +37,7 @@
         height: 100%;
         min-height: 50px;
         object-fit: contain;
-        margin-top: 10px;
+        margin: 6px;
     }
 
     .main-panel>.navbar {
@@ -2795,7 +2795,7 @@
             <div class="container-fluid" style="background: transparent; !important">
                 <div class="new_demo">
                     <!-- <img class="rounded ml-2 iconimg" alt="Blueneba" src="{!! asset('assets/img/bnt_logo.png') !!}?" width="120"> -->
-                    <img class="rounded ml-2  iconimg" src="{!! asset('assets/img/ksb-logo-data.svg') !!}" width="100">
+                    <img class="rounded ml-2  iconimg" src="{!! asset('assets/img/duke_logo.png') !!}" width="50">
                 </div>
                 <!-- <img src="{!! asset('assets/img/logo.png') !!}" width="50"> -->
                 <div class="navbar-wrapper">

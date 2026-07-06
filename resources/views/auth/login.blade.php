@@ -133,7 +133,7 @@
         <div class="logo mb-3"><img src="{{asset('assets/img/brand_logo.png') }}" alt="" width="100%"></div>
         <div class="login-box">
           <div class="german-logo-cont">
-            <img src="{{ url('/').'/'.asset('assets/img/ksb-logo-data.svg') }}?" alt="ksb" width="160" class="blueneba-logo">
+            <img src="{{ url('/').'/'.asset('assets/img/duke_logo.png') }}?" alt="Duke Logo" width="120" class="blueneba-logo">
             <!--<img src="{{ url('/').'/'.asset('assets/img/silver.png') }}" alt="" class="german-logo">-->
           </div>
           <p class="mb-3 font-weight-bold text-primary">Please log in to your account</p>
