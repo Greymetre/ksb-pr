@@ -16,6 +16,7 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 class SecondaryCustomersImport implements ToCollection, WithHeadingRow
 {
     protected $type;
+    public $errors = [];
 
     public function __construct($type)
     {
@@ -82,10 +83,7 @@ class SecondaryCustomersImport implements ToCollection, WithHeadingRow
                     throw new \Exception("Invalid city");
                 }
 
-                // Duplicate mobile check
-                if (SecondaryCustomer::where('mobile_number', $row['mobile_number'])->exists()) {
-                    throw new \Exception("Duplicate mobile");
-                }
+                $mobileNumber = trim($row['mobile_number']);
 
                 // Pincode
                 $pincodeValue = trim($row['pincode']);
@@ -110,7 +108,7 @@ if (!$beat) {
                     'sub_type' => $row['sub_type'] ?? null,
                     'owner_name' => $row['owner_name'],
                     'shop_name' => $row['shop_name'],
-                    'mobile_number' => $row['mobile_number'],
+                    'mobile_number' => $mobileNumber,
                     'whatsapp_number' => $row['whatsapp_number'] ?? null,
                     'vehicle_segment' => $row['vehicle_segment'] ?? null,
                     'address_line' => $row['address_line'],
@@ -131,7 +129,10 @@ if (!$beat) {
                     $data['saathi_awareness_status'] = $row['awareness_status'];
                 }
 
-                SecondaryCustomer::create($data);
+                SecondaryCustomer::updateOrCreate(
+                    ['mobile_number' => $mobileNumber],
+                    $data
+                );
 
             } catch (\Exception $e) {
 
