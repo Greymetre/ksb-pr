@@ -73,9 +73,7 @@ class SecondaryCustomersImport implements ToCollection, WithHeadingRow
                 // City
                 $cityValue = trim($row['city']);
 
-                $city = is_numeric($cityValue)
-                    ? City::find($cityValue)
-                    : City::where('city_name', $cityValue)
+                $city = City::where('city_name', $cityValue)
                         ->where('district_id', $district->id)
                         ->first();
 
@@ -88,9 +86,7 @@ class SecondaryCustomersImport implements ToCollection, WithHeadingRow
                 // Pincode
                 $pincodeValue = trim($row['pincode']);
 
-                $pincode = is_numeric($pincodeValue)
-                    ? Pincode::find($pincodeValue)
-                    : Pincode::where('pincode', $pincodeValue)
+                $pincode = Pincode::where('pincode', $pincodeValue)
                         ->where('city_id', $city->id)
                         ->first();
 
