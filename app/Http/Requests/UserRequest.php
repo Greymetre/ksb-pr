@@ -26,7 +26,7 @@ class UserRequest extends FormRequest
         switch($this) {
             case !empty($this->id) :
                 $rules = [
-                    'name'          => 'required|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
+                    // 'name'          => 'required|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
                     'first_name'    => 'required|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
                     'last_name'     => 'required|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
                     'address'       => 'nullable|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
@@ -45,7 +45,7 @@ class UserRequest extends FormRequest
                 break;
             default :
                 $rules = [
-                    'name'          => 'required|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
+                    // 'name'          => 'required|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
                     'first_name'    => 'required|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
                     'last_name'     => 'required|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
                     'address'       => 'nullable|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',

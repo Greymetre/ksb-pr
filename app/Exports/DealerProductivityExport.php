@@ -51,6 +51,8 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
 
         $distributors = $query->get();
 
+        // dd($distributors->toArray());
+
         if ($distributors->isEmpty()) {
             return $this->headerRows();
         }

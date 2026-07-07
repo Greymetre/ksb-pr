@@ -383,6 +383,7 @@ public function retailerProductivityExport(Request $request)
 
 public function dealerProductivityExport(Request $request)
 {
+    
     $filters = $request->only([
         'start_date',
         'end_date',
