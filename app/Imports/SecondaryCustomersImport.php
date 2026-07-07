@@ -116,7 +116,7 @@ if (!$beat) {
                     'city_id' => $city?->id,
                     'pincode_id' => $pincode?->id,
                     'beat_id' => $beat?->id,
-                    'opportunity_status' => strtoupper($row['opportunity_status']),
+                    // 'opportunity_status' => strtoupper($row['opportunity_status']),
                 ];
 
                 if (in_array($this->type, ['RETAILER', 'WORKSHOP'])) {
