@@ -1027,10 +1027,10 @@
                             <a class="collapsed hoveradd " data-toggle="collapse" href="#addressMenu"
                                 aria-expanded="false">
                                 <i class="material-icons icon">contact_mail</i>
-                                <span> {!! trans('panel.sidemenu.address_master') !!}
+                                <span> {!! trans('panel.sidemenu.address_master') !!} Management
                                 </span>
                                 <div class="d-none mobile_hide">{!! trans('panel.sidemenu.address_master')
-                                    !!}</div>
+                                    !!} Management</div>
                             </a>
                             <div class="collapse" id="addressMenu" style="">
                                 <ul class="navd">
@@ -1125,7 +1125,7 @@
                                     <li class="nav-link-btn {{ request()->is('subcategories*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('subcategories') }}">
                                             <i class="material-icons icon">subtitles</i>
-                                            <span>Segment</span>
+                                            <span>{!! trans('panel.sidemenu.subcategories') !!}</span>
                                             <div class="d-none mobile_hide">{!! trans('panel.sidemenu.subcategories')
                                                 !!}</div>
                                         </a>
@@ -1217,39 +1217,6 @@
                         </li>
                         @endif
 
-                        @if(auth()->user()->can('forecast_access'))
-                        <li
-                            class="nav-link {{ request()->is('planned-sop-forecast*') || request()->is('planned-sop*') ? 'active' : '' }}">
-                            <a class="collapsed hoveradd" data-toggle="collapse" href="#forecastMenu"
-                                aria-expanded="false">
-                                <i class="material-icons icon">online_prediction</i>
-                                <span> Forecast </span>
-                                <div class="d-none mobile_hide"> Forecast</div>
-                            </a>
-                            <div class="collapse" id="forecastMenu" style="">
-                                <ul class="navd">
-                                    <li class="nav-link-btn {{ request()->is('planned-sop*') ? 'active' : '' }}">
-                                        <a class="hoveradd2" href="{{ url('planned-sop') }}">
-                                            <i class="material-icons icon">warehouse</i>
-                                            <span>Planned S&OP</span>
-                                            <div class="d-none mobile_hide"> Planned S&OP</div>
-                                        </a>
-                                    </li>
-                                    @if(auth()->user()->can('planned_forecast'))
-                                    <li
-                                        class="nav-link-btn {{ request()->is('planned-sop-forecast*') ? 'active' : '' }}">
-                                        <a class="hoveradd2" href="{{ url('planned-sop-forecast') }}">
-                                            <i class="material-icons icon">warehouse</i>
-                                            <span>S&OP Forecast</span>
-                                            <div class="d-none mobile_hide"> S&OP Forecast</div>
-                                        </a>
-                                    </li>
-                                    @endif
-                                </ul>
-                            </div>
-                        </li>
-                        @endif
-
                         @if(auth()->user()->can('dealer_product_access'))
                         <li class="nav-link hide_icon {{ request()->is('dealer_product*') ? 'active' : '' }}">
                             <a class="hoveradd" href="{{ url('dealer_product') }}">
@@ -1317,6 +1284,38 @@
                                             <span> Primary Scheme Report</span>
                                             <div class="d-none mobile_hide"> Primary Scheme Report</div>
                                         </a>
+                                    </li>
+                                    @endif
+                                    @if(auth()->user()->can('forecast_access'))
+                                    <li
+                                        class="nav-link-btn add_icon {{ request()->is('planned-sop-forecast*') || request()->is('planned-sop*') ? 'active' : '' }}">
+                                        <a class="collapsed hoveradd" data-toggle="collapse" href="#forecastMenu"
+                                            aria-expanded="false">
+                                            <i class="material-icons icon">online_prediction</i>
+                                            <span> Forecast </span>
+                                            <div class="d-none mobile_hide"> Forecast</div>
+                                        </a>
+                                        <div class="collapse" id="forecastMenu" style="">
+                                            <ul class="navd">
+                                                <li class="nav-link-btn {{ request()->is('planned-sop*') ? 'active' : '' }}">
+                                                    <a class="hoveradd2" href="{{ url('planned-sop') }}">
+                                                        <i class="material-icons icon">warehouse</i>
+                                                        <span>Planned S&OP</span>
+                                                        <div class="d-none mobile_hide"> Planned S&OP</div>
+                                                    </a>
+                                                </li>
+                                                @if(auth()->user()->can('planned_forecast'))
+                                                <li
+                                                    class="nav-link-btn {{ request()->is('planned-sop-forecast*') ? 'active' : '' }}">
+                                                    <a class="hoveradd2" href="{{ url('planned-sop-forecast') }}">
+                                                        <i class="material-icons icon">warehouse</i>
+                                                        <span>S&OP Forecast</span>
+                                                        <div class="d-none mobile_hide"> S&OP Forecast</div>
+                                                    </a>
+                                                </li>
+                                                @endif
+                                            </ul>
+                                        </div>
                                     </li>
                                     @endif
                                 </ul>
@@ -1453,7 +1452,7 @@
                         </li>
                         @if(auth()->user()->can('user_access'))
                         <li
-                            class="nav-link {{ request()->is('users*') || request()->is('targets*') || request()->is('livelocation*') || request()->is('roles*') || request()->is('permissions*') || request()->is('tours*') || request()->is('usercity*') || request()->is('new-joinings*') ? 'active' : '' }}">
+                            class="nav-link {{ request()->is('users*') || request()->is('targets*') || request()->is('livelocation*') || request()->is('permissions*') || request()->is('tours*') || request()->is('usercity*') || request()->is('new-joinings*') ? 'active' : '' }}">
                             <a class="hoveradd" data-toggle="collapse" href="#userMenu" aria-expanded="false">
                                 <i class="material-icons icon">badge</i>
                                 <!-- <span> {!! trans('panel.sidemenu.users_master') !!}</span> -->
@@ -1662,9 +1661,9 @@
                     class="nav-link {{ request()->is('services*') || request()->is('warranty_activation*') || request()->is('complaint-type*') || request()->is('complaints*') || request()->is('service-charge*') || request()->is('service_bills*') || request()->is('end_user*') ? 'active' : '' }}">
                     <a class="collapsed hoveradd" data-toggle="collapse" href="#serviceMenu" aria-expanded="false">
                         <i class="material-icons icon">design_services</i>
-                        <span> {!! trans('panel.sidemenu.services') !!}
+                        <span> {!! trans('panel.sidemenu.services') !!} Management
                         </span>
-                        <div class="d-none mobile_hide"> {!! trans('panel.sidemenu.services') !!}</div>
+                        <div class="d-none mobile_hide"> {!! trans('panel.sidemenu.services') !!} Management</div>
                     </a>
                     <div class="collapse" id="serviceMenu" style="">
                         <ul class="navd">
@@ -1865,15 +1864,6 @@
                     </div>
                 </li>
                 @endif
-                @if(auth()->user()->can('new_invoice_access'))
-                <li class="nav-link {{ request()->is('new-invoices*') ? 'active' : '' }}">
-                    <a class="hoveradd2" href="{{ route('new-invoices.index') }}">
-                        <i class="material-icons icon">receipt_long</i>
-                        <span>New Invoices</span>
-                        <div class="d-none mobile_hide"> New Invoices</div>
-                    </a>
-                </li>
-                @endif
                 @if(auth()->user()->can('marketing_access'))
                 <li class="nav-link {{ request()->is('marketings*') ? 'active' : '' }}">
                     <a class="collapsed hoveradd" data-toggle="collapse" href="#marketingMenu" aria-expanded="false">
@@ -2054,6 +2044,15 @@
                                 </a>
                             </li>
                             @endif
+                            @if(auth()->user()->can('new_invoice_access'))
+                            <li class="nav-link-btn {{ request()->is('new-invoices*') ? 'active' : '' }}">
+                                <a class="hoveradd2" href="{{ route('new-invoices.index') }}">
+                                    <i class="material-icons icon">receipt_long</i>
+                                    <span>New Invoices</span>
+                                    <div class="d-none mobile_hide"> New Invoices</div>
+                                </a>
+                            </li>
+                            @endif
                         </ul>
                     </div>
                 </li>
@@ -2146,13 +2145,13 @@
                             </li>
                             @endif
                             @if(auth()->user()->can('permission_access'))
-                            <li class="nav-link-btn {{ request()->is('permissions*') ? 'active' : '' }}">
+                            <!-- <li class="nav-link-btn {{ request()->is('permissions*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('permissions') }}">
                                     <i class="material-icons icon">workspace_premium</i>
                                     <span>{!! trans('panel.sidemenu.permissions') !!}</span>
                                     <div class="d-none mobile_hide">{!! trans('panel.sidemenu.permissions') !!}</div>
                                 </a>
-                            </li>
+                            </li> -->
                             @endif
 
                         </ul>
