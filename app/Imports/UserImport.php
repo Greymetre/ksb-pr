@@ -257,6 +257,8 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     );
                 }
             } else {
+                $latitude = null;
+                $longitude = null;
 
                 $name = trim($row['user_name']);
                 $last_name = (strpos($name, ' ') === false) ? '' : preg_replace('#.*\s([\w-]*)$#', '$1', $name);
@@ -291,10 +293,9 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     'created_at' => getcurentDateTime(),
                     'updated_at' => getcurentDateTime()
                 ])) {
-                    $roles = Role::where('name', '=', $row['role'])->pluck('id')->toArray();
-                    $user->roles()->sync($roles);
-                    $permissions = $user->getPermissionsViaRoles()->pluck('name');
-                    $user->givePermissionTo($permissions);
+                    $user->roles()->sync(explode(',', $row['role_ids']));
+                    // $permissions = $user->getPermissionsViaRoles()->pluck('name');
+                    // $user->givePermissionTo($permissions);
                     $userdetails->push([
                         'user_id' => $user['id'],
                         'date_of_joining' => (!empty($row['date_of_joining']) && $row['date_of_joining'] != null) ? date('Y-m-d', strtotime($row['date_of_joining'])) : null,
