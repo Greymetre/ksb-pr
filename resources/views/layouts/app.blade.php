@@ -1008,82 +1008,82 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('country_access'))
-                                    <li
-                                        class="nav-link-btn add_icon {{ request()->is('country*') || request()->is('state*') || request()->is('district*') || request()->is('city*') || request()->is('pincode*') ? 'active' : '' }}">
-                                        <a class="collapsed hoveradd " data-toggle="collapse" href="#addressMenu"
-                                            aria-expanded="false">
-                                            <i class="material-icons icon">contact_mail</i>
-                                            <span> {!! trans('panel.sidemenu.address_master') !!}
-                                            </span>
-                                            <div class="d-none mobile_hide">{!! trans('panel.sidemenu.address_master')
-                                                !!}</div>
-                                        </a>
-                                        <div class="collapse" id="addressMenu" style="">
-                                            <ul class="navd">
-                                                @if(auth()->user()->can('country_access'))
-                                                <li
-                                                    class="nav-link-btn {{ request()->is('country*') ? 'active' : '' }}">
-                                                    <a class="hoveradd2" href="{{ url('country') }}">
-                                                        <i class="material-icons icon">flag_circle</i>
-                                                        <span>{!! trans('panel.sidemenu.address_country') !!}</span>
-                                                        <div class="d-none mobile_hide">{!!
-                                                            trans('panel.sidemenu.address_country') !!}</div>
-                                                    </a>
-                                                </li>
-                                                @endif
-                                                @if(auth()->user()->can('state_access'))
-                                                <li class="nav-link-btn {{ request()->is('state*') ? 'active' : '' }}">
-                                                    <a class="hoveradd2" href="{{ url('state') }}">
-                                                        <i class="material-icons icon">location_city</i>
-                                                        <span>{!! trans('panel.sidemenu.address_state') !!}</span>
-                                                        <div class="d-none mobile_hide">{!!
-                                                            trans('panel.sidemenu.address_state') !!}</div>
-                                                    </a>
-                                                </li>
-                                                @endif
-                                                @if(auth()->user()->can('district_access'))
-                                                <li
-                                                    class="nav-link-btn {{ request()->is('district*') ? 'active' : '' }}">
-                                                    <a class="hoveradd2" href="{{ url('district') }}">
-                                                        <i class="material-icons icon">balcony</i>
-                                                        <span>{!! trans('panel.sidemenu.address_district') !!}</span>
-                                                        <div class="d-none mobile_hide">{!!
-                                                            trans('panel.sidemenu.address_district') !!}</div>
-                                                    </a>
-                                                </li>
-                                                @endif
-                                                @if(auth()->user()->can('city_access'))
-                                                <li class="nav-link-btn {{ request()->is('city') ? 'active' : '' }}">
-                                                    <a class="hoveradd2" href="{{ url('city') }}">
-                                                        <i class="material-icons icon">apartment</i>
-                                                        <span>{!! trans('panel.sidemenu.address_city') !!}</span>
-                                                        <div class="d-none mobile_hide">{!!
-                                                            trans('panel.sidemenu.address_city') !!}</div>
-                                                    </a>
-                                                </li>
-                                                @endif
-                                                @if(auth()->user()->can('pincode_access'))
-                                                <li
-                                                    class="nav-link-btn {{ request()->is('pincode*') ? 'active' : '' }}">
-                                                    <a class="hoveradd2" href="{{ url('pincode') }}">
-                                                        <i class="material-icons icon">cabin</i>
-                                                        <span>{!! trans('panel.sidemenu.address_pincode') !!}</span>
-                                                        <div class="d-none mobile_hide">{!!
-                                                            trans('panel.sidemenu.address_pincode') !!}</div>
-                                                    </a>
-                                                </li>
-                                                @endif
-                                            </ul>
-                                        </div>
-                                    </li>
-                                    @endif
                                     @if(auth()->user()->can('dealer_appointment'))
                                     <li class="nav-link-btn {{ request()->is('dealer-appointment*') ? 'active' : '' }}">
                                         <a class="nav-link hoveradd2" href="{{ url('dealer-appointments') }}">
                                             <i class="material-icons icon">pending_actions</i>
                                             <span>Dealer / Distributor Appointment</span>
                                             <div class="d-none mobile_hide"> Dealer / Distributor Appointment</div>
+                                        </a>
+                                    </li>
+                                    @endif
+                                </ul>
+                            </div>
+                        </li>
+                        @endif
+                        @if(auth()->user()->can('country_access'))
+                        <li
+                            class="nav-link {{ request()->is('country') || request()->is('state') || request()->is('district*') || request()->is('city*') || request()->is('pincode*') ? 'active' : '' }}">
+                            <a class="collapsed hoveradd " data-toggle="collapse" href="#addressMenu"
+                                aria-expanded="false">
+                                <i class="material-icons icon">contact_mail</i>
+                                <span> {!! trans('panel.sidemenu.address_master') !!}
+                                </span>
+                                <div class="d-none mobile_hide">{!! trans('panel.sidemenu.address_master')
+                                    !!}</div>
+                            </a>
+                            <div class="collapse" id="addressMenu" style="">
+                                <ul class="navd">
+                                    @if(auth()->user()->can('country_access'))
+                                    <li
+                                        class="nav-link-btn {{ request()->is('country*') ? 'active' : '' }}">
+                                        <a class="hoveradd2" href="{{ url('country') }}">
+                                            <i class="material-icons icon">flag_circle</i>
+                                            <span>{!! trans('panel.sidemenu.address_country') !!}</span>
+                                            <div class="d-none mobile_hide">{!!
+                                                trans('panel.sidemenu.address_country') !!}</div>
+                                        </a>
+                                    </li>
+                                    @endif
+                                    @if(auth()->user()->can('state_access'))
+                                    <li class="nav-link-btn {{ request()->is('state*') ? 'active' : '' }}">
+                                        <a class="hoveradd2" href="{{ url('state') }}">
+                                            <i class="material-icons icon">location_city</i>
+                                            <span>{!! trans('panel.sidemenu.address_state') !!}</span>
+                                            <div class="d-none mobile_hide">{!!
+                                                trans('panel.sidemenu.address_state') !!}</div>
+                                        </a>
+                                    </li>
+                                    @endif
+                                    @if(auth()->user()->can('district_access'))
+                                    <li
+                                        class="nav-link-btn {{ request()->is('district*') ? 'active' : '' }}">
+                                        <a class="hoveradd2" href="{{ url('district') }}">
+                                            <i class="material-icons icon">balcony</i>
+                                            <span>{!! trans('panel.sidemenu.address_district') !!}</span>
+                                            <div class="d-none mobile_hide">{!!
+                                                trans('panel.sidemenu.address_district') !!}</div>
+                                        </a>
+                                    </li>
+                                    @endif
+                                    @if(auth()->user()->can('city_access'))
+                                    <li class="nav-link-btn {{ request()->is('city') ? 'active' : '' }}">
+                                        <a class="hoveradd2" href="{{ url('city') }}">
+                                            <i class="material-icons icon">apartment</i>
+                                            <span>{!! trans('panel.sidemenu.address_city') !!}</span>
+                                            <div class="d-none mobile_hide">{!!
+                                                trans('panel.sidemenu.address_city') !!}</div>
+                                        </a>
+                                    </li>
+                                    @endif
+                                    @if(auth()->user()->can('pincode_access'))
+                                    <li
+                                        class="nav-link-btn {{ request()->is('pincode*') ? 'active' : '' }}">
+                                        <a class="hoveradd2" href="{{ url('pincode') }}">
+                                            <i class="material-icons icon">cabin</i>
+                                            <span>{!! trans('panel.sidemenu.address_pincode') !!}</span>
+                                            <div class="d-none mobile_hide">{!!
+                                                trans('panel.sidemenu.address_pincode') !!}</div>
                                         </a>
                                     </li>
                                     @endif
