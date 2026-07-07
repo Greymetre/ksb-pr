@@ -31,556 +31,556 @@
 
     <meta http-equiv="Cache-Control" content="no-store" />
     <style>
-    .iconimg {
-        background: #fff;
-        padding: 0px;
-        height: 100%;
-        min-height: 50px;
-        object-fit: contain;
-        margin: 6px;
-    }
+        .iconimg {
+            background: #fff;
+            padding: 0px;
+            height: 100%;
+            min-height: 50px;
+            object-fit: contain;
+            margin: 6px;
+        }
 
-    .main-panel>.navbar {
-        background: #FFFFFF;
-        padding: 0 !important;
-        z-index: 50 !important;
-    }
+        .main-panel>.navbar {
+            background: #FFFFFF;
+            padding: 0 !important;
+            z-index: 50 !important;
+        }
 
-    /* Google Font Import - Poppins */
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        /* Google Font Import - Poppins */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: 'Poppins', sans-serif;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
 
-    :root {
-        /* ===== Colors ===== */
-        --body-color: #E4E9F7;
-        --sidebar-color: #FFF;
-        --primary-color: #3860a4;
-        --primary-color-light: #F6F5FF;
-        --toggle-color: #DDD;
-        --text-color: #707070;
+        :root {
+            /* ===== Colors ===== */
+            --body-color: #E4E9F7;
+            --sidebar-color: #FFF;
+            --primary-color: #3860a4;
+            --primary-color-light: #F6F5FF;
+            --toggle-color: #DDD;
+            --text-color: #707070;
 
-        /* ====== Transition ====== */
-        /*  --tran-03: all 0.2s ease;
+            /* ====== Transition ====== */
+            /*  --tran-03: all 0.2s ease;
       --tran-03: all 0.3s ease;
       --tran-04: all 0.3s ease;
       --tran-05: all 0.3s ease;*/
 
-        --tran-03: unset;
-        --tran-03: unset;
-        --tran-04: unset;
-        --tran-05: unset;
-    }
+            --tran-03: unset;
+            --tran-03: unset;
+            --tran-04: unset;
+            --tran-05: unset;
+        }
 
-    body {
-        min-height: 100vh;
-        background-color: var(--body-color);
-        transition: var(--tran-05);
-    }
+        body {
+            min-height: 100vh;
+            background-color: var(--body-color);
+            transition: var(--tran-05);
+        }
 
-    ::selection {
-        background-color: us color: #fff;
-    }
+        ::selection {
+            background-color: us color: #fff;
+        }
 
-    .sidebar li.nav-link a {
-        /* background-color: var(--primary-color); */
-        color: #707070;
-        font-weight: 500;
-    }
-
-
-    .sidebar li.nav-link:hover a {
-        /* background-color: var(--primary-color); */
-        color: #fff;
-    }
-
-    .sidebar li.nav-link ul.navd a {
-        background: transparent;
-        color: #fff;
-        font-weight: 500;
-        font-size: 16px;
-    }
-
-    body.dark {
-        --body-color: #18191a;
-        --sidebar-color: #242526;
-        --primary-color: #3a3b3c;
-        --primary-color-light: #3a3b3c;
-        --toggle-color: #fff;
-        --text-color: #ccc;
-    }
-
-    /* ===== Sidebar ===== */
-    .sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100%;
-        width: 280px;
-        padding: 0;
-        background: var(--sidebar-color);
-        transition: var(--tran-05);
-        z-index: 100;
-        background: linear-gradient(45deg, #3860a4 0%, #3694cc 100%);
-    }
-
-    .sidebar.close {
-        width: 88px;
-    }
-
-    .sidebar li.nav-link a:hover>a {
-        color: #fff;
-    }
-
-    /* ===== Reusable code - Here ===== */
-    .sidebar li.nav-link {
-        /* height: 50px;*/
-        list-style: none;
-        /* display: flex; */
-        align-items: center;
-        margin-top: 10px;
-        margin-bottom: 10px;
-        padding: 0;
-    }
-
-    .sidebar header .image,
-    .sidebar .icon {
-        min-width: 50px;
-        border-radius: 6px;
-    }
-
-    .sidebar .icon {
-        min-width: 50px;
-        border-radius: 6px;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-    }
-
-    .sidebar .text,
-    .sidebar .icon {
-        /* color: #fff;*/
-        /* transition: var(--tran-03);*/
-    }
+        .sidebar li.nav-link a {
+            /* background-color: var(--primary-color); */
+            color: #707070;
+            font-weight: 500;
+        }
 
 
-    .sidebar .text {
-        font-size: 17px;
-        font-weight: 400;
-        white-space: nowrap;
-        opacity: 1;
-        color: #fff;
-        padding-left: 8px;
+        .sidebar li.nav-link:hover a {
+            /* background-color: var(--primary-color); */
+            color: #fff;
+        }
 
-    }
+        .sidebar li.nav-link ul.navd a {
+            background: transparent;
+            color: #fff;
+            font-weight: 500;
+            font-size: 16px;
+        }
 
-    .sidebar .bottom-content i {
-        color: #fff;
-    }
+        body.dark {
+            --body-color: #18191a;
+            --sidebar-color: #242526;
+            --primary-color: #3a3b3c;
+            --primary-color-light: #3a3b3c;
+            --toggle-color: #fff;
+            --text-color: #ccc;
+        }
 
-    .sidebar.close .text {
-        opacity: 0;
-    }
+        /* ===== Sidebar ===== */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 280px;
+            padding: 0;
+            background: var(--sidebar-color);
+            transition: var(--tran-05);
+            z-index: 100;
+            background: linear-gradient(45deg, #3860a4 0%, #3694cc 100%);
+        }
 
-    /* =========================== */
+        .sidebar.close {
+            width: 88px;
+        }
 
-    .sidebar header {
-        position: relative;
-    }
+        .sidebar li.nav-link a:hover>a {
+            color: #fff;
+        }
 
-    .sidebar header .image-text {
-        display: flex;
-        align-items: center;
-    }
+        /* ===== Reusable code - Here ===== */
+        .sidebar li.nav-link {
+            /* height: 50px;*/
+            list-style: none;
+            /* display: flex; */
+            align-items: center;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 0;
+        }
 
-    .sidebar header .logo-text {
-        display: flex;
-        flex-direction: column;
-    }
+        .sidebar header .image,
+        .sidebar .icon {
+            min-width: 50px;
+            border-radius: 6px;
+        }
 
-    header .image-text .name {
-        margin-top: 2px;
-        font-size: 18px;
-        font-weight: 600;
-        color: #fff;
-        white-space: normal;
-    }
+        .sidebar .icon {
+            min-width: 50px;
+            border-radius: 6px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
 
-    header .image-text .profession {
-        font-size: 16px;
-        margin-top: -2px;
-        display: block;
-    }
+        .sidebar .text,
+        .sidebar .icon {
+            /* color: #fff;*/
+            /* transition: var(--tran-03);*/
+        }
 
-    .sidebar header .image {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
 
-    .sidebar header .image img {
+        .sidebar .text {
+            font-size: 17px;
+            font-weight: 400;
+            white-space: nowrap;
+            opacity: 1;
+            color: #fff;
+            padding-left: 8px;
 
-        width: 40px;
-        border-radius: 32px;
-        height: 40px;
-        object-fit: cover;
-    }
+        }
 
-    .sidebar header .toggle {
-        position: absolute;
-        top: 135%;
-        right: -10px;
-        transform: translateY(-50%) rotate(180deg);
-        height: 25px;
-        width: 25px;
-        /* background-color: var(--primary-color); */
-        background: #fff;
-        color: #3860a4;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 22px;
-        cursor: pointer;
-        transition: var(--tran-05);
-    }
+        .sidebar .bottom-content i {
+            color: #fff;
+        }
 
-    body.dark .sidebar header .toggle {
-        color: var(--text-color);
-    }
+        .sidebar.close .text {
+            opacity: 0;
+        }
 
-    .sidebar.close .toggle {
-        transform: translateY(-50%) rotate(0deg);
-    }
+        /* =========================== */
 
-    /*  .sidebar .menu {
+        .sidebar header {
+            position: relative;
+        }
+
+        .sidebar header .image-text {
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar header .logo-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        header .image-text .name {
+            margin-top: 2px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            white-space: normal;
+        }
+
+        header .image-text .profession {
+            font-size: 16px;
+            margin-top: -2px;
+            display: block;
+        }
+
+        .sidebar header .image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar header .image img {
+
+            width: 40px;
+            border-radius: 32px;
+            height: 40px;
+            object-fit: cover;
+        }
+
+        .sidebar header .toggle {
+            position: absolute;
+            top: 135%;
+            right: -10px;
+            transform: translateY(-50%) rotate(180deg);
+            height: 25px;
+            width: 25px;
+            /* background-color: var(--primary-color); */
+            background: #fff;
+            color: #3860a4;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            cursor: pointer;
+            transition: var(--tran-05);
+        }
+
+        body.dark .sidebar header .toggle {
+            color: var(--text-color);
+        }
+
+        .sidebar.close .toggle {
+            transform: translateY(-50%) rotate(0deg);
+        }
+
+        /*  .sidebar .menu {
       margin-top: 20px;
     }*/
 
-    .sidebar li.search-box {
-        border-radius: 6px;
-        background-color: var(--primary-color-light);
-        cursor: pointer;
-        transition: var(--tran-05);
-    }
+        .sidebar li.search-box {
+            border-radius: 6px;
+            background-color: var(--primary-color-light);
+            cursor: pointer;
+            transition: var(--tran-05);
+        }
 
-    .sidebar li.search-box input {
-        height: 100%;
-        width: 100%;
-        outline: none;
-        border: none;
-        background-color: var(--primary-color-light);
-        color: var(--text-color);
-        border-radius: 6px;
-        font-size: 17px;
-        font-weight: 500;
-        transition: var(--tran-05);
-    }
+        .sidebar li.search-box input {
+            height: 100%;
+            width: 100%;
+            outline: none;
+            border: none;
+            background-color: var(--primary-color-light);
+            color: var(--text-color);
+            border-radius: 6px;
+            font-size: 17px;
+            font-weight: 500;
+            transition: var(--tran-05);
+        }
 
-    .sidebar li.nav-link a {
-        list-style: none;
-        height: 100%;
-        background-color: transparent;
-        display: flex;
-        align-items: center;
-        height: 100%;
-        width: 100%;
-        border-radius: 6px;
-        text-decoration: none;
-        transition: var(--tran-03);
-        /*   border-bottom-left-radius: 0;
+        .sidebar li.nav-link a {
+            list-style: none;
+            height: 100%;
+            background-color: transparent;
+            display: flex;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: var(--tran-03);
+            /*   border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;*/
-        padding: 8px 0px;
-        position: relative;
-    }
+            padding: 8px 0px;
+            position: relative;
+        }
 
 
-    .sidebar li.nav-link ul li a:after {
-        position: unset;
-        display: none
-    }
+        .sidebar li.nav-link ul li a:after {
+            position: unset;
+            display: none
+        }
 
-    .sidebar li.nav-link a:after {
-        position: absolute;
-        content: "";
-        width: 10px;
-        height: 10px;
-        background-color: transparent;
-        border: 3px solid #fff;
-        right: 15px;
-        top: 15px;
-        border-top: 0px;
-        border-left: 0px;
-        transform: rotate(45deg);
-    }
+        .sidebar li.nav-link a:after {
+            position: absolute;
+            content: "";
+            width: 10px;
+            height: 10px;
+            background-color: transparent;
+            border: 3px solid #fff;
+            right: 15px;
+            top: 15px;
+            border-top: 0px;
+            border-left: 0px;
+            transform: rotate(45deg);
+        }
 
-    .sidebar li.nav-link a.no-after:after {
-        display: none !important;
-    }
+        .sidebar li.nav-link a.no-after:after {
+            display: none !important;
+        }
 
-    .sidebar li.nav-link a.active:after {
-        position: absolute;
-        content: "";
-        width: 10px;
-        height: 10px;
-        background-color: #fff;
-        border: 3px solid #3860a4;
-        right: 15px;
-        top: 15px;
-        border-top: 0px;
-        border-left: 0px;
-        transform: rotate(45deg);
-    }
+        .sidebar li.nav-link a.active:after {
+            position: absolute;
+            content: "";
+            width: 10px;
+            height: 10px;
+            background-color: #fff;
+            border: 3px solid #3860a4;
+            right: 15px;
+            top: 15px;
+            border-top: 0px;
+            border-left: 0px;
+            transform: rotate(45deg);
+        }
 
-    .sidebar li.nav-link a:hover {
-        /* background-color: var(--primary-color);
+        .sidebar li.nav-link a:hover {
+            /* background-color: var(--primary-color);
 */
-        color: #fff;
-        background: linear-gradient(90deg, #3860a4 0%, #1b4e6c 100%);
-    }
+            color: #fff;
+            background: linear-gradient(90deg, #3860a4 0%, #1b4e6c 100%);
+        }
 
-    .sidebar li.nav-link ul li a:hover .icon,
-    .sidebar li.nav-link a:hover .text,
-    .sidebar li.nav-link ul li a:hover span {
-        /* color: var(--primary-color);*/
-        color: #fff;
-    }
+        .sidebar li.nav-link ul li a:hover .icon,
+        .sidebar li.nav-link a:hover .text,
+        .sidebar li.nav-link ul li a:hover span {
+            /* color: var(--primary-color);*/
+            color: #fff;
+        }
 
-    .sidebar li.nav-link ul li a:hover {
-        background: #3860a4a3;
-    }
+        .sidebar li.nav-link ul li a:hover {
+            background: #3860a4a3;
+        }
 
-    body.dark .sidebar li.nav-link a:hover .icon,
-    body.dark .sidebar li.nav-link a:hover .text {
-        color: var(--text-color);
-    }
-
-
-
-    .sidebar li.nav-link.active ul li.nav-link-btn.active .icon {
-        color: #fff;
-        font-weight: 500;
-    }
-
-    .sidebar .menu-bar {
-        height: calc(100% - 162px);
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        overflow-y: visible;
-        margin-top: 20px;
-        overflow-x: hidden;
-    }
-
-    .sidebar li.nav-link.active ul li .icon {
-        color: #fff;
-    }
+        body.dark .sidebar li.nav-link a:hover .icon,
+        body.dark .sidebar li.nav-link a:hover .text {
+            color: var(--text-color);
+        }
 
 
-    .sidebar .menu-bar::-webkit-scrollbar {
-        width: 2px;
-        background-color: transparent;
-    }
 
-    .sidebar .menu-bar::-webkit-scrollbar-thumb {
-        border-radius: 2px;
-        -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, .3);
-        /*  background-color: var(--primary-color);*/
-        background: linear-gradient(45deg, #3860a4 0%, #3694cc 100%);
-    }
+        .sidebar li.nav-link.active ul li.nav-link-btn.active .icon {
+            color: #fff;
+            font-weight: 500;
+        }
 
-    /* .menu-bar::-webkit-scrollbar {
+        .sidebar .menu-bar {
+            height: calc(100% - 162px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-y: visible;
+            margin-top: 20px;
+            overflow-x: hidden;
+        }
+
+        .sidebar li.nav-link.active ul li .icon {
+            color: #fff;
+        }
+
+
+        .sidebar .menu-bar::-webkit-scrollbar {
+            width: 2px;
+            background-color: transparent;
+        }
+
+        .sidebar .menu-bar::-webkit-scrollbar-thumb {
+            border-radius: 2px;
+            -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, .3);
+            /*  background-color: var(--primary-color);*/
+            background: linear-gradient(45deg, #3860a4 0%, #3694cc 100%);
+        }
+
+        /* .menu-bar::-webkit-scrollbar {
       display: none;
     }
 */
-    .sidebar .menu-bar .mode {
-        border-radius: 6px;
-        background-color: var(--primary-color-light);
-        position: relative;
-        transition: var(--tran-05);
-    }
+        .sidebar .menu-bar .mode {
+            border-radius: 6px;
+            background-color: var(--primary-color-light);
+            position: relative;
+            transition: var(--tran-05);
+        }
 
-    .menu-bar .mode .sun-moon {
-        height: 50px;
-        width: 60px;
-    }
+        .menu-bar .mode .sun-moon {
+            height: 50px;
+            width: 60px;
+        }
 
-    .mode .sun-moon i {
-        position: absolute;
-    }
+        .mode .sun-moon i {
+            position: absolute;
+        }
 
-    .mode .sun-moon i.sun {
-        opacity: 0;
-    }
+        .mode .sun-moon i.sun {
+            opacity: 0;
+        }
 
-    body.dark .mode .sun-moon i.sun {
-        opacity: 1;
-    }
+        body.dark .mode .sun-moon i.sun {
+            opacity: 1;
+        }
 
-    body.dark .mode .sun-moon i.moon {
-        opacity: 0;
-    }
+        body.dark .mode .sun-moon i.moon {
+            opacity: 0;
+        }
 
-    .menu-bar .bottom-content .toggle-switch {
-        position: absolute;
-        right: 0;
-        height: 100%;
-        min-width: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        cursor: pointer;
-    }
+        .menu-bar .bottom-content .toggle-switch {
+            position: absolute;
+            right: 0;
+            height: 100%;
+            min-width: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            cursor: pointer;
+        }
 
-    .toggle-switch .switch {
-        position: relative;
-        height: 22px;
-        width: 40px;
-        border-radius: 25px;
-        background-color: var(--toggle-color);
-        transition: var(--tran-05);
-    }
+        .toggle-switch .switch {
+            position: relative;
+            height: 22px;
+            width: 40px;
+            border-radius: 25px;
+            background-color: var(--toggle-color);
+            transition: var(--tran-05);
+        }
 
-    .switch::before {
-        content: '';
-        position: absolute;
-        height: 15px;
-        width: 15px;
-        border-radius: 50%;
-        top: 50%;
-        left: 5px;
-        transform: translateY(-50%);
-        background-color: var(--sidebar-color);
-        transition: var(--tran-04);
-    }
+        .switch::before {
+            content: '';
+            position: absolute;
+            height: 15px;
+            width: 15px;
+            border-radius: 50%;
+            top: 50%;
+            left: 5px;
+            transform: translateY(-50%);
+            background-color: var(--sidebar-color);
+            transition: var(--tran-04);
+        }
 
-    body.dark .switch::before {
-        left: 20px;
-    }
+        body.dark .switch::before {
+            left: 20px;
+        }
 
-    ..main-panel {
-        position: absolute;
-        top: 0;
-        top: 0;
-        left: 280px;
-        height: 100vh;
-        width: calc(100% - 280px);
-        background-color: var(--body-color);
-        transition: var(--tran-05);
-    }
+        ..main-panel {
+            position: absolute;
+            top: 0;
+            top: 0;
+            left: 280px;
+            height: 100vh;
+            width: calc(100% - 280px);
+            background-color: var(--body-color);
+            transition: var(--tran-05);
+        }
 
-    .home .text {
-        font-size: 30px;
-        font-weight: 500;
-        color: var(--text-color);
-        padding: 12px 60px;
-    }
+        .home .text {
+            font-size: 30px;
+            font-weight: 500;
+            color: var(--text-color);
+            padding: 12px 60px;
+        }
 
-    .sidebar.close~..main-panel {
-        left: 78px;
-        height: 100vh;
-        width: calc(100% - 78px);
-    }
+        .sidebar.close~..main-panel {
+            left: 78px;
+            height: 100vh;
+            width: calc(100% - 78px);
+        }
 
-    body.dark .home .text {
-        color: var(--text-color);
-    }
+        body.dark .home .text {
+            color: var(--text-color);
+        }
 
-    .logo-main.desktop img {
-        width: 75%;
-        padding: 10px 5px;
-    }
+        .logo-main.desktop img {
+            width: 75%;
+            padding: 10px 5px;
+        }
 
-    .logo-main.mobile img {
-        width: 68%;
-    }
+        .logo-main.mobile img {
+            width: 68%;
+        }
 
 
-    .sidebar li.nav-link.active .text,
-    .sidebar li.nav-link.active .icon {
-        color: #fff;
-    }
+        .sidebar li.nav-link.active .text,
+        .sidebar li.nav-link.active .icon {
+            color: #fff;
+        }
 
-    /* li.nav-link a {
+        /* li.nav-link a {
     color: #707070;
     font-weight: 500;
 } */
 
 
-    .sidebar li.nav-link.active a {
-        background-color: var(--primary-color);
-        color: #ffff;
-        font-weight: 500;
-    }
+        .sidebar li.nav-link.active a {
+            background-color: var(--primary-color);
+            color: #ffff;
+            font-weight: 500;
+        }
 
-    ul.navd {
-        background: transparent;
-        height: 100%;
-        z-index: 9;
-        position: relative;
-        padding: 10px 6px;
-        border-bottom-left-radius: 6px;
-        border-bottom-right-radius: 6px;
-        /* box-shadow: 0 16px 38px -12px rgba(0, 0, 0, 0.56), 0 4px 25px 0px rgba(0, 0, 0, 0.12), 0 8px 10px -5px rgba(0, 0, 0, 0.2);*/
+        ul.navd {
+            background: transparent;
+            height: 100%;
+            z-index: 9;
+            position: relative;
+            padding: 10px 6px;
+            border-bottom-left-radius: 6px;
+            border-bottom-right-radius: 6px;
+            /* box-shadow: 0 16px 38px -12px rgba(0, 0, 0, 0.56), 0 4px 25px 0px rgba(0, 0, 0, 0.12), 0 8px 10px -5px rgba(0, 0, 0, 0.2);*/
 
-    }
+        }
 
-    .sidebar li.nav-link a.collapsed {
-        color: #fff;
-        font-weight: 500;
-        background: transparent;
-    }
+        .sidebar li.nav-link a.collapsed {
+            color: #fff;
+            font-weight: 500;
+            background: transparent;
+        }
 
 
-    .sidebar li.nav-link a {
-        /* background-color: var(--primary-color);
+        .sidebar li.nav-link a {
+            /* background-color: var(--primary-color);
     color: #ffff;
     font-weight: 500;*/
-        background-color: transparent;
-        color: #fff;
-        font-weight: 600;
-    }
+            background-color: transparent;
+            color: #fff;
+            font-weight: 600;
+        }
 
 
-    .sidebar li.nav-link a.collapsed:hover,
-    .sidebar li.nav-link.active a.collapsed {
-        background: linear-gradient(90deg, #3860a4 0%, #1b4e6c 100%);
-        color: #ffff;
-        font-weight: 500;
-    }
+        .sidebar li.nav-link a.collapsed:hover,
+        .sidebar li.nav-link.active a.collapsed {
+            background: linear-gradient(90deg, #3860a4 0%, #1b4e6c 100%);
+            color: #ffff;
+            font-weight: 500;
+        }
 
 
-    .sidebar li.nav-link.active a {
-        background: linear-gradient(45deg, #3860a4 0%, #3694cc 100%);
-    }
+        .sidebar li.nav-link.active a {
+            background: linear-gradient(45deg, #3860a4 0%, #3694cc 100%);
+        }
 
 
-    .sidebar li.nav-link.active ul.navd li.nav-link-btn.active a {
-        background: #3860a4a3;
-        color: #fff;
-        font-weight: 500;
+        .sidebar li.nav-link.active ul.navd li.nav-link-btn.active a {
+            background: #3860a4a3;
+            color: #fff;
+            font-weight: 500;
 
-    }
+        }
 
-    ul.navd li.nav-link-btn {
-        margin: 0px 0;
-    }
+        ul.navd li.nav-link-btn {
+            margin: 0px 0;
+        }
 
-    .sidebar.close li.nav-link a:after {
+        .sidebar.close li.nav-link a:after {
 
-        width: 5px;
-        height: 5px;
-    }
+            width: 5px;
+            height: 5px;
+        }
 
-    /* .sidebar.close~.main-panel {
+        /* .sidebar.close~.main-panel {
     left: 78px;
     height: 100vh;
     width: calc(100% - 78px);
@@ -597,157 +597,157 @@
     transition: var(--tran-05);
 } */
 
-    body .main-panel {
-        position: absolute;
-        top: 0;
-        float: unset;
-        left: 280px;
-        height: unset !important;
-        width: calc(100% - 280px);
-        max-height: unset !important;
-    }
+        body .main-panel {
+            position: absolute;
+            top: 0;
+            float: unset;
+            left: 280px;
+            height: unset !important;
+            width: calc(100% - 280px);
+            max-height: unset !important;
+        }
 
 
-    body .sidebar.close~.main-panel {
-        left: 87px;
-        height: 100vh;
-        width: calc(100% - 87px);
-    }
+        body .sidebar.close~.main-panel {
+            left: 87px;
+            height: 100vh;
+            width: calc(100% - 87px);
+        }
 
-    .sidebar {
-        z-index: 9999;
-    }
+        .sidebar {
+            z-index: 9999;
+        }
 
-    li {
-        list-style: none;
-    }
+        li {
+            list-style: none;
+        }
 
-    /*ul.navd li.nav-link-btn.active, ul.navd li.nav-link-btn:hover {
+        /*ul.navd li.nav-link-btn.active, ul.navd li.nav-link-btn:hover {
     background: #00000094;
     border-radius: 8px;
 }
 */
-    nav.sidebar.close {
-        opacity: 1;
-    }
+        nav.sidebar.close {
+            opacity: 1;
+        }
 
 
-    nav.sidebar.close .icon {
-        min-width: 60px;
-    }
+        nav.sidebar.close .icon {
+            min-width: 60px;
+        }
 
-    nav.sidebar.close .menu-links span {
-        display: none;
-    }
+        nav.sidebar.close .menu-links span {
+            display: none;
+        }
 
-    nav.sidebar.close li.nav-link a:after {
-        right: 5px;
-        top: 12px;
-    }
-
-
-
-    nav.sidebar.close .menu-bar {
-        height: calc(100% - 106px);
-        overflow-y: visible;
-        margin-top: 20px;
-        overflow-x: visible;
-    }
-
-    nav.sidebar.close .bottom-content {
-        text-align: center;
-    }
-
-
-    nav.sidebar.close .bottom-content span.text.nav-text {
-        display: none;
-    }
+        nav.sidebar.close li.nav-link a:after {
+            right: 5px;
+            top: 12px;
+        }
 
 
 
-    nav.sidebar.close ul.navd {
-        padding: 6px 0px;
+        nav.sidebar.close .menu-bar {
+            height: calc(100% - 106px);
+            overflow-y: visible;
+            margin-top: 20px;
+            overflow-x: visible;
+        }
 
-    }
+        nav.sidebar.close .bottom-content {
+            text-align: center;
+        }
+
+
+        nav.sidebar.close .bottom-content span.text.nav-text {
+            display: none;
+        }
 
 
 
-    nav.sidebar .bottom-content li a {
-        background: linear-gradient(45deg, #3860a4 0%, #3694cc 100%);
-        color: #fff;
-        padding: 10px 18px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+        nav.sidebar.close ul.navd {
+            padding: 6px 0px;
 
-    nav.sidebar .mobile {
-        display: none;
-    }
+        }
 
-    nav.sidebar.close .mobile {
-        display: block;
-    }
 
-    /*  .logo-main.mobile img {
+
+        nav.sidebar .bottom-content li a {
+            background: linear-gradient(45deg, #3860a4 0%, #3694cc 100%);
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        nav.sidebar .mobile {
+            display: none;
+        }
+
+        nav.sidebar.close .mobile {
+            display: block;
+        }
+
+        /*  .logo-main.mobile img {
       width: 39px;
       height: 100%;
       object-fit: contain;
     }*/
 
-    nav.sidebar.close .desktop {
-        display: none;
-    }
+        nav.sidebar.close .desktop {
+            display: none;
+        }
 
-    nav.sidebar.close li.nav-link a.hoveradd,
-    nav.sidebar.close li.nav-link ul a.hoveradd2 {
-        position: relative;
-    }
+        nav.sidebar.close li.nav-link a.hoveradd,
+        nav.sidebar.close li.nav-link ul a.hoveradd2 {
+            position: relative;
+        }
 
 
-    /*tablet css*/
+        /*tablet css*/
 
-    @media (max-width: 996px) {
-        body nav.sidebar {
+        @media (max-width: 996px) {
+            body nav.sidebar {
+                display: block !important;
+            }
+
+            body .main-panel {
+                position: relative;
+                top: 0;
+                float: unset;
+                left: 0;
+                width: calc(100% - 0px);
+
+            }
+        }
+
+        nav.sidebar.close li.nav-link .d-none.mobile_hide {
+            color: #fff;
+            font-weight: 300;
+            font-size: 13px;
+            padding: 10px 10px;
+            border-radius: 12px;
+            position: absolute;
+            right: -290%;
+            top: 6%;
+            z-index: 9999999;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            /*    transition: var(--tran-05);*/
+            width: 100%;
+            min-width: 161px;
+            font-style: normal;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(90deg, #3860a4 0%, #1b4e6c 100%);
+            letter-spacing: 1px;
+        }
+
+        body nav.sidebar.close li.nav-link a.hoveradd:hover .d-none.mobile_hide,
+        body nav.sidebar.close li.nav-link ul li a.hoveradd2:hover .d-none.mobile_hide {
             display: block !important;
         }
-
-        body .main-panel {
-            position: relative;
-            top: 0;
-            float: unset;
-            left: 0;
-            width: calc(100% - 0px);
-
-        }
-    }
-
-    nav.sidebar.close li.nav-link .d-none.mobile_hide {
-        color: #fff;
-        font-weight: 300;
-        font-size: 13px;
-        padding: 10px 10px;
-        border-radius: 12px;
-        position: absolute;
-        right: -290%;
-        top: 6%;
-        z-index: 9999999;
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
-        /*    transition: var(--tran-05);*/
-        width: 100%;
-        min-width: 161px;
-        font-style: normal;
-        font-family: 'Poppins', sans-serif;
-        background: linear-gradient(90deg, #3860a4 0%, #1b4e6c 100%);
-        letter-spacing: 1px;
-    }
-
-    body nav.sidebar.close li.nav-link a.hoveradd:hover .d-none.mobile_hide,
-    body nav.sidebar.close li.nav-link ul li a.hoveradd2:hover .d-none.mobile_hide {
-        display: block !important;
-    }
     </style>
     </style>
     <!-- Scripts -->
@@ -789,55 +789,12 @@
                     <ul class="menu-links">
                         @if(auth()->user()->can(['dashboard_access']))
                         <li class="nav-link hide_icon {{ request()->is('dealer_dashboard') ? 'active' : '' }}">
-                        <a class="collapsed hoveradd" href="{{ url('dashboard') }}">
-                            <i class="material-icons icon">dashboard</i>
-                            <span>{!! trans('panel.sidemenu.dashboard') !!}</span>
-                            <div class="d-none mobile_hide"> {!! trans('panel.sidemenu.dashboard') !!}</div>
-                        </a>
-                        </li>
-
-                        {{--<li
-                            class="nav-link {{ request()->is('sales_summary_dashboard*') || request()->is('dealer_dashboard') ? 'active' : '' }}">
-                            <a class="collapsed hoveradd" data-toggle="collapse" href="#dashMenu" aria-expanded="false">
-                                <i class="material-icons icon">diversity_3</i>
-                                <span> {!! trans('panel.sidemenu.dashboard') !!}
-                                </span>
-                                <div class="d-none mobile_hide">{!! trans('panel.sidemenu.dashboard') !!}</div>
+                            <a class="collapsed hoveradd" href="{{ url('dashboard') }}">
+                                <i class="material-icons icon">dashboard</i>
+                                <span>{!! trans('panel.sidemenu.dashboard') !!}</span>
+                                <div class="d-none mobile_hide"> {!! trans('panel.sidemenu.dashboard') !!}</div>
                             </a>
-                            <div class="collapse" id="dashMenu" style="">
-                                <ul class="navd">
-                                    @if(auth()->user()->can(['dealer_dashboard']))
-                                    <li class="nav-link-btn {{ request()->is('dealer_dashboard*') ? 'active' : '' }}">
-                                        <a class="hoveradd2" href="{{ url('dealer_dashboard') }}">
-                                            <i class="material-icons icon">transcribe</i>
-                                            <span>Dealer Dashboard</span>
-                                            <div class="d-none mobile_hide">Dealer Dashboard</div>
-                                        </a>
-                                    </li>
-                                    @endif
-                                    @if(auth()->user()->can(['sales_summary_dashboard']))
-                                    <li
-                                        class="nav-link-btn {{ request()->is('sales_summary_dashboard*') ? 'active' : '' }}">
-                                        <a class="hoveradd2" href="{{ url('sales_summary_dashboard') }}">
-                                            <i class="material-icons icon">transcribe</i>
-                                            <span>Sales</span>
-                                            <div class="d-none mobile_hide">Sales</div>
-                                        </a>
-                                    </li>
-                                    @endif
-                                    @if(auth()->user()->can(['employee_expense_report_dasboard']))
-                                    <li
-                                        class="nav-link-btn {{ request()->is('employee_expense_report*') ? 'active' : '' }}">
-                                        <a class="hoveradd2" href="{{ url('employee_expense_report') }}">
-                                            <i class="material-icons icon">transcribe</i>
-                                            <span>Employee Related Expenses</span>
-                                            <div class="d-none mobile_hide">Employee Related Expenses</div>
-                                        </a>
-                                    </li>
-                                    @endif
-                                </ul>
-                            </div>
-                        </li>--}}
+                        </li>
                         @endif
                         @if(auth()->user()->can(['lead_management_access']))
                         <li
@@ -908,7 +865,7 @@
 
 
                         <!-- ----------------------------------- -->
-                        <li class="nav-link
+                        <!-- <li class="nav-link
                               {{ request()->is('master-distributors*') ? 'active' : '' }}">
 
                             <a class="collapsed hoveradd" data-toggle="collapse" href="#masterDistributorMenu"
@@ -918,19 +875,16 @@
 
                                 <span>
                                     Customer Management
-                                    <!-- {!! trans('panel.sidemenu.master_distributors') !!} -->
                                 </span>
 
                                 <div class="d-none mobile_hide">
                                     Customer Management
-                                    <!-- {!! trans('panel.sidemenu.master_distributors') !!} -->
                                 </div>
                             </a>
 
                             <div class="collapse" id="masterDistributorMenu">
                                 <ul class="navd">
-                                    <!-- Existing Master Distributor -->
-                                     @if(auth()->user()->can(['master_distributor_access'])) 
+                                    @if(auth()->user()->can(['master_distributor_access']))
                                     <li class="nav-link-btn {{ request()->is('master-distributors*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ route('master-distributors.index') }}">
                                             <i class="material-icons icon">inventory</i>
@@ -940,26 +894,8 @@
                                         </a>
                                     </li>
                                     @endif
-                                    <!-- NEW: Mechanic -->  
-                                    <!-- <li class="nav-link-btn {{ request()->is('mechanics*') ? 'active' : '' }}">
-                                        <a class="hoveradd2" href="{{ route('mechanics.index') }}">
-                                            <i class="material-icons icon">build_circle</i>
-                                            <span>Mechanic</span>
-                                            <div class="d-none mobile_hide">Mechanic</div>
-                                        </a>
-                                    </li> -->
 
-                                    <!-- NEW: Garage -->
-                                    <!-- <li class="nav-link-btn {{ request()->is('garages*') ? 'active' : '' }}">
-                                        <a class="hoveradd2" href="{{ route('garages.index') }}">
-                                            <i class="material-icons icon">home_repair_service</i>
-                                            <span>Garage</span>
-                                            <div class="d-none mobile_hide">Garage</div>
-                                        </a>
-                                    </li> -->
-
-                                    <!-- NEW: Retailer -->
-                                     @if(auth()->user()->can(['retailer_access']))
+                                    @if(auth()->user()->can(['retailer_access']))
                                     <li class="nav-link-btn {{ request()->is('retailers*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ route('retailers.index') }}">
                                             <i class="material-icons icon">storefront</i>
@@ -968,18 +904,11 @@
                                         </a>
                                     </li>
                                     @endif
-                                    <!-- NEW: Workshop -->
-                                    <!-- <li class="nav-link-btn {{ request()->is('workshops*') ? 'active' : '' }}"> -->
-                                        <!-- <a class="hoveradd2" href="{{ route('workshops.index') }}">
-            <i class="material-icons icon">engineering</i>
-            <span>Workshop</span>
-            <div class="d-none mobile_hide">Workshop</div>
-        </a>
-    </li> -->
+
                                 </ul>
 
                             </div>
-                        </li>
+                        </li> -->
                         <!-- ----------------------------------- -->
 
                         @if(auth()->user()->can(['customer_access']))
@@ -988,9 +917,9 @@
                             <a class="collapsed hoveradd" data-toggle="collapse" href="#customerMenu"
                                 aria-expanded="false">
                                 <i class="material-icons icon">diversity_3</i>
-                                <span> {!! trans('panel.sidemenu.customers_master') !!}
+                                <span> {!! trans('panel.sidemenu.customers_master') !!} Management
                                 </span>
-                                <div class="d-none mobile_hide">{!! trans('panel.sidemenu.customers_master') !!}</div>
+                                <div class="d-none mobile_hide">{!! trans('panel.sidemenu.customers_master') !!} Management</div>
                             </a>
                             <div class="collapse" id="customerMenu" style="">
                                 <ul class="navd">
@@ -1336,8 +1265,8 @@
                             <a class="collapsed hoveradd" data-toggle="collapse" href="#salesUserMenu"
                                 aria-expanded="false">
                                 <i class="material-icons icon">real_estate_agent</i>
-                                <span> {!! trans('panel.sidemenu.sales_users') !!} </span>
-                                <div class="d-none mobile_hide"> {!! trans('panel.sidemenu.sales_users') !!}</div>
+                                <span> {!! trans('panel.sidemenu.sales_users') !!} Management </span>
+                                <div class="d-none mobile_hide"> {!! trans('panel.sidemenu.sales_users') !!} Management</div>
                             </a>
                             <div class="collapse" id="salesUserMenu" style="">
                                 <ul class="navd">
@@ -1627,9 +1556,9 @@
                             <a class="collapsed hoveradd" data-toggle="collapse" href="#accountMenu"
                                 aria-expanded="false">
                                 <i class="material-icons icon">attribution</i>
-                                <span> {!! trans('panel.sidemenu.account') !!}
+                                <span> {!! trans('panel.sidemenu.account') !!} Management
                                 </span>
-                                <div class="d-none mobile_hide"> {!! trans('panel.sidemenu.account') !!}</div>
+                                <div class="d-none mobile_hide"> {!! trans('panel.sidemenu.account') !!} Management</div>
                             </a>
                             <div class="collapse" id="accountMenu" style="">
                                 <ul class="navd">
@@ -2369,7 +2298,7 @@
                             <li class="nav-link-btn ">
                                 <div class="collapse" id="salesReportsMenu" style="">
                                     <ul class="navd">
-                                        
+
                                         @if(auth()->user()->can('attendance_report'))
                                         <li
                                             class="nav-link-btn {{ request()->is('reports/attendancereport') ? 'active' : '' }}">
@@ -2389,7 +2318,7 @@
                                                 <div class="d-none mobile_hide">Attendance Summary Report</div>
                                             </a>
                                         </li>
-                                        @endif   
+                                        @endif
                                         @if(auth()->user()->can('tours'))
                                         <li class="nav-link-btn {{ request()->is('tours*') ? 'active' : '' }}">
                                             <a class="nav-link" href="{{ url('tours') }}">
@@ -2407,7 +2336,7 @@
                                                 <div class="d-none mobile_hide"> {!! trans('panel.sidemenu.orders') !!}</div>
                                             </a>
                                         </li>
-                                        @endif 
+                                        @endif
                                         @if(auth()->user()->can('visit_report'))
                                         <li class="nav-link-btn {{ request()->is('reports/customervisit*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('reports/customervisit') }}">
@@ -2425,7 +2354,7 @@
                                                 <div class="d-none mobile_hide"> Adherence Summary</div>
                                             </a>
                                         </li>
-                                        @endif                                    
+                                        @endif
                                         @if(auth()->user()->can('user_working_report'))
                                         <li
                                             class="nav-link-btn {{ request()->is('reports/reports_sale*') ? 'active' : '' }}">
@@ -2580,8 +2509,8 @@
                             </li>
                 </li>
                 @endif
-                
-                
+
+
                 @if(auth()->user()->can('fielda_ctivity_report'))
                 <li class="nav-link-btn  " style="display:none;">
                     <a class="hoveradd2" href="{{ url('reports/fieldactivity') }}">
@@ -2676,8 +2605,8 @@
                             <li class="nav-link-btn {{ request()->is('retailers*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ route('retailers.index') }}">
                                     <i class="material-icons icon">storefront</i>
-                                        <span>Retailer</span>
-                                        <div class="d-none mobile_hide">Retailer</div>
+                                    <span>Retailer</span>
+                                    <div class="d-none mobile_hide">Retailer</div>
                                 </a>
                             </li>
                             @if(auth()->user()->can('retailer_productivity_report'))
@@ -2696,7 +2625,7 @@
                                 </a>
                             </li>
                             @endif
-                            
+
                             @if(auth()->user()->can('customers_report'))
                             <li class="nav-link-btn ">
                                 <a class="hoveradd2" href="{{ url('reports/customersreport') }}">
@@ -2800,23 +2729,23 @@
                 <!-- <img src="{!! asset('assets/img/logo.png') !!}" width="50"> -->
                 <div class="navbar-wrapper">
                     <div class="navbar-minimize">
-                                      <!-- <button id="minimizeSidebar" class="btn btn-just-icon btn-white btn-fab btn-round">
+                        <!-- <button id="minimizeSidebar" class="btn btn-just-icon btn-white btn-fab btn-round">
                            <i class="material-icons text_align-center visible-on-sidebar-regular">more_vert</i>
                            <i class="material-icons design_bullet-list-67 visible-on-sidebar-mini">view_list</i>
                            <div class="ripple-container"></div></button> -->
                     </div>
                 </div>
                 <button class="navbar-toggler" type="button"
-    data-toggle="collapse"
-    aria-controls="navigation-index"
-    aria-expanded="false"
-    aria-label="Toggle navigation">
+                    data-toggle="collapse"
+                    aria-controls="navigation-index"
+                    aria-expanded="false"
+                    aria-label="Toggle navigation">
 
-    <i class="material-icons" style="color: black; font-size: 30px;">
-        menu
-    </i>
+                    <i class="material-icons" style="color: black; font-size: 30px;">
+                        menu
+                    </i>
 
-</button>
+                </button>
                 @auth
                 <div class="collapse navbar-collapse justify-content-end">
                     <ul class="navbar-nav">
@@ -2840,33 +2769,33 @@
                            </div>
                            </li> -->
                         <!-- Profile Dropdown -->
-<li class="nav-item dropdown d-flex align-items-center">
-    <p class="m-0 mr-2" style="font-weight: bold;">{{ auth()->user()->name }}</p>
-    
-    <a class="nav-link dropdown-toggle" href="javascript:;" 
-       id="navbarDropdownProfile" 
-       data-toggle="dropdown" 
-       aria-haspopup="true" 
-       aria-expanded="false">
-        
-        @if (auth()->user()->getMedia('profile_image')->count() > 0 &&
-             Storage::disk('s3')->exists(auth()->user()->getMedia('profile_image')[0]->getPath()))
-            <img src="{{ auth()->user()->getMedia('profile_image')[0]->getFullUrl() }}" 
-                 width="40" height="40" class="rounded-circle" style="object-fit: cover;">
-        @else
-            <i class="material-icons" style="font-size: 32px; color: black;">person</i>
-        @endif
-    </a>
+                        <li class="nav-item dropdown d-flex align-items-center">
+                            <p class="m-0 mr-2" style="font-weight: bold;">{{ auth()->user()->name }}</p>
 
-    @auth
-    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownProfile">
-        <a class="dropdown-item text-danger" href="{{ url('logout') }}">
-            <i class="material-icons mr-2" style="color: black;">logout</i>
-            <span>Log Out</span>
-        </a>
-    </div>
-    @endauth
-</li>
+                            <a class="nav-link dropdown-toggle" href="javascript:;"
+                                id="navbarDropdownProfile"
+                                data-toggle="dropdown"
+                                aria-haspopup="true"
+                                aria-expanded="false">
+
+                                @if (auth()->user()->getMedia('profile_image')->count() > 0 &&
+                                Storage::disk('s3')->exists(auth()->user()->getMedia('profile_image')[0]->getPath()))
+                                <img src="{{ auth()->user()->getMedia('profile_image')[0]->getFullUrl() }}"
+                                    width="40" height="40" class="rounded-circle" style="object-fit: cover;">
+                                @else
+                                <i class="material-icons" style="font-size: 32px; color: black;">person</i>
+                                @endif
+                            </a>
+
+                            @auth
+                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownProfile">
+                                <a class="dropdown-item text-danger" href="{{ url('logout') }}">
+                                    <i class="material-icons mr-2" style="color: black;">logout</i>
+                                    <span>Log Out</span>
+                                </a>
+                            </div>
+                            @endauth
+                        </li>
                     </ul>
                 </div>
                 @endauth
@@ -2936,95 +2865,95 @@
         integrity="sha512-F636MAkMAhtTplahL9F6KmTfxTmYcAcjcCkyu0f0voT3N/6vzAuJ4Num55a0gEJ+hRLHhdz3vDvZpf6kqgEa5w=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
-    $(function() {
-        //Initialize Select2 Elements
-        $('.select2').select2()
+        $(function() {
+            //Initialize Select2 Elements
+            $('.select2').select2()
 
-        $('#toggle-one').bootstrapToggle();
-        $('.datetimepicker').datetimepicker({
-            format: 'YYYY-MM-DD HH:mm'
-        });
-        $(".datepicker").datepicker({
-            createButton: false,
-            displayClose: true,
-            closeOnSelect: false,
-            selectMultiple: true,
-            dateFormat: 'yy-mm-dd',
-            beforeShow: function(input) {
-                $(input).css({
-                    "position": "relative",
-                    "z-index": 999999
-                });
-            },
-            onClose: function() {
-                $('.ui-datepicker').css({
-                    'z-index': 0
-                });
-            }
-        });
+            $('#toggle-one').bootstrapToggle();
+            $('.datetimepicker').datetimepicker({
+                format: 'YYYY-MM-DD HH:mm'
+            });
+            $(".datepicker").datepicker({
+                createButton: false,
+                displayClose: true,
+                closeOnSelect: false,
+                selectMultiple: true,
+                dateFormat: 'yy-mm-dd',
+                beforeShow: function(input) {
+                    $(input).css({
+                        "position": "relative",
+                        "z-index": 999999
+                    });
+                },
+                onClose: function() {
+                    $('.ui-datepicker').css({
+                        'z-index': 0
+                    });
+                }
+            });
 
 
-        //Initialize Select2 Elements
-        $('.select2bs4').select2({
-            theme: 'bootstrap4'
+            //Initialize Select2 Elements
+            $('.select2bs4').select2({
+                theme: 'bootstrap4'
+            })
+            $('.timepicker').datetimepicker({
+                format: 'HH:mm'
+            });
         })
-        $('.timepicker').datetimepicker({
-            format: 'HH:mm'
+        $('body').on('click', '.imageDisplayModel', function() {
+            var imgPath = $(this).attr("src");
+            var modal = document.getElementById('previewimageInModel');
+            $('#previewimageInModel').modal('show');
+            document.getElementById("img01").src = imgPath;
         });
-    })
-    $('body').on('click', '.imageDisplayModel', function() {
-        var imgPath = $(this).attr("src");
-        var modal = document.getElementById('previewimageInModel');
-        $('#previewimageInModel').modal('show');
-        document.getElementById("img01").src = imgPath;
-    });
 
-    document.addEventListener("DOMContentLoaded", function() {
-        document.getElementById("loader").style.display = "block";
-        document.querySelector(".content").style.display = "none";
-    });
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById("loader").style.display = "block";
+            document.querySelector(".content").style.display = "none";
+        });
 
-    // Hide loader and show content when the page is fully loaded
-    window.addEventListener("load", function() {
-        document.getElementById("loader").style.display = "none";
-        document.querySelector(".content").style.display = "block";
-    });
+        // Hide loader and show content when the page is fully loaded
+        window.addEventListener("load", function() {
+            document.getElementById("loader").style.display = "none";
+            document.querySelector(".content").style.display = "block";
+        });
     </script>
     <script>
-    const body = document.querySelector('body'),
-        sidebar = body.querySelector('nav'),
-        toggle = body.querySelector(".toggle"),
-        // searchBtn = body.querySelector(".search-box"),
-        modeSwitch = body.querySelector(".toggle-switch"),
-        modeText = body.querySelector(".mode-text");
-    toggle.addEventListener("click", () => {
-        sidebar.classList.toggle("close");
-    })
-    // searchBtn.addEventListener("click", () => {
-    //   sidebar.classList.remove("close");
-    // })
-    // modeSwitch.addEventListener("click", () => {
-    //   body.classList.toggle("dark");
+        const body = document.querySelector('body'),
+            sidebar = body.querySelector('nav'),
+            toggle = body.querySelector(".toggle"),
+            // searchBtn = body.querySelector(".search-box"),
+            modeSwitch = body.querySelector(".toggle-switch"),
+            modeText = body.querySelector(".mode-text");
+        toggle.addEventListener("click", () => {
+            sidebar.classList.toggle("close");
+        })
+        // searchBtn.addEventListener("click", () => {
+        //   sidebar.classList.remove("close");
+        // })
+        // modeSwitch.addEventListener("click", () => {
+        //   body.classList.toggle("dark");
 
-    //   if (body.classList.contains("dark")) {
-    //     modeText.innerText = "Light mode";
-    //   } else {
-    //     modeText.innerText = "Dark mode";
+        //   if (body.classList.contains("dark")) {
+        //     modeText.innerText = "Light mode";
+        //   } else {
+        //     modeText.innerText = "Dark mode";
 
-    //   }
-    // });
+        //   }
+        // });
     </script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8D1DXGE6Z6"></script>
     <script>
-    window.dataLayer = window.dataLayer || [];
+        window.dataLayer = window.dataLayer || [];
 
-    function gtag() {
-        dataLayer.push(arguments);
-    }
-    gtag('js', new Date());
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
 
-    // gtag('config', 'G-8D1DXGE6Z6');
+        // gtag('config', 'G-8D1DXGE6Z6');
     </script>
 </body>
 @yield('script')

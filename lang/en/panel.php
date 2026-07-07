@@ -15,7 +15,7 @@ return [
         'address_district'  => 'District',
         'address_city'      => 'City',
         'address_pincode'   => 'Pincode',
-        'customers_master'  => 'Customers',
+        'customers_master'  => 'Customer',
         'Secondenry_master' => 'Secondry Customer',
         // 'customers'         => 'Retailers',
         'customers'         => 'Customer Master',
