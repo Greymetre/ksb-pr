@@ -94,10 +94,10 @@ class SecondaryCustomersImport implements ToCollection, WithHeadingRow
                     throw new \Exception("Invalid pincode");
                 }
 
-                $beat = Beat::find(trim($row['beat']));
+                $beat = Beat::find(trim($row['beat_id']));
 
 if (!$beat) {
-    throw new \Exception('Invalid beat id: ' . $row['beat']);
+    throw new \Exception('Invalid beat id: ' . $row['beat_id']);
 }
                 $data = [
                     'type' => $this->type,
