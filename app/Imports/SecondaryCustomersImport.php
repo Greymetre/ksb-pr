@@ -119,11 +119,11 @@ if (!$beat) {
                     // 'opportunity_status' => strtoupper($row['opportunity_status']),
                 ];
 
-                if (in_array($this->type, ['RETAILER', 'WORKSHOP'])) {
-                    $data['nistha_awareness_status'] = $row['awareness_status'];
-                } else {
-                    $data['saathi_awareness_status'] = $row['awareness_status'];
-                }
+                // if (in_array($this->type, ['RETAILER', 'WORKSHOP'])) {
+                //     $data['nistha_awareness_status'] = $row['awareness_status'];
+                // } else {
+                //     $data['saathi_awareness_status'] = $row['awareness_status'];
+                // }
 
                 SecondaryCustomer::updateOrCreate(
                     ['mobile_number' => $mobileNumber],
