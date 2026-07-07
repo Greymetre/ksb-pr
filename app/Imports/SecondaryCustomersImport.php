@@ -9,6 +9,7 @@ use App\Models\District;
 use App\Models\City;
 use App\Models\Pincode;
 use App\Models\Beat;
+use App\Models\User;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -81,7 +82,8 @@ class SecondaryCustomersImport implements ToCollection, WithHeadingRow
                     throw new \Exception("Invalid city");
                 }
 
-                $mobileNumber = trim($row['mobile_number']);
+                $mobileNumber = trim($row['mobile_number'] ?? $row['mobile_number_1'] ?? '');
+                $employeeIds = $this->resolveEmployeeIds($row);
 
                 // Pincode
                 $pincodeValue = trim($row['pincode']);
@@ -119,6 +121,10 @@ if (!$beat) {
                     // 'opportunity_status' => strtoupper($row['opportunity_status']),
                 ];
 
+                if (!empty($employeeIds)) {
+                    $data['employee_id'] = implode(',', $employeeIds);
+                }
+
                 // if (in_array($this->type, ['RETAILER', 'WORKSHOP'])) {
                 //     $data['nistha_awareness_status'] = $row['awareness_status'];
                 // } else {
@@ -135,5 +141,40 @@ if (!$beat) {
                 $this->errors[] = "Row $rowNumber → ".$e->getMessage();
             }
         }
+    }
+
+    private function resolveEmployeeIds(Collection $row): array
+    {
+        $employeeCodesValue = $row['employee_code'] ?? $row['employee_codes'] ?? null;
+
+        if ($employeeCodesValue === null || trim((string) $employeeCodesValue) === '') {
+            return [];
+        }
+
+        $employeeCodes = collect(explode(',', (string) $employeeCodesValue))
+            ->map(fn ($code) => trim($code))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($employeeCodes->isEmpty()) {
+            return [];
+        }
+
+        $users = User::whereIn('employee_codes', $employeeCodes->all())
+            ->get(['id', 'employee_codes'])
+            ->keyBy(fn ($user) => trim((string) $user->employee_codes));
+
+        $missingCodes = $employeeCodes
+            ->reject(fn ($code) => $users->has($code))
+            ->values();
+
+        if ($missingCodes->isNotEmpty()) {
+            throw new \Exception('Invalid employee code(s): ' . $missingCodes->implode(', '));
+        }
+
+        return $employeeCodes
+            ->map(fn ($code) => (string) $users[$code]->id)
+            ->all();
     }
 }
