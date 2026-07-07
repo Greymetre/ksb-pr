@@ -46,13 +46,14 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
             if(isset($row['last_year_increment_percent']) && !is_numeric($row['last_year_increment_percent'])){
                 $row['last_year_increment_percent'] = (int) str_replace('%', '', $row['last_year_increment_percent']);
             }
+
+            if (is_numeric($row['date_of_birth'])) {
+                    $excelDate = $row['date_of_birth'] - 25569; // Adjust for Excel's epoch
+                    $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
+                    $row['date_of_birth'] = !empty($row['date_of_birth']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
+                }
    
             if (!empty($row['id'])) {
-                // if (is_numeric($row['spouse_date_of_birth'])) {
-                //     $excelDate = $row['spouse_date_of_birth'] - 25569; // Adjust for Excel's epoch
-                //     $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
-                //     $row['spouse_date_of_birth'] = !empty($row['spouse_date_of_birth']) ? Carbon::createFromTimestamp($unixTimestamp) : '';
-                // }
                 // if (is_numeric($row['children_1_dob'])) {
                 //     $excelDate = $row['children_1_dob'] - 25569; // Adjust for Excel's epoch
                 //     $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
