@@ -217,9 +217,9 @@
                         @endif -->
                         <!-- 
                         <div class="col-md-6">
-                            <label class="col-form-label">Division</label>
+                            <label class="col-form-label">Zone</label>
                             <select name="product_cat_id" id="product_cat_id" class="form-control select2" required>
-                                <option value="">Select Division</option>
+                                <option value="">Select Zone</option>
                                 @foreach($category ?? [] as $cat)
                                 <option value="{{ $cat->id }}">{{ $cat->category_name }}</option>
                                 @endforeach

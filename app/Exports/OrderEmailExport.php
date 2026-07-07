@@ -103,7 +103,7 @@ class OrderEmailExport implements FromCollection,WithHeadings,ShouldAutoSize,Wit
 
     public function headings(): array
     {
-        return ['Order Date','Order ID','Employee Code', 'User Name','Designation','Branch','Division','Customer','Customer Name', 'Dealer & Distributor Name' ,'Category','Subcategory', 'Product Model Name','Product Name','Product Stage','kW', 'HP','Suc x Del','Quantity','Rate(LP)','Trade Discount%','Scheme Discount%', 'Scheme Name', 'EBD Discount%', 'MOU Discount%','Special Discount%','Frieght Discount%','Cluster Discount%','Deal Dicount%','Cash Discount%','Tax%','Sub Total','Total', 'Order Remark','Discount Approvel Remark', 'Discount Approve By', 'Status'];
+        return ['Order Date','Order ID','Employee Code', 'User Name','Designation','Branch','Zone','Customer','Customer Name', 'Dealer & Distributor Name' ,'Category','Subcategory', 'Product Model Name','Product Name','Product Stage','kW', 'HP','Suc x Del','Quantity','Rate(LP)','Trade Discount%','Scheme Discount%', 'Scheme Name', 'EBD Discount%', 'MOU Discount%','Special Discount%','Frieght Discount%','Cluster Discount%','Deal Dicount%','Cash Discount%','Tax%','Sub Total','Total', 'Order Remark','Discount Approvel Remark', 'Discount Approve By', 'Status'];
     }
 
     public function map($data): array

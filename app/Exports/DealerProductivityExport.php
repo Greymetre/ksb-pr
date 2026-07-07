@@ -111,7 +111,7 @@ class DealerProductivityExport implements FromCollection, ShouldAutoSize, WithEv
 
             $zoneName = $primaryEmployee?->getdivision?->division_name
                 ?: $distributor->sales_zone
-                ?: 'No Zone';
+                ?: 'No Branch';
 
             $branchName = $primaryEmployee?->getbranch?->branch_name ?: 'No Branch';
 

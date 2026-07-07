@@ -118,7 +118,7 @@
                 <th>Customer Name</th>
                 <th>Creation Date</th>
                 <th>Customer Type</th>
-                <th>Division</th>
+                <th>Zone</th>
                 <th>Total Sale</th>
                 <th>Slab</th>
               </thead>

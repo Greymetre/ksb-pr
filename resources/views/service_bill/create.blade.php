@@ -133,9 +133,9 @@ body table td {
                   </div>
                   <div class="col-md-3">
                      <div class="input_section">
-                        <label for="division" class="col-form-label">Division</label>
+                        <label for="division" class="col-form-label">Zone</label>
                         <select disabled name="division" id="division" class="select2">
-                           <option value="">Select Division</option>
+                           <option value="">Select Zone</option>
                            @if($divisions && count($divisions) > 0)
                            @foreach($divisions as $division)
                            <option value="{{$division->id}}">{{$division->category_name}}</option>

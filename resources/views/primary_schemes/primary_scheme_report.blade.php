@@ -14,11 +14,11 @@
                 <form method="POST" action="{{url('primary_scheme_report/download')}}">
                   @csrf
                   <div class="d-flex flex-wrap flex-row align-items-end">
-                    <!-- Division filter -->
+                    <!-- Zone filter -->
                     <div class="p-2" style="width:180px;">
-                      <label for="division">Division</label>
+                      <label for="division">Zone</label>
                       <select class="select2" name="division[]" multiple id="division" data-style="select-with-transition" required title="panel.sales_users.branch">
-                        <!-- <option value="" disabled>Division</option> -->
+                        <!-- <option value="" disabled>Zone</option> -->
                         @if(@isset($primary_divs ))
                         @foreach($primary_divs as $primary_div)
                         <option value="{!! $primary_div->division !!}">{!! $primary_div->division !!}</option>

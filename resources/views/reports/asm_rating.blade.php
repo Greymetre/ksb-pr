@@ -52,7 +52,7 @@
                     </div>
                     <div class="p-2" style="width: 200px;">
                       <select name="division_id" id="division_id" class="form-control select2" required>
-                        <option value="" disabled selected>Divisions</option>
+                        <option value="" disabled selected>Zones</option>
                         @foreach($divisions as $division)
                         <option value="{{$division->id}}">{{$division->division_name}}</option>
                         @endforeach
@@ -345,7 +345,7 @@
       var division_id = $("#division_id").val();
       var financial_year = $("#financial_year").val();
       if (!role_id || role_id.length === 0 || !user_id || !division_id || !financial_year) {
-        alert("Role, User, Division and Financial Year fields are required!");
+        alert("Role, User, Zone and Financial Year fields are required!");
       } else {
         $("#loader").show();
         $.ajax({

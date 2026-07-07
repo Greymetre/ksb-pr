@@ -144,9 +144,9 @@
        </div>
     </div> -->
       <!-- <div class="col col4">
-       <label class="bmd-label-floating">Division</label>
+       <label class="bmd-label-floating">Zone</label>
        <select class="form-control select2" name="division_id" id="division_id" data-style="select-with-transition" title="Select User">
-           <option value="">Division</option>
+           <option value="">Zone</option>
           @if(@isset($divisions ))
           @foreach($divisions as $division)
            <option value="{!! $division['id'] !!}" {{ old( 'division_id') == $division->id ? 'selected' : '' }}>{!! $division['division_name'] !!} </option>
@@ -840,9 +840,9 @@
                   </div>
                </div>
                <div class="col-md-2">
-                  <label class="bmd-label-floating">Division</label>
+                  <label class="bmd-label-floating">Zone</label>
                   <select class="form-control select2 division_test" name="division_id" id="division_id" data-style="select-with-transition" title="Select User">
-                     <option value="">Division</option>
+                     <option value="">Zone</option>
                      @if(@isset($divisions ))
                      @foreach($divisions as $division)
                      <option value="{!! $division['id'] !!}" {{ old( 'division_id') == $division->id ? 'selected' : '' }}>{!! $division['division_name'] !!} </option>
@@ -1577,7 +1577,7 @@
                   <div class="col-sm">
                      <div class="card bg-color ">
                         <div class="card-body">
-                           <h4 class="card-title">Orders by Zone </h4>
+                           <h4 class="card-title">Orders by Branch </h4>
                            <div id="OrdersbyZoneBar" class="ct-chart"></div>
                         </div>
                      </div>
@@ -1662,7 +1662,7 @@
                   <div class="col-sm">
                      <div class="card bg-color ">
                         <div class="card-body">
-                           <h4 class="card-title">Sales (Amount in RS ) by Zone </h4>
+                           <h4 class="card-title">Sales (Amount in RS ) by Branch </h4>
                            <div id="SalesbyZoneBar" class="ct-chart"></div>
                         </div>
                      </div>

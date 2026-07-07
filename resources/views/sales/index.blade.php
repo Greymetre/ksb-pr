@@ -15,7 +15,7 @@
                   <div class="d-flex flex-wrap flex-row">
                     <div class="p-2" style="width:190px;">
                       <select class="select2" name="dividion_id" id="dividion_id" required>
-                        <option value="">Select Division</option>
+                        <option value="">Select Zone</option>
                         @foreach($divisions as $division)
                         <option value="{{$division->id}}">{{$division->category_name}}</option>
                         @endforeach

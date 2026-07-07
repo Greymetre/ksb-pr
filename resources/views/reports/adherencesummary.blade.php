@@ -224,9 +224,9 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label>Division</label>
+                                <label>Zone</label>
                                 <select class="form-control select2" id="division_id" name="division_id">
-                                    <option value="">All Divisions</option>
+                                    <option value="">All Zones</option>
                                 </select>
                             </div>
 
@@ -252,7 +252,7 @@
                         <div class="row">
                             
 
-                            <!-- Division -->
+                            <!-- Zone -->
 
 
                             <div class="col-md-4">
@@ -346,12 +346,12 @@
         }
     });
 }
-        // Division
+        // Zone
 $.get("{{ url('getDivisions') }}")
 .done(function(data) {
-    console.log('Divisions:', data);
+    console.log('Zones:', data);
 
-    let options = '<option value="">All Divisions</option>';
+    let options = '<option value="">All Zones</option>';
 
     if (Array.isArray(data)) {
         data.forEach(item => {
@@ -366,7 +366,7 @@ $.get("{{ url('getDivisions') }}")
     $('#division_id').html(options);
 })
 .fail(function(err) {
-    console.error('Division API Error:', err);
+    console.error('Zone API Error:', err);
 });
 
 // Branch

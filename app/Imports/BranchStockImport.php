@@ -42,6 +42,7 @@ class BranchStockImport implements ToCollection, WithValidation, WithHeadingRow,
     public function collection(Collection $rows)
     {
         foreach ($rows as $row) {
+            $divisionId = $row['division_id'] ?? $row['zone_id'] ?? null;
 
             foreach ($row as $k => $val) {
                 if ($k == '0_30' || $k == '31_60' || $k == '61_90' || $k == '91_150' || $k == '150') {
@@ -52,7 +53,7 @@ class BranchStockImport implements ToCollection, WithValidation, WithHeadingRow,
                             'days' => $k,
                             'year' => $row['year'],
                             'quarter' => $row['quarter'],
-                            'division_id' => $row['division_id']
+                            'division_id' => $divisionId
                         ],
                         [
                             'warehouse_id' => $row['warehouse_id'],
@@ -69,7 +70,8 @@ class BranchStockImport implements ToCollection, WithValidation, WithHeadingRow,
     {
         $rules = [
             'branch_id' => 'required|exists:branches,id',
-            'division_id' => 'required|exists:divisions,id',
+            'division_id' => 'required_without:zone_id|exists:divisions,id',
+            'zone_id' => 'required_without:division_id|exists:divisions,id',
             'warehouse_id' => 'nullable|exists:ware_houses,id',
         ];
         return $rules;

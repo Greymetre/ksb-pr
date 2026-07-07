@@ -191,7 +191,7 @@ class PlannedSopSalePUMExport implements FromCollection, WithHeadings, ShouldAut
         if (isset($this->filters['financial_year'])) {
             $this->year = explode('-', $this->filters['financial_year']);
         }
-        $heading1 = ["Order Id", "Branch Name", "Warehouse", "Division Name", "Group Name", "Sap Code", "Product Name", "Sale : Quantity", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "CY Opening Stock (Branch)", "", "Last Month Planing", "Open Order (Prod.)", "", "For Prodcution", "", "Planing Month", "Forecast (Sales Plan)", "", "For Prodcution", "", 'Created By', 'Verify By', 'Created At'];
+        $heading1 = ["Order Id", "Branch Name", "Warehouse", "Zone Name", "Group Name", "Sap Code", "Product Name", "Sale : Quantity", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "CY Opening Stock (Branch)", "", "Last Month Planing", "Open Order (Prod.)", "", "For Prodcution", "", "Planing Month", "Forecast (Sales Plan)", "", "For Prodcution", "", 'Created By', 'Verify By', 'Created At'];
 
         $heading2 = ["", "", "", "", "", "", ""];
         for ($i = 4; $i <= 12; $i++) {

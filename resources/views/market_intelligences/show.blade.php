@@ -123,7 +123,7 @@
                   <h5 class="text-dark"><strong>State: {!! $id->data->state !!}</strong></h5>
                 </div>
                 <div class="col-3 right-details">
-                  <h5 class="text-dark"><strong>Division: {!! $id->division->division_name !!}</strong></h5>
+                  <h5 class="text-dark"><strong>Zone: {!! $id->division->division_name !!}</strong></h5>
                 </div>
               </div>
             </div>

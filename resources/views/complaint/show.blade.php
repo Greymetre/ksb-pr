@@ -400,7 +400,7 @@
                     <p class="border p-2 bg-light">{{$complaint->product_serail_number ?? '-'}}</p>
                   </div>
                   <div class="col-md-3">
-                      <label>Division</label>
+                      <label>Zone</label>
                       <p class="border p-2 bg-light">{{$complaint->product_details->categories->category_name ?? '-'}}</p>
                   </div>
                   <div class="col-md-3">

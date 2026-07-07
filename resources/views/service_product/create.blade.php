@@ -77,11 +77,11 @@
             </div>
             <div class="col-md-6">
               <div class="input_section">
-                <label class="col-form-label">Division <span class="text-danger"> *</span></label>
+                <label class="col-form-label">Zone <span class="text-danger"> *</span></label>
                
                   <div class="form-group has-default bmd-form-group">
                     <select name="division_id" id="division_id" class="select2">
-                      <option value="">Select Division</option>
+                      <option value="">Select Zone</option>
                       @if(count($divisions) > 0)
                       @foreach($divisions as $division)
                       <option value="{{$division->id}}" {{old('division_id', $product->division_id) == $division->id?'selected':''}}>{{$division->division_name}}</option>
@@ -103,7 +103,7 @@
             
                   <div class="form-group has-default bmd-form-group">
                     <select name="category_id" id="category_id" class="select2">
-                      <option value="">Select Division First</option>
+                      <option value="">Select Zone First</option>
                     </select>
                     @if ($errors->has('category_id'))
                     <div class="error col-lg-12">

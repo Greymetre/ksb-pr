@@ -65,7 +65,7 @@ class CutomerOutstantingExport implements FromCollection, WithHeadings, ShouldAu
             'Branch',
             'Customer ID',
             'User ID',
-            'Division ID',
+            'Zone ID',
             'Dealer Name',
             'Year',
             'Quarter',

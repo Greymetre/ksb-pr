@@ -30,9 +30,9 @@
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="input_section">
-                                            <label for="division_id">Division</label>
+                                            <label for="division_id">Zone</label>
                                             <select class="form-control select2 {{ $errors->has('division_id') ? 'is-invalid' : '' }}" onchange="getUsers()" name="division_id" id="division_id" required>
-                                                <option value="">Select Division</option>
+                                                <option value="">Select Zone</option>
                                                 @foreach($divisions as $division)
                                                 <option value="{{ $division->id }}">{{ $division->division_name }}</option>
                                                 @endforeach

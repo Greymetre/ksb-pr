@@ -30,7 +30,7 @@
                     </div>
                     <div class="p-2" style="width: 200px;">
                       <select name="division_id" id="division_id" class="form-control select2">
-                        <option value="" disabled selected>Divisions</option>
+                        <option value="" disabled selected>Zones</option>
                         @foreach($divisions as $division)
                         <option value="{{$division->id}}">{{$division->division_name}}</option>
                         @endforeach
@@ -38,7 +38,7 @@
                     </div>
                     <div class="p-2" style="width: 200px;">
                       <select name="branch_id" id="branch_id" class="form-control select2">
-                        <option value="" disabled selected>Branchs</option>
+                        <option value="" disabled selected>Branches</option>
                         @foreach($branchs as $branch)
                         <option value="{{$branch->id}}">{{$branch->branch_name}}</option>
                         @endforeach
@@ -83,7 +83,7 @@
                 <th>User Name</th>
                 <th>Designation</th>
                 <th>Branch Name</th>
-                <th>Division</th>
+                <th>Zone</th>
                 <th>Reporting Manager</th>
                 <th>Field Working Days</th>
                 <th>Other Days</th>

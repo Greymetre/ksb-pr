@@ -126,11 +126,11 @@
 
               <div class="col-md-6">
                 <div class="input_section">
-                  <label class=" col-form-label">Division <span class="text-danger"> *</span></label>
+                  <label class=" col-form-label">Zone <span class="text-danger"> *</span></label>
                
                     <div class="form-group has-default bmd-form-group">
                       <select class="form-control select2" name="division_id" id="division_id" style="width: 100%;" required>
-                        <option value="" selected disabled>Select Division</option>
+                        <option value="" selected disabled>Select Zone</option>
                       @if(@isset($divisions ))
                         @foreach($divisions as $division)
                         <option value="{!! $division['id'] !!}" {{ old( 'divisions' , (!empty($fields->division_id))?($fields->division_id):('') ) == $division['id'] ? 'selected' : '' }}>{!! $division['division_name'] !!}</option>

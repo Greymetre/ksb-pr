@@ -14,8 +14,8 @@
                   <div class="d-flex flex-wrap flex-row">
                     <div class="p-2" style="width:200px;">
                       <div class="dropdown bootstrap-select">
-                        <select class="select2" name="division_id" id="division_id" data-style="select-with-transition" title="Select Division">
-                          <option class="bs-title-option" value="">Division</option>
+                        <select class="select2" name="division_id" id="division_id" data-style="select-with-transition" title="Select Zone">
+                          <option class="bs-title-option" value="">Zone</option>
                           @foreach($divisions as $division)
                           <option value="{{$division->id}}">{{$division->division_name}}</option>
                           @endforeach
@@ -129,7 +129,7 @@
               <th>{!! trans('panel.global.name') !!}</th>
               <th>{!! trans('panel.sidemenu.branches') !!}</th>
               <th>Designation</th>
-              <th>Division</th>
+              <th>Zone</th>
               <th>Whats App</th>
               <th>{!! trans('panel.global.mobile') !!}</th>
               <th>{!! trans('panel.global.email') !!}</th>

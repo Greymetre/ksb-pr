@@ -686,7 +686,7 @@ class AppraisalController extends Controller
             'Emp Name',
             'Designation',
             'Branch',
-            'Division',
+            'Zone',
             'Department',
             'Reporting Head',
             'Email',

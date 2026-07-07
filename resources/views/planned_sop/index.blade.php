@@ -68,7 +68,7 @@
                   @endif
                   <div class="p-2" style="width:160px;">
                     <select class="select2 mr-2" name="division_id" id="division_id" data-style="select-with-transition" title="Select">
-                      <option value="">Division</option>
+                      <option value="">Zone</option>
                       @foreach($divisions as $division)
                       <option value="{{ $division->id }}" {{ $division->id == 1 ? 'selected' : '' }}>
                         {{ $division->category_name ?? '' }}
@@ -226,7 +226,7 @@
                   <th>Item Name</th>
                   <th>Forecast Qty</th>
                   <th>Order Id</th>
-               <!--    <th>Division</th>
+               <!--    <th>Zone</th>
                   <th>Product Code</th>
                   <th>Product Desc.</th>
                   <th>Opening stock as on 1st (Qty)</th>

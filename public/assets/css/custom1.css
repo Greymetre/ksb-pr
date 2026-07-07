@@ -130,6 +130,9 @@ div.dataTables_wrapper div.dataTables_info {
 
 div.dataTables_wrapper div.dataTables_paginate {
     margin: 0;
+    display: flex;
+    justify-content: flex-end;
+    white-space: normal;
 }
 
 div.dataTables_wrapper div.dataTables_paginate ul.pagination {
@@ -141,23 +144,64 @@ div.dataTables_wrapper div.dataTables_paginate ul.pagination {
     flex-wrap: wrap;
 }
 
+div.dataTables_wrapper div.dataTables_paginate span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
 div.dataTables_wrapper .pagination .page-link,
-div.dataTables_wrapper .pagination .paginate_button a {
+div.dataTables_wrapper .pagination .paginate_button a,
+div.dataTables_wrapper div.dataTables_paginate .paginate_button {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
     min-width: 34px;
-    min-height: 34px;
-    padding: 7px 10px;
+    height: 34px;
+    margin: 2px;
+    padding: 0 10px !important;
     border-radius: 6px !important;
-    border: 1px solid #d7dce2;
+    border: 1px solid #d7dce2 !important;
+    background: #fff !important;
     color: #212529 !important;
-    line-height: 1.2;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 34px !important;
     text-align: center;
+    text-decoration: none !important;
+    text-transform: none !important;
+    cursor: pointer;
+    box-shadow: none !important;
+}
+
+div.dataTables_wrapper .pagination .page-item {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+div.dataTables_wrapper .pagination .page-item.disabled .page-link,
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.disabled {
+    color: #9aa3ad !important;
+    background: #f7f8fa !important;
+    border-color: #e3e7ec !important;
+    cursor: not-allowed;
+    opacity: 1;
 }
 
 div.dataTables_wrapper .pagination .active .page-link,
-div.dataTables_wrapper .pagination .paginate_button.active a {
+div.dataTables_wrapper .pagination .paginate_button.active a,
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.current {
     border-color: #3860a4 !important;
     background: linear-gradient(45deg, #3860a4 0%, #3694cc 100%) !important;
     color: #fff !important;
+}
+
+div.dataTables_wrapper .pagination .page-link:hover,
+div.dataTables_wrapper div.dataTables_paginate .paginate_button:not(.current):not(.disabled):hover {
+    border-color: #3860a4 !important;
+    background: #eef4ff !important;
+    color: #3860a4 !important;
 }
 
 @media (max-width: 767px) {
@@ -187,6 +231,10 @@ div.dataTables_wrapper .pagination .paginate_button.active a {
     }
 
     div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+        justify-content: flex-start;
+    }
+
+    div.dataTables_wrapper div.dataTables_paginate {
         justify-content: flex-start;
     }
 }

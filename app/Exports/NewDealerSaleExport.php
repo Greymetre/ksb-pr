@@ -128,7 +128,7 @@ class NewDealerSaleExport implements FromCollection, WithHeadings, WithMapping, 
             'Customer Name',
             'Creation Date',
             'Customer Type',
-            'Division',
+            'Zone',
         ];
 
         if ($this->month && is_array($this->month) && count($this->month) > 0 && $this->financial_year && !empty($this->financial_year)) {

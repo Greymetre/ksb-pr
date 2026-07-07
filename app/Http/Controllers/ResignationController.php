@@ -208,7 +208,7 @@ class ResignationController extends Controller
             '#Resignation Id',
             'Resignation Date',
             'Status',
-            'Division',
+            'Zone',
             'Branch',
             'Employee Code',
             'Employee Name',

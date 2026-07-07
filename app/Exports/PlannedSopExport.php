@@ -90,7 +90,7 @@ class PlannedSopExport implements FromCollection, WithHeadings, ShouldAutoSize, 
     public function headings(): array
     {
         return [
-             "Order Id" , "Month","Branch Name","Division Name", "Group Name",  "Item Name" , "Product Code", "Product Desc." ,  "Opening stock as on 1st (Qty)", "Curent Stk","S&OP Plan for Next running month (M+1) (Qty.)" ,  "Budget for the month (Qty.)", "LM Sale (Qty.)" , "L3M Avg Sale (Qty.)" ,"LY same month sale (Qty.)" ,  "SKU Unit Price" , "S&OP Val_L (Unit Price *Qty.)"  , "TOP 20 SKU for the Branch (*)","Dispatch against Plan" , "Pending against Plan",   "Created By" , "Created At"
+             "Order Id" , "Month","Branch Name","Zone Name", "Group Name",  "Item Name" , "Product Code", "Product Desc." ,  "Opening stock as on 1st (Qty)", "Curent Stk","S&OP Plan for Next running month (M+1) (Qty.)" ,  "Budget for the month (Qty.)", "LM Sale (Qty.)" , "L3M Avg Sale (Qty.)" ,"LY same month sale (Qty.)" ,  "SKU Unit Price" , "S&OP Val_L (Unit Price *Qty.)"  , "TOP 20 SKU for the Branch (*)","Dispatch against Plan" , "Pending against Plan",   "Created By" , "Created At"
         ];
     }
 

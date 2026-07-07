@@ -2458,7 +2458,7 @@ public function userCityList(Request $request)
 
             $html = '';
             foreach ($types as $type) {
-                $divisionName = $type->division ? $type->division->division_name : 'No Division';
+                $divisionName = $type->division ? $type->division->division_name : 'No Zone';
                 $html .= '
                     <span class="badge badge-info mr-2 mb-2" id="badge_' . $type->id . '">
                         ' . e($divisionName . ' - ' . $type->type) . '

@@ -44,7 +44,7 @@
               <li class="list-group-item border-0 ps-0 pt-0 text-sm"><strong class="text-dark">Name Of ASM:</strong> &nbsp; <span class="asmName"></span>
               </li>
               <li class="list-group-item border-0 ps-0 text-sm"><strong class="text-dark">Location:</strong> &nbsp; <span class="asmLocation"></span> </li>
-              <li class="list-group-item border-0 ps-0 text-sm"><strong class="text-dark">Zone:</strong> &nbsp; <span class="asmZone"></span> </li>
+              <li class="list-group-item border-0 ps-0 text-sm"><strong class="text-dark">Branch:</strong> &nbsp; <span class="asmZone"></span> </li>
             </ul>
           <table class="table align-items-center mb-0">
             <thead>

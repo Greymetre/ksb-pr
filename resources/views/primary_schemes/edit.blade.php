@@ -89,7 +89,7 @@
                   <div class="col-md-6">
                      <div class="form-group">
                         <select class="select2 form-control" name="division" id="division">
-                           <option value="" selected disabled>Select Divisionss</option>
+                           <option value="" selected disabled>Select Zones</option>
                            @if($primary_divs && count($primary_divs) > 0)
                            @foreach($primary_divs as $primary_div)
                            <option value="{{$primary_div->division}}" {!! $primary_div->division == old('division', $schemes['division']) ?'selected':'' !!} >{{$primary_div->division}}</option>

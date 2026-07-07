@@ -303,7 +303,7 @@ class NewInvoiceController extends Controller
             'Customer Name',
             'Mobile Number',
             'City',
-            'Zone',
+            'Branch',
             'Invoice Date',
             'Invoice Number',
             'Pre-GST Amount',

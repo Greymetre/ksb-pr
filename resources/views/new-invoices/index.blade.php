@@ -125,7 +125,7 @@
                                     </select>
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="col-form-label">Zone</label>
+                                    <label class="col-form-label">Branch</label>
                                     <select id="zone_filter" class="form-control select2">
                                         <option value="">All zones</option>
                                         @foreach($branches as $branch)
@@ -166,7 +166,7 @@
                                     <th>Retailer ID</th>
                                     <th>Customer Name</th>
                                     <th>Mobile Number</th>
-                                    <th>City / Zone</th>
+                                    <th>City / Branch</th>
                                     <th>Invoice Date</th>
                                     <th>Invoice Number</th>
                                     <th>Pre-GST Amount</th>

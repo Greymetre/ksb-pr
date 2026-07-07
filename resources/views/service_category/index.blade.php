@@ -13,7 +13,7 @@
                   <div class="d-flex flex-wrap flex-row">
                     <div class="p-2" style="width:200px;">
                       <select name="division" id="division" class="select2">
-                        <option value="">Select Division</option>
+                        <option value="">Select Zone</option>
                         @if(count($categories) > 0)
                         @foreach($categories as $category)
                         <option value="{{$category->id}}">{{ $category->division_name}}</option>
@@ -145,10 +145,10 @@
               </div>
               <div class="col-md-6">
                 <div class="input_section">
-                  <label class="col-form-label">Division<span class="text-danger"> *</span></label>
+                  <label class="col-form-label">Zone<span class="text-danger"> *</span></label>
                                       <div class="form-group has-default bmd-form-group">
                       <select class="form-control select2" name="division_id" id="division_id" style="width: 100%;" required>
-                        <option value="">Select Division</option>
+                        <option value="">Select Zone</option>
                         @if(@isset($categories ))
                         @foreach($categories as $category)
                         <option value="{!! $category['id'] !!}" {{ old( 'category_id') == $category['id'] ? 'selected' : '' }}>{!! $category['division_name'] !!}</option>

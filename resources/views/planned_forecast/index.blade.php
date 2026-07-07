@@ -47,7 +47,7 @@
                 <div class="next-btn">
                   <div class="p-2" style="width:160px;">
                     <select class="select2 mr-2" name="division_id" id="division_id" data-style="select-with-transition" title="Select">
-                      <option value="">Division</option>
+                      <option value="">Zone</option>
                       @foreach($divisions as $division)
                       <option value="{{ $division->id }}">
                         {{ $division->category_name ?? '' }}

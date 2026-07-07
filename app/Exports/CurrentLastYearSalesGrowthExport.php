@@ -78,7 +78,7 @@ class CurrentLastYearSalesGrowthExport implements FromCollection,WithHeadings,Sh
 
      $endYear = $f_year_array[1];
 
-     $headings = ['Branch', 'Division'];
+     $headings = ['Branch', 'Zone'];
 
      $quarterNames = ['Q1', 'Q2', 'Q3', 'Q4'];
 

@@ -32,7 +32,7 @@ class ServiceProductCategoryExport implements FromCollection,WithHeadings,Should
 
     public function headings(): array
     {
-        return ['id','Category Name', 'Division Id','Division Name'];
+        return ['id','Category Name', 'Zone Id','Zone Name'];
     }
 
     public function map($data): array

@@ -37,7 +37,7 @@
                   </th>
                   <th colspan="4"> 
                     <table> 
-                      <tr class="text-center"> <th colspan="4">Product Division</th></tr> 
+                      <tr class="text-center"> <th colspan="4">Product Zone</th></tr> 
                       <tr>
                         <td>Target</td>
                         <td>10th</td>

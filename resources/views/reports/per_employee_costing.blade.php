@@ -142,7 +142,7 @@
           <div class="table-responsive">
             <table id="getprimarysales" class="table table-striped- table-bordered table-hover table-checkable no-wrap">
               <thead class=" text-primary">
-                <th>Division</th>
+                <th>Zone</th>
                 <th>Branch</th>
                 <th>Emp Code</th>
                 <th>Emp Name</th>

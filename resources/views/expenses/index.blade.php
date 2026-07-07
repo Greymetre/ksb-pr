@@ -39,8 +39,8 @@
                      <div class="p-2" style="width:150px;">
                       <!-- <select class="selectpicker" name="branch_id" id="branch_id" data-style="select-with-transition" title="Select Branch"> -->
 
-                       <select class="select2" name="branch_id" id="branch_id" data-style="select-with-transition" title="Select Zone">
-                         <option value="">Select Zone</option>
+                       <select class="select2" name="branch_id" id="branch_id" data-style="select-with-transition" title="Select Branch">
+                         <option value="">Select Branch</option>
                          @if(@isset($branches ))
                          @foreach($branches as $branch)
                          <option value="{!! $branch['id'] !!}">{!! $branch['name'] !!}</option>
@@ -51,8 +51,8 @@
 
 
                      <div class="p-2" style="width:150px;">
-                       <select class="select2" name="division_id" id="division_id" data-style="select-with-transition" title="Select Division">
-                         <option value="">Select Division</option>
+                       <select class="select2" name="division_id" id="division_id" data-style="select-with-transition" title="Select Zone">
+                         <option value="">Select Zone</option>
                          @if(@isset($divisions ))
                          @foreach($divisions as $division)
                          <option value="{!! $division['id'] !!}">{!! $division['name'] !!}</option>
@@ -182,7 +182,7 @@
                  <th class="lenth_text">{!! trans('panel.expenses.fields.note') !!}</th>
                  <th>{!! trans('panel.expenses.fields.created_at') !!}</th>
                  <!-- <th>{!! trans('panel.expenses.fields.branch') !!}</th> -->
-                  <th>Zone</th>
+                  <th>Branch</th>
                  <th>{!! trans('panel.expenses.fields.total_km') !!}</th>
                  <th>{!! trans('panel.global.action') !!}</th>
                  <th>Attechments</th>

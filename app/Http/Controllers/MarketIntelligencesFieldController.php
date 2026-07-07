@@ -179,7 +179,7 @@ class MarketIntelligencesFieldController extends Controller
         $heading = [
             'Date',
             'User name',
-            'User Division',
+            'User Zone',
             'State'
         ];
 

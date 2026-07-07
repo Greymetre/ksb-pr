@@ -34,13 +34,14 @@ class ServiceProductImport implements ToCollection, WithValidation, WithHeadingR
     {
 
         foreach ($rows as $row) {
+            $divisionId = $row['division_id'] ?? $row['zone_id'] ?? null;
             
             if (isset($row['id']) && !empty($row['id'])) {
                 $ServiceChargeProducts = ServiceChargeProducts::find($row['id']);
                 $ServiceChargeProducts->active = 'Y';
                 $ServiceChargeProducts->charge_type_id = isset($row['charge_type_id']) ? $row['charge_type_id'] : '';
                 $ServiceChargeProducts->product_name = isset($row['product_name']) ? $row['product_name'] : null;
-                $ServiceChargeProducts->division_id = isset($row['division_id']) ? $row['division_id'] : null;
+                $ServiceChargeProducts->division_id = $divisionId;
                 $ServiceChargeProducts->category_id = isset($row['category_id']) ? $row['category_id'] : null;
                 $ServiceChargeProducts->price = isset($row['price']) ? $row['price'] : null;
                 $ServiceChargeProducts->other_charge = isset($row['other_charge']) ? $row['other_charge'] : null;
@@ -52,7 +53,7 @@ class ServiceProductImport implements ToCollection, WithValidation, WithHeadingR
                     'active' => 'Y',
                     'charge_type_id' => isset($row['charge_type_id']) ? $row['charge_type_id'] : '',
                     'product_name' => isset($row['product_name']) ? $row['product_name'] : '',
-                    'division_id' => isset($row['division_id']) ? $row['division_id'] : null,
+                    'division_id' => $divisionId,
                     'category_id' => isset($row['category_id']) ? $row['category_id'] : null,
                     'price' => isset($row['price']) ? $row['price'] : null,
                     'other_charge' => isset($row['other_charge']) ? $row['other_charge'] : null,

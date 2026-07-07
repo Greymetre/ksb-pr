@@ -248,7 +248,7 @@ class CurrentLastYearBranchTargetExport implements FromCollection,WithHeadings,S
    public function headings(): array
    {
        $f_year_array = explode('-', $this->financial_year);
-       $headings = ['EMP Code', 'Emp Name', 'Branch', 'Division'];
+       $headings = ['EMP Code', 'Emp Name', 'Branch', 'Zone'];
        $quarterNames = ['Q1', 'Q2', 'Q3', 'Q4'];
        $sub_headings = ['','','',''];
        $quarterIndex = 0;
@@ -257,7 +257,7 @@ class CurrentLastYearBranchTargetExport implements FromCollection,WithHeadings,S
         if (empty($this->month)) {
             $startYear = $f_year_array[0];
             $endYear = $f_year_array[1];
-            $allMonths = ['EMP Code', 'Emp Name', 'Branch','Division','Apr', '','','May', '','', 'Jun', '','','Q1',  '','','Jul', '','', 'Aug', '','', 'Sep', '','','Q2', '','', 'Oct', '','', 'Nov', '','', 'Dec', '','','Q3', '','', 'Jan', '','', 'Feb', '','', 'Mar', '','','Q4', '','','Total'];
+            $allMonths = ['EMP Code', 'Emp Name', 'Branch','Zone','Apr', '','','May', '','', 'Jun', '','','Q1',  '','','Jul', '','', 'Aug', '','', 'Sep', '','','Q2', '','', 'Oct', '','', 'Nov', '','', 'Dec', '','','Q3', '','', 'Jan', '','', 'Feb', '','', 'Mar', '','','Q4', '','','Total'];
             // $this->month = $allMonths;
             $quarterIndex %= count($quarterNames);
             $sub_headings = ['','','','','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%','LY','CY','Growth%'];

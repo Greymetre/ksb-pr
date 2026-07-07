@@ -112,14 +112,14 @@ class AttendanceExport implements FromCollection, WithHeadings, ShouldAutoSize, 
     {
         if (Auth::user()->hasRole('superadmin') || Auth::user()->hasRole('Admin')) {
             return ['id', 'Employee Code', 'Employee Name', 'Designation', 'Branch',
-             'Division', 'Reporting Manager',
+             'Zone', 'Reporting Manager',
              'Punchin Date', 'Punchin Time', 'Punchout Time', 'Worked Time','Status', 'Objective', 'Attendance Status', 'Remark Status', 'Punchin Address', 'Punchout Address',
             //   'Punchin Summary',
             //  'punchin_longitude', 'punchin_latitude', 'punchout_longitude', 'punchout_latitude', 
              'From', 'Approve/Reject By'];
         } else {
             return ['id', 'Employee Code', 'Employee Name', 'Designation', 'Branch',
-             'Division', 'Reporting Manager',
+             'Zone', 'Reporting Manager',
              'Punchin Date', 'Punchin Time', 'Punchout Time', 'Worked Time','Status', 'Objective', 'Attendance Status', 'Remark Status', 'Punchin Address', 'Punchout Address',
             //   'Punchin Summary',
             //  'punchin_longitude', 'punchin_latitude', 'punchout_longitude', 'punchout_latitude'

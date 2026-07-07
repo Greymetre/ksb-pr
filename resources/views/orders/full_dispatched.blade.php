@@ -113,11 +113,11 @@
                <div class="row invoice-info">
                   <div class="col-md-6 invoice-col">
                      <div class="input_section">
-                        <label class="col-form-label">Division : </label>
+                        <label class="col-form-label">Zone : </label>
                         
                            <select name="product_cat_id" readonly id="product_cat_id" class="form-control " onchange="getProductlist()">
                               @if(count($category) > 0)
-                              <option value="" disabled>Select Division</option>
+                              <option value="" disabled>Select Zone</option>
                               @foreach($category as $cat)
                               <option {{(old('product_cat_id', $orders['product_cat_id']) == $cat->id)?'selected':'disabled'}} value="{{$cat->id}}">{{$cat->category_name}}</option>
                               @endforeach

@@ -211,7 +211,7 @@
 
               <table class="table responsive border-0 mt-4 new-table">
                 <tr>
-                  <td><em>Division</em></td>
+                  <td><em>Zone</em></td>
                   <td><em>Category Of Complaint </em></td>
                   <td><em>Complaint Type</em></td>
                   <td><em>Complaint Reason</em></td>

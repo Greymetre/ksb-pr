@@ -74,10 +74,10 @@
             </div>
             <div class="col-md-4">
               <div class="input_section">
-                <label class="col-form-label">Division<span class="text-danger"> *</span></label>
+                <label class="col-form-label">Zone<span class="text-danger"> *</span></label>
                 <div class="form-group has-default bmd-form-group">
                   <select class="form-select select2" name="product_division" id="product_division" onchange="getProductlist()" required>
-                    <option value=''>Select Division</option>
+                    <option value=''>Select Zone</option>
                     @foreach($divisions as $division)
                     <option value="{{ $division->id }}">{{ $division->category_name}}</option>
                     @endforeach
@@ -253,7 +253,7 @@
           return;
         }
         if (category == null || category == '') {
-          alert('Select Division First');
+          alert('Select Zone First');
           return;
         }
         getProductlist();

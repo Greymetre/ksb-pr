@@ -66,7 +66,7 @@ class DivisionController extends Controller
 	    }
 
 	    if ($status) {
-		return Redirect::to('division')->with('message_success', 'Division Store Successfully');
+		return Redirect::to('division')->with('message_success', 'Zone Store Successfully');
 	    }
 
 	    return redirect()->back()->with('message_danger', 'Error in Data Store')->withInput();
@@ -98,7 +98,7 @@ class DivisionController extends Controller
 	$division = Division::find($id);
 
 	if (!$division) {
-          return response()->json(['status' => 'error', 'message' => 'Division not found']);
+          return response()->json(['status' => 'error', 'message' => 'Zone not found']);
 	}
 
 	return response()->json($division);
@@ -133,9 +133,9 @@ class DivisionController extends Controller
         $user = Division::find($id);
         if($user->delete())
         {
-            return response()->json(['status' => 'success','message' => 'Division deleted successfully!']);
+            return response()->json(['status' => 'success','message' => 'Zone deleted successfully!']);
         }
-        return response()->json(['status' => 'error','message' => 'Error in Division Delete!']);
+        return response()->json(['status' => 'error','message' => 'Error in Zone Delete!']);
     }
 
     public function division_report_download(Request $request) {

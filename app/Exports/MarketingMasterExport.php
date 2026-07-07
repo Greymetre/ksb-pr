@@ -74,7 +74,7 @@ class MarketingMasterExport implements FromCollection,WithHeadings,ShouldAutoSiz
 
     public function headings(): array
     {
-        return ['Event Date','Event Center','Place of Participant','Event District','State','Event Under Dealer','Event Under Type','Branch','Division','TM/ ASM Name Responsible for Event','Branding Team Member','Name of Participant','Category of Participant','Mob. No. of Participant','Google Drive Photo Link','No. of Participant','Create Date','Create By', 'id'];
+        return ['Event Date','Event Center','Place of Participant','Event District','State','Event Under Dealer','Event Under Type','Branch','Zone','TM/ ASM Name Responsible for Event','Branding Team Member','Name of Participant','Category of Participant','Mob. No. of Participant','Google Drive Photo Link','No. of Participant','Create Date','Create By', 'id'];
     }
 
     public function map($data): array

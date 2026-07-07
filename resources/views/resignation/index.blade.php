@@ -20,8 +20,8 @@
                   <div class="d-flex flex-wrap flex-row">
 
                     <div class="p-2" style="width:200px;">
-                      <select class="selectpicker" name="division_id" id="division_id" data-style="select-with-transition" title="Select Division">
-                        <option value="">Select Division</option>
+                      <select class="selectpicker" name="division_id" id="division_id" data-style="select-with-transition" title="Select Zone">
+                        <option value="">Select Zone</option>
                         @if(@isset($divisions ))
                         @foreach($divisions as $division)
                         <option value="{!! $division['id'] !!}">{!! $division['division_name'] !!}</option>
@@ -133,7 +133,7 @@
               <thead class=" text-primary">
                 <th>Resignation Date</th>
                 <th>Status</th>
-                <th>Division</th>
+                <th>Zone</th>
                 <th>Branch</th>
                 <th>Employee Code</th>
                 <th>Name</th>

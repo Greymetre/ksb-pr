@@ -814,7 +814,7 @@
             <div class="main-details">
               <div class="row box-inputs mt-2">
                 <div class="col-md-12 mt-4">
-                  <p class="text-center">Division for which you are interested & Anticipated Turnover for Ensuing FY (All Figures in Lacs)</p>
+                  <p class="text-center">Zone for which you are interested & Anticipated Turnover for Ensuing FY (All Figures in Lacs)</p>
                 </div>
                 <div class="col-md-12 mt-4">
                   <table class="table">
@@ -1179,16 +1179,16 @@
 
               $('input[name="division"]').change(function() {
                 var selectedType = $('input[name="customertype"]:checked').val();
-                var selectedDivision = $('input[name="division"]:checked').val();
-                console.log(selectedType, selectedDivision);
+                var selectedZone = $('input[name="division"]:checked').val();
+                console.log(selectedType, selectedZone);
 
-                if (selectedDivision == 'SERVICE') {
+                if (selectedZone == 'SERVICE') {
                   $('#asc-div').removeClass('d-none');
                 } else {
                   $('#asc-div').addClass('d-none');
                 }
 
-                if (selectedDivision == 'AGRI' && selectedType == 'dealer') {
+                if (selectedZone == 'AGRI' && selectedType == 'dealer') {
                   $("#parent-div").removeClass('d-none');
                 } else {
                   $("#parent-div").addClass('d-none');

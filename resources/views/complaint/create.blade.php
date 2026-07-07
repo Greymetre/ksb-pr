@@ -264,7 +264,7 @@
                   </div>
                   <div class="col-md-3">
                      <div class="input_section">
-                        <label class="col-form-label">Division </label>
+                        <label class="col-form-label">Zone </label>
                         <input readonly type="text" name="category" id="category" class="form-control" value="{!! old( 'category', $complaints['category']) !!}">
                         @if ($errors->has('category'))
                         <div class="error col-lg-12">
@@ -703,8 +703,8 @@
                         <!-- <div class="col-md-3">
                         <div class="form-group">
                            <label class="bmd-label-floating">Pincode </label>
-                           <select name="division" id="division" placeholder="Select Division" class="select2 form-control">
-                              <option value="" disabled selected>Division</option>
+                           <select name="division" id="division" placeholder="Select Zone" class="select2 form-control">
+                              <option value="" disabled selected>Zone</option>
                               @if($divisions && count($divisions) > 0)
                               @foreach($divisions as $division)
                               <option value="{{$division->id}}" {!! old( 'division' , $complaints['division'])==$division->id?'selected':'' !!} >{{$division->division_name}}</option>

@@ -27,7 +27,7 @@ class BranchStockTemplate implements FromCollection,WithHeadings,ShouldAutoSize
             'Branch ID',  
             'Branch Name',
             'Warehouse ID',
-            'Division ID',
+            'Zone ID',
             'Year',
             'Quarter',
             '0-30',

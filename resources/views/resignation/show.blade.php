@@ -138,7 +138,7 @@
                       <h6 class="text-info">{{$resignation->branch->branch_name}}</h6>
                     </div>
                     <div class="col-3">
-                      <h5>Division</h5>
+                      <h5>Zone</h5>
                       <h6 class="text-info">{{$resignation->division->division_name}}</h6>
                     </div>
 

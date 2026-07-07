@@ -52,10 +52,10 @@
                         @endif
                       </select>
                     </div>
-                    <!-- Division filter -->
+                    <!-- Zone filter -->
                     <div class="p-2" style="width:200px;">
-                      <select class="select2" name="division" id="division" data-style="select-with-transition" title="Select Division">
-                        <option value="" selected>Select Division</option>
+                      <select class="select2" name="division" id="division" data-style="select-with-transition" title="Select Zone">
+                        <option value="" selected>Select Zone</option>
                         @if(@isset($divisions ))
                         @foreach($divisions as $division)
                         <option value="{!! $division->division !!}">{!! $division->division !!}</option>
@@ -223,7 +223,7 @@
                 <th>S. No</th>
                 <th>Action</th>
                 <th>Event Date</th>
-                <th>Division</th>
+                <th>Zone</th>
                 <th>Event Center</th>
                 <th>Event District</th>
                 <th>State</th>

@@ -44,8 +44,8 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="dropdown bootstrap-select show-tick">
-                                    <select class="selectpicker" multiple id="division_id" name="division_id" data-style="select-with-transition" title="Choose Division" data-size="10" tabindex="-98">
-                                        <option disabled=""> Select Division</option>
+                                    <select class="selectpicker" multiple id="division_id" name="division_id" data-style="select-with-transition" title="Choose Zone" data-size="10" tabindex="-98">
+                                        <option disabled=""> Select Zone</option>
                                         @if(@isset($divisions ))
                                         @foreach($divisions as $division)
                                         <option value="{!! $division['id'] !!}">{!! $division['name'] !!}</option>

@@ -47,9 +47,9 @@
                                 </div>
 
                                 <div class="input_section">
-                                    <label class="col-form-label" for="category">Division</label>
+                                    <label class="col-form-label" for="category">Zone</label>
                                     <select class="form-control select2 {{ $errors->has('division') ? 'is-invalid' : '' }}" name="division" id="division" required>
-                                        <option value="">Select Division</option>
+                                        <option value="">Select Zone</option>
                                         @foreach($devisions as $devision)
                                         <option value="{{ $devision->id }}" <?php if ($sales_weightage->division_id == $devision->id) {echo "selected";} ?>>{{ $devision->division_name }}</option>
                                         @endforeach

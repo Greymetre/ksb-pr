@@ -22,7 +22,7 @@ class MarketingMasterTemplate implements FromCollection, WithHeadings, ShouldAut
     {
         return [
             'Event Date',
-            'Division',
+            'Zone',
             'Event Center',
             'Place of Participant',
             'Event District',

@@ -1028,7 +1028,7 @@
                            <li class="nav-link-btn {{ request()->is('division*') ? 'active' : '' }}">
                               <a class="hoveradd2" href="{{ url('division') }}">
                                  <i class="material-icons icon">shopping_bag</i>
-                                 <span>Division</span>
+                                 <span>Zone</span>
                               </a>
                            </li>
                            @endif
@@ -1263,7 +1263,7 @@
                               <li class="nav-item {{ request()->is('service-charge/dividsions*') ? 'active' : '' }}">
                                  <a class="nav-link" href="{{ url('service-charge/dividsions') }}">
                                     <i class="material-icons">receipt_long</i>
-                                    <p>Division</p>
+                                    <p>Zone</p>
                                  </a>
                               </li>
                               @endif

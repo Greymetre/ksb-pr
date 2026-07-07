@@ -144,7 +144,7 @@ class SalesTargetDealersExport implements FromCollection, WithHeadings, ShouldAu
         $headings[] = 'LY Sales Ach';
         $headings[] = 'GOLY %';
         $headings[] = 'Dealer ID';
-        $headings[] = 'Division';
+        $headings[] = 'Zone';
         $headings[] = 'Dealer Type';
         $headings[] = 'New Dealer Quarter';
 

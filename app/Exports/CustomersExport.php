@@ -164,7 +164,7 @@ class CustomersExport implements FromCollection, WithHeadings, ShouldAutoSize, W
             'Employee Name',
             'Designation',
             'Branch Name',
-            'Division',
+            'Zone',
             'Latitude',
             'Longitude',
             'Employee ID',

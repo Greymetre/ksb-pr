@@ -20,7 +20,7 @@ class ServiceProductDivisionExport implements FromCollection,WithHeadings,Should
 
     public function headings(): array
     {
-        return ['id','Division Name'];
+        return ['id','Zone Name'];
     }
 
     public function map($data): array

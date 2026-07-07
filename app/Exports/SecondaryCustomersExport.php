@@ -140,7 +140,7 @@ class SecondaryCustomersExport implements
             'Shop Photo',
             'GST Attachment',
             'PAN Attachment',
-            'Zone',
+            'Branch',
         ];
     }
 

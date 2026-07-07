@@ -187,7 +187,7 @@
                 <th>{!! trans('panel.sales_users.employee_code') !!}</th>
                 <th>{!! trans('panel.sales_users.user_name') !!}</th>
                 <th>{!! trans('panel.sales_users.designation') !!}</th>
-                <th>Division</th>
+                <th>Zone</th>
                 <th>{!! trans('panel.sales_users.branch_name') !!}</th>
                 <th>{!! trans('panel.sales_users.sales_type') !!}</th>
                 <th>{!! trans('panel.sales_users.month') !!}</th>

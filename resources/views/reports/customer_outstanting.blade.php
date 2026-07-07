@@ -20,8 +20,8 @@
                   <div class="d-flex flex-wrap flex-row">
                     <!-- division filter -->
                     {{-- <div class="p-2" style="width:200px;">
-                      <label for="division">Division</label>
-                      <select class="select2" name="division[]" placeholder="Division" multiple id="ps_division_id" data-style="select-with-transition" title="{!! trans('panel.secondary_dashboard.division') !!}">
+                      <label for="division">Zone</label>
+                      <select class="select2" name="division[]" placeholder="Zone" multiple id="ps_division_id" data-style="select-with-transition" title="{!! trans('panel.secondary_dashboard.division') !!}">
                         <option value="" disabled>{!! trans('panel.secondary_dashboard.division') !!}</option>
                         @if(@isset($ps_divisions ))
                         @foreach($ps_divisions as $division)
@@ -63,7 +63,7 @@
                      <!-- divisions filter -->
                      <div class="p-2" style="width:180px;">
                       <select class="select2" name="division_id" id="division_id" data-style="select-with-transition" title="panel.sales_users.branch">
-                        <option value="" disabled selected>Division</option>
+                        <option value="" disabled selected>Zone</option>
                         @if(@isset($divisions ))
                         @foreach($divisions as $division)
                         <option value="{!! $division->id !!}">{!! $division->division_name !!}</option>

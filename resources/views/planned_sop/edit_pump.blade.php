@@ -58,11 +58,11 @@
             </div>
             <div class="col-md-4">
               <div class="input_section">
-                <label class="col-form-label">Division<span class="text-danger"> *</span></label>
+                <label class="col-form-label">Zone<span class="text-danger"> *</span></label>
                 <div class="form-group has-default bmd-form-group">
                   <input type="hidden" value="{{$plannedsop->getproduct->category_id ?? ''}}" name="product_division">
                   <select class="form-select select2" name="product_division_1" id="product_division" disabled>
-                         <option value=''>Select Division</option>
+                         <option value=''>Select Zone</option>
                          @foreach($divisions as $division)
                               <option value="{{ $division->id }}"  {{isset($plannedsop->getproduct->category_id) && $plannedsop->getproduct->category_id == $division->id ? "Selected" : '' }}>{{ $division->category_name}}</option>
                          @endforeach

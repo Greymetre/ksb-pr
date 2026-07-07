@@ -15,7 +15,7 @@
                   <div class="d-flex flex-wrap flex-row">
                     <!-- division filter -->
                     <div class="p-2" style="width:200px;">
-                      <label for="division">Division</label>
+                      <label for="division">Zone</label>
                       <select class="selectpicker" name="division[]" multiple id="ps_division_id" data-style="select-with-transition" title="{!! trans('panel.secondary_dashboard.division') !!}">
                         <option value="" disabled>{!! trans('panel.secondary_dashboard.division') !!}</option>
                         @if(@isset($ps_divisions ))

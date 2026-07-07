@@ -88,7 +88,7 @@ $this->reportingUsers = User::whereIn('id', $allReportingIds)
 
     public function headings(): array
     {
-        return ['id', 'Visit Date', 'User ID', 'Employee Code', 'Employee Name','Reporting Manager', 'Designation', 'Division', 'Branch', 'Checkin Time', 'Checkout Time', 'Spend Time', 'Checkin Address', 'Checkout Address', 'Distance (KM) ', 'Customer Id', 'Customer Type', 'Customer Name', 'Customer Mobile', 'Beat Name', 'City', 'District', 'Address',
+        return ['id', 'Visit Date', 'User ID', 'Employee Code', 'Employee Name','Reporting Manager', 'Designation', 'Zone', 'Branch', 'Checkin Time', 'Checkout Time', 'Spend Time', 'Checkin Address', 'Checkout Address', 'Distance (KM) ', 'Customer Id', 'Customer Type', 'Customer Name', 'Customer Mobile', 'Beat Name', 'City', 'District', 'Address',
         //  'Existing',
           'Visit Type', 'Visit Remark', 'Order Qty', 'Order Value'];
     }

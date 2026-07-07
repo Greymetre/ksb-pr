@@ -16,7 +16,7 @@
                   <form method="post" action="{{ URL::to('service-charge/dividsions/download') }}" class="form-horizontal">
                     @csrf
                     @if(auth()->user()->can(['services_product_division_download']))
-                    <button class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.download') !!} Division Report" name="export_division_report" value="true"><i class="material-icons">cloud_download</i></button>
+                    <button class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.download') !!} Zone Report" name="export_division_report" value="true"><i class="material-icons">cloud_download</i></button>
                     @endif
                   </form>
                 </div>

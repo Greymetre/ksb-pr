@@ -53,7 +53,7 @@ class UserSalesReportExport implements FromCollection, WithHeadings, ShouldAutoS
 
     public function headings(): array
     {
-        return ['Employees Code', 'User Name', 'Designation', 'Branch Name', 'Division', 'Reporting Manager', 'Field Working Days', 'Other Days', 'Total Days', 'Distributor Visit Total', 'Distributor Visit Unique', 'Dealer Visit Total', 'Dealer Visit Unique', 'Retailer Visit Total', 'Retailer Visit Unique', 'Service Center Visit Total', 'Service Center Visit Unique', 'Influencer Visit Total', 'Influencer Visit Unique', 'Total Visit', 'Total Visit Unique', 'Distributor New Registration', 'Dealer New Registration', 'Retailer New Registration', 'Service Center New Registration', 'Influencer-New Registration', 'Total New Registration'];
+        return ['Employees Code', 'User Name', 'Designation', 'Branch Name', 'Zone', 'Reporting Manager', 'Field Working Days', 'Other Days', 'Total Days', 'Distributor Visit Total', 'Distributor Visit Unique', 'Dealer Visit Total', 'Dealer Visit Unique', 'Retailer Visit Total', 'Retailer Visit Unique', 'Service Center Visit Total', 'Service Center Visit Unique', 'Influencer Visit Total', 'Influencer Visit Unique', 'Total Visit', 'Total Visit Unique', 'Distributor New Registration', 'Dealer New Registration', 'Retailer New Registration', 'Service Center New Registration', 'Influencer-New Registration', 'Total New Registration'];
     }
 
     public function map($data): array

@@ -35,7 +35,7 @@
                                     </div>
 
                                     <div class="p-2" style="width: 250px;">
-                                        <select class="selectpicker" name="division_id" id="division_id" data-style="select-with-transition" title="Select Division">
+                                        <select class="selectpicker" name="division_id" id="division_id" data-style="select-with-transition" title="Select Zone">
                                             <option value="">Select division</option>
                                             @if(@isset($divisions ))
                                             @foreach($divisions as $division)

@@ -17,8 +17,8 @@
                   <div class="d-flex flex-wrap flex-row">
                     @if(!isCustomerUser())
                     <div class="p-2" style="width:200px;">
-                      <select class="selectpicker" name="division_id" id="division_id" data-style="select-with-transition" title="Select Division">
-                        <option value="">Select Division</option>
+                      <select class="selectpicker" name="division_id" id="division_id" data-style="select-with-transition" title="Select Zone">
+                        <option value="">Select Zone</option>
                         @if(@isset($divisions ))
                         @foreach($divisions as $division)
                         <option value="{!! $division['id'] !!}" {{ old( 'division_id') == $division->id ? 'selected' : '' }}>{!! $division['division_name'] !!}</option>

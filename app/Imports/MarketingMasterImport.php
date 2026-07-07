@@ -49,6 +49,8 @@ class MarketingMasterImport implements ToCollection, WithValidation, WithHeading
     public function collection(Collection $rows)
     {
         foreach ($rows as $row) {
+            $division = $row['division'] ?? $row['zone'] ?? null;
+
             if (is_numeric($row['event_date'])) {
                 $excelDate = $row['event_date'] - 25569; // Adjust for Excel's epoch
                 $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
@@ -62,7 +64,7 @@ class MarketingMasterImport implements ToCollection, WithValidation, WithHeading
                     'mob_no_of_participant' => $row['mob_no_of_participant'],
                 ], [
                     'event_date' => Carbon::parse($row['event_date'])->toDateString(),
-                    'division' => $row['division'],
+                    'division' => $division,
                     'event_center' => $row['event_center'],
                     'place_of_participant' => $row['place_of_participant'],
                     'event_district' => $row['event_district'],
@@ -93,7 +95,8 @@ class MarketingMasterImport implements ToCollection, WithValidation, WithHeading
             'branch' => 'required|exists:branches,branch_name',
             'state' => 'required|exists:states,state_name',
             'category_of_participant' => 'required|in:Plumber,Mechanic,Village influencer,Retailer,Exhibition Visitors,Electrician',
-            'division' => 'required|exists:divisions,division_name',
+            'division' => 'required_without:zone|exists:divisions,division_name',
+            'zone' => 'required_without:division|exists:divisions,division_name',
             'event_date' => 'required|date|before_or_equal:today',
         ];
         return $rules;

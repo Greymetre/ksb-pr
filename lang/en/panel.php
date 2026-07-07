@@ -33,7 +33,7 @@ return [
         'products'          => 'Products',
         'gifts'             => 'Gifts',
         'brands'            => 'Brand',
-        'branches'          => 'Zone',
+        'branches'          => 'Branch',
         'units'             => 'Units',
         'order_master'      => 'Orders',
         'orders'            => 'Orders',
@@ -82,7 +82,7 @@ return [
     'sales_users' => [
         'title' => 'Target Achievement Users',
         'target_users'        => 'Target Users',
-        'select-divisions'    => 'Divisions',
+        'select-divisions'    => 'Zones',
         'sales_type'          => 'Type',
         'month'               => 'Month',
         'year'                => 'Year',
@@ -106,7 +106,7 @@ return [
     'sales_dealer_distributor' => [
         'title'               => 'Target Achievement Dealer/Distributor Wise',
         'target_dealers'      => 'Target Dealers',
-        'select-divisions'    => 'Divisions',
+        'select-divisions'    => 'Zones',
         'sales_type'          => 'Type',
         'month'               => 'Month',
         'year'                => 'Year',
@@ -552,7 +552,7 @@ return [
         'dealers_and_distibutors' => 'Dealers & Distibutors',
         'sales_person' => 'Sales Person',
         'branch' => 'Branch',
-        'division' => 'Division',
+        'division' => 'Zone',
         'month' => 'Month',
         'year' => 'Year',
         'product_model' => 'Product Model',
@@ -585,7 +585,7 @@ return [
            'dealers_and_distibutors' => 'Dealers & Distibutors',
            'sales_person' => 'Sales Person',
            'branch' => 'Branch',
-           'division' => 'Division',
+           'division' => 'Zone',
            'month' => 'Month',
            'year' => 'Year',
            'product_model' => 'Product Model',
@@ -702,7 +702,7 @@ return [
     'pincode'                       => 'Pincode / Postal Code',
 
     // 4. Business & Operational Information
-    'sales_zone'                    => 'Sales Zone / Region',
+    'sales_zone'                    => 'Sales Branch / Region',
     'territory'                     => 'Area / Territory',
     'beat'                          => 'Beat / Route Mapping',
     'market_classification'         => 'Market Classification',
@@ -1076,9 +1076,9 @@ return [
         'university_name'   => 'University Name',
         'point'             => 'Point',
         'year'              => 'Year',
-        'branch_name'       => 'Zone',
+        'branch_name'       => 'Branch',
         'branch_code'       => 'Branch Code',
-        'division'          => 'Division',
+        'division'          => 'Zone',
         
 
         'fields'         => [
@@ -1155,11 +1155,11 @@ return [
     ],
     
    'division'           => [
-        'title'          => 'Divisions',
-        'title_singular' => 'Division',
+        'title'          => 'Zones',
+        'title_singular' => 'Zone',
         'fields'         => [
             'id'                       => 'ID',
-            'division_name'        => 'Division Name',
+            'division_name'        => 'Zone Name',
             'division_image'        => 'Image',
         ],
     ],
@@ -1525,7 +1525,7 @@ return [
         'weightage' => 'Weightage',
         'last_promotion' => 'Last Promotion',
         'display_names' => 'Display Name',
-        'display_division' => 'Division Name',
+        'display_division' => 'Zone Name',
         'financial_year' => 'Financial Year'
     ],
     'checkin'      => [

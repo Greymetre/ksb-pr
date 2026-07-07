@@ -40,7 +40,7 @@
                       <div class="form-group">
                         <!-- <label class="bmd-label-floating">Status</label> -->
                         <select class="form-control select2" name="division_id" id="division_id" style="width: 100%;">
-                          <option value="">Select Division</option>
+                          <option value="">Select Zone</option>
                           @foreach($divisions as $division)
                           <option value="{{$division}}">{{$division}}</option>
                           @endforeach                          
@@ -151,7 +151,7 @@
                 <th>City</th>
                 <th>Firm Name</th>
                 <th>Customer Type</th>
-                <th>Division</th>
+                <th>Zone</th>
                 <th>BP code</th>
                 <th>Status</th>
               </thead>

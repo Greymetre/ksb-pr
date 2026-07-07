@@ -245,9 +245,9 @@
                   <!-- Form Section -->
                   <div class="col-md-4">
                      <div class="input_section">
-                        <label class="col-form-label">Division </label>
+                        <label class="col-form-label">Zone </label>
                         <select name="activity_division" id="activity_division" class="form-control selec2">
-                           <option value="">Select Division</option>
+                           <option value="">Select Zone</option>
                            @foreach($divisions as $division)
                            <option value="{{$division->id}}">{{$division->division_name}}</option>
                            @endforeach

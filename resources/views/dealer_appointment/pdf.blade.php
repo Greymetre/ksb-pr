@@ -669,7 +669,7 @@
       <div class="main-details">
         <div class="row box-inputs mt-2">
           <div class="col-md-12 mt-4">
-            <p class="text-center">Division for which you are interested & Anticipated Turnover for Ensuing FY (All Figures in Lacs)</p>
+            <p class="text-center">Zone for which you are interested & Anticipated Turnover for Ensuing FY (All Figures in Lacs)</p>
           </div>
           <div class="col-md-12 mt-4">
             <table class="table">

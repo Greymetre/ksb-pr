@@ -34,7 +34,7 @@ class TargetAchievementExport implements FromCollection,WithHeadings,ShouldAutoS
 
     public function headings(): array
     {
-        return ['ZSM', 'ASM Name', 'Base Location', 'GAJRA GEARS Target', 'GAJRA GEARS 10th', 'GAJRA GEARS 20th', 'GAJRA GEARS 30th', 'Product Division Target', 'Product Division 10th', 'Product Division 20th', 'Product Division 30th', 'Differential Target', 'Differential 10th', 'Differential 20th', 'Differential 30th' , 'Group Target', 'Group 10th', 'Group 20th', 'Group 30th'];
+        return ['ZSM', 'ASM Name', 'Base Location', 'GAJRA GEARS Target', 'GAJRA GEARS 10th', 'GAJRA GEARS 20th', 'GAJRA GEARS 30th', 'Product Zone Target', 'Product Zone 10th', 'Product Zone 20th', 'Product Zone 30th', 'Differential Target', 'Differential 10th', 'Differential 20th', 'Differential 30th' , 'Group Target', 'Group 10th', 'Group 20th', 'Group 30th'];
     }
 
     public function map($data): array

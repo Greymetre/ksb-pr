@@ -154,7 +154,7 @@ DB::raw('GROUP_CONCAT(year ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","M
         'Designation',
         'Branch Id',
         'Branch Name',
-        'Division',
+        'Zone',
         'Sales Type'
     ];
 

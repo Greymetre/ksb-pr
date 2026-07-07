@@ -69,7 +69,7 @@ class UserExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMa
     public function headings(): array
     {
         if (Auth::user()->id == 1) {
-            return ['ID', 'Employees Code', 'User Name', 'Designation', 'Role', 'Zone Name', 'Location', 'Department', 'Division', 'Reporting To', 'Mobile', 'Email',
+            return ['ID', 'Employees Code', 'User Name', 'Designation', 'Role', 'Branch Name', 'Location', 'Department', 'Zone', 'Reporting To', 'Mobile', 'Email',
             //  'Gender',
               'Date Of Joining', 'Date Of Birth',
             //    'Age', 'CTC Annual', 'Gross Salary Monthly', 'CTC Per Month', 'Last Year Increments', 'Last Year Increment Percent', 'Last Year Increments Value', 'Last Promotion', 'Marital Status', 'Father Name', 'Father Date Of Birth', 'Mother Name', 'Mother  DOB', 'Marriage Anniversary', 'Spouse name', 'Spouse Date Of Birth', 'Children-1', 'Children-1 DOB', 'Children-2', 'Children-2 DOB', 'Children-3', 'Children-3 DOB', 'Children-4', 'Children-4 DOB', 'Children-5', 'Children-5 DOB', 'PAN Number', 'Adhar Number', 'Emergency Number', 'Current Address', 'Permanent Address', 'Biometric Code', 'Account Number', 'Bank Name', 'IFSC Code', 'PF Number', 'UN Number', 'ESI Number', 'Probation Period',
@@ -87,7 +87,7 @@ class UserExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMa
                     //    'Leave Balance'
                        ];
         } else {
-            return ['ID', 'Employees Code', 'User Name', 'Designation', 'Role', 'Zone Name', 'Location', 'Department', 'Division', 'Reporting To', 'Mobile', 'Email', 
+            return ['ID', 'Employees Code', 'User Name', 'Designation', 'Role', 'Branch Name', 'Location', 'Department', 'Zone', 'Reporting To', 'Mobile', 'Email', 
             // 'Gender', 
             'Date Of Joining', 'Date Of Birth', 
             // 'Age', 'Last Promotion', 'Marital Status', 'Father Name', 'Father Date Of Birth', 'Mother Name', 'Mother  DOB', 'Marriage Anniversary', 'Spouse name', 'Spouse Date Of Birth', 'Children-1', 'Children-1 DOB', 'Children-2', 'Children-2 DOB', 'Children-3', 'Children-3 DOB', 'Children-4', 'Children-4 DOB', 'Children-5', 'Children-5 DOB', 'PAN Number', 'Adhar Number', 'Emergency Number', 'Current Address', 'Permanent Address', 'Biometric Code', 'Account Number', 'Bank Name', 'IFSC Code', 'PF Number', 'UN Number', 'ESI Number', 'Probation Period',

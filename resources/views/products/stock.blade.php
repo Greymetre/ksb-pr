@@ -90,7 +90,7 @@
               <thead class=" text-primary">
                 <th>Branch</th>
                 <th>Ware House</th>
-                <th>Division</th>
+                <th>Zone</th>
                 <th>Year</th>
                 <th>Quarter</th>
                 <th>0-30</th>

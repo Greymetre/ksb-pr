@@ -73,7 +73,7 @@
                 <th>{!! trans('panel.global.active') !!}</th>
                 <th>Product Name</th>
                 <th>Cahrge Type</th>
-                <th>Division</th>
+                <th>Zone</th>
                 <th>Category</th>
                 <th>Price(charge)</th>
               </thead>

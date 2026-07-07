@@ -126,7 +126,7 @@ class PerEmployeeCostingExport implements FromCollection, WithHeadings, WithMapp
     public function headings(): array
     {
         $label1 = [
-            'Division',
+            'Zone',
             'Branch',
             'Emp Code',
             'Empolyee Name',

@@ -353,7 +353,7 @@
                   <th>Service Eng</th>
                   <th>Service Center Code</th>
                   <th>Complaint Status</th>
-                  <th>Division</th> 
+                  <th>Zone</th> 
                   <th>Seller Name</th>
                   <th>Customer Name</th>
                   <th>Customer Email</th>
@@ -365,7 +365,7 @@
                   <th>State</th>
                   <th>City</th>
                   <th>Customer Complaint Type</th>      
-                  <th>Division</th> 
+                  <th>Zone</th> 
                   <th>Product Name</th>
                   <th>Product Code</th> 
                          
@@ -400,7 +400,7 @@
                   <th>Company Sale Bill Date</th>
                   <th>Service Centre Remarks</th>
                   <th>Complaint Register By</th>
-                  <!-- <th>Division Name</th> -->
+                  <!-- <th>Zone Name</th> -->
                   <th>Work Completed Duration</th>
                   <th>Open Duration</th>
                   <th>Closed Date</th>
@@ -597,7 +597,7 @@
           });
 
            $('#category_name_1').select2({
-              placeholder: "Select Division",
+              placeholder: "Select Zone",
               allowClear: true,
               width: '150px' // Set width for better alignment
           });

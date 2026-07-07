@@ -89,7 +89,7 @@
                             </div>
 
                             <div class="form-group">
-                                <label class="col-form-label"><strong>City / Zone</strong></label>
+                                <label class="col-form-label"><strong>City / Branch</strong></label>
                                 <input type="text" class="form-control"
                                     value="{{ $invoice->customer->city->city_name ?? '-' }} / {{ $invoice->creator->getbranch->branch_name ?? '-' }}" readonly>
                             </div>

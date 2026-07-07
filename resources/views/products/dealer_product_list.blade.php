@@ -14,8 +14,8 @@
                   <div class="d-flex flex-wrap flex-row">
 
                     <div class="p-2" style="width:200px;">
-                      <select class="selectpicker" name="category_id" id="category_id" data-style="select-with-transition" title="Select Division">
-                        <option value="">Select Division</option>
+                      <select class="selectpicker" name="category_id" id="category_id" data-style="select-with-transition" title="Select Zone">
+                        <option value="">Select Zone</option>
                         @if(@isset($categories ))
                         @foreach($categories as $category)
                         <option value="{!! $category['id'] !!}" {{ old( 'category_id', $category_id) == $category->id ? 'selected' : '' }}>{!! $category['category_name'] !!}</option>
@@ -24,8 +24,8 @@
                       </select>
                     </div>
                     <!-- <div class="p-2" style="width:180px;">
-                      <select class="selectpicker" multiple name="branch_id[]" id="branch_id" data-style="select-with-transition" title="Select Sub Division">
-                        <option value="">Select Sub Division</option>
+                      <select class="selectpicker" multiple name="branch_id[]" id="branch_id" data-style="select-with-transition" title="Select Sub Zone">
+                        <option value="">Select Sub Zone</option>
                         @if(@isset($subCategories ))
                         @foreach($subCategories as $subCategory)
                         <option value="{!! $subCategory['id'] !!}">{!! $subCategory['subcategory_name'] !!}</option>

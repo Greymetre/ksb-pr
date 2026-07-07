@@ -42,14 +42,14 @@ class ServiceChargeProductsController extends Controller
         try {
             if (!empty($request['id'])) {
                 $status = ServiceChargeDivision::where('id', $request['id'])->update($request->except(['_token', 'id', 'image']));
-                $msg = 'Division Update Successfully';
+                $msg = 'Zone Update Successfully';
             } else {
                 $request['active'] = 'Y';
                 $request['created_by'] = Auth::user()->id;
 
                 $request['division_name'] = $request->input('division_name', '');
                 $status = ServiceChargeDivision::create($request->except(['_token', 'image']));
-                $msg = 'Division Store Successfully';
+                $msg = 'Zone Store Successfully';
             }
 
             if ($status) {
@@ -67,7 +67,7 @@ class ServiceChargeProductsController extends Controller
         $division = ServiceChargeDivision::find($id);
 
         if (!$division) {
-            return response()->json(['status' => 'error', 'message' => 'Division not found']);
+            return response()->json(['status' => 'error', 'message' => 'Zone not found']);
         }
 
         return response()->json($division);
@@ -88,9 +88,9 @@ class ServiceChargeProductsController extends Controller
     {
         $user = ServiceChargeDivision::find($id);
         if ($user->delete()) {
-            return response()->json(['status' => 'success', 'message' => 'Division deleted successfully!']);
+            return response()->json(['status' => 'success', 'message' => 'Zone deleted successfully!']);
         }
-        return response()->json(['status' => 'error', 'message' => 'Error in Division Delete!']);
+        return response()->json(['status' => 'error', 'message' => 'Error in Zone Delete!']);
     }
 
     public function divisiondownload()

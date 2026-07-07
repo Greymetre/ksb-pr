@@ -1484,7 +1484,7 @@
                                     <li class="nav-link-btn {{ request()->is('branch*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('branches') }}">
                                             <i class="material-icons icon">meeting_room</i>
-                                            <span>Zone</span>
+                                            <span>Branch</span>
                                             <div class="d-none mobile_hide"> Branch</div>
                                         </a>
                                     </li>
@@ -1493,8 +1493,8 @@
                                     <li class="nav-link-btn {{ request()->is('division*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('division') }}">
                                             <i class="material-icons icon">safety_divider</i>
-                                            <span>Division</span>
-                                            <div class="d-none mobile_hide"> Division</div>
+                                            <span>Zone</span>
+                                            <div class="d-none mobile_hide"> Zone</div>
                                         </a>
                                     </li>
                                     @endif
@@ -1823,8 +1823,8 @@
                                             class="nav-link-btn {{ request()->is('service-charge/dividsions*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('service-charge/dividsions') }}">
                                                 <i class="material-icons icon">receipt_long</i>
-                                                <span>Division</span>
-                                                <div class="d-none mobile_hide"> Division</div>
+                                                <span>Zone</span>
+                                                <div class="d-none mobile_hide"> Zone</div>
                                             </a>
                                         </li>
                                         @endif

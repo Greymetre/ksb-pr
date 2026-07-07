@@ -113,7 +113,7 @@ class PlannedSopPUMExport implements FromCollection, WithHeadings, ShouldAutoSiz
         if(isset($this->filters['financial_year'])){
             $this->year = explode('-',$this->filters['financial_year']);
         }
-        $heading1 = ["Order Id" , "Planing Month","Branch Name","Division Name", "Group Name", "Sap Code", "Product Name","Sale : Quantity","","","","","","","","","","","","","","","Open Order (Prod.)","","Forecast (Sales Plan)","" ,'Created By', 'Verify By' ,'Created At'];
+        $heading1 = ["Order Id" , "Planing Month","Branch Name","Zone Name", "Group Name", "Sap Code", "Product Name","Sale : Quantity","","","","","","","","","","","","","","","Open Order (Prod.)","","Forecast (Sales Plan)","" ,'Created By', 'Verify By' ,'Created At'];
 
         $heading2 = ["","","","","","",""];
         for ($i=4; $i <= 12 ; $i++) {

@@ -223,7 +223,7 @@ protected $reportingUsers;
         if ($this->dividion_id == '1') {
             return ['Order Date', 'Order No', 'Employee Name','Reporting Manager','Designation',  'Branch','Retailer Name','Distributor Name','Distributor Code', 'Product Code', 'Product Name',  'Quantity','Rate', 'Total Order Value',
             // 'Status', 
-            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family', 'id', 'Zone',
+            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family', 'id', 'Branch',
             //  'Division', 
              
             //   'Customer', 
@@ -244,7 +244,7 @@ protected $reportingUsers;
         } elseif ($this->dividion_id == '2') {
             return [ 'Order Date', 'Order No', 'Employee Name','Reporting Manager','Designation',  'Branch','Retailer Name', 'Distributor Name','Distributor Code',  'Product Code', 'Product Name', 'Quantity','Rate', 'Total Order Value',
             // 'Status', 
-            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family','id', 'Zone',
+            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family','id', 'Branch',
             // 'Division', 'Designation', 
             
             //  'Customer', 
@@ -262,7 +262,7 @@ protected $reportingUsers;
         } else {
             return [ 'Order Date', 'Order No','Employee Name','Reporting Manager','Designation',  'Branch','Retailer Name','Distributor Name','Distributor Code', 'Product Code', 'Product Name', 'Quantity','Rate', 'Total Order Value',
             // 'Status', 
-            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family','id', 'Zone',
+            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family','id', 'Branch',
             //  'Division', 'Designation', 
              
             //  'Customer', 
