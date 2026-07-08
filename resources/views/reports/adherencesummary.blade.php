@@ -132,7 +132,8 @@
                                 <label>Designation</label>
                                 <select class="form-control selectpicker" 
                                     id="designation_id_dealer" 
-                                    name="designation_id" 
+                                    name="designation_id[]" 
+                                    multiple
                                     data-style="select-with-transition"
                                     title="Select Designation"
                                     >
@@ -385,16 +386,26 @@ $.get("{{ url('getDesignations') }}", function(data) {
     let dealerOptions = '';
     let asrOptions = '';
     let asrDesignationId = '';
+    let dealerDesignationIds = [];
 
     data.forEach(item => {
 
-        let isAsr = $.trim(item.designation_name).toUpperCase() === 'ASR';
+        let designationName = $.trim(item.designation_name).toUpperCase();
+        let isAsr = designationName === 'ASR';
+        let isDealerDefault = ['ASR', 'DSR'].includes(designationName);
         let selected = isAsr
             ? 'selected' 
+            : '';
+        let dealerSelected = isDealerDefault
+            ? 'selected'
             : '';
 
         if (isAsr) {
             asrDesignationId = item.id;
+        }
+
+        if (isDealerDefault) {
+            dealerDesignationIds.push(item.id);
         }
 
         // ✅ Retailer (MULTIPLE)
@@ -403,7 +414,7 @@ $.get("{{ url('getDesignations') }}", function(data) {
                             </option>`;
 
         // ✅ ASR (MULTIPLE bhi hai tumhara)
-        dealerOptions += `<option value="${item.id}" ${selected}>
+        dealerOptions += `<option value="${item.id}" ${dealerSelected}>
                                 ${item.designation_name}
                             </option>`;
 
@@ -418,8 +429,11 @@ $.get("{{ url('getDesignations') }}", function(data) {
 
     if (asrDesignationId) {
         $('#designation_id_retailer').val([asrDesignationId]);
-        $('#designation_id_dealer').val(asrDesignationId);
         $('#designation_id_asr').val(asrDesignationId);
+    }
+
+    if (dealerDesignationIds.length) {
+        $('#designation_id_dealer').val(dealerDesignationIds);
     }
 
     // Refresh bootstrap-select after dynamic options are inserted.

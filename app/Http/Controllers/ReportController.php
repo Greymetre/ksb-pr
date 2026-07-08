@@ -397,7 +397,9 @@ public function dealerProductivityExport(Request $request)
     ]);
 
     if (empty($filters['designation_id'])) {
-        $filters['designation_id'] = Designation::where('designation_name', 'ASR')->value('id');
+        $filters['designation_id'] = Designation::whereIn('designation_name', ['ASR', 'DSR'])
+            ->pluck('id')
+            ->all();
     }
 
     $allowedUserIds = getUsersReportingToAuth();
