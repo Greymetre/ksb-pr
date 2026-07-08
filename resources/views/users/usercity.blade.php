@@ -12,8 +12,8 @@
               <div class="next-btn">
                 <form method="GET" action="{{ URL::to('/usercity-download') }}">
                   <div class="d-flex flex-row">
-                    <input type="text" name="page_number" id="tableInfo" value="1" hidden>
-                    <input type="text" name="page_length" id="page_length" value="10" hidden>
+                    <input type="text" class="form-control" name="page_number" id="tableInfo" value="1">
+                    <input type="text" class="form-control" name="page_length" id="page_length" value="10">
 
                     <div class="p-2"></div>
                     <div class=""><button class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.download') !!} {!! trans('User City') !!}"><i class="material-icons">cloud_download</i></button></div>
