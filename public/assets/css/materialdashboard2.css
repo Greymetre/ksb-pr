@@ -16329,7 +16329,7 @@ a .material-icons {
     -ms-transform: translate3d(0px,0,0);
     transform: translate3d(0px,0,0);
     text-align: center;
-    border-radius: 20px
+    border-radius: 0px
 }
 
 .sidebar .logo:after {

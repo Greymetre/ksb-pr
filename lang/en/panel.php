@@ -1055,7 +1055,7 @@ return [
         'children_four_date_of_birth'  => 'Children-4 Date of Birth',
         'children_five'  => 'Children-5',
         'children_five_date_of_birth'  => 'Children-5 Date of Birth',
-        'pay_roll'  => 'Pay Roll',
+        'pay_roll'  => 'Grade',
         'sales_type' => 'Sales Type',
 
 

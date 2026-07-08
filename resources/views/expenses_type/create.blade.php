@@ -42,12 +42,10 @@
                       <select name="payroll_id" id="payroll_id" class="form-control {{ $errors->has('payroll_id') ? 'is-invalid' : '' }}">
                         <option value="" disabled selected>Please select Grade</option>
                         @foreach($pay_rolls as $key=>$payroll)
-                                                <option value="{{$key}}">Grade {{$key}}</option>
-
-                        <!-- <option value="{{$key}}">{{$payroll}}</option> -->
+                        <option value="{{$key}}" {{ old('payroll_id') == $key ? 'selected' : '' }}>{{$payroll}}</option>
                         @endforeach
                       </select>
-                      @if($errors->has('name'))
+                      @if($errors->has('payroll_id'))
                       <div class="invalid-feedback">
                         {{ $errors->first('payroll_id') }}
                       </div>

@@ -17,8 +17,7 @@
                      <div class="p-2" style="width:195px;">
                        <select class="select2" name="payroll" id="payroll" data-style="select-with-transition">
                          @foreach($pay_rolls as $key=>$payroll)
-                         <!-- <option value="{!! $key !!}">{!! $payroll !!}</option> -->
-                        <option value="{!! $key !!}">Grade {!! $key !!}</option>
+                         <option value="{!! $key !!}">{!! $payroll !!}</option>
                          @endforeach
                        </select>
                      </div>

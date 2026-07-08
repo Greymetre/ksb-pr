@@ -84,7 +84,8 @@ $(document).ready(function() {
         data: 'payroll_id',
         name: 'payroll_id',
         render: function(data){
-            return 'Grade ' + data;
+            var payrolls = @json(config('constants.pay_roll'));
+            return payrolls[data] || data;
         }
     },
             {data: 'rate', name: 'rate',"defaultContent": ''},

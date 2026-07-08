@@ -25,7 +25,8 @@ class UpdateExpensesTypeRequest extends FormRequest
     {
         return [
             'name' => 'required',
-            'allowance_type_id' => 'required'
+            'allowance_type_id' => 'required',
+            'payroll_id' => 'required|in:' . implode(',', array_keys(config('constants.pay_roll'))),
         ];
     }
 }

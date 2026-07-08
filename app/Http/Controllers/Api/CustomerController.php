@@ -627,7 +627,7 @@ class CustomerController extends Controller
             $user = $request->user();
             $userids = getUsersReportingToAuth($user->id);
             $pageSize = $request->input('pageSize');
-            $query = $this->customers->with('customeraddress:customer_id,address1,address2', 'customerdetails:customer_id,grade,visit_status', 'customertypes')->select('id', 'name', 'first_name', 'last_name', 'mobile', 'email', 'profile_image', 'customer_code', 'latitude', 'longitude')->whereIn('executive_id', $userids)->latest();
+            $query = $this->customers->with('customeraddress:customer_id,address1,address2', 'customerdetails:customer_id,grade,visit_status', 'customertypes')->select('id', 'name', 'first_name', 'last_name', 'mobile', 'email', 'profile_image', 'customer_code', 'latitude', 'longitude')->latest();
             $db_data = (!empty($pageSize)) ? $query->paginate($pageSize) : $query->get();
             $data = collect([]);
             if ($db_data->isNotEmpty()) {

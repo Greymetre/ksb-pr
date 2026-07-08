@@ -10,6 +10,11 @@ function readURL(input) {
   }
 }
 
+$(document).on('click', 'form [data-dismiss="fileinput"]', function (event) {
+  event.preventDefault();
+  $(this).filter('button').attr('type', 'button');
+});
+
 $(".getimage1").change(function () {
   readURL(this);
 });
@@ -91,7 +96,7 @@ function readURL6(input) {
 }
 
 $(".getimage6").change(function () {
-  readURL0(this);
+  readURL6(this);
 });
 
 function readURL7(input) {
@@ -130,7 +135,7 @@ $(".getimage8").change(function () {
 
 /*==================== Address Functions =================*/
 function getShippingStateList() {
-  var country_id = $("select[name=country_id]").val();
+  var country_id = $("select[name=shipping_country_id]").val();
   var base_url = $('.baseurl').data('baseurl');
   if (country_id) {
     $.ajax({
@@ -445,4 +450,3 @@ function getUserInfo() {
     });
   }
 }
-

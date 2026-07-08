@@ -39,7 +39,7 @@
           <div class="first-box">
             <div class="row">
               <div class="col-md-3 ml-auto mr-auto">
-                <div class="fileinput fileinput-new" data-provides="fileinput">
+                <div class="fileinput fileinput-new">
 
                   <div class="fileinput-new thumbnail">
                     <img src="{!! !empty($customers['profile_image']) ? $customers['profile_image'] : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview7">
@@ -63,7 +63,7 @@
                 </div>
               </div>
               <div class="col-md-3 ml-auto mr-auto">
-                <div class="fileinput fileinput-new" data-provides="fileinput">
+                <div class="fileinput fileinput-new">
 
                   <div class="fileinput-new thumbnail">
                     <img src="{!! !empty($customers['shop_image']) ? $customers['shop_image'] : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview8">
@@ -1002,7 +1002,7 @@
 
           <div class="row mt-5">
             <div class="col-md-2 col-sm-2">
-              <div class="fileinput fileinput-new" data-provides="fileinput">
+              <div class="fileinput fileinput-new">
                 <div class="fileinput-new thumbnail">
                   <img src="{!! !empty($customers['customerdocuments']->where('document_name','gstin')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','gstin')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview1">
                   <div class="selectThumbnail">
@@ -1025,7 +1025,7 @@
               </div>
             </div>
             <div class="col-md-2 col-sm-2">
-              <div class="fileinput fileinput-new" data-provides="fileinput">
+              <div class="fileinput fileinput-new">
 
                 <div class="fileinput-new thumbnail">
                   <img src="{!! !empty($customers['customerdocuments']->where('document_name','pan')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','pan')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview2">
@@ -1044,7 +1044,7 @@
               </div>
             </div>
             <div class="col-md-2 col-sm-2">
-              <div class="fileinput fileinput-new" data-provides="fileinput">
+              <div class="fileinput fileinput-new">
 
                 <div class="fileinput-new thumbnail">
                   <img src="{!! !empty($customers['customerdocuments']->where('document_name','aadhar')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','aadhar')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview3">
@@ -1063,7 +1063,7 @@
               </div>
             </div>
             <div class="col-md-2 col-sm-2">
-              <div class="fileinput fileinput-new" data-provides="fileinput">
+              <div class="fileinput fileinput-new">
 
                 <div class="fileinput-new thumbnail">
                   <img src="{!! !empty($customers['customerdocuments']->where('document_name','aadharback')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','aadharback')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview4">
@@ -1082,7 +1082,7 @@
               </div>
             </div>
             <div class="col-md-2 col-sm-2">
-              <div class="fileinput fileinput-new" data-provides="fileinput">
+              <div class="fileinput fileinput-new">
 
                 <div class="fileinput-new thumbnail">
                   <img src="{!! !empty($customers['customerdocuments']->where('document_name','bankpass')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','bankpass')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview5">
@@ -1101,7 +1101,7 @@
               </div>
             </div>
             <div class="col-md-2 col-sm-2">
-              <div class="fileinput fileinput-new" data-provides="fileinput">
+              <div class="fileinput fileinput-new">
 
                 <div class="fileinput-new thumbnail">
                   <img src="{!! !empty($customers['customerdocuments']->where('document_name','other')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','other')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview6">
@@ -1230,8 +1230,8 @@
     </div>
   </div>
   </div>
-  <script src="{{ url('/').'/'.asset('assets/js/jquery.custom.js?v='.time()) }}"></script>
-  <script src="{{ url('/').'/'.asset('assets/js/validation_customers.js') }}"></script>
+  <script src="{{ asset('assets/js/jquery.custom.js') }}?v={{ time() }}"></script>
+  <script src="{{ asset('assets/js/validation_customers.js') }}"></script>
   <script type="text/javascript">
     $(function() {
       //Initialize Select2 Elements
@@ -1303,6 +1303,3 @@
   </script>
 
 </x-app-layout>
-
-
-

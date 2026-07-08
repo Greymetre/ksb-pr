@@ -340,7 +340,7 @@
                                         <div class="form-group has-default bmd-form-group">
                                             <div class="form-group has-default bmd-form-group">
                                                 <select class="form-control" name="payroll">
-                                                    <option value="" disabled selected>Select Pay Roll</option>
+                                                    <option value="" disabled selected>Select Grade</option>
                                                     @foreach($pay_rolls as $key=> $pay_roll)
                                                     <option
                                                         {{ (($key == old('payroll', $user->payroll?$user->payroll:''))) ? 'selected' : '' }}

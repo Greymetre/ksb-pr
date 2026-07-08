@@ -22,10 +22,10 @@
     <link rel="stylesheet" href="{{ asset('assets/plugins/select2/css/select2.css?v=' . now()->timestamp) }}">
     <!-- <link href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css" rel="stylesheet"> -->
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.5.2/js/fileinput.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.5.2/css/fileinput.min.css"
         rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.5.2/js/fileinput.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.3/jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment.min.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
@@ -3869,7 +3869,10 @@
                     button.fkUploadForm = source;
                     button.addEventListener('click', function() {
                         const file = source.querySelector('input[type="file"]');
-                        if (file) file.click();
+                        if (file) {
+                            source.dataset.fkAutoSubmitFile = '1';
+                            file.click();
+                        }
                     });
                 } else if (source && source.matches && source.matches('form') && kind === 'export') {
                     button.addEventListener('click', function() {
@@ -4254,12 +4257,93 @@
             }
         });
 
-        document.addEventListener('change', function(event) {
-            if (event.target.matches('input[type="file"]')) {
-                const form = event.target.closest('form');
-                if (form && event.target.files && event.target.files.length) form.submit();
+        (function() {
+            if (window.__fileInputSubmitGuardInstalled) return;
+            window.__fileInputSubmitGuardInstalled = true;
+
+            let lastFileChangeAt = 0;
+            let lastFileChangeForm = null;
+            let lastExplicitSubmitAt = 0;
+            let lastExplicitSubmitForm = null;
+            const guardMs = 3000;
+
+            function closest(target, selector) {
+                return target && target.closest ? target.closest(selector) : null;
             }
-        });
+
+            function isFileChangeSubmit(form) {
+                if (!form || form !== lastFileChangeForm) return false;
+                if (Date.now() - lastFileChangeAt > guardMs) return false;
+                return !(form === lastExplicitSubmitForm && Date.now() - lastExplicitSubmitAt < guardMs);
+            }
+
+            function rememberExplicitSubmit(form) {
+                lastExplicitSubmitAt = Date.now();
+                lastExplicitSubmitForm = form;
+            }
+
+            document.addEventListener('click', function(event) {
+                const submitter = closest(event.target, 'button[type="submit"], input[type="submit"], button:not([type])');
+                if (submitter && submitter.form) {
+                    rememberExplicitSubmit(submitter.form);
+                }
+
+                const fileControl = closest(event.target, 'form [data-dismiss="fileinput"]');
+                if (fileControl && !(event.target.matches && event.target.matches('input[type="file"]'))) {
+                    event.preventDefault();
+                    if (fileControl.tagName === 'BUTTON') {
+                        fileControl.type = 'button';
+                    }
+                }
+            }, true);
+
+            document.addEventListener('change', function(event) {
+                if (event.target.matches && event.target.matches('form input[type="file"]')) {
+                    lastFileChangeAt = Date.now();
+                    lastFileChangeForm = event.target.form;
+                    if (
+                        lastFileChangeForm &&
+                        lastFileChangeForm.dataset.fkAutoSubmitFile === '1' &&
+                        event.target.files &&
+                        event.target.files.length
+                    ) {
+                        delete lastFileChangeForm.dataset.fkAutoSubmitFile;
+                        rememberExplicitSubmit(lastFileChangeForm);
+                        lastFileChangeForm.submit();
+                    }
+                }
+            }, true);
+
+            document.addEventListener('submit', function(event) {
+                if (isFileChangeSubmit(event.target)) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                }
+            }, true);
+
+            const nativeSubmit = HTMLFormElement.prototype.submit;
+            HTMLFormElement.prototype.submit = function() {
+                if (isFileChangeSubmit(this)) {
+                    return false;
+                }
+
+                return nativeSubmit.call(this);
+            };
+
+            if (HTMLFormElement.prototype.requestSubmit) {
+                const nativeRequestSubmit = HTMLFormElement.prototype.requestSubmit;
+                HTMLFormElement.prototype.requestSubmit = function(submitter) {
+                    if (submitter) {
+                        rememberExplicitSubmit(this);
+                    }
+                    if (isFileChangeSubmit(this)) {
+                        return false;
+                    }
+
+                    return nativeRequestSubmit.call(this, submitter);
+                };
+            }
+        })();
 
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') closeFilterDrawers();
