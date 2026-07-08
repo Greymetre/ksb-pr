@@ -1217,10 +1217,10 @@ return [
     ],
     'subcategory'           => [
         'title'          => 'Sub Categories',
-        'title_singular' => 'Segment',
+        'title_singular' => 'Sub Category',
         'fields'         => [
             'id'                       => 'ID',
-            'subcategory_name'        => 'Segment Name',
+            'subcategory_name'        => 'Sub Category Name',
             'subcategory_image'        => 'Image',
             'category'        => 'Category',
         ],

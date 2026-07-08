@@ -9978,7 +9978,8 @@ fieldset[disabled][disabled] .btn.btn-raised,.btn.btn-raised.disabled,.btn.btn-r
 
 .btn-group,.btn-group-vertical {
     position: relative;
-    margin: 10px 1px
+    margin: 5px 1px;
+    gap: 5px;
 }
 
 .btn-group .dropdown-menu,.btn-group-vertical .dropdown-menu {
@@ -14028,7 +14029,7 @@ thead.thead-inverse th,.table-inverse thead th {
     background: #fff;
     color: #fff;
     font-weight: 400;
-    padding: 25px 3px;
+    padding: 0;
 }
 
 .card .card-category:not([class*=text-]) {
@@ -26472,7 +26473,7 @@ a#navbarDropdownMenuLink {
 
 .table-responsive::-webkit-scrollbar {
     width: 2px;
-    height: 10px;
+    height: 2px;
     background-color: transparent
 }
 

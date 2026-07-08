@@ -1,18 +1,4 @@
 <x-app-layout>
-  <style>
-    .custom-btn {
-        width: 90px; /* Smaller width */
-        font-weight: bold;
-        font-size: 13px;
-        border-radius: 6px;
-        padding: 6px 8px;
-        border: none;
-        color: white;
-        background: linear-gradient(135deg, #007bff, #0056b3); /* Gradient Blue */
-        transition: all 0.3s ease-in-out;
-        box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
-    }
-  </style>
   <div class="row">
     <div class="col-md-12">
       <div class="card">

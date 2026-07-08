@@ -1,106 +1,127 @@
 <x-app-layout>
   <div class="row">
     <div class="col-md-12">
-      <div class="card">
-        <div class="card-header card-header-icon card-header-theme">
-          <div class="card-icon">
-            <i class="material-icons">perm_identity</i>
+      <div class="fk-list-page-head">
+        <div class="fk-list-heading-block">
+          <div class="fk-list-breadcrumb">
+            <span>User Management</span>
+            <span>&rsaquo;</span>
+            <span class="fk-current">{!! trans('panel.user.title_singular') !!} {!! trans('panel.global.list') !!}</span>
           </div>
-          <h4 class="card-title ">{!! trans('panel.user.title_singular') !!} {!! trans('panel.global.list') !!}
-            <span class="">
-              <div class="btn-group header-frm-btn">
-              @if(auth()->user()->can(['user_download']))
-                <form action="{{ URL::to('users-download') }}" method="get" enctype="multipart/form-data">
-                  <div class="d-flex flex-wrap flex-row">
-                    <div class="p-2" style="width:200px;">
-                      <div class="dropdown bootstrap-select">
-                        <select class="select2" name="division_id" id="division_id" data-style="select-with-transition" title="Select Zone">
-                          <option class="bs-title-option" value="">Zone</option>
-                          @foreach($divisions as $division)
-                          <option value="{{$division->id}}">{{$division->division_name}}</option>
-                          @endforeach
-                        </select>
-                      </div>
-                    </div>
-                    <div class="p-2" style="width:200px;">
-                      <div class="dropdown bootstrap-select">
-                        <select class="select2" name="branch_id" id="branch_id" data-style="select-with-transition" title="Select Branch">
-                          <option class="bs-title-option" value="">Branch</option>
-                          @foreach($branches as $branche)
-                          <option value="{{$branche->id}}">{{$branche->branch_name}}</option>
-                          @endforeach
-                        </select>
-                      </div>
-                    </div>
-                    <div class="p-2" style="width:200px;">
-                      <div class="dropdown bootstrap-select">
-                        <select class="select2" name="department_id" id="department_id" data-style="select-with-transition" title="Select Department">
-                          <option class="bs-title-option" value="">department</option>
-                          @foreach($departments as $department)
-                          <option value="{{$department->id}}">{{$department->name}}</option>
-                          @endforeach
-                        </select>
-                      </div>
-                    </div>
-                    <div class="p-2" style="width:200px;">
-                      <div class="dropdown bootstrap-select">
-                        <select class="select2" name="user_type" id="user_type" data-style="select-with-transition" title="Select User type">
-                          <option class="bs-title-option" value="employee">Employee</option>
-                          <option class="bs-title-option" value="customer">Customer</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div class="p-2" style="width: 250px;">
-                      <select class="selectpicker" name="active" id="active" data-style="select-with-transition" title="Select User Status">
-                        <option value="">Select User Status</option>
-                        <option value="Y">Active</option>
-                        <option value="N">Inactive</option>
-                      </select>
-                    </div>
-                    <div class="p-2">
-                      <button class="btn btn-just-icon btn-theme" title="Download Customers"><i class="material-icons">cloud_download</i></button></div>
-                  </div>
-                </form>
-              @endif
-              </div>
-              <div class="next-btn">
-                @if(auth()->user()->can(['user_upload']))
-                <form action="{{ URL::to('users-upload') }}" class="form-horizontal" method="post" enctype="multipart/form-data">
-                  {{ csrf_field() }}
-                  <div class="input-group">
-                    <div class="fileinput fileinput-new text-center" data-provides="fileinput">
-                      <span class="btn btn-just-icon btn-theme btn-file">
-                        <span class="fileinput-new"><i class="material-icons">attach_file</i></span>
-                        <span class="fileinput-exists">Change</span>
-                        <input type="hidden">
-                        <input type="file" name="import_file" required accept=".xls,.xlsx" />
-                      </span>
-                    </div>
-                    <div class="input-group-append">
-                      <button class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.upload') !!} {!! trans('panel.user.title') !!}">
-                        <i class="material-icons">cloud_upload</i>
-                        <div class="ripple-container"></div>
-                      </button>
-                    </div>
-                  </div>
-                </form>
-                @endif
-
-                @if(auth()->user()->can(['user_download']))
-                <!-- <a href="{{ URL::to('users-download') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.download') !!} {!! trans('panel.user.title') !!}"><i class="material-icons">cloud_download</i></a> -->
-                @endif
-                @if(auth()->user()->can(['user_template']))
-                <a href="{{ URL::to('users-template') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.template') !!} {!! trans('panel.user.title_singular') !!}"><i class="material-icons">text_snippet</i></a>
-                @endif
-                @if(auth()->user()->can(['user_create']))
-                <a href="{{ route('users.create') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.add') !!} {!! trans('panel.user.title_singular') !!}"><i class="material-icons">add_circle</i></a>
-                @endif
-              </div>
+          <div class="fk-list-title-row">
+            <h1 class="fk-list-title">{!! trans('panel.user.title_singular') !!} {!! trans('panel.global.list') !!}</h1>
+            <span class="fk-list-count" id="user-record-count"></span>
+          </div>
         </div>
-        </span>
-        </h4>
+        <div class="fk-list-actions">
+          @if(auth()->user()->can(['user_download']))
+          <button class="btn fk-filter-trigger" type="button" data-filter-target="#user-filter-drawer">
+            <span class="material-icons">tune</span>
+            <span>Filters</span>
+          </button>
+          @endif
+          @if(auth()->user()->can(['user_create']))
+          <a href="{{ route('users.create') }}" class="btn fk-create-action" title="{!!  trans('panel.global.add') !!} {!! trans('panel.user.title_singular') !!}">
+            <span class="material-icons">add_circle</span>
+            <span>Add New {!! trans('panel.user.title_singular') !!}</span>
+          </a>
+          @endif
+        </div>
       </div>
+      <div class="card fk-listing-card fk-user-listing-card" data-fk-listing-ready="1">
       <div class="card-body">
+        @if(auth()->user()->can(['user_download']))
+        <aside class="fk-filter-drawer" id="user-filter-drawer">
+          <div class="fk-filter-drawer-head">
+            <div class="fk-filter-drawer-icon"><span class="material-icons">tune</span></div>
+            <div>
+              <h3>Advanced Filters</h3>
+              <p>Applied live to the directory</p>
+            </div>
+            <button type="button" class="fk-filter-close" aria-label="Close filters"><span class="material-icons">close</span></button>
+          </div>
+          <div class="fk-filter-drawer-body">
+            <form action="{{ URL::to('users-download') }}" method="get" enctype="multipart/form-data" id="user-filter-export-form">
+              <div class="d-flex flex-wrap flex-row">
+                <div class="p-2" data-label="Zone">
+                  <div class="dropdown bootstrap-select">
+                    <select class="select2" name="division_id" id="division_id" data-style="select-with-transition" title="Select Zone">
+                      <option class="bs-title-option" value="">Zone</option>
+                      @foreach($divisions as $division)
+                      <option value="{{$division->id}}">{{$division->division_name}}</option>
+                      @endforeach
+                    </select>
+                  </div>
+                </div>
+                <div class="p-2" data-label="Branch">
+                  <div class="dropdown bootstrap-select">
+                    <select class="select2" name="branch_id" id="branch_id" data-style="select-with-transition" title="Select Branch">
+                      <option class="bs-title-option" value="">Branch</option>
+                      @foreach($branches as $branche)
+                      <option value="{{$branche->id}}">{{$branche->branch_name}}</option>
+                      @endforeach
+                    </select>
+                  </div>
+                </div>
+                <div class="p-2" data-label="Department">
+                  <div class="dropdown bootstrap-select">
+                    <select class="select2" name="department_id" id="department_id" data-style="select-with-transition" title="Select Department">
+                      <option class="bs-title-option" value="">department</option>
+                      @foreach($departments as $department)
+                      <option value="{{$department->id}}">{{$department->name}}</option>
+                      @endforeach
+                    </select>
+                  </div>
+                </div>
+                <div class="p-2" data-label="Employee">
+                  <div class="dropdown bootstrap-select">
+                    <select class="select2" name="user_type" id="user_type" data-style="select-with-transition" title="Select User type">
+                      <option class="bs-title-option" value="employee">Employee</option>
+                      <option class="bs-title-option" value="customer">Customer</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="p-2" data-label="Status">
+                  <select class="selectpicker" name="active" id="active" data-style="select-with-transition" title="Select User Status">
+                    <option value="">Select User Status</option>
+                    <option value="Y">Active</option>
+                    <option value="N">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="fk-filter-drawer-tools">
+            @if(auth()->user()->can(['user_template']))
+            <a href="{{ URL::to('users-template') }}" class="btn fk-tool-template" title="{!!  trans('panel.global.template') !!} {!! trans('panel.user.title_singular') !!}">
+              <span class="material-icons">description</span>
+              <span>Template</span>
+            </a>
+            @endif
+            @if(auth()->user()->can(['user_upload']))
+            <form action="{{ URL::to('users-upload') }}" class="form-horizontal" method="post" enctype="multipart/form-data">
+              {{ csrf_field() }}
+              <label class="btn fk-upload-tool fk-tool-upload">
+                <span class="material-icons">cloud_upload</span>
+                <span>Import</span>
+                <input type="file" name="import_file" required accept=".xls,.xlsx" />
+              </label>
+              <button type="submit" class="fk-hidden-submit">Upload</button>
+            </form>
+            @endif
+            @if(auth()->user()->can(['user_download']))
+            <button class="btn fk-tool-export" type="submit" form="user-filter-export-form">
+              <span class="material-icons">cloud_download</span>
+              <span>Export</span>
+            </button>
+            @endif
+          </div>
+          <div class="fk-filter-drawer-foot">
+            <button class="btn fk-filter-reset" type="button">Reset</button>
+            <button class="btn fk-filter-apply" type="button">Apply Filters</button>
+          </div>
+        </aside>
+        @endif
         @if(count($errors) > 0)
         <div class="alert alert-danger">
           <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -145,7 +166,6 @@
         </div>
       </div>
     </div>
-  </div>
   </div>
   <script src="{{ url('/').'/'.asset('assets/js/jquery.custom.js') }}"></script>
   <script type="text/javascript">
@@ -280,6 +300,16 @@
           },
         ]
       });
+      function updateUserRecordCount() {
+        var info = $('#getuser_info').text() || '';
+        var match = info.match(/\bof\s+([\d,]+)\b/i);
+        if (match && match[1]) {
+          $('#user-record-count').text(match[1].replace(/,/g, '') + ' records').addClass('is-visible');
+        }
+      }
+      table.on('draw.dt', updateUserRecordCount);
+      setTimeout(updateUserRecordCount, 600);
+      setTimeout(updateUserRecordCount, 1600);
       $('#user_type').change(function(){
         table.draw();
       });
@@ -293,6 +323,17 @@
         table.draw();
       });
       $('#department_id').change(function(){
+        table.draw();
+      });
+      $('.fk-filter-apply').on('click', function() {
+        table.draw();
+        $('#user-filter-drawer').removeClass('is-open');
+        $('body').removeClass('fk-filter-open');
+      });
+      $('.fk-filter-reset').on('click', function() {
+        $('#division_id, #branch_id, #department_id, #active').val('').trigger('change');
+        $('#user_type').val('employee').trigger('change');
+        $('.selectpicker').selectpicker('refresh');
         table.draw();
       });
 

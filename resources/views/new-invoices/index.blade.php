@@ -1,186 +1,155 @@
 <x-app-layout>
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header card-header-icon card-header-theme">
-                    <div class="card-icon">
-                        <i class="material-icons">receipt_long</i>
-                    </div>
-                    <h4 class="card-title">
-                        New Invoice Listing
-                        <span class="">
-                            <div class="btn-group header-frm-btn" style="    flex-direction: row;justify-content: right;align-items: center;gap: 0px;">
-                                @if(auth()->user()->can('new_invoice_export'))
-                                <a href="{{ route('new-invoices.export') }}" id="exportInvoices"
-                                    class="btn btn-just-icon btn-theme" title="Export Invoices">
-                                    <i class="material-icons">cloud_download</i>
-                                </a>
-                                @endif
-                                @if(auth()->user()->can('new_invoice_create'))
-                                <a href="{{ route('new-invoices.create') }}" class="btn btn-just-icon btn-theme"
-                                    title="Create Invoice">
-                                    <i class="material-icons">add_circle</i>
-                                </a>
-                                @endif
-                            </div>
-                        </span>
-                    </h4>
+    <section class="fk-manual-listing">
+        <div class="fk-list-page-head">
+            <div class="fk-list-heading-block">
+                <div class="fk-list-breadcrumb">
+                    <span>Loyalty Engine</span><span>&rsaquo;</span><span class="fk-current">New Invoices</span>
+                </div>
+                <div class="fk-list-title-row">
+                    <h1 class="fk-list-title">New Invoice Listing</h1>
+                    <span class="fk-list-count is-visible" id="newInvoiceRecordCount">0 records</span>
+                </div>
+            </div>
+            <div class="fk-list-actions">
+                <button class="btn fk-filter-trigger" type="button" data-filter-target="#newInvoiceFilterDrawer">
+                    <span class="material-icons">tune</span><span>Filters</span>
+                </button>
+                @if(auth()->user()->can('new_invoice_create'))
+                <a href="{{ route('new-invoices.create') }}" class="btn fk-create-action" title="Add Invoice">
+                    <span class="material-icons">add_circle</span><span>Add New Invoice</span>
+                </a>
+                @endif
+            </div>
+        </div>
+
+        <div class="card fk-listing-card" data-fk-listing-ready="1">
+            <div class="card-body">
+                @if ($errors->any())
+                <div class="alert alert-danger">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <i class="material-icons">close</i>
+                    </button>
+                    @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                    @endforeach
+                </div>
+                @endif
+
+                @foreach (['success' => 'success', 'error' => 'danger'] as $key => $class)
+                @if (session($key))
+                <div class="alert alert-{{ $class }}">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <i class="material-icons">close</i>
+                    </button>
+                    {{ session($key) }}
+                </div>
+                @endif
+                @endforeach
+
+                <div class="alert invoice-message" style="display: none;">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <i class="material-icons">close</i>
+                    </button>
+                    <span class="message"></span>
                 </div>
 
-                <div class="card-body">
-                    @if ($errors->any())
-                    <div class="alert alert-danger">
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <i class="material-icons">close</i>
-                        </button>
-                        @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                        @endforeach
+                <div class="fk-table-meta">
+                    <div class="fk-table-meta-icon"><span class="material-icons">receipt_long</span></div>
+                    <div class="fk-table-meta-copy">
+                        <h2>New Invoice Directory</h2>
+                        <p class="fk-table-meta-subline" id="newInvoiceTableMeta">Live directory · page 1 of 1</p>
                     </div>
-                    @endif
+                </div>
 
-                    @foreach (['success' => 'success', 'error' => 'danger'] as $key => $class)
-                    @if (session($key))
-                    <div class="alert alert-{{ $class }}">
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <i class="material-icons">close</i>
-                        </button>
-                        {{ session($key) }}
-                    </div>
-                    @endif
-                    @endforeach
-
-                    <div class="alert invoice-message" style="display: none;">
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <i class="material-icons">close</i>
-                        </button>
-                        <span class="message"></span>
-                    </div>
-
-                    <div class="row invoice-summary mb-3">
-                        <div class="col-md-3 col-lg-2 col-sm-6 mb-3">
-                            <div class="invoice-stat-card">
-                                <small>Total Invoices</small>
-                                <h4 data-summary="total_invoices" class="text-dark">{{ $summary['total_invoices'] }}</h4>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-lg-2 col-sm-6 mb-3">
-                            <div class="invoice-stat-card">
-                                <small>Total Retailers</small>
-                                <h4 data-summary="total_retailers" class="text-dark">{{ $summary['total_retailers'] }}</h4>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-lg-2 col-sm-6 mb-3">
-                            <div class="invoice-stat-card">
-                                <small>Approved By SS</small>
-                                <h4 data-summary="approved_ss" class="text-dark">{{ $summary['approved_ss'] }}</h4>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-lg-2 col-sm-6 mb-3">
-                            <div class="invoice-stat-card">
-                                <small>Approved By Sales</small>
-                                <h4 data-summary="approved_sales" class="text-dark">{{ $summary['approved_sales'] }}</h4>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-lg-2 col-sm-6 mb-3">
-                            <div class="invoice-stat-card">
-                                <small>Approved By HO</small>
-                                <h4 data-summary="approved_ho" class="text-dark">{{ $summary['approved_ho'] }}</h4>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-lg-2 col-sm-6 mb-3">
-                            <div class="invoice-stat-card">
-                                <small>Pending / Rejected</small>
-                                <h4><span data-summary="pending" class="text-dark">{{ $summary['pending'] }}</span> / <span data-summary="rejected" class="text-dark">{{ $summary['rejected'] }}</span></h4>
-                            </div>
-                        </div>
-                        <div class="col-md-6 col-lg-4 col-sm-12 mb-3">
-                            <div class="invoice-stat-card">
-                                <small>Total Points / Amount</small>
-                                <h4><span data-summary="total_points" class="text-dark">{{ number_format($summary['total_points'], 2) }}</span> pts</h4>
-                                <small>Rs. <span data-summary="total_amount" class="text-dark">{{ number_format($summary['total_amount'], 2) }}</span></small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card mb-3 invoice-filter-card">
-                        <div class="card-body">
-                            <h5 class="mb-3"><i class="material-icons align-middle">filter_list</i> Filter Invoice Transactions</h5>
-                            <div class="row">
-                                <div class="col-md-3">
-                                    <label class="col-form-label">Retailer Name / Mobile</label>
-                                    <input type="text" id="retailer_search" class="form-control" placeholder="Name or mobile number">
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="col-form-label">Invoice No.</label>
-                                    <input type="text" id="invoice_number_filter" class="form-control" placeholder="Invoice number">
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="col-form-label">Approval Status</label>
-                                    <select id="approval_status_filter" class="form-control select2">
-                                        <option value="">All status</option>
-                                        @foreach($approvalStatuses as $status => $label)
-                                        <option value="{{ $status }}">{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="col-form-label">Branch</label>
-                                    <select id="zone_filter" class="form-control select2">
-                                        <option value="">All zones</option>
-                                        @foreach($branches as $branch)
-                                        <option value="{{ $branch->id }}">{{ $branch->branch_name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="col-form-label">Branch</label>
-                                    <select id="branch_filter" class="form-control select2">
-                                        <option value="">All branches</option>
-                                        @foreach($branches as $branch)
-                                        <option value="{{ $branch->id }}">{{ $branch->branch_name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-2 mt-2">
-                                    <label class="col-form-label">From Date</label>
-                                    <input type="text" id="from_date" class="form-control datepicker" autocomplete="off" readonly>
-                                </div>
-                                <div class="col-md-2 mt-2">
-                                    <label class="col-form-label">To Date</label>
-                                    <input type="text" id="to_date" class="form-control datepicker" autocomplete="off" readonly>
-                                </div>
-                                <div class="col-md-3 mt-4">
-                                    <button type="button" id="resetFilter" class="btn btn-secondary">Reset</button>
-                                    <button type="button" id="applyFilter" class="btn btn-theme">Apply</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="table table-striped table-bordered table-hover no-wrap" id="invoiceTable">
-                            <thead class="text-primary">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Retailer ID</th>
-                                    <th>Customer Name</th>
-                                    <th>Mobile Number</th>
-                                    <th>City / Branch</th>
-                                    <th>Invoice Date</th>
-                                    <th>Invoice Number</th>
-                                    <th>Pre-GST Amount</th>
-                                    <th>Points</th>
-                                    <th>Approval Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                        </table>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table fk-glass-table" id="invoiceTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Retailer ID</th>
+                                <th>Customer Name</th>
+                                <th>Mobile Number</th>
+                                <th>City / Branch</th>
+                                <th>Invoice Date</th>
+                                <th>Invoice Number</th>
+                                <th>Pre-GST Amount</th>
+                                <th>Points</th>
+                                <th>Approval Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
+
+    <aside class="fk-filter-drawer" id="newInvoiceFilterDrawer">
+        <div class="fk-filter-drawer-head">
+            <div class="fk-filter-drawer-icon"><span class="material-icons">tune</span></div>
+            <div>
+                <h3>Advanced Filters</h3>
+                <p>Applied live to the directory</p>
+            </div>
+            <button type="button" class="fk-filter-close" aria-label="Close filters"><span class="material-icons">close</span></button>
+        </div>
+        <div class="fk-filter-drawer-body">
+            <div class="fk-filter-field">
+                <label for="retailer_search">Retailer Name / Mobile</label>
+                <input type="text" id="retailer_search" class="form-control fk-filter-control" placeholder="Name or mobile number">
+            </div>
+            <div class="fk-filter-field">
+                <label for="invoice_number_filter">Invoice No.</label>
+                <input type="text" id="invoice_number_filter" class="form-control fk-filter-control" placeholder="Invoice number">
+            </div>
+            <div class="fk-filter-field">
+                <label for="approval_status_filter">Approval Status</label>
+                <select id="approval_status_filter" class="form-control select2 fk-filter-control">
+                    <option value="">All status</option>
+                    @foreach($approvalStatuses as $status => $label)
+                    <option value="{{ $status }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="fk-filter-field">
+                <label for="zone_filter">Zone</label>
+                <select id="zone_filter" class="form-control select2 fk-filter-control">
+                    <option value="">All zones</option>
+                    @foreach($branches as $branch)
+                    <option value="{{ $branch->id }}">{{ $branch->branch_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="fk-filter-field">
+                <label for="branch_filter">Branch</label>
+                <select id="branch_filter" class="form-control select2 fk-filter-control">
+                    <option value="">All branches</option>
+                    @foreach($branches as $branch)
+                    <option value="{{ $branch->id }}">{{ $branch->branch_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="fk-filter-field">
+                <label for="from_date">From Date</label>
+                <input type="text" id="from_date" class="form-control datepicker fk-filter-control" autocomplete="off" readonly>
+            </div>
+            <div class="fk-filter-field">
+                <label for="to_date">To Date</label>
+                <input type="text" id="to_date" class="form-control datepicker fk-filter-control" autocomplete="off" readonly>
+            </div>
+        </div>
+        @if(auth()->user()->can('new_invoice_export'))
+        <div class="fk-filter-drawer-tools">
+            <a href="{{ route('new-invoices.export') }}" id="exportInvoices" class="btn fk-tool-export" title="Export Invoices">
+                <span class="material-icons">cloud_download</span><span>Export</span>
+            </a>
+        </div>
+        @endif
+        <div class="fk-filter-drawer-foot">
+            <button class="btn fk-filter-reset" id="resetFilter" type="button">Reset</button>
+            <button class="btn fk-filter-apply" id="applyFilter" type="button">Apply Filters</button>
+        </div>
+    </aside>
 
     <div class="modal fade" id="invoiceApprovalModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog" role="document">
@@ -212,33 +181,6 @@
         </div>
     </div>
 
-    <style>
-        .invoice-stat-card {
-            border: 1px solid #e3e7ef;
-            border-radius: 6px;
-            padding: 14px;
-            min-height: 92px;
-            background: #fff;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-        }
-        .invoice-stat-card small {
-            color: #6c757d;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .invoice-stat-card h4 {
-            margin: 8px 0 2px;
-            font-weight: 700;
-        }
-        .invoice-filter-card {
-            border: 1px solid #e3e7ef;
-            box-shadow: none;
-        }
-        #invoiceTable td {
-            vertical-align: middle;
-        }
-    </style>
-
     <script>
         $(document).ready(function() {
             $('.datepicker').datepicker({
@@ -253,6 +195,7 @@
                 serverSide: true,
                 stateSave: true,
                 lengthMenu: [[10, 25, 50, 100, 500], [10, 25, 50, 100, 500]],
+                dom: 't<"bottom"ip>',
                 ajax: {
                     url: "{{ route('new-invoices.index') }}",
                     data: function(d) {
@@ -282,7 +225,12 @@
                     {data: 'approval_status', name: 'approval_status', orderable: false, searchable: false},
                     {data: 'action', name: 'action', orderable: false, searchable: false}
                 ],
-                order: [[5, 'desc']]
+                order: [[5, 'desc']],
+                drawCallback: function() {
+                    var info = this.api().page.info();
+                    $('#newInvoiceRecordCount').text((info.recordsDisplay || 0) + ' records');
+                    $('#newInvoiceTableMeta').text('Live directory · page ' + ((info.page || 0) + 1) + ' of ' + (info.pages || 1));
+                }
             });
 
             $('#applyFilter').on('click', function() {

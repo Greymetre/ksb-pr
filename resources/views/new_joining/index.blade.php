@@ -1,9 +1,4 @@
 <x-app-layout>
-  <style>
-    span.select2-dropdown.select2-dropdown--below {
-      z-index: 99999 !important;
-    }
-  </style>
   <div class="row">
     <div class="col-md-12">
       <div class="card">

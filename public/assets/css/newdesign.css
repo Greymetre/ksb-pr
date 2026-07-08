@@ -42,8 +42,14 @@ body .sidebar li.nav-link.active ul.navd li.nav-link-btn.active a i{
     color: #34B1E2!important;
 }
 
+body .sidebar li.nav-link.active ul.navd li.nav-link-btn.active a span{
+    color: rgb(255, 255, 255)!important;
+    font-weight: 600!important;
+}
+
 body .sidebar li.nav-link.active ul.navd li.nav-link-btn.active a{
-     background: #ffffff00!important;
+    background-color: rgba(34, 211, 238, 0.13)!important;
+    box-shadow: rgba(34, 211, 238, 0.6) 0px 0px 18px -6px !important;
 }
 
 body .sidebar li.nav-link.active ul li.nav-link-btn.active .icon{
@@ -286,7 +292,7 @@ a.nav-link[aria-expanded="false"]:after {
 
 /* width */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 2px;
 }
 
 /* Track */
@@ -871,7 +877,7 @@ a.nav-link[aria-expanded="false"]:after {
 
 /* width */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 2px;
 }
 
 /* Track */

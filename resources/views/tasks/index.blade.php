@@ -1,24 +1,4 @@
 <x-app-layout>
-<style type="text/css">
-  .table-responsive th{
-    white-space: nowrap !important;
-  }
-  #gettasks td {
-    text-align: left;
-  }
-  /* Apply wider width to the description column */
-  td.description-column, th.description-column {
-      max-width: 400px;   /* You can increase this value as needed */
-      min-width: 300px;
-      white-space: normal; /* Allow text wrapping */
-      word-wrap: break-word;
-      text-align: left;
-  }
-/*  #gettasks thead{
-    display: none !important;
-  } */
-
-</style>
 <div class="row">
    <div class="col-md-12">
       <div class="card">

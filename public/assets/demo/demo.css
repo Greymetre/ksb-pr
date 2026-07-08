@@ -58,7 +58,7 @@
 }
 
 #custom-scroll::-webkit-scrollbar {
-    width: 5px
+    width: 2px
 }
 
 #custom-scroll::-webkit-scrollbar-track {

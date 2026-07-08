@@ -393,7 +393,7 @@
 
 /* Scrollbar Styling */
 .txydp-year-picker::-webkit-scrollbar {
-    width: 6px;
+    width: 2px;
 }
 
 .txydp-year-picker::-webkit-scrollbar-thumb {

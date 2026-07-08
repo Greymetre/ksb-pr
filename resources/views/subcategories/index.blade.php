@@ -1,10 +1,5 @@
   <x-app-layout>
-    <style>
-      .selection{
-        z-index: 999 !important; 
-      }
-      </style>
-  <div class="row">
+    <div class="row">
     <div class="col-md-12">
       <div class="card">
         <div class="card-header card-header-icon card-header-theme">
@@ -110,7 +105,7 @@
           <div class="row">
               <div class="col-md-6">
                 <div class="input_section">
-                  <label class="col-form-label">Segment<span class="text-danger"> *</span></label>
+                  <label class="col-form-label">Subcategory<span class="text-danger"> *</span></label>
                                 <div class="form-group has-default bmd-form-group">
                       <input type="text" name="subcategory_name" id="subcategory_name" class="form-control" value="{!! old( 'subcategory_name') !!}" maxlength="200" required>
                       @if ($errors->has('subcategory_name'))

@@ -8,6 +8,8 @@
     <title>{{ config('app.name', 'Blueneba') }}</title>
     <link rel="stylesheet" type="text/css"
         href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Roboto+Slab:400,700|Material+Icons" />
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css">
     <!-- CSS Files -->
     <link href="{{ asset('assets/css/materialdashboard2.css?v=' . now()->timestamp) }}" rel="stylesheet" />
@@ -27,6 +29,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.3/jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment.min.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <meta http-equiv="Cache-Control" content="no-store" />
@@ -565,8 +568,8 @@
 
         .sidebar li.nav-link.active ul.navd li.nav-link-btn.active a {
             background: #3860a4a3;
-            color: #fff;
-            font-weight: 500;
+            color: rgb(125, 143, 191);
+            font-weight: 400;
 
         }
 
@@ -748,12 +751,725 @@
         body nav.sidebar.close li.nav-link ul li a.hoveradd2:hover .d-none.mobile_hide {
             display: block !important;
         }
-    </style>
+
+        :root {
+            --fk-bg: #050e24;
+            --fk-panel: #081a40;
+            --fk-panel-2: #0d1c40;
+            --fk-border: rgba(120, 160, 255, .14);
+            --fk-border-strong: rgba(34, 211, 238, .34);
+            --fk-text: #ffffff;
+            --fk-muted: #7d8fbf;
+            --fk-soft: #a9bce6;
+            --fk-accent: #22d3ee;
+            --fk-accent-2: #3b82f6;
+            --fk-side-open: 264px;
+            --fk-side-closed: 78px;
+        }
+
+        body.fk-dark-shell,
+        body.fk-dark-shell .wrapper,
+        body.fk-dark-shell .main-panel,
+        body.fk-dark-shell .content {
+            background:
+                radial-gradient(120% 90% at 18% 8%, #0d2358 0, transparent 55%),
+                radial-gradient(110% 80% at 95% 95%, #0a1b45 0, transparent 60%),
+                var(--fk-bg) !important;
+            color: var(--fk-soft);
+            font-family: 'Inter', 'Poppins', sans-serif;
+        }
+
+        body.fk-dark-shell .wrapper {
+            min-height: 100vh;
+            height: auto;
+        }
+
+        body.fk-dark-shell .sidebar {
+            width: var(--fk-side-open);
+            background: linear-gradient(180deg, #081a40, #050e24) !important;
+            border-right: 1px solid rgba(90, 130, 220, .18);
+            box-shadow: none;
+            overflow: hidden;
+            z-index: 1060;
+        }
+
+        body.fk-dark-shell .sidebar.close {
+            width: var(--fk-side-closed);
+        }
+
+        body.fk-dark-shell .sidebar header {
+            min-height: 104px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+            padding: 0;
+            border-bottom: 1px solid rgba(90, 130, 220, .14);
+            background: #081a40;
+            overflow: hidden;
+        }
+
+        body.fk-dark-shell .sidebar .logo,
+        body.fk-dark-shell .sidebar .simple-text {
+            width: 100%;
+            min-width: 0;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            display: flex;
+        }
+
+        body.fk-dark-shell .sidebar .logo {
+            min-height: 72px;
+            display: flex;
+            align-items: center;
+            padding: 16px 14px 14px !important;
+            border-bottom: 1px solid rgba(90, 130, 220, .14);
+        }
+
+        body.fk-dark-shell .fk-sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            min-height: 42px;
+            height: auto;
+            overflow: visible;
+        }
+
+        body.fk-dark-shell .fk-field-logo {
+            display: block;
+            height: 28px;
+            max-width: 142px;
+            width: auto;
+            object-fit: contain;
+            object-position: left center;
+            filter: drop-shadow(0 2px 10px rgba(34, 211, 238, .3));
+            transition: opacity .18s;
+        }
+
+        body.fk-dark-shell .fk-duke-mark {
+            margin-left: auto;
+            width: auto;
+            height: auto;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(120, 160, 255, .18);
+            background: rgba(120, 160, 255, .06);
+            border-radius: 9px;
+            padding: 4px 8px;
+            transition: opacity .18s;
+            flex: none;
+        }
+
+        body.fk-dark-shell .fk-duke-mark img {
+            height: 18px;
+            max-width: none;
+            width: auto;
+            display: block;
+            object-fit: contain;
+        }
+
+        body.fk-dark-shell .fk-sidebar-tagline {
+            height: 31px;
+            display: flex;
+            align-items: center;
+            padding: 10px 16px 0;
+            color: #6d82c0;
+            font-family: 'Sora', 'Inter', sans-serif;
+            font-size: 7.5px;
+            font-weight: 700;
+            letter-spacing: 2.4px;
+            line-height: 1;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        body.fk-dark-shell .sidebar.close .fk-field-logo {
+            display: none;
+        }
+
+        body.fk-dark-shell .sidebar.close .fk-sidebar-tagline {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        body.fk-dark-shell .sidebar.close .logo {
+            padding: 0 12px !important;
+        }
+
+        body.fk-dark-shell .sidebar.close .fk-sidebar-brand {
+            justify-content: center;
+        }
+
+        body.fk-dark-shell .sidebar.close .fk-duke-mark {
+            width: 44px;
+            height: 36px;
+            margin: 0 auto;
+        }
+
+        body.fk-dark-shell .sidebar header .toggle {
+            display: none;
+        }
+
+        body.fk-dark-shell .sidebar .menu-bar {
+            height: calc(100vh - 104px);
+            margin-top: 0;
+            padding: 8px 12px 16px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #17386f #04112d;
+        }
+
+        body.fk-dark-shell .sidebar .menu-bar::-webkit-scrollbar {
+            width: 2px;
+        }
+
+        body.fk-dark-shell .sidebar .menu-bar::-webkit-scrollbar-track {
+            background: #04112d;
+            border-radius: 20px;
+        }
+
+        body.fk-dark-shell .sidebar .menu-bar::-webkit-scrollbar-thumb {
+            background: #17386f;
+            border-radius: 20px;
+        }
+
+        body.fk-dark-shell .menu-links {
+            padding: 0;
+            margin: 0;
+        }
+
+        body.fk-dark-shell .fk-menu-section {
+            margin-top: 14px;
+            padding: 2px 10px 6px;
+            font-family: 'Sora', 'Inter', sans-serif;
+            font-size: 8.5px;
+            line-height: 1.2;
+            letter-spacing: 2.2px;
+            text-transform: uppercase;
+            color: #4d5f95;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        body.fk-dark-shell .fk-menu-section:first-child {
+            margin-top: 0;
+        }
+
+        body.fk-dark-shell .sidebar.close .fk-menu-section span {
+            display: none;
+        }
+
+        body.fk-dark-shell .sidebar li.nav-link,
+        body.fk-dark-shell .sidebar li.nav-link-btn,
+        body.fk-dark-shell .sidebar li.nav-item-btn {
+            margin: 0 0 5px;
+            padding: 0;
+            list-style: none;
+        }
+
+        body.fk-dark-shell .sidebar li.nav-link>a,
+        body.fk-dark-shell .sidebar li.nav-link-btn>a,
+        body.fk-dark-shell .sidebar li.nav-item-btn>a {
+            min-height: 42px;
+            padding: 0 18px;
+            gap: 11px;
+            border: 1px solid transparent;
+            border-radius: 11px;
+            background: transparent !important;
+            color: #a9bce6 !important;
+            font-family: 'Inter', sans-serif;
+            font-size: 12.5px;
+            font-weight: 500;
+            line-height: 1.25;
+            box-shadow: none !important;
+            letter-spacing: 0;
+        }
+
+        body.fk-dark-shell .sidebar li.nav-link>a:hover,
+        body.fk-dark-shell .sidebar li.nav-link-btn>a:hover,
+        body.fk-dark-shell .sidebar li.nav-item-btn>a:hover,
+        body.fk-dark-shell .sidebar li.nav-link>a[aria-expanded="true"] {
+            color: #fff !important;
+            background: rgba(34, 211, 238, .07) !important;
+            border-color: rgba(34, 211, 238, .18);
+        }
+
+        body.fk-dark-shell .sidebar li.nav-link.active>a,
+        body.fk-dark-shell .sidebar li.nav-link>a[aria-expanded="true"] {
+            color: #fff !important;
+            background: rgba(34, 211, 238, .07) !important;
+            border-color: rgba(34, 211, 238, .16);
+            box-shadow:
+                inset 3px 0 0 var(--fk-accent),
+                0 0 18px -8px rgba(34, 211, 238, .45) !important;
+        }
+
+        body.fk-dark-shell .sidebar li.nav-link a:after {
+            border-color: #5a6a95;
+            width: 7px;
+            height: 7px;
+            right: 12px;
+            top: 16px;
+            border-width: 2px;
+            border-top: 0;
+            border-left: 0;
+        }
+
+        body.fk-dark-shell .sidebar li.nav-link a.no-after:after,
+        body.fk-dark-shell .sidebar li.nav-link-btn>a:after,
+        body.fk-dark-shell .sidebar li.nav-item-btn>a:after {
+            display: none !important;
+        }
+
+        body.fk-dark-shell .sidebar li.nav-link a[aria-expanded="true"]:after {
+            transform: rotate(225deg);
+            top: 18px;
+            border-color: #5a6a95;
+            background: transparent;
+        }
+
+        body.fk-dark-shell .sidebar .icon {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            min-width: 22px;
+            width: 22px;
+            height: 22px;
+            font-size: 20px;
+            letter-spacing: normal;
+            text-transform: none;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+            color: inherit !important;
+            border-radius: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        body.fk-dark-shell .sidebar .menu-links span {
+            color: inherit;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        body.fk-dark-shell ul.navd {
+            margin: 2px 0 6px 20px;
+            padding: 0 0 0 8px;
+            background: transparent;
+            border-radius: 0;
+            border-left: 1px solid rgba(90, 130, 220, .20);
+        }
+
+        body.fk-dark-shell ul.navd li>a {
+            position: relative;
+            min-height: 34px;
+            padding: 0 10px 0 24px;
+            color: #7d8fbf !important;
+            font-family: 'Inter', sans-serif;
+            font-size: 12.8px;
+            border-radius: 9px;
+            font-weight: 500;
+        }
+
+        body.fk-dark-shell ul.navd li>a .icon {
+            display: none;
+        }
+
+        body.fk-dark-shell ul.navd li>a:before {
+            content: "";
+            position: absolute;
+            left: 2px;
+            top: 50%;
+            width: 5px;
+            height: 5px;
+            border-radius: 999px;
+            background: currentColor;
+            opacity: .5;
+            transform: translateY(-50%);
+        }
+
+        body.fk-dark-shell ul.navd li.active>a {
+            color: #fff !important;
+            background: rgba(34, 211, 238, .13) !important;
+            font-weight: 600;
+            box-shadow: 0 0 18px -6px rgba(34, 211, 238, .6) !important;
+        }
+
+        body.fk-dark-shell ul.navd li.active>a:before {
+            background: var(--fk-accent);
+            opacity: 1;
+            box-shadow: 0 0 8px var(--fk-accent);
+        }
+
+        body.fk-dark-shell ul.navd li.active:has(> .collapse.show)>a {
+            color: #a9bce6 !important;
+            background: transparent !important;
+            font-weight: 500;
+            box-shadow: none !important;
+        }
+
+        body.fk-dark-shell ul.navd li.active:has(> .collapse.show)>a:before {
+            background: currentColor;
+            opacity: .5;
+            box-shadow: none;
+        }
+
+        body.fk-dark-shell ul.navd li.active:has(> .collapse.show)>a[aria-expanded="true"] {
+            color: #fff !important;
+            background: rgba(34, 211, 238, .07) !important;
+            border-color: rgba(34, 211, 238, .16);
+        }
+
+        body.fk-dark-shell .sidebar.close .menu-links span,
+        body.fk-dark-shell .sidebar.close ul.navd {
+            display: none;
+        }
+
+        body.fk-dark-shell .sidebar.close li.nav-link>a {
+            justify-content: center;
+            padding: 0;
+        }
+
+        body.fk-dark-shell .sidebar.close .icon {
+            min-width: 42px;
+        }
+
+        body.fk-dark-shell .main-panel {
+            left: var(--fk-side-open);
+            width: calc(100% - var(--fk-side-open));
+            min-height: 100vh;
+            transition: left .28s cubic-bezier(.2, .8, .2, 1), width .28s cubic-bezier(.2, .8, .2, 1);
+        }
+
+        body.fk-dark-shell .sidebar.close~.main-panel {
+            left: var(--fk-side-closed);
+            width: calc(100% - var(--fk-side-closed));
+        }
+
+        body.fk-dark-shell .main-panel>.navbar {
+            min-height: 64px;
+            height: 64px;
+            padding: 0 20px !important;
+            background: rgba(5, 14, 36, .72) !important;
+            border-bottom: 1px solid rgba(90, 130, 220, .15);
+            backdrop-filter: blur(18px);
+            box-shadow: none;
+        }
+
+        body.fk-dark-shell .main-panel>.navbar .container-fluid {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            max-width: none;
+            min-height: 64px;
+            background: transparent !important;
+            padding: 0;
+        }
+
+        body.fk-dark-shell .fk-header-left,
+        body.fk-dark-shell .fk-header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        body.fk-dark-shell .fk-header-right {
+            margin-left: auto;
+            flex: none;
+        }
+
+        body.fk-dark-shell .fk-header-btn,
+        body.fk-dark-shell .fk-live-sync,
+        body.fk-dark-shell .fk-bell-btn {
+            height: 42px;
+            border: 1px solid rgba(90, 130, 220, .28);
+            border-radius: 12px;
+            background: rgba(8, 20, 50, .62);
+            color: #a9bce6;
+            box-shadow: none;
+        }
+
+        body.fk-dark-shell .fk-header-btn {
+            width: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        body.fk-dark-shell .fk-header-btn .material-symbols-outlined,
+        body.fk-dark-shell .fk-bell-btn .material-symbols-outlined,
+        body.fk-dark-shell .fk-user-trigger .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 20px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body.fk-dark-shell .fk-live-sync {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 0 18px;
+            border-color: rgba(34, 211, 238, .35);
+            color: var(--fk-accent);
+            font-family: 'Sora', 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+        }
+
+        body.fk-dark-shell .fk-live-sync:before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: var(--fk-accent);
+            box-shadow: 0 0 10px rgba(34, 211, 238, .85);
+            animation: 1.4s ease 0s infinite normal none running bl;
+        }
+
+        @keyframes bl {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.25;
+                transform: scale(1.4);
+            }
+        }
+
+        body.fk-dark-shell .fk-bell-btn {
+            position: relative;
+            width: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            color: #a9bce6;
+        }
+
+        body.fk-dark-shell .fk-bell-btn:after {
+            content: "";
+            position: absolute;
+            top: 9px;
+            right: 10px;
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #ff5d7a;
+            box-shadow: 0 0 8px rgba(255, 93, 122, .7);
+        }
+
+        body.fk-dark-shell .fk-user-menu {
+            position: relative;
+        }
+
+        body.fk-dark-shell .fk-user-trigger {
+            min-width: 182px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 0 10px 0 0;
+            border: 0;
+            background: transparent;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        body.fk-dark-shell .fk-user-avatar {
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 13px;
+            background: linear-gradient(135deg, #22d3ee, #3b82f6);
+            color: #04121f;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 800;
+            overflow: hidden;
+            flex: none;
+        }
+
+        body.fk-dark-shell .fk-user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        body.fk-dark-shell .fk-user-copy {
+            min-width: 0;
+            flex: 1;
+        }
+
+        body.fk-dark-shell .fk-user-name,
+        body.fk-dark-shell .fk-user-role {
+            display: block;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.15;
+        }
+
+        body.fk-dark-shell .fk-user-name {
+            color: #fff;
+            font-size: 13.5px;
+            font-weight: 700;
+        }
+
+        body.fk-dark-shell .fk-user-role {
+            margin-top: 3px;
+            color: #6d82c0;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        body.fk-dark-shell .fk-user-trigger .fk-chevron {
+            color: #5a6a95;
+            font-size: 18px;
+            flex: none;
+        }
+
+        body.fk-dark-shell .fk-user-menu .dropdown-menu {
+            min-width: 180px;
+            padding: 8px;
+            margin-top: 6px;
+            border: 1px solid rgba(90, 130, 220, .22);
+            border-radius: 12px;
+            background: #081a40;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, .35);
+        }
+
+        body.fk-dark-shell .fk-user-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            min-height: 36px;
+            border-radius: 9px;
+            color: #a9bce6 !important;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        body.fk-dark-shell .fk-user-menu .dropdown-item:hover {
+            background: rgba(34, 211, 238, .08);
+            color: #fff !important;
+        }
+
+        body.fk-dark-shell .fk-user-menu .dropdown-item .material-symbols-outlined {
+            color: inherit !important;
+            font-size: 18px;
+        }
+
+        body.fk-dark-shell .navbar .nav-item p,
+        body.fk-dark-shell .navbar .material-icons {
+            color: #fff !important;
+        }
+
+        body.fk-dark-shell .content {
+            margin-top: 5px !important;
+            padding: 12px 28px 44px;
+        }
+
+        body.fk-dark-shell .container-fluid {
+            max-width: 1560px;
+        }
+
+        body.fk-dark-shell .footer {
+            display: none;
+        }
+
+        @media (max-width: 996px) {
+            body.fk-dark-shell .sidebar {
+                transform: translateX(-110%);
+                width: 288px;
+            }
+
+            body.fk-dark-shell .sidebar.close {
+                transform: translateX(0);
+                width: 288px;
+            }
+
+            body.fk-dark-shell .sidebar.close .menu-links span,
+            body.fk-dark-shell .sidebar.close ul.navd,
+            body.fk-dark-shell .sidebar.close .fk-field-logo,
+            body.fk-dark-shell .sidebar.close .fk-duke-mark,
+            body.fk-dark-shell .sidebar.close .fk-sidebar-tagline,
+            body.fk-dark-shell .sidebar.close .fk-menu-section span {
+                display: block;
+                opacity: 1;
+            }
+
+            body.fk-dark-shell .sidebar.close .fk-sidebar-tagline {
+                display: flex;
+            }
+
+            body.fk-dark-shell .main-panel,
+            body.fk-dark-shell .sidebar.close~.main-panel {
+                left: 0;
+                width: 100%;
+            }
+
+            body.fk-dark-shell .content {
+                padding: 10px 12px 32px;
+            }
+
+            body.fk-dark-shell .main-panel>.navbar {
+                padding: 0 12px !important;
+            }
+
+            body.fk-dark-shell .fk-live-sync {
+                display: none;
+            }
+
+            body.fk-dark-shell .fk-user-trigger {
+                min-width: 52px;
+                padding-right: 0;
+            }
+
+            body.fk-dark-shell .fk-user-copy,
+            body.fk-dark-shell .fk-user-trigger .fk-chevron {
+                display: none;
+            }
+
+        }
     </style>
     <!-- Scripts -->
 </head>
 
-<body class="">
+<body class="fk-shell fk-dark-shell">
     <!-- Loader -->
     <div class="loader-container" id="loader">
         <div class="loader"></div>
@@ -762,16 +1478,14 @@
         <nav class="sidebar">
             <header>
                 <div class="logo">
-                    <a href="{{ url('customers') }}" class="simple-text logo-normal">
-                        <!-- GAJRA GEARS -->
-                        <div class="logo-main desktop">
-                            <img src="{{ asset('assets/img/brand_logo_new.png') }}" class="rounded" alt="...">
-                        </div>
-                        <div class="logo-main mobile">
-                            <img src="{{ asset('assets/img/mobillogo.svg') }}" class="rounded" alt="...">
-                        </div>
+                    <a href="{{ url('customers') }}" class="simple-text logo-normal fk-sidebar-brand">
+                        <img src="{{ asset('assets/img/fieldkonnect_login_logo.png') }}" class="fk-field-logo" alt="FieldKonnect">
+                        <span class="fk-duke-mark">
+                            <img src="{{ asset('assets/img/duke_logo_new.png') }}" alt="Duke Pipes">
+                        </span>
                     </a>
                 </div>
+                <div class="fk-sidebar-tagline">Range &middot; Availability &middot; Reach &middot; Engagement</div>
                 {{--<div class="image-text mt-2">
                <span class="image">
                   <img
@@ -787,6 +1501,7 @@
             <div class="menu-bar">
                 <div class="menu">
                     <ul class="menu-links">
+                        <li class="fk-menu-section"><span>Overview</span></li>
                         @if(auth()->user()->can(['dashboard_access']))
                         <li class="nav-link hide_icon {{ request()->is('dealer_dashboard') ? 'active' : '' }}">
                             <a class="collapsed hoveradd" href="{{ url('dashboard') }}">
@@ -796,6 +1511,7 @@
                             </a>
                         </li>
                         @endif
+                        <li class="fk-menu-section"><span>Customers</span></li>
                         @if(auth()->user()->can(['lead_management_access']))
                         <li
                             class="nav-link {{ request()->is('leads*') || request()->is('contacts*') ? 'active' : '' }}">
@@ -864,7 +1580,6 @@
                         @endif
 
 
-                        <!-- ----------------------------------- -->
                         <!-- <li class="nav-link
                               {{ request()->is('master-distributors*') ? 'active' : '' }}">
 
@@ -1099,6 +1814,7 @@
                         </a>
                         </li> -->
                         @endif
+                        <li class="fk-menu-section"><span>Catalogue &amp; Supply</span></li>
                         @if(auth()->user()->can('product_access'))
                         <li
                             class="nav-link {{ request()->is('categories*') || request()->is('subcategories*') || request()->is('brands*') || request()->is('products*') || request()->is('units*') || request()->is('production*') ? 'active' : '' }}">
@@ -1226,9 +1942,10 @@
                             </a>
                         </li>
                         @endif
+                        <li class="fk-menu-section"><span>Team</span></li>
                         @if(auth()->user()->can('target_users_access'))
                         <li
-                            class="nav-link {{ request()->is('sales_users*') || request()->is('sales_dealer*') ? 'active' : '' }}">
+                            class="nav-link {{ request()->is('sales_users*') || request()->is('sales_dealer*') || request()->is('branches_sales_target*') || request()->is('primary_scheme') || request()->is('primary_scheme_report') || request()->is('planned-sop*') || request()->is('planned-sop-forecast*') ? 'active' : '' }}">
                             <a class="collapsed hoveradd" data-toggle="collapse" href="#salesUserMenu"
                                 aria-expanded="false">
                                 <i class="material-icons icon">real_estate_agent</i>
@@ -1333,7 +2050,7 @@
                         @endif
                         @if(auth()->user()->can('hr_access'))
                         <li
-                            class="nav-link {{ request()->is('reports/attendancereport*') || request()->is('reports/attendancereportSummary*') || request()->is('holidays*') || request()->is('leaves*') || request()->is('appraisal*') || request()->is('sales_weightage*') || request()->is('users*') || request()->is('targets*') || request()->is('livelocation*') || request()->is('permissions*') || request()->is('tours*') || request()->is('usercity*') || request()->is('new-joinings*') ? 'active' : '' }}">
+                            class="nav-link {{ request()->is('reports/attendancereport*') || request()->is('reports/attendancereportSummary*') || request()->is('holidays*') || request()->is('leaves*') || request()->is('appraisal*') || request()->is('sales_weightage*') ? 'active' : '' }}">
                             <a class="collapsed hoveradd" data-toggle="collapse" href="#hr" aria-expanded="false">
                                 <i class="material-icons icon">family_restroom</i>
                                 <!-- <span> {!! trans('panel.sidemenu.hr') !!}</span> -->
@@ -1409,7 +2126,7 @@
                                     </li>
                                     @endif
                                     @if(auth()->user()->can('branch'))
-                                    <li class="nav-link-btn {{ request()->is('branch*') ? 'active' : '' }}">
+                                    <li class="nav-link-btn {{ request()->is('branches') || request()->is('branches/*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('branches') }}">
                                             <i class="material-icons icon">meeting_room</i>
                                             <span>Branch</span>
@@ -1549,6 +2266,7 @@
                         </li>
                         @endif
                         @endif
+                        <li class="fk-menu-section"><span>Finance</span></li>
                         @if(auth()->user()->can(['account_access']))
                         <li
                             class="nav-link {{ request()->is('expenses*') || request()->is('tax_invoice*') || request()->is('expenses_type*') || request()->is('estimate*') ? 'active' : '' }}">
@@ -1656,6 +2374,7 @@
                 </div>
                 </li>
                 @endif
+                <li class="fk-menu-section"><span>Services &amp; Orders</span></li>
                 @if(auth()->user()->can('services_access'))
                 <li
                     class="nav-link {{ request()->is('services*') || request()->is('warranty_activation*') || request()->is('complaint-type*') || request()->is('complaints*') || request()->is('service-charge*') || request()->is('service_bills*') || request()->is('end_user*') ? 'active' : '' }}">
@@ -1741,7 +2460,7 @@
                                 <a class="collapsed hoveradd" data-toggle="collapse" href="#serviceProductMenu"
                                     aria-expanded="false">
                                     <i class="material-icons icon">home_repair_service</i>
-                                    <sapn> Service Charge Products</span>
+                                    <span> Service Charge Products</span>
                                         <div class="d-none mobile_hide"> Service Charge Products</div>
                                 </a>
                                 <div class="collapse" id="serviceProductMenu" style="">
@@ -1864,6 +2583,7 @@
                     </div>
                 </li>
                 @endif
+                <li class="fk-menu-section"><span>Growth</span></li>
                 @if(auth()->user()->can('marketing_access'))
                 <li class="nav-link {{ request()->is('marketings*') ? 'active' : '' }}">
                     <a class="collapsed hoveradd" data-toggle="collapse" href="#marketingMenu" aria-expanded="false">
@@ -2057,6 +2777,7 @@
                     </div>
                 </li>
                 @endif
+                <li class="fk-menu-section"><span>Operations</span></li>
                 @if(auth()->user()->can('status_access'))
                 <li
                     class="nav-link {{request()->is('loyalty-app-setting*') || request()->is('roles*') || request()->is('power_bi_setting*') ? 'active' : '' }}">
@@ -2237,7 +2958,7 @@
                             </li>
                             @endif
                             @if(auth()->user()->can('visitreport_access'))
-                            <li class="nav-link-btn">
+                            <li class="nav-link-btn {{ request()->is('retailers*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('mastervisitreport') }}">
                                     <i class="material-icons icon">store</i>
                                     <span>Master VisitReport</span>
@@ -2267,6 +2988,7 @@
                     </div>
                 </li>
                 @endif
+                <li class="fk-menu-section"><span>Reports</span></li>
                 @if(auth()->user()->can('reports'))
                 <li class="nav-link {{ request()->is('reports*') ? 'active' : '' }}">
                     <a class="collapsed hoveradd" data-toggle="collapse" href="#tasksMenu" aria-expanded="false">
@@ -2721,81 +3443,48 @@
         <!-- Navbar -->
         <nav class="navbar navbar-expand-lg navbar-transparent navbar-absolute fixed-top ">
             <div class="container-fluid" style="background: transparent; !important">
-                <div class="new_demo">
-                    <!-- <img class="rounded ml-2 iconimg" alt="Blueneba" src="{!! asset('assets/img/bnt_logo.png') !!}?" width="120"> -->
-                    <img class="rounded ml-2  iconimg" src="{!! asset('assets/img/duke_logo.png') !!}" width="50">
-                </div>
-                <!-- <img src="{!! asset('assets/img/logo.png') !!}" width="50"> -->
-                <div class="navbar-wrapper">
-                    <div class="navbar-minimize">
-                        <!-- <button id="minimizeSidebar" class="btn btn-just-icon btn-white btn-fab btn-round">
-                           <i class="material-icons text_align-center visible-on-sidebar-regular">more_vert</i>
-                           <i class="material-icons design_bullet-list-67 visible-on-sidebar-mini">view_list</i>
-                           <div class="ripple-container"></div></button> -->
-                    </div>
-                </div>
-                <button class="navbar-toggler" type="button"
-                    data-toggle="collapse"
-                    aria-controls="navigation-index"
-                    aria-expanded="false"
-                    aria-label="Toggle navigation">
-
-                    <i class="material-icons" style="color: black; font-size: 30px;">
-                        menu
-                    </i>
-
-                </button>
                 @auth
-                <div class="collapse navbar-collapse justify-content-end">
-                    <ul class="navbar-nav">
-                        <!-- <li class="nav-item dropdown">
-                           <a class="nav-link" href="http://example.com" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                             <i class="material-icons">notifications</i>
-                             <span class="notification">5</span>
-                             <p class="d-lg-none d-md-block">
-                               Some Actions
-                             </p>
-                           </a>
-                           <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownMenuLink">
-                             @if(auth()->user()->can('visitor_log_access'))
-                             <a href="{{route('visitor')}}" class="btn btn-info btn-sm float-right">Visitor Logs</a>
-                             @endif
-                             <a class="dropdown-item" href="#">Mike John responded to your email</a>
-                             <a class="dropdown-item" href="#">You have 5 new tasks</a>
-                             <a class="dropdown-item" href="#">You're now friend with Andrew</a>
-                             <a class="dropdown-item" href="#">Another Notification</a>
-                             <a class="dropdown-item" href="#">Another One</a>
-                           </div>
-                           </li> -->
-                        <!-- Profile Dropdown -->
-                        <li class="nav-item dropdown d-flex align-items-center">
-                            <p class="m-0 mr-2" style="font-weight: bold;">{{ auth()->user()->name }}</p>
-
-                            <a class="nav-link dropdown-toggle" href="javascript:;"
-                                id="navbarDropdownProfile"
-                                data-toggle="dropdown"
-                                aria-haspopup="true"
-                                aria-expanded="false">
-
+                @php
+                $userRoleName = auth()->user()->roles->pluck('name')->first() ?? 'Super Administrator';
+                $userInitials = collect(explode(' ', trim(auth()->user()->name)))->filter()->map(function ($part) {
+                return strtoupper(substr($part, 0, 1));
+                })->take(2)->implode('');
+                @endphp
+                <div class="fk-header-left">
+                    <button class="fk-header-btn fk-sidebar-toggle" type="button" aria-label="Toggle sidebar">
+                        <span class="material-symbols-outlined">menu</span>
+                    </button>
+                </div>
+                <div class="fk-header-right">
+                    <button class="fk-live-sync" type="button">Live Sync</button>
+                    <button class="fk-bell-btn" type="button" aria-label="Notifications">
+                        <span class="material-symbols-outlined">notifications</span>
+                    </button>
+                    <div class="dropdown fk-user-menu">
+                        <a class="fk-user-trigger" href="javascript:;" id="navbarDropdownProfile" data-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                            <span class="fk-user-avatar">
                                 @if (auth()->user()->getMedia('profile_image')->count() > 0 &&
                                 Storage::disk('s3')->exists(auth()->user()->getMedia('profile_image')[0]->getPath()))
                                 <img src="{{ auth()->user()->getMedia('profile_image')[0]->getFullUrl() }}"
-                                    width="40" height="40" class="rounded-circle" style="object-fit: cover;">
+                                    alt="{{ auth()->user()->name }}">
                                 @else
-                                <i class="material-icons" style="font-size: 32px; color: black;">person</i>
+                                {{ $userInitials ?: 'AD' }}
                                 @endif
+                            </span>
+                            <span class="fk-user-copy">
+                                <span class="fk-user-name">{{ auth()->user()->name }}</span>
+                                <span class="fk-user-role">{{ $userRoleName }}</span>
+                            </span>
+                            <span class="material-symbols-outlined fk-chevron">expand_more</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownProfile">
+                            <a class="dropdown-item" href="{{ url('logout') }}">
+                                <span class="material-symbols-outlined">logout</span>
+                                <span>Log Out</span>
                             </a>
-
-                            @auth
-                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownProfile">
-                                <a class="dropdown-item text-danger" href="{{ url('logout') }}">
-                                    <i class="material-icons mr-2" style="color: black;">logout</i>
-                                    <span>Log Out</span>
-                                </a>
-                            </div>
-                            @endauth
-                        </li>
-                    </ul>
+                        </div>
+                    </div>
                 </div>
                 @endauth
             </div>
@@ -2920,14 +3609,781 @@
     </script>
     <script>
         const body = document.querySelector('body'),
-            sidebar = body.querySelector('nav'),
+            sidebar = body.querySelector('.sidebar'),
             toggle = body.querySelector(".toggle"),
+            headerToggle = body.querySelector(".fk-sidebar-toggle"),
             // searchBtn = body.querySelector(".search-box"),
             modeSwitch = body.querySelector(".toggle-switch"),
             modeText = body.querySelector(".mode-text");
-        toggle.addEventListener("click", () => {
-            sidebar.classList.toggle("close");
-        })
+        if (toggle && sidebar) {
+            toggle.addEventListener("click", () => {
+                sidebar.classList.toggle("close");
+            });
+        }
+        if (headerToggle && sidebar) {
+            headerToggle.addEventListener("click", () => {
+                sidebar.classList.toggle("close");
+            });
+        }
+
+        function cleanListingTitle(rawTitle) {
+            return (rawTitle || '')
+                .replace(/\(\s*\d+\s*\)/g, '')
+                .replace(/\bAdd\b|\bEdit\b|\bCreate\b/gi, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function getActiveSectionLabel() {
+            const activeTrigger = document.querySelector('.sidebar li.nav-link.active > a > span');
+            const activeSubmenu = document.querySelector('.sidebar ul.navd li.active');
+            const parentLi = activeSubmenu ? activeSubmenu.closest('li.nav-link') : null;
+            const parentTrigger = parentLi ? parentLi.querySelector('a > span') : null;
+            const label = (parentTrigger && parentTrigger.textContent) || (activeTrigger && activeTrigger.textContent) || 'Dashboard';
+            return label.replace(/\s+/g, ' ').trim();
+        }
+
+        function getListingCount(card) {
+            const info = card.querySelector('.dataTables_info');
+            const text = info ? info.textContent : '';
+            const match = text.match(/\bof\s+([\d,]+)\b/i) || text.match(/Showing\s+[\d,]+\s+(?:to|–|-)\s+[\d,]+\s+of\s+([\d,]+)/i);
+            return match ? match[1].replace(/,/g, '') : '';
+        }
+
+        function updateListingCount(card, chip) {
+            const count = getListingCount(card);
+            if (!count) return;
+            chip.textContent = count + ' records';
+            chip.classList.add('is-visible');
+        }
+
+        function buildListingTitleText(titleEl) {
+            const clone = titleEl.cloneNode(true);
+            clone.querySelectorAll('button, a, form, input, select, textarea, .btn, .header-frm-btn, .next-btn, .float-right, .dropdown, .bootstrap-select, .select2, .collapse').forEach(function(node) {
+                node.remove();
+            });
+            return cleanListingTitle(clone.textContent);
+        }
+
+        function isCreateAction(node) {
+            if (!node || !node.matches) return false;
+            const href = (node.getAttribute('href') || '').toLowerCase();
+            const title = (node.getAttribute('title') || node.textContent || '').toLowerCase();
+            const icon = node.querySelector ? node.querySelector('.material-icons') : null;
+            const iconText = icon ? icon.textContent.trim() : '';
+            return node.matches('a') && (href.indexOf('/create') !== -1 || href.indexOf('create') !== -1 || iconText === 'add_circle' || title.indexOf('add') !== -1);
+        }
+
+        function isFilterForm(form) {
+            if (!form || !form.matches || !form.matches('form')) return false;
+            const action = (form.getAttribute('action') || '').toLowerCase();
+            if (action.indexOf('upload') !== -1 || action.indexOf('template') !== -1) return false;
+            if (action.indexOf('download') !== -1) return true;
+            if (form.querySelector('select, textarea, input[type="text"], input[type="date"], input.datepicker')) return true;
+            const fileInputs = form.querySelectorAll('input[type="file"]');
+            return fileInputs.length === 0 && !!form.querySelector('input, select, textarea');
+        }
+
+        function createFilterButton(drawer) {
+            const button = document.createElement('button');
+            button.className = 'btn fk-filter-trigger';
+            button.type = 'button';
+            button.innerHTML = '<span class="material-icons">tune</span><span>Filters</span>';
+            button.addEventListener('click', function() {
+                drawer.classList.add('is-open');
+                document.body.classList.add('fk-filter-open');
+            });
+            return button;
+        }
+
+        function getCreateLabel(link, titleText) {
+            const explicitTitle = (link.getAttribute('title') || '').replace(/\s+/g, ' ').trim();
+            const titleMatch = explicitTitle.match(/\badd\s+(.+)$/i);
+            if (titleMatch && titleMatch[1]) return 'Add New ' + titleMatch[1].replace(/\s+list$/i, '').trim();
+            const base = (titleText || 'Record').replace(/\s+list$/i, '').trim();
+            return 'Add New ' + base;
+        }
+
+        function enhanceCreateAction(link, titleText) {
+            link.classList.remove('btn-just-icon');
+            link.classList.add('fk-create-action');
+            link.innerHTML = '<span class="material-icons">add_circle</span><span>' + getCreateLabel(link, titleText) + '</span>';
+        }
+
+        function isTemplateAction(link) {
+            const href = (link.getAttribute('href') || '').toLowerCase();
+            const title = (link.getAttribute('title') || link.textContent || '').toLowerCase();
+            const icon = link.querySelector ? link.querySelector('.material-icons') : null;
+            const iconText = icon ? icon.textContent.trim() : '';
+            return href.indexOf('template') !== -1 || title.indexOf('template') !== -1 || iconText === 'text_snippet' || iconText === 'description';
+        }
+
+        function isExportAction(link) {
+            const href = (link.getAttribute('href') || '').toLowerCase();
+            const title = (link.getAttribute('title') || link.textContent || '').toLowerCase();
+            const icon = link.querySelector ? link.querySelector('.material-icons') : null;
+            const iconText = icon ? icon.textContent.trim() : '';
+            return href.indexOf('download') !== -1 || href.indexOf('export') !== -1 || title.indexOf('download') !== -1 || title.indexOf('export') !== -1 || iconText === 'cloud_download';
+        }
+
+        function isUploadForm(form) {
+            const action = (form.getAttribute('action') || '').toLowerCase();
+            return action.indexOf('upload') !== -1 || !!form.querySelector('input[type="file"]');
+        }
+
+        function decorateFilterDrawer(drawer) {
+            drawer.querySelectorAll('.fk-filter-drawer-body .p-2, .fk-filter-drawer-body .col, .fk-filter-drawer-body [class*="col-"], .fk-filter-drawer-body .d-flex > div, .fk-filter-drawer-body .row > div, .fk-filter-drawer-body .search').forEach(function(field) {
+                const control = field.querySelector('select, input, textarea');
+                if (!control || field.dataset.label) return;
+                const label = control.getAttribute('title') ||
+                    control.getAttribute('placeholder') ||
+                    control.getAttribute('name') ||
+                    control.getAttribute('id') ||
+                    '';
+                if (label) field.dataset.label = label.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+            });
+        }
+
+        function hasFilterControls(node) {
+            return !!(node && node.querySelector && node.querySelector('select, textarea, input[type="search"], input[type="text"], input[type="date"], input.datepicker, .select2, .selectpicker'));
+        }
+
+        function collectFilterSection(container) {
+            const sections = [];
+            if (!container || !container.querySelectorAll) return sections;
+            container.querySelectorAll('.collapse, .filter-box').forEach(function(section) {
+                if (hasFilterControls(section)) sections.push(section);
+            });
+            return sections;
+        }
+
+        function createFilterDrawer(titleText) {
+            const drawer = document.createElement('aside');
+            drawer.className = 'fk-filter-drawer';
+            drawer.innerHTML = '<div class="fk-filter-drawer-head"><div class="fk-filter-drawer-icon"><span class="material-icons">tune</span></div><div><h3>Advanced Filters</h3><p>Applied live to the directory</p></div><button type="button" class="fk-filter-close" aria-label="Close filters"><span class="material-icons">close</span></button></div><div class="fk-filter-drawer-body"></div><div class="fk-filter-drawer-tools"></div><div class="fk-filter-drawer-foot"><button class="btn fk-filter-reset" type="button">Reset</button><button class="btn fk-filter-apply" type="button">Apply Filters</button></div>';
+            drawer.querySelector('.fk-filter-close').addEventListener('click', function() {
+                drawer.classList.remove('is-open');
+                document.body.classList.remove('fk-filter-open');
+            });
+            return drawer;
+        }
+
+        function formatInlineFilterLabel(field) {
+            const raw = field.getAttribute('title') ||
+                field.getAttribute('placeholder') ||
+                field.getAttribute('name') ||
+                field.getAttribute('id') ||
+                'Filter';
+            return raw
+                .replace(/\[\]$/g, '')
+                .replace(/\.+$/g, '')
+                .replace(/[_-]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toUpperCase();
+        }
+
+        function moveInlineTableFilters(card, drawerBody) {
+            const fields = Array.from(card.querySelectorAll('thead input.table-input, thead select.table-input, thead textarea.table-input'));
+            if (!fields.length || !drawerBody) return false;
+
+            const section = document.createElement('div');
+            section.className = 'fk-inline-table-filters';
+
+            fields.forEach(function(field) {
+                const row = field.closest('tr');
+                const select2Companion = field.nextElementSibling && field.nextElementSibling.classList.contains('select2') ? field.nextElementSibling : null;
+                if (row) row.classList.add('fk-list-extra-row');
+
+                field.removeAttribute('style');
+                field.classList.add('fk-filter-control');
+
+                const wrap = document.createElement('div');
+                wrap.className = 'fk-filter-field';
+
+                const label = document.createElement('label');
+                label.textContent = formatInlineFilterLabel(field);
+
+                wrap.appendChild(label);
+                wrap.appendChild(field);
+                if (select2Companion) wrap.appendChild(select2Companion);
+                section.appendChild(wrap);
+            });
+
+            drawerBody.appendChild(section);
+            return true;
+        }
+
+        function normalizeListingActions(titleEl, actions, card, titleText) {
+            const candidates = [titleEl];
+            titleEl.querySelectorAll('.float-right, .header-frm-btn, .next-btn').forEach(function(node) {
+                candidates.push(node);
+            });
+            card.querySelectorAll(':scope > .card-body .date_sarch, :scope > .card-body .pream_entry, :scope > .card-body .well').forEach(function(node) {
+                candidates.push(node);
+            });
+            if (!candidates.length) {
+                Array.from(titleEl.children).forEach(function(node) {
+                    if (node.querySelector && node.querySelector('button, a.btn, form, input, select, .btn')) {
+                        candidates.push(node);
+                    }
+                });
+            }
+            if (!candidates.length) {
+                Array.from(titleEl.children).forEach(function(node) {
+                    if (node.matches && (node.matches('form') || node.matches('button.btn') || node.matches('a.btn'))) {
+                        candidates.push(node);
+                    }
+                });
+            }
+
+            const drawer = createFilterDrawer(titleText);
+            const drawerBody = drawer.querySelector('.fk-filter-drawer-body');
+            const drawerTools = drawer.querySelector('.fk-filter-drawer-tools');
+            const preservedAdds = [];
+            const preservedAddSet = new Set();
+            const appended = new Set();
+            const toolKeys = new Set();
+
+            function appendDrawerTool(kind, tool) {
+                if (!tool || toolKeys.has(kind)) return;
+                toolKeys.add(kind);
+                drawerTools.appendChild(tool);
+            }
+
+            function makeToolButton(kind, source) {
+                const button = document.createElement(source && source.matches && source.matches('a') ? 'a' : 'button');
+                button.className = 'btn fk-tool-' + kind;
+                if (button.tagName === 'A') button.href = source.getAttribute('href') || '#';
+                else button.type = 'button';
+                const icon = kind === 'template' ? 'description' : (kind === 'upload' ? 'cloud_upload' : 'cloud_download');
+                const label = kind === 'template' ? 'Template' : (kind === 'upload' ? 'Import' : 'Export');
+                button.innerHTML = '<span class="material-icons">' + icon + '</span><span>' + label + '</span>';
+                if (source && kind === 'upload') {
+                    button.fkUploadForm = source;
+                    button.addEventListener('click', function() {
+                        const file = source.querySelector('input[type="file"]');
+                        if (file) file.click();
+                    });
+                } else if (source && source.matches && source.matches('form') && kind === 'export') {
+                    button.addEventListener('click', function() {
+                        source.submit();
+                    });
+                }
+                return button;
+            }
+
+            candidates.forEach(function(container) {
+                Array.from(container.querySelectorAll('a')).forEach(function(link) {
+                    if (isCreateAction(link) && !preservedAddSet.has(link)) {
+                        preservedAdds.push(link);
+                        preservedAddSet.add(link);
+                    } else if (isTemplateAction(link)) {
+                        appendDrawerTool('template', makeToolButton('template', link));
+                    } else if (isExportAction(link)) {
+                        appendDrawerTool('export', makeToolButton('export', link));
+                    }
+                });
+                Array.from(container.querySelectorAll('form')).forEach(function(form) {
+                    if (isUploadForm(form)) {
+                        appendDrawerTool('upload', makeToolButton('upload', form));
+                    } else if (isFilterForm(form) && !appended.has(form)) {
+                        drawerBody.appendChild(form);
+                        appended.add(form);
+                    }
+                });
+                collectFilterSection(container).forEach(function(section) {
+                    if (!appended.has(section)) {
+                        section.classList.remove('collapse');
+                        section.classList.add('fk-filter-section');
+                        drawerBody.appendChild(section);
+                        appended.add(section);
+                    }
+                });
+                if (container.matches && isFilterForm(container) && !appended.has(container)) {
+                    drawerBody.appendChild(container);
+                    appended.add(container);
+                }
+            });
+
+            moveInlineTableFilters(card, drawerBody);
+
+            if (drawerBody.children.length) {
+                if (!drawerTools.children.length) drawerTools.remove();
+                decorateFilterDrawer(drawer);
+                document.body.appendChild(drawer);
+                actions.appendChild(createFilterButton(drawer));
+            }
+
+            preservedAdds.forEach(function(link) {
+                enhanceCreateAction(link, titleText);
+                actions.appendChild(link);
+            });
+        }
+
+        function singularizeListingLabel(label) {
+            const clean = (label || 'Directory')
+                .replace(/\s+list$/i, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+            if (/report$/i.test(clean)) return clean;
+            if (/ies$/i.test(clean)) return clean.replace(/ies$/i, 'y');
+            if (/sses$/i.test(clean)) return clean.replace(/es$/i, '');
+            if (/s$/i.test(clean) && !/ss$/i.test(clean)) return clean.replace(/s$/i, '');
+            return clean;
+        }
+
+        function getDirectoryTitle(titleText) {
+            const base = singularizeListingLabel(titleText);
+            return /directory$/i.test(base) || /report$/i.test(base) ? base : base + ' Directory';
+        }
+
+        function getTablePageInfo(card) {
+            const table = card.querySelector('table');
+            const info = {
+                page: 1,
+                pages: 1
+            };
+            if (window.jQuery && table && window.jQuery.fn && window.jQuery.fn.DataTable && window.jQuery.fn.DataTable.isDataTable(table)) {
+                const pageInfo = window.jQuery(table).DataTable().page.info();
+                info.page = (pageInfo.page || 0) + 1;
+                info.pages = pageInfo.pages || 1;
+                return info;
+            }
+
+            const lengthSelect = card.querySelector('.dataTables_length select');
+            const total = parseInt(getListingCount(card) || '0', 10);
+            const pageSize = lengthSelect ? parseInt(lengthSelect.value || '10', 10) : 10;
+            if (total && pageSize) {
+                info.pages = Math.max(1, Math.ceil(total / pageSize));
+            }
+            return info;
+        }
+
+        function updateTableMeta(card) {
+            const metaSubline = card.querySelector('.fk-table-meta-subline');
+            if (!metaSubline) return;
+            const pageInfo = getTablePageInfo(card);
+            metaSubline.textContent = 'Live directory · page ' + pageInfo.page + ' of ' + pageInfo.pages;
+        }
+
+        function normalizeDataTableMarkup(card) {
+            card.querySelectorAll('table').forEach(function(table) {
+                table.classList.add('fk-glass-table');
+                table.classList.remove(
+                    'table-striped',
+                    'table-striped-',
+                    'table-bordered',
+                    'table-hover',
+                    'table-checkable',
+                    'table-sm',
+                    'table-condensed',
+                    'responsive',
+                    'no-wrap',
+                    'nowrap',
+                    'w-100',
+                    'display'
+                );
+                table.removeAttribute('border');
+                table.removeAttribute('cellpadding');
+                table.removeAttribute('cellspacing');
+            });
+
+            card.querySelectorAll('.dataTables_length, .dataTables_filter').forEach(function(control) {
+                control.classList.add('fk-list-extra');
+                const row = control.closest('.row');
+                if (row) row.classList.add('fk-dt-controls-row');
+            });
+
+            card.querySelectorAll('thead, tbody, tr, th, td').forEach(function(node) {
+                node.classList.remove(
+                    'text-primary',
+                    'text-rose',
+                    'thead-light',
+                    'table-info',
+                    'table-active',
+                    'bg-white',
+                    'bg-light',
+                    'description-column'
+                );
+            });
+
+            card.querySelectorAll(':scope > .card-body > .well, :scope > .card-body > .pream_entry, :scope > .card-body > .date_sarch, :scope > .card-body > .sort_btn, :scope > .card-body > .filter-box, :scope > .card-body > .header-frm-btn, :scope > .card-body > .next-btn').forEach(function(node) {
+                node.classList.add('fk-list-extra');
+            });
+
+            card.querySelectorAll(':scope > .card-body > form, :scope > .card-body > .collapse, :scope > .card-body > .row').forEach(function(node) {
+                if (!node.querySelector('table')) {
+                    node.classList.add('fk-list-extra');
+                }
+            });
+        }
+
+        function ensureTableMeta(card, titleText) {
+            const bodyEl = card.querySelector(':scope > .card-body');
+            if (!bodyEl || bodyEl.querySelector(':scope > .fk-table-meta')) return;
+
+            const meta = document.createElement('div');
+            meta.className = 'fk-table-meta';
+
+            const icon = document.createElement('div');
+            icon.className = 'fk-table-meta-icon';
+            icon.innerHTML = '<span class="material-icons">storefront</span>';
+
+            const copy = document.createElement('div');
+            copy.className = 'fk-table-meta-copy';
+
+            const title = document.createElement('h2');
+            title.textContent = getDirectoryTitle(titleText);
+
+            const subline = document.createElement('p');
+            subline.className = 'fk-table-meta-subline';
+            subline.textContent = 'Live directory · page 1 of 1';
+
+            copy.appendChild(title);
+            copy.appendChild(subline);
+            meta.appendChild(icon);
+            meta.appendChild(copy);
+
+            const tableWrap = bodyEl.querySelector('.table-responsive') || bodyEl.querySelector('table');
+            if (tableWrap) bodyEl.insertBefore(meta, tableWrap);
+            else bodyEl.insertBefore(meta, bodyEl.firstChild);
+            updateTableMeta(card);
+        }
+
+        function normalizeListingHeaders() {
+            document.querySelectorAll('.content .card').forEach(function(card) {
+                if (card.closest('.modal') || card.dataset.fkListingReady === '1' || !card.querySelector('table')) return;
+
+                const header = Array.from(card.children).find(function(child) {
+                    return child.classList &&
+                        child.classList.contains('card-header') &&
+                        (child.classList.contains('card-header-theme') || child.classList.contains('card-header-icon'));
+                });
+                if (!header) return;
+
+                header.querySelectorAll('i.material-icons').forEach(function(icon) {
+                    if (icon.textContent.trim() === 'perm_identity') {
+                        const iconWrap = icon.closest('.card-icon');
+                        if (iconWrap) iconWrap.remove();
+                        else icon.remove();
+                    }
+                });
+
+                const titleEl = header.querySelector('.card-title');
+                if (!titleEl) return;
+
+                const titleText = buildListingTitleText(titleEl);
+                if (!titleText) return;
+
+                const pageHead = document.createElement('div');
+                pageHead.className = 'fk-list-page-head';
+
+                const headingBlock = document.createElement('div');
+                headingBlock.className = 'fk-list-heading-block';
+
+                const breadcrumb = document.createElement('div');
+                breadcrumb.className = 'fk-list-breadcrumb';
+                const sectionLabel = getActiveSectionLabel();
+                const currentLabel = titleText.replace(/\s+List$/i, '').trim();
+                breadcrumb.innerHTML = '<span>' + sectionLabel.toUpperCase() + '</span><span>&rsaquo;</span><span class="fk-current">' + currentLabel.toUpperCase() + '</span>';
+
+                const titleRow = document.createElement('div');
+                titleRow.className = 'fk-list-title-row';
+
+                const heading = document.createElement('h1');
+                heading.className = 'fk-list-title';
+                heading.textContent = titleText;
+
+                const countChip = document.createElement('span');
+                countChip.className = 'fk-list-count';
+                const titleCount = (titleEl.textContent || '').match(/\(\s*(\d+)\s*\)/);
+                if (titleCount) {
+                    countChip.textContent = titleCount[1] + ' records';
+                    countChip.classList.add('is-visible');
+                }
+
+                titleRow.appendChild(heading);
+                titleRow.appendChild(countChip);
+                headingBlock.appendChild(breadcrumb);
+                headingBlock.appendChild(titleRow);
+
+                const actions = document.createElement('div');
+                actions.className = 'fk-list-actions';
+                normalizeListingActions(titleEl, actions, card, titleText);
+
+                pageHead.appendChild(headingBlock);
+                pageHead.appendChild(actions);
+                card.parentNode.insertBefore(pageHead, card);
+                card.classList.add('fk-listing-card');
+                card.dataset.fkListingReady = '1';
+                header.classList.add('fk-card-header-processed');
+                normalizeDataTableMarkup(card);
+                ensureTableMeta(card, titleText);
+
+                updateListingCount(card, countChip);
+                updateTableMeta(card);
+                setTimeout(function() {
+                    updateListingCount(card, countChip);
+                    updateTableMeta(card);
+                }, 600);
+                setTimeout(function() {
+                    updateListingCount(card, countChip);
+                    updateTableMeta(card);
+                }, 1600);
+
+                if (window.jQuery) {
+                    window.jQuery(card).find('table').on('draw.dt', function() {
+                        normalizeDataTableMarkup(card);
+                        updateListingCount(card, countChip);
+                        updateTableMeta(card);
+                    });
+                }
+            });
+        }
+
+        normalizeListingHeaders();
+        window.addEventListener('load', normalizeListingHeaders);
+        document.querySelectorAll('.fk-filter-drawer').forEach(decorateFilterDrawer);
+
+        function getFooterEntityLabel(wrapper) {
+            const card = wrapper.closest('.fk-listing-card, .card');
+            const section = wrapper.closest('.fk-manual-listing, .content');
+            const manualTitle = section ? section.querySelector('.fk-list-page-head .fk-list-title') : null;
+            const cardTitle = card ? card.querySelector('.card-title, .fk-table-meta h2') : null;
+            const title = cleanListingTitle((manualTitle && manualTitle.textContent) || (cardTitle && cardTitle.textContent) || '')
+                .replace(/([a-z])([A-Z])/g, '$1 $2')
+                .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+            const clean = title
+                .replace(/\s*(list|listing|directory|report)$/i, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            if (!clean || /report$/i.test(title)) return 'records';
+            if (/y$/i.test(clean)) return clean.replace(/y$/i, 'ies').toLowerCase();
+            if (/ies$/i.test(clean)) return clean.toLowerCase();
+            if (/s$/i.test(clean)) return clean.toLowerCase();
+            return clean.toLowerCase() + 's';
+        }
+
+        function formatDataTableFooter(wrapper) {
+            if (!wrapper) return;
+            const infoEl = wrapper.querySelector('.dataTables_info');
+            const table = wrapper.querySelector('table');
+
+            if (infoEl && window.jQuery && table && window.jQuery.fn && window.jQuery.fn.DataTable && window.jQuery.fn.DataTable.isDataTable(table)) {
+                const info = window.jQuery(table).DataTable().page.info();
+                const total = info.recordsDisplay || info.recordsTotal || 0;
+                const start = total ? (info.start + 1) : 0;
+                const end = info.end || 0;
+                infoEl.textContent = 'Showing ' + start + '-' + end + ' of ' + total + ' ' + getFooterEntityLabel(wrapper);
+            }
+
+            wrapper.querySelectorAll('.paginate_button.previous, .page-item.previous .page-link').forEach(function(button) {
+                button.innerHTML = '<span class="material-icons">chevron_left</span>';
+                button.setAttribute('aria-label', 'Previous page');
+            });
+
+            wrapper.querySelectorAll('.paginate_button.next, .page-item.next .page-link').forEach(function(button) {
+                button.innerHTML = '<span class="material-icons">chevron_right</span>';
+                button.setAttribute('aria-label', 'Next page');
+            });
+        }
+
+        function formatAllDataTableFooters() {
+            document.querySelectorAll('body.fk-shell div.dataTables_wrapper').forEach(formatDataTableFooter);
+        }
+
+        formatAllDataTableFooters();
+        window.addEventListener('load', formatAllDataTableFooters);
+
+        if (window.jQuery) {
+            window.jQuery(document).on('draw.dt xhr.dt init.dt', function(event, settings) {
+                const wrapper = settings && settings.nTableWrapper ? settings.nTableWrapper : (event.target ? event.target.closest('div.dataTables_wrapper') : null);
+                setTimeout(function() {
+                    formatDataTableFooter(wrapper);
+                }, 0);
+            });
+        }
+
+        function closeFilterDrawers() {
+            document.querySelectorAll('.fk-filter-drawer.is-open').forEach(function(drawer) {
+                drawer.classList.remove('is-open');
+            });
+            document.body.classList.remove('fk-filter-open');
+        }
+
+        document.addEventListener('click', function(event) {
+            const trigger = event.target.closest('.fk-filter-trigger');
+            if (trigger) {
+                const targetSelector = trigger.getAttribute('data-filter-target');
+                const drawer = targetSelector ? document.querySelector(targetSelector) : trigger.fkFilterDrawer;
+                if (drawer) {
+                    drawer.classList.add('is-open');
+                    document.body.classList.add('fk-filter-open');
+                }
+            }
+
+            if (event.target.closest('.fk-filter-close')) {
+                closeFilterDrawers();
+            }
+
+            const applyButton = event.target.closest('.fk-filter-apply');
+            if (applyButton) {
+                const drawer = applyButton.closest('.fk-filter-drawer');
+                if (drawer && window.jQuery) {
+                    window.jQuery(drawer).find('input, select, textarea').trigger('change');
+                }
+                closeFilterDrawers();
+            }
+
+            const resetButton = event.target.closest('.fk-filter-reset');
+            if (resetButton) {
+                const drawer = resetButton.closest('.fk-filter-drawer');
+                if (drawer && window.jQuery) {
+                    window.jQuery(drawer).find('input[type="text"], input[type="date"], textarea').val('').trigger('change');
+                    window.jQuery(drawer).find('select').val('').trigger('change');
+                    window.jQuery(drawer).find('.selectpicker').selectpicker('refresh');
+                }
+            }
+        });
+
+        document.addEventListener('change', function(event) {
+            if (event.target.matches('input[type="file"]')) {
+                const form = event.target.closest('form');
+                if (form && event.target.files && event.target.files.length) form.submit();
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') closeFilterDrawers();
+        });
+
+        function normalizeSidebarPath(path) {
+            return String(path || '')
+                .replace(/^https?:\/\/[^/]+/i, '')
+                .replace(/^\/+/, '')
+                .replace(/\/+$/, '');
+        }
+
+        function sanitizeSidebarActiveState() {
+            const sidebarEl = document.querySelector('.sidebar');
+            if (!sidebarEl) return;
+
+            const currentPath = normalizeSidebarPath(window.location.pathname);
+            let bestLink = null;
+            let bestScore = -1;
+
+            sidebarEl.querySelectorAll('a[href]').forEach(function(link) {
+                const href = link.getAttribute('href') || '';
+                if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
+
+                const linkUrl = new URL(link.href, window.location.origin);
+                if (linkUrl.origin !== window.location.origin) return;
+
+                const linkPath = normalizeSidebarPath(linkUrl.pathname);
+                if (!linkPath) return;
+
+                const isMatch = currentPath === linkPath || currentPath.indexOf(linkPath + '/') === 0;
+                if (!isMatch) return;
+
+                const score = linkPath.length;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestLink = link;
+                }
+            });
+
+            if (!bestLink) return;
+
+            sidebarEl.querySelectorAll('li.active').forEach(function(item) {
+                item.classList.remove('active');
+            });
+            sidebarEl.querySelectorAll('.collapse.show').forEach(function(menu) {
+                menu.classList.remove('show');
+            });
+            sidebarEl.querySelectorAll('[data-toggle="collapse"]').forEach(function(trigger) {
+                trigger.setAttribute('aria-expanded', 'false');
+                trigger.classList.add('collapsed');
+            });
+
+            const activeItem = bestLink.closest('li');
+            if (activeItem) activeItem.classList.add('active');
+
+            let menu = bestLink.closest('.collapse');
+            while (menu) {
+                menu.classList.add('show');
+                const parentItem = menu.closest('li');
+                if (parentItem) parentItem.classList.add('active');
+
+                if (menu.id) {
+                    const trigger = sidebarEl.querySelector('a[href="#' + menu.id + '"]');
+                    if (trigger) {
+                        trigger.setAttribute('aria-expanded', 'true');
+                        trigger.classList.remove('collapsed');
+                    }
+                }
+
+                menu = parentItem ? parentItem.parentElement.closest('.collapse') : null;
+            }
+        }
+
+        sanitizeSidebarActiveState();
+
+        document.querySelectorAll('.sidebar .collapse').forEach(function(menu) {
+            if (menu.querySelector('li.active')) {
+                menu.classList.add('show');
+                const trigger = document.querySelector('.sidebar a[href="#' + menu.id + '"]');
+                if (trigger) {
+                    trigger.setAttribute('aria-expanded', 'true');
+                    trigger.classList.remove('collapsed');
+                }
+            }
+        });
+
+        function scrollSidebarToActive() {
+            const menuBar = document.querySelector('.sidebar .menu-bar');
+            if (!menuBar) return;
+
+            const activeItem = document.querySelector('.sidebar ul.navd li.active') ||
+                document.querySelector('.sidebar li.nav-link.active') ||
+                document.querySelector('.sidebar .active');
+
+            if (!activeItem) return;
+
+            const menuRect = menuBar.getBoundingClientRect();
+            const itemRect = activeItem.getBoundingClientRect();
+            const offset = itemRect.top - menuRect.top - (menuRect.height / 2) + (itemRect.height / 2);
+
+            menuBar.scrollTo({
+                top: Math.max(0, menuBar.scrollTop + offset),
+                behavior: 'smooth'
+            });
+        }
+
+        setTimeout(scrollSidebarToActive, 250);
+        window.addEventListener('load', function() {
+            setTimeout(scrollSidebarToActive, 250);
+        });
+
+        document.querySelectorAll('.sidebar [data-toggle="collapse"]').forEach(function(trigger) {
+            trigger.addEventListener('click', function() {
+                const target = document.querySelector(trigger.getAttribute('href'));
+                if (!target) return;
+                setTimeout(function() {
+                    trigger.setAttribute('aria-expanded', target.classList.contains('show') ? 'true' : 'false');
+                }, 250);
+            });
+        });
+
+        const navbarToggle = document.querySelector('.navbar-toggler');
+        if (navbarToggle && sidebar) {
+            navbarToggle.addEventListener('click', function() {
+                if (window.innerWidth <= 996) {
+                    sidebar.classList.toggle('close');
+                }
+            });
+        }
         // searchBtn.addEventListener("click", () => {
         //   sidebar.classList.remove("close");
         // })

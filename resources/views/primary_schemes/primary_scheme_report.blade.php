@@ -17,7 +17,7 @@
                     <!-- Zone filter -->
                     <div class="p-2" style="width:180px;">
                       <label for="division">Zone</label>
-                      <select class="select2" name="division[]" multiple id="division" data-style="select-with-transition" required title="panel.sales_users.branch">
+                      <select class="select2" name="division[]" multiple id="division" data-style="select-with-transition" required title="Zone">
                         <!-- <option value="" disabled>Zone</option> -->
                         @if(@isset($primary_divs ))
                         @foreach($primary_divs as $primary_div)
@@ -28,7 +28,7 @@
                     </div>
                     <!-- branch filter -->
                     <div class="p-2" style="width:180px;">
-                      <select class="select2" name="branch_id" id="ps_branch_id" data-style="select-with-transition" title="panel.sales_users.branch">
+                      <select class="select2" name="branch_id" id="ps_branch_id" data-style="select-with-transition" title="Branch">
                         <option value="" disabled selected>{!! trans('panel.secondary_dashboard.branch') !!}</option>
                         @if(@isset($branches ))
                         @foreach($branches as $branch)
@@ -63,13 +63,13 @@
                     <!-- Scheme filter -->
                     <div class="p-2 new_see" style="width:180px;">
                       <label for="scheme_id">Primary Scheme</label>
-                      <select class="select2" name="scheme_id" id="scheme_id" data-style="select-with-transition" required title="panel.sales_users.branch">
+                      <select class="select2" name="scheme_id" id="scheme_id" data-style="select-with-transition" required title="Primary Scheme">
                         <option value="" disabled>Primary Scheme</option>
                       </select>
                     </div>
                     <div class="p-2 new_see" style="width:180px;">
                       <label for="types">Type</label>
-                      <select class="select2" name="types" id="types" data-style="select-with-transition" title="panel.sales_users.branch">
+                      <select class="select2" name="types" id="types" data-style="select-with-transition" title="Type">
                         <option value="" disabled selected>Type</option>
                         <option value="qualified">Qualified</option>
                         <option value="unqualified">Unqualified</option>
@@ -110,25 +110,27 @@
           @endif
           
           <div class="table-responsive">
-            <!-- <table id="getprimarysales" class="d-none table table-striped- table-bordered table-hover table-checkable no-wrap">
+            <table id="getprimarysales" class="table table-striped- table-bordered table-hover table-checkable no-wrap">
               <thead class=" text-primary">
-                <th>Branch</th>
-                <th>Emp Code</th>
-                <th>Name</th>
-                <th>Joining Date</th>
-                <th>Targer</th>
-                <th>Achievement</th>
-                <th>Fresh Sales Return</th>
-                <th>Net Sales</th>
-                <th>Target Achievement (%)</th>
-                <th>Outstanding Value (>60 Days) %</th>
-                <th>Stock Value (>90 Days) %</th>
-                <th>Total Incentive</th>
-                <th>Total Incentive as per weightage</th>
+                <tr>
+                  <th>Branch</th>
+                  <th>Emp Code</th>
+                  <th>Name</th>
+                  <th>Joining Date</th>
+                  <th>Target</th>
+                  <th>Achievement</th>
+                  <th>Fresh Sales Return</th>
+                  <th>Net Sales</th>
+                  <th>Target Achievement (%)</th>
+                  <th>Outstanding Value (>60 Days) %</th>
+                  <th>Stock Value (>90 Days) %</th>
+                  <th>Total Incentive</th>
+                  <th>Total Incentive as per weightage</th>
+                </tr>
               </thead>
               <tbody>
               </tbody>
-            </table> -->
+            </table>
           </div>
         </div>
       </div>

@@ -7,15 +7,16 @@
             <i class="material-icons">perm_identity</i>
           </div>
           <h4 class="card-title ">{!! trans('panel.orderschemes.title_singular') !!} {!! trans('panel.global.list') !!}
-               </h4>
             <span class="">
               <div class="btn-group header-frm-btn">
               <div class="next-btn">                
-                @if(auth()->user()->can(['scheme_create']))
+                @if(auth()->user()->can(['scheme_create']) || auth()->user()->can('orderscheme'))
                 <a href="{{ route('orderschemes.create') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.add') !!} {!! trans('panel.orderschemes.title_singular') !!}"><i class="material-icons">add_circle</i></a>
                 @endif
               </div>
+              </div>
             </span>
+          </h4>
        
         </div>
 

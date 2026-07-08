@@ -1,36 +1,4 @@
 <x-app-layout>
-  <style>
-    .table-input::placeholder {
-          color: rgba(0, 0, 0, 0.5); /* Light greyish-white for better visibility */
-          opacity: 1; /* Ensures visibility in all browsers */
-      }
-
-    .table-input:focus {
-        border-color: #007bff;
-        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
-    }
-
-    .hover-effect {
-      cursor: pointer;
-      transition: transform 0.2s ease-in-out;
-    }
-
-    .hover-effect:hover {
-      transform: scale(1.05); /* Slightly increase size on hover */
-    }
-
-    .table-input {
-        width: 100% !important
-        padding: 5px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-        outline: none;
-        background: white;
-        width: 335px;
-    }
-  </style>
   <div class="row">
     <div class="col-md-12">
       <div class="card">

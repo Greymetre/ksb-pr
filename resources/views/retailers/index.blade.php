@@ -1,12 +1,4 @@
 <x-app-layout>
-   <style>
-        .select2{
-            z-index: 50 !important;
-        }
-        #ui-datepicker-div {
-            z-index: 10000 !important;
-        }
-    </style>
     <div class="row">
         <div class="col-md-12">
             <div class="card">

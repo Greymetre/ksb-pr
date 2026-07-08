@@ -1,10 +1,4 @@
 <x-app-layout>
-  <style>
-    table tbody tr {
-      font-size: 12px !important;
-      font-weight: 100 !important;
-    }
-  </style>
   <div class="row">
     <div class="col-md-12">
       <div class="card">
