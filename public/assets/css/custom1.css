@@ -337,6 +337,69 @@ body.fk-shell .fk-list-actions .btn-just-icon:not(.fk-create-action) {
     padding: 0 !important;
 }
 
+body.fk-shell .fk-list-actions .fk-list-search {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    display: inline-flex;
+    align-items: center;
+    overflow: hidden;
+    border: 1px solid rgba(90, 130, 220, .34);
+    border-radius: 13px;
+    background: rgba(8, 20, 50, .68);
+    transition: width .28s ease, min-width .28s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+body.fk-shell .fk-list-actions .fk-list-search.is-open,
+body.fk-shell .fk-list-actions .fk-list-search.has-value {
+    width: 260px;
+    min-width: 260px;
+    border-color: rgba(47, 208, 232, .55);
+    box-shadow: 0 0 24px rgba(47, 208, 232, .12);
+}
+
+body.fk-shell .fk-list-actions .fk-list-search-toggle {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #cbd9ff;
+    cursor: pointer;
+}
+
+body.fk-shell .fk-list-actions .fk-list-search-toggle .material-icons {
+    font-size: 19px;
+}
+
+body.fk-shell .fk-list-actions .fk-list-search-input,
+body.fk-shell .fk-list-actions input.fk-list-search-input {
+    width: 208px !important;
+    min-width: 208px;
+    height: 40px !important;
+    margin: 0 !important;
+    padding: 0 12px 0 2px !important;
+    border: 0 !important;
+    outline: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #eaf1ff !important;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px !important;
+    font-weight: 400;
+    line-height: 40px;
+}
+
+body.fk-shell .fk-list-actions .fk-list-search-input::placeholder {
+    color: rgba(151, 166, 207, .72);
+}
+
 body.fk-shell .fk-list-actions .fk-filter-trigger {
     width: 140px !important;
     min-width: 140px !important;
@@ -1616,6 +1679,12 @@ body.fk-shell .fk-export-report .fk-report-card .fk-create-action .material-icon
     body.fk-shell .fk-list-actions {
         justify-content: flex-start;
         margin-left: 0;
+    }
+
+    body.fk-shell .fk-list-actions .fk-list-search.is-open,
+    body.fk-shell .fk-list-actions .fk-list-search.has-value {
+        width: min(260px, 100%);
+        min-width: min(260px, 100%);
     }
 
     body.fk-shell .fk-list-title {

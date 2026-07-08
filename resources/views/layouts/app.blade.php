@@ -3930,6 +3930,60 @@
             });
         }
 
+        function ensureListingSearch(card, actions) {
+            if (!card || !actions || actions.querySelector('.fk-list-search')) return true;
+
+            const searchInput = card.querySelector('.dataTables_filter input[type="search"], .dataTables_filter input[type="text"], .dataTables_filter input');
+            if (!searchInput) return false;
+
+            searchInput.classList.add('fk-list-search-input');
+            searchInput.removeAttribute('style');
+            searchInput.setAttribute('placeholder', searchInput.getAttribute('placeholder') || 'Search');
+
+            const searchWrap = document.createElement('div');
+            searchWrap.className = 'fk-list-search';
+
+            const searchButton = document.createElement('button');
+            searchButton.className = 'fk-list-search-toggle';
+            searchButton.type = 'button';
+            searchButton.setAttribute('aria-label', 'Open search');
+            searchButton.innerHTML = '<span class="material-icons">search</span>';
+
+            searchWrap.appendChild(searchButton);
+            searchWrap.appendChild(searchInput);
+            actions.insertBefore(searchWrap, actions.firstChild);
+
+            function openSearch() {
+                searchWrap.classList.add('is-open');
+                setTimeout(function() {
+                    searchInput.focus();
+                }, 120);
+            }
+
+            searchButton.addEventListener('click', function() {
+                if (searchWrap.classList.contains('is-open')) {
+                    searchInput.focus();
+                    return;
+                }
+                openSearch();
+            });
+
+            searchInput.addEventListener('focus', openSearch);
+            searchInput.addEventListener('input', function() {
+                if (searchInput.value.trim()) searchWrap.classList.add('has-value');
+                else searchWrap.classList.remove('has-value');
+            });
+            searchInput.addEventListener('blur', function() {
+                if (!searchInput.value.trim()) {
+                    setTimeout(function() {
+                        searchWrap.classList.remove('is-open');
+                    }, 160);
+                }
+            });
+
+            return true;
+        }
+
         function singularizeListingLabel(label) {
             const clean = (label || 'Directory')
                 .replace(/\s+list$/i, '')
@@ -4120,6 +4174,11 @@
                 const actions = document.createElement('div');
                 actions.className = 'fk-list-actions';
                 normalizeListingActions(titleEl, actions, card, titleText);
+                if (!ensureListingSearch(card, actions)) {
+                    setTimeout(function() {
+                        ensureListingSearch(card, actions);
+                    }, 300);
+                }
 
                 pageHead.appendChild(headingBlock);
                 pageHead.appendChild(actions);
@@ -4203,6 +4262,15 @@
             document.querySelectorAll('body.fk-shell div.dataTables_wrapper').forEach(formatDataTableFooter);
         }
 
+        function syncListingSearchForWrapper(wrapper) {
+            if (!wrapper) return;
+            const card = wrapper.closest('.fk-listing-card, .card');
+            if (!card) return;
+            const pageHead = card.previousElementSibling && card.previousElementSibling.classList && card.previousElementSibling.classList.contains('fk-list-page-head') ? card.previousElementSibling : null;
+            const actions = pageHead ? pageHead.querySelector('.fk-list-actions') : null;
+            if (actions) ensureListingSearch(card, actions);
+        }
+
         formatAllDataTableFooters();
         window.addEventListener('load', formatAllDataTableFooters);
 
@@ -4211,6 +4279,7 @@
                 const wrapper = settings && settings.nTableWrapper ? settings.nTableWrapper : (event.target ? event.target.closest('div.dataTables_wrapper') : null);
                 setTimeout(function() {
                     formatDataTableFooter(wrapper);
+                    syncListingSearchForWrapper(wrapper);
                 }, 0);
             });
         }
