@@ -9,37 +9,39 @@
           <h4 class="card-title ">User City List
             <span class="">
               <div class="btn-group header-frm-btn">
-              <div class="next-btn">
-                <form method="GET" action="{{ URL::to('/usercity-download') }}">
-                  <div class="d-flex flex-row">
-                    <input type="text" class="form-control" name="page_number" id="tableInfo" value="1">
-                    <input type="text" class="form-control" name="page_length" id="page_length" value="10">
+                <div class="next-btn">
+                  <form method="GET" action="{{ URL::to('/usercity-download') }}">
+                    <div class="d-flex flex-row">
+                      <label for="page_number" class="col-form-label text-white">Page Number</label>
+                      <input type="number" class="form-control" name="page_number" id="tableInfo" value="1">
+                      <label for="page_length" class="col-form-label text-white">Records</label>
+                      <input type="number" class="form-control" name="page_length" id="page_length" value="100" min="1" max="5000" required>
 
-                    <div class="p-2"></div>
-                    <div class=""><button class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.download') !!} {!! trans('User City') !!}"><i class="material-icons">cloud_download</i></button></div>
-                  </div>
-                </form>
-                <form action="{{ URL::to('/usercity-upload') }}" class="form-horizontal" method="post" enctype="multipart/form-data">
-                  {{ csrf_field() }}
-                  <div class="input-group">
-                    <div class="fileinput fileinput-new text-center" data-provides="fileinput">
-                      <span class="btn btn-just-icon btn-theme btn-file">
-                        <span class="fileinput-new"><i class="material-icons">attach_file</i></span>
-                        <span class="fileinput-exists">Change</span>
-                        <input type="hidden">
-                        <input type="file" name="import_file" required accept=".xls,.xlsx" />
-                      </span>
+                      <div class="p-2"></div>
+                      <div class=""><button class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.download') !!} {!! trans('User City') !!}"><i class="material-icons">cloud_download</i></button></div>
                     </div>
-                    <div class="input-group-append">
-                      <button class="btn btn-just-icon btn-theme" title="User City Upload">
-                        <i class="material-icons">cloud_upload</i>
-                        <div class="ripple-container"></div>
-                      </button>
+                  </form>
+                  <form action="{{ URL::to('/usercity-upload') }}" class="form-horizontal" method="post" enctype="multipart/form-data">
+                    {{ csrf_field() }}
+                    <div class="input-group">
+                      <div class="fileinput fileinput-new text-center" data-provides="fileinput">
+                        <span class="btn btn-just-icon btn-theme btn-file">
+                          <span class="fileinput-new"><i class="material-icons">attach_file</i></span>
+                          <span class="fileinput-exists">Change</span>
+                          <input type="hidden">
+                          <input type="file" name="import_file" required accept=".xls,.xlsx" />
+                        </span>
+                      </div>
+                      <div class="input-group-append">
+                        <button class="btn btn-just-icon btn-theme" title="User City Upload">
+                          <i class="material-icons">cloud_upload</i>
+                          <div class="ripple-container"></div>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </form>
-                <!-- <a href="{{ URL::to('/usercity-download') }}" class="btn btn-just-icon btn-theme" title="User City Download"><i class="material-icons">cloud_download</i></a> -->
-              </div>
+                  </form>
+                  <!-- <a href="{{ URL::to('/usercity-download') }}" class="btn btn-just-icon btn-theme" title="User City Download"><i class="material-icons">cloud_download</i></a> -->
+                </div>
               </div>
             </span>
           </h4>
