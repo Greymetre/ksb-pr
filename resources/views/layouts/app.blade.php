@@ -3816,6 +3816,12 @@
 
         function normalizeListingActions(titleEl, actions, card, titleText) {
             const candidates = [titleEl];
+            const headerEl = titleEl.closest('.card-header');
+            if (headerEl) {
+                headerEl.querySelectorAll(':scope > span, :scope > .float-right, :scope > .header-frm-btn, :scope > .next-btn, :scope > .card, :scope > .row, :scope > form').forEach(function(node) {
+                    candidates.push(node);
+                });
+            }
             titleEl.querySelectorAll('.float-right, .header-frm-btn, .next-btn').forEach(function(node) {
                 candidates.push(node);
             });
