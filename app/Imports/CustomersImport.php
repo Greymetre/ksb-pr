@@ -47,7 +47,6 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
 
   public function collection(Collection $rows)
   {
-    // dd($rows);
     $customerdetails = collect([]);
     $addressdetails = collect([]);
     $attachments = collect([]);
@@ -175,7 +174,7 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
           'customer_code' => !empty($row['customer_code']) ? $row['customer_code'] : null,
           'profile_image' =>  !empty($row['profile_image']) ? $row['profile_image'] : '',
           'status_id' =>  !empty($row['status_id']) ? $row['status_id'] : 2,
-          'customertype' =>  !empty($row['customer_type']) ? $row['customer_type'] : 1,
+          'customertype' =>  !empty($row['customer_type_id']) ? $row['customer_type_id'] : 1,
           'firmtype' =>  !empty($row['firmtype']) ? $row['firmtype'] : null,
           // 'created_by' => $user_id,
           'created_by' => Auth::user()->id,
