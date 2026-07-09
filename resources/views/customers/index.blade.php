@@ -234,7 +234,7 @@
                 <!-- <th>{!! trans('panel.global.no') !!}</th> -->
                 <!-- <th><input type="checkbox" class="allCustomerschecked"/></th> -->
                 <th>{!! trans('panel.global.action') !!}</th>
-                <th>BP Code</th>
+                <!-- <th>BP Code</th> -->
                 <th>Firm Name</th>
                 <th>Contact Person</th>
                 <th>{!! trans('panel.customers.fields.mobile') !!}</th>
@@ -303,12 +303,12 @@
             orderable: false,
             searchable: false
           },
-          {
-            data: 'sap_code',
-            name: 'sap_code',
-            "defaultContent": '',
-            orderable: false,
-          },
+          //{
+            //data: 'sap_code',
+            //name: 'sap_code',
+          //   "defaultContent": '',
+          //   orderable: false,
+          // },
           {
             data: 'name',
             name: 'name',

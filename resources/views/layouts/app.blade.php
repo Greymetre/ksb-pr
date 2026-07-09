@@ -3891,20 +3891,23 @@
             const appended = new Set();
             const toolKeys = new Set();
 
-            function appendDrawerTool(kind, tool) {
+            function appendHeaderTool(kind, tool) {
                 if (!tool || toolKeys.has(kind)) return;
                 toolKeys.add(kind);
-                drawerTools.appendChild(tool);
+                actions.appendChild(tool);
             }
 
             function makeToolButton(kind, source) {
                 const button = document.createElement(source && source.matches && source.matches('a') ? 'a' : 'button');
-                button.className = 'btn fk-tool-' + kind;
+                button.className = 'btn btn-just-icon fk-tool-' + kind;
                 if (button.tagName === 'A') button.href = source.getAttribute('href') || '#';
                 else button.type = 'button';
                 const icon = kind === 'template' ? 'description' : (kind === 'upload' ? 'cloud_upload' : 'cloud_download');
                 const label = kind === 'template' ? 'Template' : (kind === 'upload' ? 'Import' : 'Export');
-                button.innerHTML = '<span class="material-icons">' + icon + '</span><span>' + label + '</span>';
+                button.classList.add('fk-icon-action');
+                button.setAttribute('title', label);
+                button.setAttribute('aria-label', label);
+                button.innerHTML = '<span class="material-icons">' + icon + '</span>';
                 if (source && kind === 'upload') {
                     button.fkUploadForm = source;
                     button.addEventListener('click', function() {
@@ -3928,14 +3931,14 @@
                         preservedAdds.push(link);
                         preservedAddSet.add(link);
                     } else if (isTemplateAction(link)) {
-                        appendDrawerTool('template', makeToolButton('template', link));
+                        appendHeaderTool('template', makeToolButton('template', link));
                     } else if (isExportAction(link)) {
-                        appendDrawerTool('export', makeToolButton('export', link));
+                        appendHeaderTool('export', makeToolButton('export', link));
                     }
                 });
                 Array.from(container.querySelectorAll('form')).forEach(function(form) {
                     if (isUploadForm(form)) {
-                        appendDrawerTool('upload', makeToolButton('upload', form));
+                        appendHeaderTool('upload', makeToolButton('upload', form));
                     } else if (isFilterForm(form) && !appended.has(form)) {
                         drawerBody.appendChild(form);
                         appended.add(form);

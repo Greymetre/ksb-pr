@@ -7,39 +7,19 @@
           <i class="material-icons">perm_identity</i>
         </div>
         <h4 class="card-title ">{!! trans('panel.pincode.title_singular') !!} {!! trans('panel.global.list') !!}
-              <span class="">
-                <div class="btn-group header-frm-btn">
-                    <div class="next-btn">
-                  <form action="{{ URL::to('pincode-upload') }}" class="form-horizontal" method="post" enctype="multipart/form-data">
-                  {{ csrf_field() }}
-                  <div class="input-group">
-                      <div class="fileinput fileinput-new text-center" data-provides="fileinput">
-                        <span class="btn btn-just-icon btn-theme btn-file">
-                          <span class="fileinput-new"><i class="material-icons">attach_file</i></span>
-                          <span class="fileinput-exists">Change</span>
-                          <input type="hidden">
-                          <input type="file" name="import_file" required accept=".xls,.xlsx" />
-                        </span>
-                      </div>
-                    <div class="input-group-append">
-                      <button class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.upload') !!} {!! trans('panel.pincode.title') !!}">
-                        <i class="material-icons">cloud_upload</i>
-                        <div class="ripple-container"></div>
-                      </button>
-                    </div>
-                  </div>
-                  </form>
-                 
-                  <a href="{{ URL::to('pincode-download') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.download') !!} {!! trans('panel.pincode.title') !!}"><i class="material-icons">cloud_download</i></a>
-      
-                  <a href="{{ URL::to('pincode-template') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.template') !!} {!! trans('panel.pincode.title_singular') !!}"><i class="material-icons">text_snippet</i></a>
-           
-                  @if(auth()->user()->can(['pincode_create']))
-                   <a data-toggle="modal" data-target="#createpincode" class="btn btn-just-icon btn-theme create" title="{!!  trans('panel.global.add') !!} {!! trans('panel.pincode.title_singular') !!}"><i class="material-icons">add_circle</i></a>
-                  @endif
-                </div>
-                </div>
-              </span>
+              @include('components.address-master-actions', [
+                'module' => 'pincode',
+                'title' => trans('panel.pincode.title'),
+                'titleSingular' => trans('panel.pincode.title_singular'),
+                'uploadUrl' => URL::to('pincode-upload'),
+                'downloadUrl' => URL::to('pincode-download'),
+                'templateUrl' => URL::to('pincode-template'),
+                'createTarget' => '#createpincode',
+                'uploadPermission' => null,
+                'downloadPermission' => null,
+                'templatePermission' => null,
+                'createPermission' => 'pincode_create',
+              ])
           </h4>
       </div>
       <div class="card-body">

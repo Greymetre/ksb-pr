@@ -1048,7 +1048,7 @@ body.fk-shell table.fk-glass-table {
     margin: 0 !important;
     border: 0 !important;
     border-collapse: separate !important;
-    border-spacing: 0 10px !important;
+    border-spacing: 0 !important;
     background: transparent !important;
     color: var(--fk-list-text);
     box-shadow: none !important;
@@ -1059,7 +1059,7 @@ body.fk-shell table.table thead,
 body.fk-shell table.dataTable thead,
 body.fk-shell table.table.dataTable thead,
 body.fk-shell table.fk-glass-table thead {
-    transform: translateY(-10px);
+    /* transform: translateY(-10px); */
     border: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
@@ -1069,7 +1069,7 @@ body.fk-shell table.table thead th,
 body.fk-shell table.dataTable thead th,
 body.fk-shell table.table.dataTable thead th,
 body.fk-shell table.fk-glass-table thead th {
-    height: 40px;
+    height: 35px;
     padding: 0px 15px !important;
     border-top: 0 !important;
     border-bottom: 1px solid rgba(34, 211, 238, .22) !important;
@@ -1093,13 +1093,13 @@ body.fk-shell table.fk-glass-table thead th {
 body.fk-shell table.table thead th:first-child,
 body.fk-shell table.dataTable thead th:first-child,
 body.fk-shell table.fk-glass-table thead th:first-child {
-    padding-left: 24px !important;
+    padding-left: 15px !important;
 }
 
 body.fk-shell table.table thead th:last-child,
 body.fk-shell table.dataTable thead th:last-child,
 body.fk-shell table.fk-glass-table thead th:last-child {
-    padding-right: 24px !important;
+    padding-right: 15px !important;
 }
 
 body.fk-shell table.dataTable thead .sorting:before,
@@ -1120,20 +1120,31 @@ body.fk-shell table.fk-glass-table tbody tr {
     box-shadow: none !important;
 }
 
+body.fk-shell table.table tbody tr,
+body.fk-shell table.dataTable tbody tr,
+body.fk-shell table.table.dataTable tbody tr,
+body.fk-shell table.fk-glass-table tbody tr,
 body.fk-shell table.table tbody td,
 body.fk-shell table.dataTable tbody td,
 body.fk-shell table.table.dataTable tbody td,
 body.fk-shell table.fk-glass-table tbody td {
-    height: 40px;
-    padding: 3px 15px !important;
-    border-top: 1px solid rgba(120, 160, 255, .13) !important;
-    border-bottom: 1px solid rgba(120, 160, 255, .13) !important;
-    background: rgba(13, 28, 64, .62) !important;
-    color: var(--fk-list-cell) !important;
+    transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease;
+}
+
+body.fk-shell table.table tbody td,
+body.fk-shell table.dataTable tbody td,
+body.fk-shell table.table.dataTable tbody td,
+body.fk-shell table.fk-glass-table tbody td {
+    height: 60px;
+    padding: 0 16px !important;
+    border-top: 0 !important;
+    border-bottom: 1px solid rgba(90, 130, 220, .18) !important;
+    background: rgba(10, 24, 58, .58) !important;
+    color: #aebde3 !important;
     font-family: 'Inter', sans-serif !important;
-    font-size: 14.5px !important;
-    font-weight: 500 !important;
-    line-height: 1.25 !important;
+    font-size: 13.5px !important;
+    font-weight: 400 !important;
+    line-height: 1.35 !important;
     letter-spacing: 0 !important;
     text-align: left !important;
     text-transform: none !important;
@@ -1155,31 +1166,38 @@ body.fk-shell table.fk-glass-table tbody td * {
 body.fk-shell table.table tbody td:first-child,
 body.fk-shell table.dataTable tbody td:first-child,
 body.fk-shell table.fk-glass-table tbody td:first-child {
-    padding-left: 24px !important;
-    border-left: 1px solid rgba(120, 160, 255, .13) !important;
-    border-radius: 14px 0 0 14px;
+    padding-left: 18px !important;
+    border-left: 0 !important;
+    border-radius: 0;
 }
 
 body.fk-shell table.table tbody td:last-child,
 body.fk-shell table.dataTable tbody td:last-child,
 body.fk-shell table.fk-glass-table tbody td:last-child {
-    padding-right: 24px !important;
-    border-right: 1px solid rgba(120, 160, 255, .13) !important;
-    border-radius: 0 14px 14px 0;
+    padding-right: 18px !important;
+    border-right: 0 !important;
+    border-radius: 0;
 }
 
 body.fk-shell table.table tbody tr:hover td,
 body.fk-shell table.dataTable tbody tr:hover td,
 body.fk-shell table.fk-glass-table tbody tr:hover td {
-    background: rgba(16, 35, 78, .76) !important;
-    border-color: rgba(34, 211, 238, .22) !important;
+    background: rgba(12, 35, 76, .78) !important;
+    border-bottom-color: rgba(34, 211, 238, .22) !important;
+    color: #c7d4f4 !important;
+}
+
+body.fk-shell table.table tbody tr:hover td:first-child,
+body.fk-shell table.dataTable tbody tr:hover td:first-child,
+body.fk-shell table.fk-glass-table tbody tr:hover td:first-child {
+    box-shadow: inset 3px 0 0 #22d3ee;
 }
 
 body.fk-shell table.table tbody td a,
 body.fk-shell table.dataTable tbody td a,
 body.fk-shell table.fk-glass-table tbody td a {
-    color: var(--fk-list-cell) !important;
-    font-weight: 600 !important;
+    color: #c4d0ef !important;
+    font-weight: 500 !important;
     text-decoration: none !important;
 }
 
@@ -1200,16 +1218,16 @@ body.fk-shell .fk-loyalty-summary-card table.fk-glass-table {
 body.fk-shell table.table tbody td .btn,
 body.fk-shell table.dataTable tbody td .btn,
 body.fk-shell table.fk-glass-table tbody td .btn {
-    width: 30px;
-    min-width: 30px;
-    height: 30px;
-    min-height: 30px;
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0 !important;
     border: 1px solid var(--fk-list-border-strong) !important;
-    border-radius: 11px !important;
+    border-radius: 10px !important;
     background: rgba(8, 20, 50, .62) !important;
     box-shadow: none !important;
     color: var(--fk-list-soft) !important;

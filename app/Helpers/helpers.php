@@ -137,7 +137,7 @@ if (! function_exists('receiverNotification')) {
 if (! function_exists('fileupload')) {
     function fileupload($image = '', $path = 'default', $filename = '')
     {
-        $filename = $filename . date('ymdHis') . '.' . $image->getClientOriginalExtension();
+        $filename = $filename . date('ymdHis') . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
         $destinationPath = public_path('uploads/' . $path);
 
         // Ensure the directory exists
@@ -1768,4 +1768,3 @@ if (! function_exists('strongPasswordRules')) {
         return $rules;
     }
 }
-

@@ -55,15 +55,81 @@ class CustomerController extends Controller
         $this->path = 'customers';
     }
 
+    private function requestFileByAnyKey(Request $request, array $keys)
+    {
+        foreach ($keys as $key) {
+            if ($request->hasFile($key)) {
+                return $request->file($key);
+            }
+        }
+
+        return null;
+    }
+
+    private function saveCustomerAttachment($customerId, string $documentName, $file): string
+    {
+        $filePath = fileupload($file, $this->path, $documentName . '_');
+
+        Attachment::updateOrCreate([
+            'customer_id'   => $customerId,
+            'document_name' => $documentName,
+        ], [
+            'active'        => 'Y',
+            'file_path'     => $filePath,
+            'document_name' => $documentName,
+            'customer_id'   => $customerId,
+            'created_at'    => getcurentDateTime(),
+            'updated_at'    => getcurentDateTime(),
+        ]);
+
+        return $filePath;
+    }
+
     public function storeCustomer(Request $request)
     {
         try {
             $user = $request->user();
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthenticated - please provide valid bearer token.',
+                ], $this->unauthorized);
+            }
+
             $validator = Validator::make($request->all(), [
                 'address' => 'nullable|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
                 'mobile'  => 'required|numeric|unique:customers,mobile',
                 // 'email'  => 'email|unique:customers,email',
                 'customertype'       => 'nullable|exists:customer_types,id',
+                'image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'shopimage' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'visiting_card' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'gstin_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'pan_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadhar_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'other_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+            ], [
+                'image.file' => 'Profile image must be a valid uploaded file.',
+                'image.mimes' => 'Profile image must be jpg, jpeg, png, webp, or pdf.',
+                'image.max' => 'Profile image size must not be greater than 5 MB.',
+                'shopimage.file' => 'Shop image must be a valid uploaded file.',
+                'shopimage.mimes' => 'Shop image must be jpg, jpeg, png, webp, or pdf.',
+                'shopimage.max' => 'Shop image size must not be greater than 5 MB.',
+                'visiting_card.file' => 'Visiting card must be a valid uploaded file.',
+                'visiting_card.mimes' => 'Visiting card must be jpg, jpeg, png, webp, or pdf.',
+                'visiting_card.max' => 'Visiting card size must not be greater than 5 MB.',
+                'gstin_image.file' => 'GST document must be a valid uploaded file.',
+                'gstin_image.mimes' => 'GST document must be jpg, jpeg, png, webp, or pdf.',
+                'gstin_image.max' => 'GST document size must not be greater than 5 MB.',
+                'pan_image.file' => 'PAN document must be a valid uploaded file.',
+                'pan_image.mimes' => 'PAN document must be jpg, jpeg, png, webp, or pdf.',
+                'pan_image.max' => 'PAN document size must not be greater than 5 MB.',
+                'aadhar_image.file' => 'Aadhaar document must be a valid uploaded file.',
+                'aadhar_image.mimes' => 'Aadhaar document must be jpg, jpeg, png, webp, or pdf.',
+                'aadhar_image.max' => 'Aadhaar document size must not be greater than 5 MB.',
+                'other_image.file' => 'Bank passbook must be a valid uploaded file.',
+                'other_image.mimes' => 'Bank passbook must be jpg, jpeg, png, webp, or pdf.',
+                'other_image.max' => 'Bank passbook size must not be greater than 5 MB.',
             ]);
             if ($validator->fails()) {
                 return response()->json(['status' => 'error', 'message' => $validator->messages()->all()], $this->badrequest);
@@ -79,13 +145,16 @@ class CustomerController extends Controller
                 return response(['status' => 'error', 'message' => 'Mobile Number Already Exist'], 400);
             } else {
 
-                $customergst = CustomerDetails::where('gstin_no', '=', $request['gstin_no'])->whereNotNull('gstin_no')->first();
+                $customergst = null;
+                if ($request->filled('gstin_no')) {
+                    $customergst = CustomerDetails::where('gstin_no', '=', $request['gstin_no'])->whereNotNull('gstin_no')->first();
+                }
 
                 if (!empty($customergst)) {
                     return response(['status' => 'error', 'message' => 'GST Number Already Exist'], 400);
                 } else {
 
-                    $name = explode(" ", $request['full_name']);
+                    $name = explode(" ", trim((string) $request->input('full_name', '')));
                     $request['last_name'] = isset($request['last_name']) ? $request['last_name'] : array_pop($name);
                     $request['first_name'] = isset($request['first_name']) ? $request['first_name'] : implode(" ", $name);
                     $request['created_by'] = $user->id;
@@ -94,11 +163,15 @@ class CustomerController extends Controller
                     $request['customertype'] = isset($request['customertype']) ? $request['customertype'] : $customertype;
                     //$response =  $this->customers->save_data($request);
 
-                    if ($request->file('image')) {
-                        $image = $request->file('image');
+                    if ($image = $this->requestFileByAnyKey($request, ['image'])) {
                         // $filename = 'punchin_'.autoIncrementId('Attendance', 'id');
-                        $filename = 'customer';
+                        $filename = 'profile_';
                         $request['profile_image'] = fileupload($image, $this->path, $filename);
+                    }
+
+                    if ($image = $this->requestFileByAnyKey($request, ['shopimage'])) {
+                        $filename = 'shop_';
+                        $request['shop_image'] = fileupload($image, $this->path, $filename);
                     }
 
                     if ($customer = Customers::updateOrCreate(['mobile' => $request['mobile']], [
@@ -116,9 +189,10 @@ class CustomerController extends Controller
                         'gender' => !empty($request['gender']) ? ucfirst($request['gender']) : '',
                         'customer_code' => !empty($request['customer_code']) ? $request['customer_code'] : '',
                         'profile_image' =>  !empty($request['profile_image']) ? $request['profile_image'] : '',
+                        'shop_image' =>  !empty($request['shop_image']) ? $request['shop_image'] : '',
                         'status_id' =>  !empty($request['status_id']) ? $request['status_id'] : 2,
                         'customertype' =>  !empty($request['customertype']) ? $request['customertype'] : 1,
-                        'firmtype' =>  !empty($request['firmtype']) ? $request['firmtype'] : null,
+                        'firmtype' =>  (!empty($request['firmtype']) && is_numeric($request['firmtype'])) ? $request['firmtype'] : null,
                         //'executive_id' =>  !empty($request['executive_id'])? $request['executive_id'] : $request['created_by'],
                         'created_by' =>  !empty($request['created_by']) ? $request['created_by'] : null,
                         'manager_name' => !empty($request['manager_name']) ? $request['manager_name'] : '',
@@ -146,7 +220,9 @@ class CustomerController extends Controller
 
                         if (!empty($request['parent_id'])) {
 
-                            $parent_data = explode(",", $request['parent_id']);
+                            $parent_data = array_filter(array_map('trim', explode(",", $request['parent_id'])), function ($value) {
+                                return is_numeric($value);
+                            });
                             foreach ($parent_data as $key => $row_parent) {
                                 $parentDetail = ParentDetail::create(
                                     [
@@ -198,7 +274,6 @@ class CustomerController extends Controller
                         $request['state_id'] = !empty($pincodes['cityname']['districtname']['state_id']) ? $pincodes['cityname']['districtname']['state_id'] : $request['state_id'];
                         $request['district_id'] = !empty($pincodes['cityname']['district_id']) ? $pincodes['cityname']['district_id'] : $request['district_id'];
                         $request['city_id'] = !empty($pincodes['city_id']) ? $pincodes['city_id'] : $request['city_id'];
-                        $request['zipcode'] = !empty($request['pincode_id']) ? $request['pincode_id'] : $request['zipcode'];
                         $request['pincode_id'] = !empty($pincodes['id']) ? $pincodes['id'] : $request['pincode_id'];
 
                         $request['country_id'] = !empty($request['country_id']) ? $request['country_id'] : State::where('id', $request['state_id'])->pluck('country_id')->first();
@@ -221,12 +296,6 @@ class CustomerController extends Controller
                             'updated_at' => getcurentDateTime()
                         ]);
 
-                        if ($request->file('shopimage')) {
-                            $image = $request->file('shopimage');
-                            $filename = 'customer';
-                            $request['shop_image'] = fileupload($image, $this->path, $filename);
-                        }
-
                         // if($request->file('image')){
                         //    $image = $request->file('image');
                         //    $filename = 'customer';
@@ -247,78 +316,25 @@ class CustomerController extends Controller
 
 
 
-                        if ($request->file('visiting_card')) {
-                            $image = $request->file('visiting_card');
-                            $filename = 'customer';
+                        if ($image = $this->requestFileByAnyKey($request, ['visiting_card'])) {
+                            $filename = 'visiting_card_';
                             $request['visiting_image'] = fileupload($image, $this->path, $filename);
                         }
 
-                        if ($request->file('gstin_image')) {
-                            $image = $request->file('gstin_image');
-                            $filename = 'customer';
-                            $gstinimagepath = fileupload($image, $this->path, $filename);
-                            Attachment::updateOrCreate([
-                                'customer_id'   =>  $request['customer_id'],
-                                'document_name' =>  'gstin'
-                            ], [
-                                'active'        => 'Y',
-                                'file_path'     => $gstinimagepath,
-                                'document_name' =>  'gstin',
-                                'customer_id' => $request['customer_id'],
-                                'created_at' => getcurentDateTime(),
-                                'updated_at' => getcurentDateTime()
-                            ]);
+                        if ($image = $this->requestFileByAnyKey($request, ['gstin_image'])) {
+                            $this->saveCustomerAttachment($request['customer_id'], 'gstin', $image);
                         }
 
-                        if ($request->file('pan_image')) {
-                            $image = $request->file('pan_image');
-                            $filename = 'customer';
-                            $panimagepath = fileupload($image, $this->path, $filename);
-                            Attachment::updateOrCreate([
-                                'customer_id'   =>  $request['customer_id'],
-                                'document_name' =>  'pan'
-                            ], [
-                                'active'        => 'Y',
-                                'file_path'     => $panimagepath,
-                                'document_name' =>  'pan',
-                                'customer_id' => $request['customer_id'],
-                                'created_at' => getcurentDateTime(),
-                                'updated_at' => getcurentDateTime()
-                            ]);
+                        if ($image = $this->requestFileByAnyKey($request, ['pan_image'])) {
+                            $this->saveCustomerAttachment($request['customer_id'], 'pan', $image);
                         }
 
-                        if ($request->file('aadhar_image')) {
-                            $image = $request->file('aadhar_image');
-                            $filename = 'customer';
-                            $aadharimagepath = fileupload($image, $this->path, $filename);
-                            Attachment::updateOrCreate([
-                                'customer_id'   =>  $request['customer_id'],
-                                'document_name' =>  'aadhar'
-                            ], [
-                                'active'        => 'Y',
-                                'file_path'     => $aadharimagepath,
-                                'document_name' =>  'aadhar',
-                                'customer_id' => $request['customer_id'],
-                                'created_at' => getcurentDateTime(),
-                                'updated_at' => getcurentDateTime()
-                            ]);
+                        if ($image = $this->requestFileByAnyKey($request, ['aadhar_image'])) {
+                            $this->saveCustomerAttachment($request['customer_id'], 'aadhar', $image);
                         }
 
-                        if ($request->file('other_image')) {
-                            $image = $request->file('other_image');
-                            $filename = 'customer';
-                            $otherimagepath = fileupload($image, $this->path, $filename);
-                            Attachment::updateOrCreate([
-                                'customer_id'   =>  $request['customer_id'],
-                                'document_name' =>  'other'
-                            ], [
-                                'active'        => 'Y',
-                                'file_path'     => $otherimagepath,
-                                'document_name' =>  'other',
-                                'customer_id' => $request['customer_id'],
-                                'created_at' => getcurentDateTime(),
-                                'updated_at' => getcurentDateTime()
-                            ]);
+                        if ($image = $this->requestFileByAnyKey($request, ['other_image'])) {
+                            $this->saveCustomerAttachment($request['customer_id'], 'bankpass', $image);
                         }
 
                         CustomerDetails::updateOrCreate(['customer_id' => $request['customer_id']], [
@@ -327,6 +343,10 @@ class CustomerController extends Controller
                             'gstin_no'      => isset($request['gstin_no']) ? ucfirst($request['gstin_no']) : '',
                             'pan_no'        => isset($request['pan_no']) ? ucfirst($request['pan_no']) : '',
                             'aadhar_no'     => isset($request['aadhar_no']) ? ucfirst($request['aadhar_no']) : '',
+                            'account_holder' => isset($request['account_holder']) ? ucfirst($request['account_holder']) : '',
+                            'account_number' => isset($request['account_number']) ? $request['account_number'] : '',
+                            'bank_name' => isset($request['bank_name']) ? $request['bank_name'] : '',
+                            'ifsc_code' => isset($request['ifsc_code']) ? $request['ifsc_code'] : '',
                             'otherid_no'    => isset($request['otherid_no']) ? ucfirst($request['otherid_no']) : '',
                             'enrollment_date' => isset($request['enrollment_date']) ? $request['enrollment_date'] : null,
                             'approval_date'  => isset($request['approval_date']) ? $request['approval_date'] : null,
@@ -386,53 +406,53 @@ class CustomerController extends Controller
                                 ]);
                             }
                         }
-                        if ($request['customertype'] == '1' || $request['customertype'] == '3') {
-                            $passis = generatePassword();
-                            if (strlen($request['mobile']) > 10 && substr($request['mobile'], 0, 2) === '91') {
-                                $request['mobile'] = substr($request['mobile'], 2);
-                            }
-                            $user = User::create([
-                                'active'   =>  isset($request['active']) ? $request['active'] : 'Y',
-                                'name'   =>  isset($request['name']) ? $request['name'] : $request['first_name'] . ' ' . $request['last_name'],
-                                'first_name'   =>  isset($request['first_name']) ? $request['first_name'] : '',
-                                'last_name'   =>  isset($request['last_name']) ? $request['last_name'] : '',
-                                'mobile'   =>  isset($request['mobile']) ? $request['mobile'] : null,
-                                'email'   =>  isset($request['email']) ? $request['email'] : 'customer'.$customer->id.'@gmail.com',
-                                'password'   =>  Hash::make($passis),
-                                'reportingid' => !empty($request['created_by']) ? $request['created_by'] : null,
-                                'password_string'   =>  $passis,
-                                'customerid' => $customer->id,
-                            ]);
-                            $user->roles()->sync(['29']);
-                            $permissions = $user->getPermissionsViaRoles()->pluck('name');
-                            $user->givePermissionTo($permissions);
-                        }
-                        if ($request['customertype'] == '4') {
-                            $passis = generatePassword();
-                            if (strlen($request['mobile']) > 10 && substr($request['mobile'], 0, 2) === '91') {
-                                $request['mobile'] = substr($request['mobile'], 2);
-                            }
-                            $user = User::create([
-                                'active'   =>  isset($request['active']) ? $request['active'] : 'Y',
-                                'name'   =>  isset($request['name']) ? $request['name'] : $request['first_name'] . ' ' . $request['last_name'],
-                                'first_name'   =>  isset($request['first_name']) ? $request['first_name'] : '',
-                                'last_name'   =>  isset($request['last_name']) ? $request['last_name'] : '',
-                                'mobile'   =>  isset($request['mobile']) ? $request['mobile'] : null,
-                                'email'   =>  isset($request['email']) ? $request['email'] : 'customer'.$customer->id.'@gmail.com',
-                                'password'   =>  Hash::make($passis),
-                                'reportingid' => !empty($request['created_by']) ? $request['created_by'] : null,
-                                'password_string'   =>  $passis,
-                                'customerid' => $customer->id,
-                            ]);
-                            $user->roles()->sync(['40']);
-                            $permissions = $user->getPermissionsViaRoles()->pluck('name');
-                            $user->givePermissionTo($permissions);
-                        }
-                        $asmnotify = collect([
-                            'title' => 'Successfully added',
-                            'body' =>  'You have successfully added ' . $request['name']
-                        ]);
-                        sendNotification($user->id, $asmnotify);
+                        // if ($request['customertype'] == '1' || $request['customertype'] == '3') {
+                        //     $passis = generatePassword();
+                        //     if (strlen($request['mobile']) > 10 && substr($request['mobile'], 0, 2) === '91') {
+                        //         $request['mobile'] = substr($request['mobile'], 2);
+                        //     }
+                        //     $user = User::create([
+                        //         'active'   =>  isset($request['active']) ? $request['active'] : 'Y',
+                        //         'name'   =>  isset($request['name']) ? $request['name'] : $request['first_name'] . ' ' . $request['last_name'],
+                        //         'first_name'   =>  isset($request['first_name']) ? $request['first_name'] : '',
+                        //         'last_name'   =>  isset($request['last_name']) ? $request['last_name'] : '',
+                        //         'mobile'   =>  isset($request['mobile']) ? $request['mobile'] : null,
+                        //         'email'   =>  isset($request['email']) ? $request['email'] : 'customer'.$customer->id.'@gmail.com',
+                        //         'password'   =>  Hash::make($passis),
+                        //         'reportingid' => !empty($request['created_by']) ? $request['created_by'] : null,
+                        //         'password_string'   =>  $passis,
+                        //         'customerid' => $customer->id,
+                        //     ]);
+                        //     $user->roles()->sync(['29']);
+                        //     $permissions = $user->getPermissionsViaRoles()->pluck('name');
+                        //     $user->givePermissionTo($permissions);
+                        // }
+                        // if ($request['customertype'] == '4') {
+                        //     $passis = generatePassword();
+                        //     if (strlen($request['mobile']) > 10 && substr($request['mobile'], 0, 2) === '91') {
+                        //         $request['mobile'] = substr($request['mobile'], 2);
+                        //     }
+                        //     $user = User::create([
+                        //         'active'   =>  isset($request['active']) ? $request['active'] : 'Y',
+                        //         'name'   =>  isset($request['name']) ? $request['name'] : $request['first_name'] . ' ' . $request['last_name'],
+                        //         'first_name'   =>  isset($request['first_name']) ? $request['first_name'] : '',
+                        //         'last_name'   =>  isset($request['last_name']) ? $request['last_name'] : '',
+                        //         'mobile'   =>  isset($request['mobile']) ? $request['mobile'] : null,
+                        //         'email'   =>  isset($request['email']) ? $request['email'] : 'customer'.$customer->id.'@gmail.com',
+                        //         'password'   =>  Hash::make($passis),
+                        //         'reportingid' => !empty($request['created_by']) ? $request['created_by'] : null,
+                        //         'password_string'   =>  $passis,
+                        //         'customerid' => $customer->id,
+                        //     ]);
+                        //     $user->roles()->sync(['40']);
+                        //     $permissions = $user->getPermissionsViaRoles()->pluck('name');
+                        //     $user->givePermissionTo($permissions);
+                        // }
+                        // $asmnotify = collect([
+                        //     'title' => 'Successfully added',
+                        //     'body' =>  'You have successfully added ' . $request['name']
+                        // ]);
+                        // sendNotification($user->id, $asmnotify);
                         return response()->json(['status' => 'success', 'message' => 'Data inserted successfully.'], $this->successStatus);
                     }
                     return response(['status' => 'error', 'message' => 'No Record inserted.'], 200);
@@ -624,42 +644,440 @@ class CustomerController extends Controller
     public function getCustomerList(Request $request)
     {
         try {
-            $user = $request->user();
-            $userids = getUsersReportingToAuth($user->id);
-            $pageSize = $request->input('pageSize');
-            $query = $this->customers->with('customeraddress:customer_id,address1,address2', 'customerdetails:customer_id,grade,visit_status', 'customertypes')->select('id', 'name', 'first_name', 'last_name', 'mobile', 'email', 'profile_image', 'customer_code', 'latitude', 'longitude')->latest();
-            $db_data = (!empty($pageSize)) ? $query->paginate($pageSize) : $query->get();
-            $data = collect([]);
-            if ($db_data->isNotEmpty()) {
-                foreach ($db_data as $key => $value) {
-                    $data->push([
-                        'customer_id' => isset($value['id']) ? $value['id'] : 0,
-                        'name' => isset($value['name']) ? $value['name'] : '',
-                        'mobile' => isset($value['mobile']) ? $value['mobile'] : '',
-                        //'first_name' => isset($value['first_name']) ? $value['first_name'] : '',
-                        //'last_name' => isset($value['last_name']) ? $value['last_name'] : '',
-                        'email' => isset($value['email']) ? $value['email'] : '',
-                        'profile_image' => isset($value['profile_image']) ? $value['profile_image'] : '',
-                        'customer_code' => isset($value['customer_code']) ? $value['customer_code'] : '',
-                        //'totalamount' => isset($value['totalamount']) ? $value['totalamount'] : '',
-                        //'totalpaid' => isset($value['totalpaid']) ? $value['totalpaid'] : '',
-                        //'outstanding' => $value['totalamount']-$value['totalpaid'],
-                        'address1' => isset($value['customeraddress']['address1']) ? $value['customeraddress']['address1'] : '',
-                        'address2' => isset($value['customeraddress']['address2']) ? $value['customeraddress']['address2'] : '',
-                        'latitude' => isset($value['latitude']) ? $value['latitude'] : '',
-                        'longitude' => isset($value['longitude']) ? $value['longitude'] : '',
-                        //'shop_image' => isset($value['customerdetails']['shop_image']) ? $value['customerdetails']['shop_image'] : '',
-                        //'visiting_card' => isset($value['customerdetails']['visiting_card']) ? $value['customerdetails']['visiting_card'] : '',
-                        'grade' => isset($value['customerdetails']['grade']) ? $value['customerdetails']['grade'] : '',
-                        'visit_status' => isset($value['customerdetails']['visit_status']) ? $value['customerdetails']['visit_status'] : '',
-                    ]);
-                }
-                return response()->json(['status' => 'success', 'message' => 'Data retrieved successfully.', 'data' => $data], $this->successStatus);
+            $authUser = $request->user();
+
+            if (!$authUser) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Unauthenticated - please provide valid token',
+                ], $this->unauthorized);
             }
-            return response(['status' => 'error', 'message' => 'No Record Found.', 'data' => $data], 200);
+
+            $customerTypeId = $this->resolveCustomerListTypeId(
+                $request->query('type')
+                ?? $request->query('customer_type')
+                ?? $request->input('customerType')
+                ?? $request->input('customertype')
+                ?? $request->input('customer_type_id')
+            );
+
+            if ($request->filled('type') || $request->filled('customer_type') || $request->filled('customerType') || $request->filled('customertype') || $request->filled('customer_type_id')) {
+                if (!$customerTypeId) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Invalid customer type parameter.',
+                    ], $this->badrequest);
+                }
+            }
+
+            $today = now()->startOfDay()->toDateString();
+            $query = Customers::with([
+                'customeraddress.countryname',
+                'customeraddress.statename',
+                'customeraddress.districtname',
+                'customeraddress.cityname',
+                'customeraddress.pincodename',
+                'customerdetails',
+                'customertypes',
+                'beatdetails.beats',
+                'getemployeedetail.employee_detail',
+                'customerdocuments',
+            ])->where('customers.active', 'Y')->select('customers.*');
+
+            $this->applyCustomerListAccessScope($query, $authUser, $request);
+
+            if ($customerTypeId) {
+                $this->applyCustomerTypeFilter($query, $customerTypeId);
+            }
+
+            if ($request->filled('global_search')) {
+                $search = $request->global_search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%")
+                        ->orWhere('contact_number', 'like', "%{$search}%");
+                });
+            }
+            if ($request->filled('status')) {
+                $query->where('status_id', $request->status);
+            }
+            if ($request->filled('city_name')) {
+                $query->whereHas('customeraddress.cityname', function ($q) use ($request) {
+                    $q->where('city_name', 'like', '%' . $request->city_name . '%');
+                });
+            }
+            if ($request->filled('owner_name')) {
+                $ownerName = $request->owner_name;
+                $query->where(function ($q) use ($ownerName) {
+                    $q->where('first_name', 'like', "%{$ownerName}%")
+                        ->orWhere('last_name', 'like', "%{$ownerName}%")
+                        ->orWhereRaw("CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) like ?", ["%{$ownerName}%"]);
+                });
+            }
+            if ($request->filled('shop_name')) {
+                $query->where('name', 'like', "%{$request->shop_name}%");
+            }
+            if ($request->filled('mobile')) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('mobile', 'like', "%{$request->mobile}%")
+                        ->orWhere('contact_number', 'like', "%{$request->mobile}%");
+                });
+            }
+            if ($request->filled('beat_id')) {
+                $query->whereHas('beatdetails', function ($q) use ($request) {
+                    $q->where('beat_id', $request->beat_id);
+                });
+            }
+            if ($request->filled('state_id')) {
+                $query->whereHas('customeraddress', function ($q) use ($request) {
+                    $q->where('state_id', $request->state_id);
+                });
+            }
+            if ($request->filled('city_id')) {
+                $query->whereHas('customeraddress', function ($q) use ($request) {
+                    $q->where('city_id', $request->city_id);
+                });
+            }
+            if ($request->filled('opportunity_status') && \Illuminate\Support\Facades\Schema::hasColumn('customers', 'custom_fields')) {
+                $query->where('custom_fields', 'like', '%"opportunity_status"%')
+                    ->where('custom_fields', 'like', '%' . $request->opportunity_status . '%');
+            }
+            if ($request->filled('awareness_status')) {
+                $query->where(function ($q) use ($request) {
+                    $q->whereHas('customerdetails', function ($detail) use ($request) {
+                        $detail->where('visit_status', $request->awareness_status);
+                    });
+
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('customers', 'custom_fields')) {
+                        $q->orWhere('custom_fields', 'like', '%"awareness_status"%')
+                            ->where('custom_fields', 'like', '%' . $request->awareness_status . '%');
+                    }
+                });
+            }
+
+            $query->addSelect([
+                'last_checkin_date' => CheckIn::select('checkin_date')
+                    ->where(function ($q) {
+                        $q->where(function ($legacy) {
+                            $legacy->whereColumn('customer_id', 'customers.id');
+                        })->orWhere(function ($entity) {
+                            $entity->where('entity_type', 'customer')
+                                ->whereColumn('entity_id', 'customers.id');
+                        });
+                    })
+                    ->where('user_id', $authUser->id)
+                    ->orderByDesc('checkin_date')
+                    ->orderByDesc('checkin_time')
+                    ->limit(1),
+                'last_checkin_time' => CheckIn::select('checkin_time')
+                    ->where(function ($q) {
+                        $q->whereColumn('customer_id', 'customers.id')
+                            ->orWhere(function ($entity) {
+                                $entity->where('entity_type', 'customer')
+                                    ->whereColumn('entity_id', 'customers.id');
+                            });
+                    })
+                    ->where('user_id', $authUser->id)
+                    ->orderByDesc('checkin_date')
+                    ->orderByDesc('checkin_time')
+                    ->limit(1),
+                'has_checked_in_today' => CheckIn::selectRaw('IF(COUNT(*) > 0, 1, 0)')
+                    ->where(function ($q) {
+                        $q->whereColumn('customer_id', 'customers.id')
+                            ->orWhere(function ($entity) {
+                                $entity->where('entity_type', 'customer')
+                                    ->whereColumn('entity_id', 'customers.id');
+                            });
+                    })
+                    ->where('user_id', $authUser->id)
+                    ->whereDate('checkin_date', $today),
+                'last_checkout_date' => CheckIn::select('checkout_date')
+                    ->where(function ($q) {
+                        $q->whereColumn('customer_id', 'customers.id')
+                            ->orWhere(function ($entity) {
+                                $entity->where('entity_type', 'customer')
+                                    ->whereColumn('entity_id', 'customers.id');
+                            });
+                    })
+                    ->where('user_id', $authUser->id)
+                    ->whereNotNull('checkout_date')
+                    ->orderByDesc('checkout_date')
+                    ->orderByDesc('checkout_time')
+                    ->limit(1),
+                'current_visit_is_open' => CheckIn::selectRaw('IF(COUNT(*) > 0, 1, 0)')
+                    ->where(function ($q) {
+                        $q->whereColumn('customer_id', 'customers.id')
+                            ->orWhere(function ($entity) {
+                                $entity->where('entity_type', 'customer')
+                                    ->whereColumn('entity_id', 'customers.id');
+                            });
+                    })
+                    ->where('user_id', $authUser->id)
+                    ->whereNull('checkout_date')
+                    ->whereDate('checkin_date', $today),
+                'last_checkout_time' => CheckIn::select('checkout_time')
+                    ->where(function ($q) {
+                        $q->whereColumn('customer_id', 'customers.id')
+                            ->orWhere(function ($entity) {
+                                $entity->where('entity_type', 'customer')
+                                    ->whereColumn('entity_id', 'customers.id');
+                            });
+                    })
+                    ->where('user_id', $authUser->id)
+                    ->whereNotNull('checkout_date')
+                    ->orderByDesc('checkout_date')
+                    ->orderByDesc('checkout_time')
+                    ->limit(1),
+                'has_checked_out_today' => CheckIn::selectRaw('IF(COUNT(*) > 0, 1, 0)')
+                    ->where(function ($q) {
+                        $q->whereColumn('customer_id', 'customers.id')
+                            ->orWhere(function ($entity) {
+                                $entity->where('entity_type', 'customer')
+                                    ->whereColumn('entity_id', 'customers.id');
+                            });
+                    })
+                    ->where('user_id', $authUser->id)
+                    ->whereDate('checkout_date', $today),
+                'last_checkin_id' => CheckIn::select('id')
+                    ->where(function ($q) {
+                        $q->whereColumn('customer_id', 'customers.id')
+                            ->orWhere(function ($entity) {
+                                $entity->where('entity_type', 'customer')
+                                    ->whereColumn('entity_id', 'customers.id');
+                            });
+                    })
+                    ->where('user_id', $authUser->id)
+                    ->orderByDesc('checkin_date')
+                    ->orderByDesc('checkin_time')
+                    ->limit(1),
+            ]);
+
+            $perPage = $request->query('per_page', $request->input('pageSize', 10));
+            $customers = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+            $cleanData = [
+                'current_page' => $customers->currentPage(),
+                'data'         => collect($customers->items())->map(function ($customer) {
+                    return $this->formatCustomerListItem($customer);
+                })->values(),
+                'from'         => $customers->firstItem(),
+                'to'           => $customers->lastItem(),
+                'per_page'     => $customers->perPage(),
+                'total'        => $customers->total(),
+                'last_page'    => $customers->lastPage(),
+            ];
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Customers retrieved successfully',
+                'data'    => $cleanData,
+            ], $this->successStatus);
         } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], $this->internalError);
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => $e->getMessage(),
+                ], $e->getStatusCode());
+            }
+
+            return response()->json([
+                'status'  => false,
+                'message' => 'Failed to fetch customers',
+                'error'   => $e->getMessage(),
+            ], $this->internalError);
         }
+    }
+
+    private function resolveCustomerListTypeId($type): ?int
+    {
+        if (empty($type)) {
+            return null;
+        }
+
+        if (is_numeric($type)) {
+            return CustomerType::where('active', 'Y')->where('id', $type)->exists()
+                ? (int) $type
+                : null;
+        }
+
+        $type = trim((string) $type);
+
+        return CustomerType::where('active', 'Y')
+            ->where(function ($query) use ($type) {
+                $query->where('customertype_name', $type)
+                    ->orWhere('type_name', $type);
+            })
+            ->value('id');
+    }
+
+    private function customerListHasAnyRole($user, array $roles): bool
+    {
+        if (method_exists($user, 'hasRole')) {
+            foreach ($roles as $role) {
+                if ($user->hasRole($role)) {
+                    return true;
+                }
+            }
+        }
+
+        if ($user->relationLoaded('roles')) {
+            return $user->roles->pluck('name')->intersect($roles)->isNotEmpty();
+        }
+
+        if (!empty($user->user_type)) {
+            $userTypes = is_string($user->user_type)
+                ? (json_decode($user->user_type, true) ?? [])
+                : (array) $user->user_type;
+
+            return !empty(array_intersect($roles, $userTypes));
+        }
+
+        return false;
+    }
+
+    private function applyCustomerListAccessScope($query, $authUser, Request $request): void
+    {
+        if ($authUser instanceof Customers) {
+            $query->where('customers.id', $authUser->id);
+            return;
+        }
+
+        $isSuperAdmin = $this->customerListHasAnyRole($authUser, ['superadmin', 'subAdmin']);
+
+        if ($isSuperAdmin) {
+            if ($request->filled('for_user_id')) {
+                $targetUserId = $request->for_user_id;
+                $query->where(function ($q) use ($targetUserId) {
+                    $q->where('created_by', $targetUserId)
+                        ->orWhere('executive_id', $targetUserId)
+                        ->orWhereHas('getemployeedetail', function ($employee) use ($targetUserId) {
+                            $employee->where('user_id', $targetUserId);
+                        });
+                });
+            }
+
+            return;
+        }
+
+        if ($request->filled('for_user_id')) {
+            $targetUserId = (int) $request->for_user_id;
+            $visibleUserIds = getUsersReportingToAuth($authUser->id);
+            $visibleUserIds[] = $authUser->id;
+            $visibleUserIds = array_unique($visibleUserIds);
+
+            if (!in_array($targetUserId, $visibleUserIds)) {
+                abort(403, 'You do not have permission to view this user\'s customers');
+            }
+
+            $visibleUserIds = [$targetUserId];
+        } elseif ($this->customerListHasAnyRole($authUser, ['BM.'])) {
+            $visibleUserIds = User::where('branch_id', $authUser->branch_id)
+                ->whereDoesntHave('roles', function ($q) {
+                    $q->whereIn('id', config('constants.customer_roles'));
+                })
+                ->pluck('id')
+                ->toArray();
+        } else {
+            $visibleUserIds = getUsersReportingToAuth($authUser->id);
+            $visibleUserIds[] = $authUser->id;
+            $visibleUserIds = array_unique($visibleUserIds);
+        }
+
+        $query->where(function ($q) use ($visibleUserIds) {
+            $q->whereIn('created_by', $visibleUserIds)
+                ->orWhereIn('executive_id', $visibleUserIds)
+                ->orWhereHas('getemployeedetail', function ($employee) use ($visibleUserIds) {
+                    $employee->whereIn('user_id', $visibleUserIds);
+                });
+        });
+    }
+
+    private function applyCustomerTypeFilter($query, int $customerTypeId): void
+    {
+        $query->where('customertype', $customerTypeId);
+    }
+
+    private function formatCustomerListItem(Customers $customer): array
+    {
+        $address = $customer->customeraddress;
+        $details = $customer->customerdetails;
+        $beat = optional($customer->beatdetails)->beats;
+        $customFields = is_string($customer->custom_fields ?? null)
+            ? (json_decode($customer->custom_fields, true) ?? [])
+            : (array) ($customer->custom_fields ?? []);
+        $employeeIds = $customer->getemployeedetail
+            ? $customer->getemployeedetail->pluck('user_id')->filter()->values()->implode(',')
+            : '';
+        $employeeNames = $customer->getemployeedetail
+            ? $customer->getemployeedetail->pluck('employee_detail.name')->filter()->values()->implode(', ')
+            : '';
+        $documents = $customer->customerdocuments ?? collect();
+
+        return [
+            'id' => $customer->id,
+            'customer_id' => $customer->id,
+            'type' => optional($customer->customertypes)->customertype_name,
+            'customertype' => $customer->customertype,
+            'customer_type_id' => $customer->customertype,
+            'customer_type' => optional($customer->customertypes)->customertype_name,
+            'sub_type' => $customFields['sub_type'] ?? null,
+            'owner_name' => trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? '')),
+            'shop_name' => $customer->name ?? '',
+            'mobile_number' => $customer->mobile ?? '',
+            'whatsapp_number' => $customer->contact_number ?? '',
+            'owner_photo' => $customer->profile_image ?? '',
+            'shop_photo' => optional($details)->shop_image ?? $customer->shop_image ?? '',
+            'vehicle_segment' => $customFields['vehicle_segment'] ?? null,
+            'address_line' => optional($address)->full_address ?? trim((optional($address)->address1 ?? '') . ' ' . (optional($address)->address2 ?? '')),
+            'belt_area_market_name' => optional($address)->locality ?? optional($address)->landmark ?? null,
+            'saathi_awareness_status' => $customFields['saathi_awareness_status'] ?? $customFields['awareness_status'] ?? optional($details)->visit_status ?? null,
+            'nistha_awareness_status' => $customFields['nistha_awareness_status'] ?? $customFields['awareness_status'] ?? optional($details)->visit_status ?? null,
+            'opportunity_status' => $customFields['opportunity_status'] ?? optional($details)->grade ?? null,
+            'gps_location' => ($customer->latitude && $customer->longitude) ? $customer->latitude . ',' . $customer->longitude : null,
+            'country_id' => optional($address)->country_id,
+            'state_id' => optional($address)->state_id,
+            'district_id' => optional($address)->district_id,
+            'city_id' => optional($address)->city_id,
+            'pincode_id' => optional($address)->pincode_id,
+            'beat_id' => optional($customer->beatdetails)->beat_id,
+            'distributor_name' => $customer->parent_id ?? null,
+            'gst_number' => optional($details)->gstin_no ?? '',
+            'pan_number' => optional($details)->pan_no ?? '',
+            'gst_attachment' => optional($documents->firstWhere('document_name', 'gstin'))->file_path,
+            'pan_attachment' => optional($documents->firstWhere('document_name', 'pan'))->file_path,
+            'bank_proof' => optional($documents->firstWhere('document_name', 'bankpass'))->file_path,
+            'bank_account_type' => $customFields['bank_account_type'] ?? null,
+            'bank_account_number' => optional($details)->account_number,
+            'bank_name' => optional($details)->bank_name,
+            'ifsc_code' => optional($details)->ifsc_code,
+            'account_holder_name' => optional($details)->account_holder,
+            'status' => $customer->status_id,
+            'active' => $customer->active,
+            'employee_id' => $employeeIds ?: $customer->executive_id,
+            'employee_names' => $employeeNames,
+            'created_by' => $customer->created_by,
+            'customer_code' => $customer->customer_code,
+            'sap_code' => $customer->sap_code,
+            'created_at' => $customer->created_at,
+            'updated_at' => $customer->updated_at,
+            'country' => optional($address)->countryname,
+            'state' => optional($address)->statename,
+            'district' => optional($address)->districtname,
+            'city' => optional($address)->cityname,
+            'pincode' => optional($address)->pincodename,
+            'beat' => $beat,
+            'distributor' => null,
+            'last_checkin_date' => $customer->last_checkin_date,
+            'last_checkin_time' => $customer->last_checkin_time,
+            'has_checked_in_today' => (int) $customer->has_checked_in_today,
+            'last_checkout_date' => $customer->last_checkout_date,
+            'current_visit_is_open' => (int) $customer->current_visit_is_open,
+            'last_checkout_time' => $customer->last_checkout_time,
+            'has_checked_out_today' => (int) $customer->has_checked_out_today,
+            'last_checkin_id' => $customer->last_checkin_id,
+        ];
     }
 
     // public function getCustomerInfo(Request $request)
@@ -772,20 +1190,37 @@ class CustomerController extends Controller
 
     public function getCustomerInfo(Request $request)
     {
-
         try {
             $validator = Validator::make($request->all(), [
                 'customer_id' => 'nullable|exists:customers,id',
+                'id' => 'nullable|exists:customers,id',
             ]);
             if ($validator->fails()) {
-                return response()->json(['status' => 'error', 'message' => $validator->messages()->all()], $this->badrequest);
+                return response()->json(['status' => false, 'message' => $validator->messages()->all()], $this->badrequest);
             }
-            $user = $request->user();
-            $user_id = $user->id;
+            $authUser = $request->user();
+            if (!$authUser) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Unauthenticated - please provide valid token',
+                ], $this->unauthorized);
+            }
+
             $fromdate = isset($request->fromDate) ? $request->fromDate : null;
             $todate = isset($request->toDate) ? $request->toDate : null;
 
-            $customer_id = $request->input('customer_id');
+            $customer_id = $request->input('customer_id') ?? $request->input('id');
+
+            if (empty($customer_id) && $authUser instanceof Customers) {
+                $customer_id = $authUser->id;
+            }
+
+            if (empty($customer_id)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Customer id is required.',
+                ], $this->badrequest);
+            }
 
             $orders = Order::where(function ($query) use ($customer_id, $fromdate, $todate) {
 
@@ -820,25 +1255,47 @@ class CustomerController extends Controller
                 }
             })->select('grand_total')->get();
 
-            $checkins = CheckIn::with('visitreports', 'visitreports.visittypename')->where('customer_id', '=', $customer_id)->select('checkin_date', 'checkin_time')->latest()->limit(10)->get();
+            $checkins = CheckIn::where(function ($query) use ($customer_id) {
+                $query->where('customer_id', '=', $customer_id)
+                    ->orWhere(function ($entity) use ($customer_id) {
+                        $entity->where('entity_type', 'customer')
+                            ->where('entity_id', $customer_id);
+                    });
+            })->select('id', 'checkin_date', 'checkin_time', 'checkin_address', 'checkout_date', 'checkout_time', 'checkout_address', 'time_interval')->latest()->limit(10)->get();
             $last_order_date = Order::where('buyer_id', '=', $customer_id)->latest()->pluck('order_date')->first();
-            $data = $this->customers->with('customerdetails', 'visitsinfo', 'getparentdetail', 'parentdetail', 'customeraddress', 'customerdocuments', 'surveys', 'surveys.fields', 'customeraddress.cityname', 'customeraddress.districtname', 'customeraddress.statename', 'customeraddress.pincodename', 'customertypes', 'customerdeals')->where('id', $customer_id)->select(
-                'id',
-                'name',
-                'first_name',
-                'last_name',
-                'mobile',
-                'email',
-                'profile_image',
-                'customer_code',
-                'customertype',
-                'contact_number',
-                'latitude',
-                'longitude',
-                'sap_code',
+            $query = Customers::with(
+                'customerdetails',
+                'visitsinfo',
+                'getparentdetail.parent_detail',
+                'parentdetail',
+                'customeraddress.countryname',
+                'customeraddress.cityname',
+                'customeraddress.districtname',
+                'customeraddress.statename',
+                'customeraddress.pincodename',
+                'customerdocuments',
+                'surveys',
+                'surveys.fields',
+                'customertypes',
+                'customerdeals',
+                'beatdetails.beats',
+                'getemployeedetail.employee_detail',
+                'createdbyname'
+            )->where('id', $customer_id)->select(
+                'customers.*',
                 DB::raw('(SELECT SUM(grand_total) FROM sales WHERE sales.buyer_id = customers.id) as totalamount'),
-                DB::raw('(SELECT SUM(paid_amount) FROM sales WHERE sales.buyer_id = id) as totalpaid')
-            )->first();
+                DB::raw('(SELECT SUM(paid_amount) FROM sales WHERE sales.buyer_id = customers.id) as totalpaid')
+            );
+
+            $this->applyCustomerListAccessScope($query, $authUser, $request);
+            $customer = $query->first();
+
+            if (!$customer) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Customer not found',
+                ], $this->notFound);
+            }
 
             $total_value = $orders->sum('sub_total');
             $total_qty = $orders->sum('total_qty');
@@ -853,8 +1310,8 @@ class CustomerController extends Controller
             $parent = array();
             $parent_id = array();
             $activity = [];
-            if (!empty($data['visitsinfo'])) {
-                foreach ($data['visitsinfo'] as $key => $visit) {
+            if (!empty($customer['visitsinfo'])) {
+                foreach ($customer['visitsinfo'] as $key => $visit) {
                     $activity[] = [
                         "id" => $visit->id,
                         "customer_id" => $visit->customer_id,
@@ -871,25 +1328,35 @@ class CustomerController extends Controller
 
             }
 
-            if (!empty($data['getparentdetail'])) {
+            if (!empty($customer['getparentdetail'])) {
 
-                foreach ($data['getparentdetail'] as $key => $parent_data) {
+                foreach ($customer['getparentdetail'] as $key => $parent_data) {
                     $parent[] = isset($parent_data->parent_detail->name) ? $parent_data->parent_detail->name : '';
                     $parent_id[] = isset($parent_data->parent_id) ? $parent_data->parent_id : '';
                 }
             }
+
+            $data = $this->formatCustomerListItem($customer);
+            $data['email'] = isset($customer['email']) ? $customer['email'] : '';
+            $data['profile_image'] = isset($customer['profile_image']) ? $customer['profile_image'] : '';
+            $data['first_name'] = isset($customer['first_name']) ? $customer['first_name'] : '';
+            $data['last_name'] = isset($customer['last_name']) ? $customer['last_name'] : '';
+            $data['name'] = isset($customer['name']) ? $customer['name'] : '';
+            $data['mobile'] = isset($customer['mobile']) ? $customer['mobile'] : '';
+            $data['contact_number'] = isset($customer['contact_number']) ? $customer['contact_number'] : '';
+            $data['latitude'] = isset($customer['latitude']) ? $customer['latitude'] : '';
+            $data['longitude'] = isset($customer['longitude']) ? $customer['longitude'] : '';
             $data['activity'] = $activity;
             $data['parent_id'] = implode(',', $parent_id);
             $data['parent_name'] = implode(',', $parent);
             $data['beat_name'] = isset($beatinfo['beat_name']) ? $beatinfo['beat_name'] : '';
             $data['beat_id'] = isset($beatinfo['id']) ? $beatinfo['id'] : null;
-            $data['outstanding'] = $data['totalamount'] - $data['totalpaid'];
+            $data['outstanding'] = ($customer['totalamount'] ?? 0) - ($customer['totalpaid'] ?? 0);
             $data['total_order_value'] = $total_value;
-            // $data['total_order_quantity'] = $total_qty; 
             $data['total_order_quantity'] = $sum_quantity;
 
-            $data['avg_order_value'] = ($total_value >= 1) ? number_format((float)$total_value / $orders->count(), 1, '.', '') . ' %'  : '';
-            $data['avg_order_quantity'] = ($total_qty >= 1) ? number_format((float)$total_qty / $orders->count(), 1, '.', '') . ' %'  : '';
+            $data['avg_order_value'] = ($total_value >= 1 && $orders->count() > 0) ? number_format((float)$total_value / $orders->count(), 1, '.', '') . ' %'  : '';
+            $data['avg_order_quantity'] = ($total_qty >= 1 && $orders->count() > 0) ? number_format((float)$total_qty / $orders->count(), 1, '.', '') . ' %'  : '';
             $data['total_sales_value'] = $sales->sum('grand_total');
             if (!empty($last_order_date) && isset($last_order_date)) {
                 $dateTime1 = Carbon::parse($last_order_date);
@@ -897,8 +1364,8 @@ class CustomerController extends Controller
             } else {
                 $data['last_order_date'] = "";
             }
-            if (!empty($data['visitsinfo']) && isset($data['visitsinfo'][0]->created_at)) {
-                $dateTime = Carbon::parse($data['visitsinfo'][0]->created_at);
+            if (!empty($customer['visitsinfo']) && isset($customer['visitsinfo'][0]->created_at)) {
+                $dateTime = Carbon::parse($customer['visitsinfo'][0]->created_at);
                 $data['last_visited'] = $dateTime->format('d-m-Y');
             } else {
                 $data['last_visited'] = "";
@@ -907,16 +1374,109 @@ class CustomerController extends Controller
             // $data['last_visited'] = isset($data['visitsinfo']) ? $data['visitsinfo'][0]->created_at : '';
             // $data['last_order_date'] = isset($last_order_date) ? $last_order_date : '';
             $data['visited'] = $checkins;
-            $data['email'] = isset($data['email']) ? $data['email'] : '';
-            $data['customer_code'] = isset($data['customer_code']) ? $data['customer_code'] : '';
             $data['activities'] = UserActivity::with('users')->where('customerid', '=', $customer_id)->select('userid', 'time', 'description', 'type')->latest()->limit(5)->get();
             $data['tasks'] = Tasks::with('users')->where('completed', '=', 0)->where('customer_id', '=', $customer_id)->select('user_id', 'title', 'descriptions', 'datetime')->orderBy('datetime', 'asc')->limit(5)->get();
-            unset($data['totalamount'], $data['totalpaid']);
             $data['total_points'] = Wallet::where('customer_id', '=', $customer_id)->where('transaction_type', '=', 'Cr')->sum('points');
             $data['total_coupon_scan'] = Wallet::where('customer_id', '=', $customer_id)->where('transaction_type', '=', 'Cr')->sum('quantity');
-            return response()->json(['status' => 'success', 'message' => 'Data retrieved successfully.', 'data' => $data, 'customers' => $data['visitsinfo']], $this->successStatus);
+            $data['customerdetails'] = $customer->customerdetails;
+            $data['customeraddress'] = $customer->customeraddress;
+            $data['customerdocuments'] = $customer->customerdocuments;
+            $data['surveys'] = $customer->surveys;
+            $data['customerdeals'] = $customer->customerdeals;
+            $data['visitsinfo'] = $customer->visitsinfo;
+            $data['creator'] = $customer->createdbyname;
+
+            $createdById = $customer->created_by;
+            $hierarchy_level = 0;
+            $hierarchy_label = 'Self';
+
+            if (!($authUser instanceof Customers) && $createdById && $createdById != $authUser->id) {
+                $hierarchy_level = getHierarchyLevel($createdById, $authUser->id);
+                $hierarchy_label = match ($hierarchy_level) {
+                    0   => 'Self',
+                    -1  => 'Not in Hierarchy',
+                    default => 'Level ' . $hierarchy_level
+                };
+            }
+
+            $today = now()->startOfDay()->toDateString();
+            $checkInQuery = CheckIn::where(function ($query) use ($customer_id) {
+                $query->where('customer_id', '=', $customer_id)
+                    ->orWhere(function ($entity) use ($customer_id) {
+                        $entity->where('entity_type', 'customer')
+                            ->where('entity_id', $customer_id);
+                    });
+            })->where('user_id', $authUser->id);
+
+            $lastCheckIn = (clone $checkInQuery)
+                ->orderByDesc('checkin_date')
+                ->orderByDesc('checkin_time')
+                ->first([
+                    'id',
+                    'checkin_date',
+                    'checkin_time',
+                    'checkin_address',
+                    'checkout_date',
+                    'checkout_time',
+                    'checkout_address',
+                    'time_interval'
+                ]);
+
+            $lastCheckOut = (clone $checkInQuery)
+                ->whereNotNull('checkout_date')
+                ->orderByDesc('checkout_date')
+                ->orderByDesc('checkout_time')
+                ->first(['checkout_date', 'checkout_time', 'checkout_address']);
+
+            $checkData = [
+                'last_checkin' => $lastCheckIn ? [
+                    'checkin_id'       => $lastCheckIn->id,
+                    'checkin_datetime' => $lastCheckIn->checkin_date . ' ' . $lastCheckIn->checkin_time,
+                    'checkin_address'  => $lastCheckIn->checkin_address,
+                    'checkout_datetime' => $lastCheckIn->checkout_date
+                        ? $lastCheckIn->checkout_date . ' ' . $lastCheckIn->checkout_time
+                        : null,
+                    'checkout_address' => $lastCheckIn->checkout_address,
+                    'duration'         => $lastCheckIn->time_interval ?? null,
+                ] : null,
+
+                'last_checkout' => $lastCheckOut ? [
+                    'checkout_datetime' => $lastCheckOut->checkout_date . ' ' . $lastCheckOut->checkout_time,
+                    'checkout_address'  => $lastCheckOut->checkout_address,
+                ] : null,
+
+                'today' => [
+                    'has_checked_in'  => (clone $checkInQuery)->whereDate('checkin_date', $today)->exists(),
+                    'has_checked_out' => (clone $checkInQuery)->whereDate('checkout_date', $today)->exists(),
+                ],
+            ];
+
+            $linkedDistributors = collect($customer->getparentdetail ?? [])
+                ->filter(fn($parentDetail) => !empty($parentDetail->parent_detail))
+                ->map(fn($parentDetail) => [
+                    'id' => $parentDetail->parent_id,
+                    'shop_name' => $parentDetail->parent_detail->name,
+                ])
+                ->values();
+
+            return response()->json([
+                'status'      => true,
+                'message'     => 'Customer retrieved successfully',
+                'hierarchy_level' => $hierarchy_level,
+                'hierarchy_label' => $hierarchy_label,
+                'data'        => $data,
+                'check_status' => $checkData,
+                'distributors' => $linkedDistributors,
+            ], $this->successStatus);
         } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], $this->internalError);
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => $e->getMessage(),
+                ], $e->getStatusCode());
+            }
+
+            return response()->json(['status' => false, 'message' => 'Failed to retrieve customer', 'error' => $e->getMessage()], $this->internalError);
         }
     }
 
@@ -1005,8 +1565,7 @@ class CustomerController extends Controller
                 //     $request['shop_image'] = fileupload($image, $this->path, $filename);
                 // }
 
-                if ($request->file('gstin_image')) {
-                    $image = $request->file('gstin_image');
+                if ($image = $this->requestFileByAnyKey($request, ['gstin_image', 'gstinImage', 'gst_attachment', 'gstAttachment'])) {
                     $filename = 'customer';
                     $gstinimagepath = fileupload($image, $this->path, $filename);
                     Attachment::updateOrCreate(['document_name'   =>  'gstin', 'customer_id'   =>  $request->customer_id], [
@@ -1018,8 +1577,7 @@ class CustomerController extends Controller
                     ]);
                 }
 
-                if ($request->file('pan_image')) {
-                    $image = $request->file('pan_image');
+                if ($image = $this->requestFileByAnyKey($request, ['pan_image', 'panImage', 'pan_attachment', 'panAttachment'])) {
                     $filename = 'customer';
                     $panimagepath = fileupload($image, $this->path, $filename);
                     Attachment::updateOrCreate(['document_name'   =>  'pan', 'customer_id'   =>  $request->customer_id], [
@@ -1031,8 +1589,7 @@ class CustomerController extends Controller
                     ]);
                 }
 
-                if ($request->file('aadhar_image')) {
-                    $image = $request->file('aadhar_image');
+                if ($image = $this->requestFileByAnyKey($request, ['aadhar_image', 'aadharImage'])) {
                     $filename = 'customer';
                     $aadharimagepath = fileupload($image, $this->path, $filename);
                     Attachment::updateOrCreate(['document_name'   =>  'aadhar', 'customer_id'   =>  $request->customer_id], [
@@ -1044,11 +1601,10 @@ class CustomerController extends Controller
                     ]);
                 }
 
-                if ($request->file('other_image')) {
-                    $image = $request->file('other_image');
+                if ($image = $this->requestFileByAnyKey($request, ['other_image', 'otherImage', 'additionalDocument', 'cancelledCheque', 'mouDocument'])) {
                     $filename = 'customer';
                     $otherimagepath = fileupload($image, $this->path, $filename);
-                    Attachment::updateOrCreate(['document_name'   =>  'aadhar', 'customer_id'   =>  $request->customer_id], [
+                    Attachment::updateOrCreate(['document_name'   =>  'other', 'customer_id'   =>  $request->customer_id], [
                         'active'        => 'Y',
                         'file_path'     => $otherimagepath,
                         'document_name' =>  'other',
@@ -1057,8 +1613,19 @@ class CustomerController extends Controller
                     ]);
                 }
 
-                if ($request->file('visiting_card')) {
-                    $image = $request->file('visiting_card');
+                if ($image = $this->requestFileByAnyKey($request, ['bank_proof', 'bankProof', 'bankProofImage', 'imgbankpass', 'cancelledCheque', 'cancelled_cheque'])) {
+                    $filename = 'customer';
+                    $bankProofPath = fileupload($image, $this->path, $filename);
+                    Attachment::updateOrCreate(['document_name'   =>  'bankpass', 'customer_id'   =>  $request->customer_id], [
+                        'active'        => 'Y',
+                        'file_path'     => $bankProofPath,
+                        'document_name' =>  'bankpass',
+                        'customer_id' => $request['customer_id'],
+                        'updated_at' => getcurentDateTime()
+                    ]);
+                }
+
+                if ($image = $this->requestFileByAnyKey($request, ['visiting_card', 'visitingCard'])) {
                     $filename = 'customer';
                     $request['visiting_image'] = fileupload($image, $this->path, $filename);
                     CustomerDetails::updateOrCreate(['customer_id'   =>  $request->customer_id], [
@@ -1066,8 +1633,7 @@ class CustomerController extends Controller
                     ]);
                 }
 
-                if ($request->file('shop_image')) {
-                    $image = $request->file('shop_image');
+                if ($image = $this->requestFileByAnyKey($request, ['shopimage', 'shopImage', 'shop_image', 'shop_photo', 'shopPhoto'])) {
                     $filename = 'customer';
                     $request['shop_image'] = fileupload($image, $this->path, $filename);
                     CustomerDetails::updateOrCreate(['customer_id'   =>  $request->customer_id], [
@@ -1127,8 +1693,7 @@ class CustomerController extends Controller
                         ]);
                     }
                 }
-                if ($request->file('image')) {
-                    $image = $request->file('image');
+                if ($image = $this->requestFileByAnyKey($request, ['image', 'profileImage', 'profile_image', 'owner_photo', 'ownerPhoto'])) {
                     // $filename = 'punchin_'.autoIncrementId('Attendance', 'id');
                     $filename = 'customer';
                     $request['profile_image'] = fileupload($image, $this->path, $filename);
