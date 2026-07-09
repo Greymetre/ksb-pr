@@ -47,6 +47,7 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
 
   public function collection(Collection $rows)
   {
+    dd($rows);
     $customerdetails = collect([]);
     $addressdetails = collect([]);
     $attachments = collect([]);
@@ -173,13 +174,13 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
           'customer_code' => !empty($row['customer_code']) ? $row['customer_code'] : null,
           'profile_image' =>  !empty($row['profile_image']) ? $row['profile_image'] : '',
           'status_id' =>  !empty($row['status_id']) ? $row['status_id'] : 2,
-          'customertype' =>  !empty($row['customertype']) ? $row['customertype'] : 1,
+          'customertype' =>  !empty($row['customer_type']) ? $row['customer_type'] : 1,
           'firmtype' =>  !empty($row['firmtype']) ? $row['firmtype'] : null,
           // 'created_by' => $user_id,
           'created_by' => Auth::user()->id,
           //'executive_id' => $executive_id,
           //'parent_id' => $parent_id,
-          'contact_number' => (string)!empty($row['contact_number']) ? $row['contact_number'] : null,
+          'contact_number' => (string)!empty($row['contact_number_2']) ? $row['contact_number_2'] : null,
           'created_at' => getcurentDateTime(),
           'updated_at' => getcurentDateTime()
         ])) {
@@ -231,18 +232,18 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
           $addressdetails->push([
             'active' => 'Y',
             'customer_id' => $customer['id'],
-            'address1' => !empty($row['address1']) ? $row['address1'] : '',
+            'address1' => !empty($row['address']) ? $row['address'] : '',
             'address2' => !empty($row['address2']) ? $row['address2'] : '',
             'landmark' => !empty($row['landmark']) ? $row['landmark'] : '',
-            'locality' => !empty($row['locality']) ? $row['locality'] : '',
-            'country_id' => !empty($row['country_id']) ? $row['country_id'] : null,
+            'locality' => !empty($row['market_place']) ? $row['market_place'] : '',
+            'country_id' => 1,
             'state_id' => !empty($row['state_id']) ? $row['state_id'] : null,
             // 'district_id' => !empty($city['district_id'])? $city['district_id']:null,
             'district_id' => !empty($row['district_id']) ? $row['district_id'] : null,
             // 'city_id' => !empty($pincode['city_id'])? $pincode['city_id']:null,
-            // 'pincode_id' => !empty($pincode['id'])? $pincode['id']:null,
+            'pincode_id' => !empty($pincode['id'])? $pincode['id']:null,
             'city_id' => !empty($row['city_id']) ? $row['city_id'] : null,
-            'pincode_id' => !empty($row['pincode_id']) ? $row['pincode_id'] : null,
+            // 'pincode_id' => !empty($row['pincode_id']) ? $row['pincode_id'] : null,
             'created_by' => Auth::user()->id,
             'created_at' => getcurentDateTime(),
             'updated_at' => getcurentDateTime()
@@ -251,10 +252,12 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
           if ($customerdetails->isNotEmpty()) {
             CustomerDetails::updateOrCreate(['customer_id' => $customer['id'],],[
               'active' => 'Y',
-              // 'gstin_no' => !empty($row['gstin_no'])? $row['gstin_no']:null,
-              // 'pan_no' => !empty($row['pan_no'])? $row['pan_no']:null,
-              // 'aadhar_no' => !empty($row['aadhar_no'])? $row['aadhar_no']:null,
-              // 'otherid_no' => !empty($row['otherid_no'])? $row['otherid_no']:null,
+              'gstin_no' => !empty($row['gstin_no'])? $row['gstin_no']:null,
+              'pan_no' => !empty($row['pan_no'])? $row['pan_no']:null,
+              'aadhar_no' => !empty($row['aadhar_no'])? $row['aadhar_no']:null,
+              'otherid_no' => !empty($row['otherid_no'])? $row['otherid_no']:null,
+              'grade' => !empty($row['grade']) ? $row['grade'] : null,
+              'visit_status' => !empty($row['visit_status']) ? $row['visit_status'] : null,
               'enrollment_date' => !empty($row['enrollment_date']) ? $row['enrollment_date'] : null,
               'approval_date' => !empty($row['approval_date']) ? $row['approval_date'] : null,
               'created_at' => getcurentDateTime(),

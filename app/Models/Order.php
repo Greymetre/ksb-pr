@@ -151,6 +151,16 @@ public function insertrules()
     {
         return $this->belongsTo(\App\Models\MasterDistributor::class,'seller_id' );
     }
+
+    public function buyerCustomer()
+    {
+        return $this->belongsTo(\App\Models\Customers::class, 'buyer_id', 'id');
+    }
+
+    public function sellerCustomer()
+    {
+        return $this->belongsTo(\App\Models\Customers::class, 'seller_id', 'id');
+    }
     
              // Buyer = SecondaryCustomer
     public function buyer()

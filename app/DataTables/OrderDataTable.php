@@ -14,6 +14,20 @@ use Illuminate\Support\Facades\Auth;
 
 class OrderDataTable extends DataTable
 {
+    private function customerDisplayName($customer): string
+    {
+        if (!$customer) {
+            return '';
+        }
+
+        $fullName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
+
+        return $customer->name
+            ?: $fullName
+            ?: $customer->customer_code
+            ?: $customer->mobile
+            ?: '';
+    }
 
     public function dataTable($query)
     {
@@ -28,6 +42,12 @@ class OrderDataTable extends DataTable
             })
             ->editColumn('statusname.status_name', function ($data) {
                 return $data->status_id ? $data->statusname->status_name : 'Pending';
+            })
+            ->addColumn('buyer_name', function ($data) {
+                return $this->customerDisplayName($data->buyerCustomer);
+            })
+            ->addColumn('seller_name', function ($data) {
+                return $this->customerDisplayName($data->sellerCustomer);
             })
             ->addColumn('action', function ($query) {
                 $btn = '';
@@ -85,7 +105,7 @@ class OrderDataTable extends DataTable
     {
         $userids = getUsersReportingToAuth();
 
-        $query = $model->with('executive.getdesignation', 'executive.getbranch', 'sellers', 'buyers', 'statusname', 'createdbyname');
+        $query = $model->with('executive.getdesignation', 'executive.getbranch', 'buyerCustomer', 'sellerCustomer', 'statusname', 'createdbyname');
 
         if (auth()->user()->hasRole('Distributor')) {
             $query->where('seller_id', auth()->user()->customerid);

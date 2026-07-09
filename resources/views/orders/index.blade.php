@@ -34,12 +34,12 @@
                                         </div>
                                         <div class="p-2" style="width:190px;">
                                             <select class="select2" name="retailers_id" id="retailers_id"
-                                                title="Select Retailers">
-                                                <option value="">Select Retailers</option>
+                                                title="Select Buyer">
+                                                <option value="">Select Buyer</option>
                                                 @foreach($retailers as $user)
                                                 <option value="{!! $user['id'] !!}"
                                                     {{ old( 'retailers_id') == $user->id ? 'selected' : '' }}>{!!
-                                                    $user['shop_name'] !!}</option>
+                                                    $user->name ?: trim(($user->first_name ?? '').' '.($user->last_name ?? '')) ?: $user->customer_code ?: $user->mobile !!}</option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -57,12 +57,12 @@
                                         @if(!isCustomerUser())
                                         <div class="p-2" style="width:190px;">
                                             <select class="select2" name="distributor_id" id="distributor_id"
-                                                title="Select Distributor">
-                                                <option value="">Select Distributor</option>
+                                                title="Select Seller">
+                                                <option value="">Select Seller</option>
                                                 @foreach($distributors as $user)
                                                 <option value="{!! $user['id'] !!}"
                                                     {{ old( 'distributor_id') == $user->id ? 'selected' : '' }}>{!!
-                                                    $user['legal_name'] !!}</option>
+                                                    $user->name ?: trim(($user->first_name ?? '').' '.($user->last_name ?? '')) ?: $user->customer_code ?: $user->mobile !!}</option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -182,9 +182,9 @@
                                 <th>{!! trans('panel.order.order_date') !!}</th>
                                 <th>{!! trans('panel.order.orderno') !!}</th>
                                 <!-- <th>{!! trans('panel.global.buyer_name') !!}</th> -->
-                                <th>Secondary Customer Name</th>
+                                <th>Buyer Name</th>
                                 <!-- <th>{!! trans('panel.global.seller_name') !!}</th> -->
-                                <th>Primary Customer Name</th>
+                                <th>Seller Name</th>
 
                                 <th>{!! trans('panel.order.completed_date') !!}</th>
                                 <!-- <th>{!! trans('panel.order.total_gst') !!}</th> -->
@@ -270,14 +270,14 @@
                     orderable: false,
                 },
                 {
-                    data: 'buyers.shop_name',
-                    name: 'buyers.shop_name',
+                    data: 'buyer_name',
+                    name: 'buyer_name',
                     "defaultContent": '',
                     orderable: false,
                 },
                 {
-                    data: 'sellers.legal_name',
-                    name: 'sellers.legal_name',
+                    data: 'seller_name',
+                    name: 'seller_name',
                     "defaultContent": '',
                     orderable: false,
                 },

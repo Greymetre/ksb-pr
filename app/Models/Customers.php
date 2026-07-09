@@ -18,7 +18,7 @@ class Customers extends Authenticatable
 
     protected $table = 'customers';
 
-    protected $fillable = ['active', 'name', 'first_name', 'last_name', 'mobile', 'email', 'password', 'notification_id', 'latitude', 'longitude', 'device_type', 'gender', 'profile_image', 'shop_image', 'customer_code', 'status_id', 'region_id', 'customertype', 'firmtype', 'created_by', 'updated_by', 'executive_id', 'otp', 'custom_fields', 'deleted_at', 'created_at', 'updated_at', 'beatscheduleid', 'same_address', 'manager_name', 'manager_phone', 'contact_number', 'parent_id', 'sap_code'];
+    protected $fillable = ['active', 'name', 'first_name', 'last_name', 'mobile', 'email', 'password', 'notification_id', 'latitude', 'longitude', 'device_type', 'gender', 'profile_image', 'shop_image', 'customer_code', 'status_id', 'region_id', 'customertype', 'firmtype', 'created_by', 'updated_by', 'executive_id', 'otp', 'custom_fields', 'deleted_at', 'created_at', 'updated_at', 'beatscheduleid', 'same_address', 'manager_name', 'manager_phone', 'contact_number', 'parent_id', 'sap_code', 'creation_date', 'working_status'];
     protected $appends = ['full_address'];
 
     public function message()
@@ -106,12 +106,12 @@ class Customers extends Authenticatable
                 'created_at' => $created_at,
                 'updated_at' => $created_at
             ])) {
-                if (isset($request['customertype']) && $request['customertype'] == 4) {
-                    $mobile = substr($request['mobile'], 2); // remove country code
-                    Customers::where('id', $customer_id)->update([
-                        'password' => Hash::make($mobile)
-                    ]);
-                }
+                // if (isset($request['customertype']) && $request['customertype'] == 4) {
+                //     $mobile = substr($request['mobile'], 2); // remove country code
+                //     Customers::where('id', $customer_id)->update([
+                //         'password' => Hash::make($mobile)
+                //     ]);
+                // }
                 return $response = array('status' => 'success', 'message' => 'Customer Insert Successfully', 'customer_id' => $customer_id);
             }
             return $response = array('status' => 'error', 'message' => 'Error in Customer Store');

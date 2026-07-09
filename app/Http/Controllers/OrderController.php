@@ -83,8 +83,14 @@
             $user_ids = $this->orders->distinct()->pluck('created_by');
             $buyer_ids = $this->orders->distinct()->pluck('buyer_id');
             $divisions = Division::where('active', 'Y')->get();
-            $retailers = SecondaryCustomer::whereIn("id", $buyer_ids)->get();
-            $distributors = MasterDistributor::whereIn("id", $sellers_ids)->get();
+            $retailers = Customers::whereIn("id", $buyer_ids)
+                ->select('id', 'name', 'first_name', 'last_name', 'mobile', 'customer_code', 'customertype')
+                ->orderBy('name', 'asc')
+                ->get();
+            $distributors = Customers::whereIn("id", $sellers_ids)
+                ->select('id', 'name', 'first_name', 'last_name', 'mobile', 'customer_code', 'customertype')
+                ->orderBy('name', 'asc')
+                ->get();
             $customer_types = CustomerType::where('active', 'Y')->get();
             $users = User::whereIn('id' , $user_ids)->get();
             $designations = Designation::where('active', 'Y')->get();
