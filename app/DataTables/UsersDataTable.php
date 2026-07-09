@@ -121,16 +121,16 @@ class UsersDataTable extends DataTable
                 if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin') && !Auth::user()->hasRole('Sub_Admin')) {
                     $query->whereIn('id', $userids);
                 }
-                if($request->active && !empty($request->active)){
+                if ($request->active && !empty($request->active)) {
                     $query->where('active', $request->active);
                 }
-                if($request->division_id && !empty($request->division_id)){
+                if ($request->division_id && !empty($request->division_id)) {
                     $query->where('division_id', $request->division_id);
                 }
-                if($request->branch_id && !empty($request->branch_id)){
+                if ($request->branch_id && !empty($request->branch_id)) {
                     $query->where('branch_id', $request->branch_id);
                 }
-                if($request->department_id && !empty($request->department_id)){
+                if ($request->department_id && !empty($request->department_id)) {
                     $query->where('department_id', $request->department_id);
                 }
             })

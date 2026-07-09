@@ -1407,6 +1407,40 @@ body.fk-shell table.fk-glass-table .fk-whatsapp-link svg {
     fill: currentColor;
 }
 
+body.fk-shell table.table .fk-whatsapp-link.fk-whatsapp-with-number,
+body.fk-shell table.dataTable .fk-whatsapp-link.fk-whatsapp-with-number,
+body.fk-shell table.fk-glass-table .fk-whatsapp-link.fk-whatsapp-with-number {
+    width: auto;
+    min-width: 0;
+    height: auto;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: inherit;
+    white-space: nowrap;
+}
+
+body.fk-shell table.table .fk-whatsapp-link.fk-whatsapp-with-number:hover,
+body.fk-shell table.dataTable .fk-whatsapp-link.fk-whatsapp-with-number:hover,
+body.fk-shell table.fk-glass-table .fk-whatsapp-link.fk-whatsapp-with-number:hover {
+    background: transparent;
+    box-shadow: none;
+    color: var(--fk-list-text);
+    transform: none;
+}
+
+body.fk-shell table.table .fk-whatsapp-link.fk-whatsapp-with-number svg,
+body.fk-shell table.dataTable .fk-whatsapp-link.fk-whatsapp-with-number svg,
+body.fk-shell table.fk-glass-table .fk-whatsapp-link.fk-whatsapp-with-number svg {
+    width: 18px;
+    min-width: 18px;
+    height: 18px;
+    color: #25d366;
+}
+
 body.fk-shell div.dataTables_wrapper .bottom,
 body.fk-shell div.dataTables_wrapper>.row:last-child {
     display: flex !important;

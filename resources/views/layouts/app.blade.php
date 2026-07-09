@@ -791,6 +791,7 @@
             box-shadow: none;
             overflow: hidden;
             z-index: 1060;
+            transition: width .28s cubic-bezier(.2, .8, .2, 1);
         }
 
         body.fk-dark-shell .sidebar.close {
@@ -3615,14 +3616,53 @@
             // searchBtn = body.querySelector(".search-box"),
             modeSwitch = body.querySelector(".toggle-switch"),
             modeText = body.querySelector(".mode-text");
+
+        let sidebarHoverOpened = false;
+
+        function isDesktopSidebar() {
+            return window.innerWidth > 996;
+        }
+
+        function toggleSidebarPinned() {
+            if (!sidebar) return;
+            if (sidebarHoverOpened) {
+                sidebarHoverOpened = false;
+                sidebar.classList.remove('fk-hover-open');
+                sidebar.classList.remove('close');
+                return;
+            }
+            sidebar.classList.toggle("close");
+        }
+
         if (toggle && sidebar) {
             toggle.addEventListener("click", () => {
-                sidebar.classList.toggle("close");
+                toggleSidebarPinned();
             });
         }
         if (headerToggle && sidebar) {
             headerToggle.addEventListener("click", () => {
-                sidebar.classList.toggle("close");
+                toggleSidebarPinned();
+            });
+        }
+        if (sidebar) {
+            sidebar.addEventListener('mouseenter', function() {
+                if (!isDesktopSidebar() || !sidebar.classList.contains('close')) return;
+                sidebarHoverOpened = true;
+                sidebar.classList.add('fk-hover-open');
+                sidebar.classList.remove('close');
+            });
+
+            sidebar.addEventListener('mouseleave', function() {
+                if (!isDesktopSidebar() || !sidebarHoverOpened) return;
+                sidebarHoverOpened = false;
+                sidebar.classList.remove('fk-hover-open');
+                sidebar.classList.add('close');
+            });
+
+            window.addEventListener('resize', function() {
+                if (isDesktopSidebar() || !sidebarHoverOpened) return;
+                sidebarHoverOpened = false;
+                sidebar.classList.remove('fk-hover-open');
             });
         }
 
