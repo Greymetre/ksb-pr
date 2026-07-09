@@ -241,9 +241,9 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
             // 'district_id' => !empty($city['district_id'])? $city['district_id']:null,
             'district_id' => !empty($row['district_id']) ? $row['district_id'] : null,
             // 'city_id' => !empty($pincode['city_id'])? $pincode['city_id']:null,
-            'pincode_id' => !empty($pincode['id'])? $pincode['id']:null,
+            // 'pincode_id' => !empty($pincode['id'])? $pincode['id']:null,
             'city_id' => !empty($row['city_id']) ? $row['city_id'] : null,
-            // 'pincode_id' => !empty($row['pincode_id']) ? $row['pincode_id'] : null,
+            'pincode_id' => !empty($row['pincode_id']) ? $row['pincode_id'] : null,
             'created_by' => Auth::user()->id,
             'created_at' => getcurentDateTime(),
             'updated_at' => getcurentDateTime()
