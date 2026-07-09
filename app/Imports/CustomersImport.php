@@ -102,6 +102,7 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
           'city_id' => !empty($row['city_id']) ? $row['city_id'] : null,
           'district_id' => !empty($row['district_id']) ? $row['district_id'] : null,
           'state_id' => !empty($row['state_id']) ? $row['state_id'] : null,
+          'country_id' => !empty($row['country_id']) ? $row['country_id'] : null,
           'address1' => !empty($row['address']) ? $row['address'] : null,
           'landmark' => !empty($row['market_place']) ? $row['market_place'] : null,
 
@@ -236,7 +237,7 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
             'address2' => !empty($row['address2']) ? $row['address2'] : '',
             'landmark' => !empty($row['landmark']) ? $row['landmark'] : '',
             'locality' => !empty($row['market_place']) ? $row['market_place'] : '',
-            'country_id' => 1,
+            'country_id' => !empty($row['country_id']) ? $row['country_id'] : null,
             'state_id' => !empty($row['state_id']) ? $row['state_id'] : null,
             // 'district_id' => !empty($city['district_id'])? $city['district_id']:null,
             'district_id' => !empty($row['district_id']) ? $row['district_id'] : null,
