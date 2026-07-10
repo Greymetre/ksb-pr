@@ -380,6 +380,7 @@ class LoginController extends Controller
             'email'               => $user->email,
             'mobile'              => $user->mobile,
             'profile_image'       => $user->profile_image,
+            'payroll_id'          => $user->payroll ?? '',
             'access_token'        => $token,
             'roles'               => $user->roles->pluck('id')->toArray(),
             'user_type'           => $user->roles->pluck('name')->toArray(),
@@ -560,6 +561,7 @@ class LoginController extends Controller
             $nestedData['profile_image'] = isset($user['profile_image']) ? $user['profile_image'] : '';
             $nestedData['gender'] = isset($user['gender']) ? $user['gender'] : '';
             $nestedData['region_id'] = isset($user['region_id']) ? $user['region_id'] : '';
+            $nestedData['payroll_id'] = isset($user['payroll']) ? $user['payroll'] : '';
             return response()->json(['status' => 'success', 'userinfo' => $nestedData], $this->successStatus);
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], $this->internalError);
