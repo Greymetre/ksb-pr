@@ -80,14 +80,7 @@ $(document).ready(function() {
             {data: 'action', name: 'action',"defaultContent": '', orderable: false, searchable: false},
             {data: 'allowance_type', name: 'allowance_type'},
             {data: 'name', name: 'name',"defaultContent": ''},
-             {
-        data: 'payroll_id',
-        name: 'payroll_id',
-        render: function(data){
-            var payrolls = @json(config('constants.pay_roll'));
-            return payrolls[data] || data;
-        }
-    },
+            {data: 'payroll_name', name: 'payroll_id', "defaultContent": ''},
             {data: 'rate', name: 'rate',"defaultContent": ''},
         ]
     });

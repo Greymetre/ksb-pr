@@ -754,7 +754,7 @@ class ExpensesController extends Controller
     public function getexpenseType(Request $request)
     {
         $payroll = $request->payroll;
-        $expenseTypes = ExpensesType::where('payroll_id', $payroll)->get();
+        $expenseTypes = ExpensesType::forPayroll($payroll)->get();
         $html = "";
         $html .= "<option value='' >Select Expense Type</option>";
         foreach ($expenseTypes as $expenseType) {
@@ -768,7 +768,7 @@ class ExpensesController extends Controller
     {
         $user_id = $request->user_id;
         $userDetail = User::where('id', $user_id)->first();
-        $expenseTypes = ExpensesType::where('payroll_id', $userDetail->payroll)->get();
+        $expenseTypes = ExpensesType::forPayroll($userDetail->payroll ?? null)->get();
         $html = "";
         $html .= "<option value=''>Select Expense Type</option>";
         if (!empty($userDetail->payroll)) {
@@ -789,7 +789,7 @@ class ExpensesController extends Controller
         $user_id = $request->user_id;
         $expenses_type = $request->expenses_type;
         $userDetail = User::where('id', $user_id)->first();
-        $expenseTypes = ExpensesType::where('payroll_id', $userDetail->payroll)->get();
+        $expenseTypes = ExpensesType::forPayroll($userDetail->payroll ?? null)->get();
         $selected = '';
 
         $html = "";

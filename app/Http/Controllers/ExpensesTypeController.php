@@ -32,6 +32,16 @@ class ExpensesTypeController extends Controller
                     }
                 })
 
+                ->addColumn('payroll_name', function ($query) {
+                    $payRolls = Config('constants.pay_roll');
+                    $payrollNames = collect($query->payrollIds())
+                        ->map(fn ($id) => $payRolls[$id] ?? $id)
+                        ->filter()
+                        ->implode(', ');
+
+                    return $payrollNames;
+                })
+
                 ->addColumn('is_active', function ($query) {
                       $active = ($query->is_active == '1') ? 'checked="" value="'.$query->is_active.'"' : 'value="'.$query->is_active.'"';
                       return '<div class="togglebutton">
@@ -84,7 +94,7 @@ class ExpensesTypeController extends Controller
         $expensesType->name = $request->name;
         $expensesType->rate = $request->rate!=null?$request->rate:0.00;
         $expensesType->allowance_type_id = $request->allowance_type_id;
-        $expensesType->payroll_id = $request->payroll_id;
+        $expensesType->payroll_id = implode(',', $request->payroll_id);
         $expensesType->save();
         return redirect(route('expenses_type.index'))->with('message_success', 'Data Store Successfully');
      }
@@ -125,7 +135,7 @@ class ExpensesTypeController extends Controller
         $expensesType->name = $request->name;
         $expensesType->rate = $request->rate;
         $expensesType->allowance_type_id = $request->allowance_type_id;
-        $expensesType->payroll_id = $request->payroll_id;
+        $expensesType->payroll_id = implode(',', $request->payroll_id);
         $expensesType->save();
         return redirect(route('expenses_type.index'))->with('message_success', 'Data Updated Successfully');
     }

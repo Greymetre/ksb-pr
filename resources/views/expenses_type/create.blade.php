@@ -39,10 +39,12 @@
                   <label class="col-form-label">{{ trans('panel.expenses_type.fields.pay_roll') }}<span class="text-danger"> *</span></label>
                  
                     <div class="form-group has-default bmd-form-group">
-                      <select name="payroll_id" id="payroll_id" class="form-control {{ $errors->has('payroll_id') ? 'is-invalid' : '' }}">
-                        <option value="" disabled selected>Please select Grade</option>
+                      @php
+                      $selectedPayrolls = (array) old('payroll_id', []);
+                      @endphp
+                      <select name="payroll_id[]" id="payroll_id" class="form-control select2 {{ $errors->has('payroll_id') ? 'is-invalid' : '' }}" multiple>
                         @foreach($pay_rolls as $key=>$payroll)
-                        <option value="{{$key}}" {{ old('payroll_id') == $key ? 'selected' : '' }}>{{$payroll}}</option>
+                        <option value="{{$key}}" {{ in_array((string) $key, array_map('strval', $selectedPayrolls), true) ? 'selected' : '' }}>{{$payroll}}</option>
                         @endforeach
                       </select>
                       @if($errors->has('payroll_id'))

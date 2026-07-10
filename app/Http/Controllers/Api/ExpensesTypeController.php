@@ -50,6 +50,25 @@ class ExpensesTypeController extends Controller
         return $withIds ? [$files, $ids] : $files;
     }
 
+    private function expenseTypeData(ExpensesType $expenseType): array
+    {
+        $payRolls = config('constants.pay_roll');
+        $payrollIds = $expenseType->payrollIds();
+
+        return [
+            'id' => $expenseType->id ?? "",
+            'name' => $expenseType->name ?? "",
+            'rate' => $expenseType->rate ?? "",
+            'allowance_type_id' => $expenseType->allowance_type_id ?? "",
+            'payroll_id' => $expenseType->payroll_id ?? "",
+            'payroll_ids' => $payrollIds,
+            'payroll_names' => collect($payrollIds)
+                ->map(fn ($id) => $payRolls[$id] ?? $id)
+                ->values()
+                ->toArray(),
+        ];
+    }
+
 
     public function getExpensesType(Request $request)
     {
@@ -66,18 +85,12 @@ class ExpensesTypeController extends Controller
             }
 
             $payroll_id = $request->payroll_id;
-            $expense_types = ExpensesType::where('payroll_id', $payroll_id)->get();
+            $expense_types = ExpensesType::forPayroll($payroll_id)->get();
             if (!empty($expense_types)) {
 
                 $datas = array();
                 foreach ($expense_types as $expense_type) {
-                    $datas[] = array(
-                        'id' => $expense_type->id ?? "",
-                        'name' => $expense_type->name ?? "",
-                        'rate' => $expense_type->rate ?? "",
-                        'allowance_type_id' => $expense_type->allowance_type_id ?? "",
-                        'payroll_id' => $expense_type->payroll_id ?? "",
-                    );
+                    $datas[] = $this->expenseTypeData($expense_type);
                 }
 
                 return response()->json(['status' => 'success', 'message' => 'Data retrieved successfully.', 'data' => $datas], $this->successStatus);
@@ -165,11 +178,8 @@ class ExpensesTypeController extends Controller
             $pageSize = $request->input('pageSize');
             // $query = Expenses::with('media','expense_type')->whereIn('user_id',$userids)->orderBy('id','desc');
             $query = Expenses::with('media', 'expense_type')->where(['user_id' => Auth::Id()])->orderBy('id', 'desc');
-            $expence_types = ExpensesType::where('payroll_id', $payroll_id)->get()->map(function($item) {
-                return [
-                    'id' => $item->id,
-                    'name' => $item->name
-                ];
+            $expence_types = ExpensesType::forPayroll($payroll_id ?: optional($request->user())->payroll)->get()->map(function($item) {
+                return $this->expenseTypeData($item);
             })->toArray();
             //$expenses = (!empty($pageSize)) ? $query->paginate($pageSize) : $query->get();
             if (!empty($request['start_date']) && !empty($request['end_date'])) {
@@ -425,6 +435,12 @@ class ExpensesTypeController extends Controller
             }
             $pageSize = $request->input('pageSize');
             $query = Expenses::with('media', 'expense_type', 'users')->orderBy('id', 'desc');
+            $filterUser = !empty($request['user_id'])
+                ? User::find($request['user_id'])
+                : $user;
+            $expence_types = ExpensesType::forPayroll(optional($filterUser)->payroll)->get()->map(function ($item) {
+                return $this->expenseTypeData($item);
+            })->toArray();
             // $query = Expenses::with('media','expense_type')->where(['user_id'=>Auth::Id()])->orderBy('id','desc');
             //$expenses = (!empty($pageSize)) ? $query->paginate($pageSize) : $query->get();
             if (!empty($request['start_date']) && !empty($request['end_date'])) {
@@ -432,6 +448,9 @@ class ExpensesTypeController extends Controller
             }
             if ((!empty($request['status']) || $request['status'] == 0) && $request['status'] != null) {
                 $query->where('checker_status',$request['status']);
+            }
+            if (!empty($request['expenses_type'])) {
+                $query->where('expenses_type', $request['expenses_type']);
             }
             if (!empty($request['user_id'])) {
                 $query->where('user_id', $request['user_id']);
@@ -520,9 +539,9 @@ class ExpensesTypeController extends Controller
 
                
 
-                return response()->json(['status' => 'success', 'message' => 'Data retrieved successfully.', 'users' => $all_users, 'branches' => $branches,'all_status'=> $all_status ,'data' => $datas], $this->successStatus);
+                return response()->json(['status' => 'success', 'message' => 'Data retrieved successfully.', 'users' => $all_users, 'branches' => $branches,'all_status'=> $all_status, 'expence_types' => $expence_types, 'data' => $datas], $this->successStatus);
             }
-            return response(['status' => 'error', 'message' => 'No Record Found.',  'users' => $all_users, 'branches' => $branches,'all_status'=> $all_status ,'data' => $datas , 'dummy' =>$request['status']], 200);
+            return response(['status' => 'error', 'message' => 'No Record Found.',  'users' => $all_users, 'branches' => $branches,'all_status'=> $all_status, 'expence_types' => $expence_types, 'data' => $datas , 'dummy' =>$request['status']], 200);
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], $this->internalError);
         }
