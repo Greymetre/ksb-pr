@@ -291,8 +291,8 @@ margin-top: 3px;
               <div class="row">
                 <div class="col-md-6">
                   @php
-$city = \App\Models\City::find($paln->town);
-@endphp
+                  $city = \App\Models\City::find(optional($paln)->town);
+                  @endphp
                   <h6>Today Plan - {{ $city->city_name ?? '' }} </h6>
                   <h6>Today Visit - {{ $city->city_name  ?? '' }}</h6>
                   <h6>Live Location - <a href="{{url('/livelocation').'?user_id='.$expense->user_id.'&date='.$expense->date}}"><i class="material-icons">location_on</i></a></h6>
