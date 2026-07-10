@@ -308,7 +308,17 @@ class ExpensesTypeController extends Controller
                 $datas['status'] = $exp_status;
                 $datas['reason'] = $expense->reason ?? "";
 
-                $plan = TourProgramme::where('userid', $expense->user_id)->where('date', $expense->date)->first();
+                $plan = TourProgramme::with('city:id,city_name')
+                    ->where('userid', $expense->user_id)
+                    ->where('date', $expense->date)
+                    ->first();
+
+                if ($plan) {
+                    $townId = $plan->town;
+                    $plan->town_id = $townId;
+                    $plan->town = $plan->city->city_name ?? '';
+                    $plan->unsetRelation('city');
+                }
                 $total_visit = count(CheckIn::where('user_id', $expense->user_id)->where('checkin_date', $expense->date)->groupBy('customer_id')->get());
 
                 $checkins = CheckIn::where('user_id', $expense->user_id)
