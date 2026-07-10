@@ -50,7 +50,7 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
     $customerdetails = collect([]);
     $addressdetails = collect([]);
     $attachments = collect([]);
-     
+
     foreach ($rows as $ky=>$row) {
       if (isset($row['mobile']) && strlen(preg_replace('/\s+/', '', $row['mobile'])) == 10) {
         $row['mobile'] = '91' . preg_replace('/\s+/', '', $row['mobile']);
@@ -70,7 +70,7 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
           'active' => $row['status'] ?? 'Y',
           'first_name' => !empty($row['first_name']) ? $row['first_name'] : '',
           'last_name' => !empty($row['last_name']) ? $row['last_name'] : '',
-          'contact_number' => !empty($row['contact_number2']) ? $row['contact_number2'] : null,
+          'contact_number' => !empty($row['contact_number_2']) ? $row['contact_number_2'] : null,
           //'executive_id' => !empty($row['employee_id'])? $row['employee_id'] :null,
           //'parent_id' => !empty($row['parent_id'])? $row['parent_id'] :null,
           'customer_code' => !empty($row['customer_code']) ? $row['customer_code'] : null,
@@ -180,7 +180,7 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
           'created_by' => Auth::user()->id,
           //'executive_id' => $executive_id,
           //'parent_id' => $parent_id,
-          'contact_number' => (string)!empty($row['contact_number_2']) ? $row['contact_number_2'] : null,
+          'contact_number' => !empty($row['contact_number_2']) ? $row['contact_number_2'] : null,
           'created_at' => getcurentDateTime(),
           'updated_at' => getcurentDateTime()
         ])) {
@@ -234,7 +234,7 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
             'customer_id' => $customer['id'],
             'address1' => !empty($row['address']) ? $row['address'] : '',
             'address2' => !empty($row['address2']) ? $row['address2'] : '',
-            'landmark' => !empty($row['landmark']) ? $row['landmark'] : '',
+            'landmark' => !empty($row['market_place']) ? $row['market_place'] : '',
             'locality' => !empty($row['market_place']) ? $row['market_place'] : '',
             'country_id' => !empty($row['country_id']) ? $row['country_id'] : null,
             'state_id' => !empty($row['state_id']) ? $row['state_id'] : null,
@@ -249,13 +249,13 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
             'updated_at' => getcurentDateTime()
           ]);
           // dd($customerdetails, $customer);
-          if ($customerdetails->isNotEmpty()) {
+          // if ($customerdetails->isNotEmpty()) {
             CustomerDetails::updateOrCreate(['customer_id' => $customer['id'],],[
               'active' => 'Y',
               'gstin_no' => !empty($row['gstin_no'])? $row['gstin_no']:null,
               'pan_no' => !empty($row['pan_no'])? $row['pan_no']:null,
               'aadhar_no' => !empty($row['aadhar_no'])? $row['aadhar_no']:null,
-              'otherid_no' => !empty($row['otherid_no'])? $row['otherid_no']:null,
+          'otherid_no' => !empty($row['other_no']) ? $row['other_no'] : null,
               'grade' => !empty($row['grade']) ? $row['grade'] : null,
               'visit_status' => !empty($row['visit_status']) ? $row['visit_status'] : null,
               'enrollment_date' => !empty($row['enrollment_date']) ? $row['enrollment_date'] : null,
@@ -263,7 +263,7 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
               'created_at' => getcurentDateTime(),
               'updated_at' => getcurentDateTime()
             ]);
-          }
+          // }
           if ($addressdetails->isNotEmpty()) {
             Address::insert($addressdetails->toArray());
           }
