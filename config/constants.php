@@ -27,7 +27,7 @@ return [
         'Field Demo',
         'Retailer Meet',
         'Plumber Meet',
-        'Orther',
+        'Other',
     ],
     'redeem_mode' => [
         '1' => 'Gift',
