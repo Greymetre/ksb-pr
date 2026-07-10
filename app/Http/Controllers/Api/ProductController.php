@@ -130,7 +130,7 @@ class ProductController extends Controller
                 }
                 $query->where('active', '=', 'Y');
             })
-                ->select('id', 'product_name', 'product_code', 'display_name', 'description', 'subcategory_id', 'category_id', 'brand_id', 'product_image', 'unit_id', 'hsn_sac', 'hsn_sac_no','specification', 'part_no', 'product_no', 'model_no', 'suc_del')->latest();
+                ->select('id', 'product_name', 'product_code', 'display_name', 'description', 'subcategory_id', 'category_id', 'brand_id', 'product_image', 'unit_id', 'hsn_sac', 'hsn_sac_no', 'specification', 'part_no', 'product_no', 'model_no', 'suc_del')->latest();
 
             $db_data = (!empty($pageSize)) ? $query->paginate($pageSize) : $query->get();
 
@@ -230,7 +230,7 @@ class ProductController extends Controller
                     //$prodcutdetails = $value['prodcutdetails']->where('isprimary',1);
                     $data->push([
                         'id' => isset($value['id']) ? $value['id'] : 0,
-                        'product_name' => isset($value['product_name']) ? $value['product_name'].'('.$value['product_code'].')' : '',
+                        'product_name' => isset($value['product_name']) ? $value['product_name'] . '(' . $value['product_code'] . ')' : '',
                         'display_name' => isset($value['display_name']) ? $value['display_name'] : '',
                         'description' => isset($value['description']) ? $value['description'] : '',
                         'product_image' => isset($value['product_image']) ? $value['product_image'] : '',
@@ -254,7 +254,7 @@ class ProductController extends Controller
                         'product_no' => isset($value['product_no']) ? $value['product_no'] : '',
                         'model_no' => isset($value['model_no']) ? $value['model_no'] : '',
                         'hp' => isset($value['specification']) ? $value['specification'] : '',
-                        'discount' => $value['productpriceinfo']?$value['productpriceinfo']['discount'] : 0,
+                        'discount' => $value['productpriceinfo'] ? $value['productpriceinfo']['discount'] : 0,
                         // 'amount_diff' => $value['productpriceinfo']['mrp'] - $product_ebd_amount,
                         'amount_diff' => ($value['productpriceinfo']->mrp ?? 0) - $product_ebd_amount,
                         'ebd_amount' => (string)$ebd_amount,
@@ -439,7 +439,7 @@ class ProductController extends Controller
                         $data->push([
                             'id' => isset($rows['id']) ? $rows['id'] : 0,
                             'subcategory_name' => isset($rows['subcategory_name']) ? $rows['subcategory_name'] : '',
-                            'subcategory_image' => (isset($rows['subcategory_image']) && !empty($rows['subcategory_image']) ) ? url('/public/uploads').'/'.$rows['subcategory_image'] : url('/public/assets/img/placeholder.jpg'),
+                            'subcategory_image' => (isset($rows['subcategory_image']) && !empty($rows['subcategory_image'])) ? url('/public/uploads') . '/' . $rows['subcategory_image'] : url('/public/assets/img/placeholder.jpg'),
                             'category_id' => isset($rows['category_id']) ? $rows['category_id'] : 0,
                             'category_name' => isset($rows['categories']['category_name']) ? $rows['categories']['category_name'] : '',
                         ]);
@@ -536,7 +536,7 @@ class ProductController extends Controller
                 $query->where('active', '=', 'Y');
                 $query->where('id', '=', $product_id);
             })
-            ->first();
+                ->first();
 
             $detail = collect([]);
             $data = collect([]);
@@ -673,7 +673,13 @@ class ProductController extends Controller
                     'product_code' => isset($query['product_code']) ? $query['product_code'] : '',
                     'display_name' => isset($query['display_name']) ? $query['display_name'] : '',
                     'description' => isset($query['description']) ? $query['description'] : '',
-                    'product_image' => (isset($query['product_image']) && !empty($query['product_image'])) ? url('/public/uploads').'/'.$query['product_image'] : url('/public/assets/img/placeholder.jpg'),
+                    'product_image' => !empty($query['product_image'])
+                        ? (
+                            filter_var($query['product_image'], FILTER_VALIDATE_URL)
+                            ? $query['product_image']
+                            : url('/public/uploads/' . ltrim($query['product_image'], '/'))
+                        )
+                        : url('/public/assets/img/placeholder.jpg'),
                     'subcategory_id' => isset($query['subcategory_id']) ? $query['subcategory_id'] : 0,
                     // 'subcategory_name' => isset($query['subcategories']['subcategory_name']) ? $query['subcategories']['subcategory_name'] : '',
                     'subcategory_name' => $query->subcategories->subcategory_name ?? '',

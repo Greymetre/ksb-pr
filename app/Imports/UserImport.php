@@ -135,7 +135,6 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     'reportingid' => !empty($row['reporting_id']) ? $row['reporting_id'] : '',
                     'sales_type' => !empty($row['sales_type']) ? $row['sales_type'] : '',
                     'show_attandance_report' => !empty($row['attandance_summary_report']) ? (int)$row['attandance_summary_report'] : '',
-                    'password' => !empty($row['password']) ? Hash::make($row['password']) : '',
                     'latitude'  => $latitude,
                     'longitude' => $longitude,
                     //'created_at' => getcurentDateTime(),
@@ -289,7 +288,6 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     'department_id' => !empty($row['department_id']) ? $row['department_id'] : '',
                     'reportingid' => !empty($row['reporting_id']) ? $row['reporting_id'] : '',
                     'latitude'  => $latitude,
-                    'password' => !empty($row['password']) ? Hash::make($row['password']) : '',
                     'longitude' => $longitude,
                     'created_at' => getcurentDateTime(),
                     'updated_at' => getcurentDateTime()
