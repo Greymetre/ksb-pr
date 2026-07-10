@@ -329,15 +329,58 @@ class UserController extends Controller
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], $this->internalError);
         }
     }
+
+    private function formatActivityCustomer($customer)
+    {
+        if (!$customer) {
+            return null;
+        }
+
+        $personName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
+        $displayName = $customer->name ?: $personName;
+
+        return [
+            'id' => $customer->id,
+            'name' => $displayName,
+            'first_name' => $customer->first_name,
+            'last_name' => $customer->last_name,
+            'mobile' => $customer->mobile,
+            'contact_number' => $customer->contact_number,
+            'email' => $customer->email,
+            'profile_image' => $customer->profile_image,
+            'shop_image' => $customer->shop_image,
+            'customer_code' => $customer->customer_code,
+            'customer_type_id' => $customer->customertype,
+            'customer_type' => optional($customer->customertypes)->customertype_name,
+            'latitude' => $customer->latitude,
+            'longitude' => $customer->longitude,
+            'address' => optional($customer->customeraddress)->full_address,
+        ];
+    }
+
     public function getUserActivity(Request $request)
     {
         try {
             $user_id = $request->user()->id;
             $date = $request->input('date') ? $request->input('date') : date('Y-m-d');
-            $data = UserActivity::with('customers')->where(function ($query) use ($user_id, $date) {
+            $data = UserActivity::with(['customers.customertypes', 'customers.customeraddress'])->where(function ($query) use ($user_id, $date) {
                 $query->whereDate('time', '=', date('Y-m-d', strtotime($date)));
                 $query->where('userid', '=', $user_id);
-            })->select('id', 'customerid', 'latitude', 'longitude', 'time', 'address', 'description', 'type')->get();
+            })->select('id', 'customerid', 'latitude', 'longitude', 'time', 'address', 'description', 'type')->get()
+                ->map(function ($activity) {
+                    $customer = $this->formatActivityCustomer($activity->customers);
+
+                    $activity->customer_id = $activity->customerid;
+                    $activity->customer_name = $customer['name'] ?? null;
+                    $activity->customer_mobile = $customer['mobile'] ?? null;
+                    $activity->customer_contact_number = $customer['contact_number'] ?? null;
+                    $activity->customer_code = $customer['customer_code'] ?? null;
+                    $activity->customer_type_id = $customer['customer_type_id'] ?? null;
+                    $activity->customer_type = $customer['customer_type'] ?? null;
+                    $activity->customer = $customer;
+
+                    return $activity;
+                });
             if ($data->isNotEmpty()) {
                 return response()->json(['status' => 'success', 'message' => 'Data retrieved successfully.', 'data' => $data], $this->successStatus);
             }

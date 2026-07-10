@@ -46,6 +46,41 @@ class ReportingActivityController extends Controller
         return $zones;
     }
 
+    private function customerDisplayName($customer)
+    {
+        if (!$customer) {
+            return '';
+        }
+
+        $personName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
+
+        return $customer->name ?: ($personName ?: ($customer->customer_code ?: ($customer->mobile ?: 'Unknown Customer')));
+    }
+
+    private function customerActivitySummary($customer)
+    {
+        if (!$customer) {
+            return null;
+        }
+
+        return [
+            'id' => $customer->id,
+            'name' => $this->customerDisplayName($customer),
+            'first_name' => $customer->first_name,
+            'last_name' => $customer->last_name,
+            'mobile' => $customer->mobile,
+            'contact_number' => $customer->contact_number,
+            'customer_code' => $customer->customer_code,
+            'customer_type_id' => $customer->customertype,
+            'customer_type' => optional($customer->customertypes)->customertype_name,
+            'address' => optional($customer->customeraddress)->full_address,
+            'city' => optional(optional($customer->customeraddress)->cityname)->city_name,
+            'state' => optional(optional($customer->customeraddress)->statename)->state_name,
+            'latitude' => $customer->latitude,
+            'longitude' => $customer->longitude,
+        ];
+    }
+
     public function allReportingUsers(Request $request)
     {
         $user = $request->user();
@@ -329,9 +364,12 @@ class ReportingActivityController extends Controller
         // $checkInOut = CheckIn::with('visitreports')->with('customers')->where('user_id', $user_id)->where('checkin_date', $date)->get();
         // $orders = Order::with('buyers')->where('created_by', $user_id)->whereRaw('DATE(created_at)="'.$date.'"')->get();
         $orders = Order::with([
-            'buyer',                    // SecondaryCustomer
-            'orderdetails',             // OrderDetails
-            'orderdetails.products'     // Product info
+            'buyerCustomer.customertypes',
+            'sellerCustomer.customertypes',
+            'buyerCustomer.customeraddress.cityname',
+            'sellerCustomer.customeraddress.cityname',
+            'orderdetails',
+            'orderdetails.products'
         ])
             ->where('created_by', $user_id)
             ->whereDate('created_at', $date)   // or use order_date if you prefer
@@ -361,8 +399,8 @@ class ReportingActivityController extends Controller
         //     ->get();
 
 
-        // Secondary Customer - Add & Update (with city_name and state_name)
-        $customer_add = SecondaryCustomer::with(['state', 'city'])
+        // Customer - Add & Update (single customer module)
+        $customer_add = Customers::with(['customeraddress.cityname', 'customeraddress.statename', 'customertypes'])
             ->where('created_by', $user_id)
             ->whereDate('created_at', $date)
             ->get();
@@ -372,42 +410,16 @@ class ReportingActivityController extends Controller
         //     ->whereColumn('updated_at', '>', 'created_at')
         //     ->whereDate('updated_at', $date)
         //     ->get();
-        $customer_update = SecondaryCustomer::with(['city.statename', 'state'])
-            ->where('created_by', $user_id)
-
-            // exclude approve/reject updates
-            ->where(function ($q) {
-                $q->whereNull('status_updated_at')
-                    ->orWhereColumn('updated_at', '!=', 'status_updated_at');
-            })
-
-            ->whereColumn('updated_at', '>', 'created_at')
-            ->whereDate('updated_at', $date)
-            ->get();
-
-        // Master Distributor - Add & Update
-        $master_add = MasterDistributor::with(['billingCity', 'billingDistrict'])
-            ->where('created_by', $user_id)
-            ->whereDate('created_at', $date)
-            ->get();
-
-        $master_update = MasterDistributor::with(['billingCity', 'billingDistrict'])
+        $customer_update = Customers::with(['customeraddress.cityname', 'customeraddress.statename', 'customertypes'])
             ->where('created_by', $user_id)
             ->whereColumn('updated_at', '>', 'created_at')
             ->whereDate('updated_at', $date)
             ->get();
-        $approvedCustomers = SecondaryCustomer::with(['city', 'state'])
-            ->where('status', 'APPROVED')
-            ->where('approve_reject_by', $user_id)
-            ->whereNotNull('status_updated_at')
-            ->whereDate('status_updated_at', $date)
-            ->get();
-        $rejectedCustomers = SecondaryCustomer::with(['city', 'state'])
-            ->where('status', 'REJECTED')
-            ->where('approve_reject_by', $user_id)
-            ->whereNotNull('status_updated_at')
-            ->whereDate('status_updated_at', $date)
-            ->get();
+
+        $master_add = collect();
+        $master_update = collect();
+        $approvedCustomers = collect();
+        $rejectedCustomers = collect();
 
 
         $punchInData = array();
@@ -482,8 +494,10 @@ class ReportingActivityController extends Controller
             $entity = $val->entity;                    // This uses your getEntityAttribute()
             $entityName = $val->entity_name ?? 'Unknown';   // Uses your getEntityNameAttribute()
             $cityName = $entity?->city?->city_name
+                ?? $entity?->customeraddress?->cityname?->city_name
                 ?? $entity?->billing_city
                 ?? 'City not available';
+            $customer = $entity instanceof Customers ? $this->customerActivitySummary($entity) : null;
 
             $location = $val->checkin_address ?? 'No Location';
 
@@ -499,6 +513,8 @@ class ReportingActivityController extends Controller
                     'location'      => $location,
                     'city'          => $cityName,
                     'customer'      => $entityName,
+                    'customer_mobile' => $customer['mobile'] ?? ($entity->mobile ?? $entity->mobile_number ?? null),
+                    'customer_detail' => $customer,
                     'customer_type' => $val->entity_type_display ?? 'Customer'
                 ];
             }
@@ -516,6 +532,8 @@ class ReportingActivityController extends Controller
                     'location'      => $location,
                     'city'          => $cityName,
                     'customer'      => $entityName,
+                    'customer_mobile' => $customer['mobile'] ?? ($entity->mobile ?? $entity->mobile_number ?? null),
+                    'customer_detail' => $customer,
                     'remark'        => $remark,
                     'customer_type' => $val->entity_type_display ?? 'Customer'
                 ];
@@ -543,14 +561,8 @@ class ReportingActivityController extends Controller
 
         // ====================== Orders ======================
         foreach ($orders as $order) {
-
-            $sellerName = $order->seller?->trade_name
-                ?? $order->seller?->legal_name
-                ?? 'Unknown Seller';
-
-            $buyerName = $order->buyer?->shop_name
-                ?? $order->buyer?->owner_name
-                ?? 'Unknown Buyer';
+            $seller = $this->customerActivitySummary($order->sellerCustomer);
+            $buyer = $this->customerActivitySummary($order->buyerCustomer);
 
             $totalQty   = $order->orderdetails ? $order->orderdetails->sum('quantity') : 0;
             $grandTotal = $order->grand_total ?? 0;
@@ -563,8 +575,12 @@ class ReportingActivityController extends Controller
                 'longitude'    => '',
 
                 // Key-Value fields as you want
-                'seller'       => $sellerName,
-                'customer'     => $buyerName,
+                'seller'       => $seller['name'] ?? 'Unknown Seller',
+                'seller_mobile' => $seller['mobile'] ?? null,
+                'seller_customer' => $seller,
+                'customer'     => $buyer['name'] ?? 'Unknown Buyer',
+                'customer_mobile' => $buyer['mobile'] ?? null,
+                'customer_detail' => $buyer,
                 'qty'          => (int)$totalQty,
                 'value'        => (float)$grandTotal,
 
@@ -587,37 +603,22 @@ class ReportingActivityController extends Controller
         // }
 
         foreach ($customer_add as $val) {
-            $customerName = $val->shop_name ?? $val->owner_name ?? 'Unknown Customer';
-            $location     = $val->address_line ?? $val->belt_area_market_name ?? 'No Location';
-
-            // Get city name using city_id (fast lookup)
-            $cityName = $cityLookup[$val->city_id] ?? 'City not available';
-            $stateName = $stateLookup[$val->state_id] ?? 'State not available';
-
-            // GPS Handling (unchanged)
-            $latitude = $longitude = '';
-            if (!empty($val->gps_location)) {
-                $coords = explode(',', trim($val->gps_location));
-                if (count($coords) >= 2) {
-                    $latitude  = trim($coords[0]);
-                    $longitude = trim($coords[1]);
-                } else {
-                    $latitude = trim($val->gps_location);
-                }
-            }
+            $customer = $this->customerActivitySummary($val);
 
             $customerAddData[] = [
                 'title'         => 'New Customer Registration',
                 'time'          => date('H:i:s', strtotime($val->created_at)),
                 'date'          => $date,
-                'latitude'      => $longitude,
-                'longitude'     => $latitude,
+                'latitude'      => $customer['latitude'] ?? '',
+                'longitude'     => $customer['longitude'] ?? '',
                 'time_display'  => date('h:i A', strtotime($val->created_at)),
-                'location'      => $location,
-                'city'          => $cityName,
-                'state'         => $stateName,
-                'customer'      => $customerName,
-                'customer_type' => $val->type
+                'location'      => $customer['address'] ?? 'No Location',
+                'city'          => $customer['city'] ?? 'City not available',
+                'state'         => $customer['state'] ?? 'State not available',
+                'customer'      => $customer['name'] ?? 'Unknown Customer',
+                'customer_mobile' => $customer['mobile'] ?? null,
+                'customer_detail' => $customer,
+                'customer_type' => $customer['customer_type'] ?? 'Customer'
             ];
         }
 
@@ -645,37 +646,22 @@ class ReportingActivityController extends Controller
 
         // Secondary Customer Update
         foreach ($customer_update as $val) {
-            $customerName = $val->shop_name ?? $val->owner_name ?? 'Unknown Customer';
-            $cityName = $cityLookup[$val->city_id] ?? 'City not available';
-            $stateName = $stateLookup[$val->state_id] ?? 'State not available';
-
-            $location     = $val->address_line ?? $val->belt_area_market_name ?? 'No Location';
-            // Handle gps_location (split if it's "lat,long" format)
-            $latitude  = '';
-            $longitude = '';
-
-            if (!empty($val->gps_location)) {
-                $coords = explode(',', trim($val->gps_location));
-                if (count($coords) >= 2) {
-                    $latitude  = trim($coords[0]);
-                    $longitude = trim($coords[1]);
-                } else {
-                    $latitude = trim($val->gps_location); // fallback
-                }
-            }
+            $customer = $this->customerActivitySummary($val);
 
             $customerUpdateData[] = [
                 'title'         => 'Customer Edit',
                 'time'          => date('H:i:s', strtotime($val->updated_at)),
                 'date'          => $date,
-                'latitude'      => $longitude,
-                'longitude'     => $latitude,
+                'latitude'      => $customer['latitude'] ?? '',
+                'longitude'     => $customer['longitude'] ?? '',
                 'time_display'  => date('h:i A', strtotime($val->updated_at)),
-                'location'      => $location,
-                'city'          => $cityName,
-                'state'         => $stateName,
-                'customer'      => $customerName,
-                'customer_type' => $val->type
+                'location'      => $customer['address'] ?? 'No Location',
+                'city'          => $customer['city'] ?? 'City not available',
+                'state'         => $customer['state'] ?? 'State not available',
+                'customer'      => $customer['name'] ?? 'Unknown Customer',
+                'customer_mobile' => $customer['mobile'] ?? null,
+                'customer_detail' => $customer,
+                'customer_type' => $customer['customer_type'] ?? 'Customer'
             ];
         }
 

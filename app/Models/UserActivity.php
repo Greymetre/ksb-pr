@@ -16,7 +16,8 @@ class UserActivity extends Model
 
     public function customers()
     {
-        return $this->belongsTo('App\Models\Customers', 'customerid', 'id')->select('id','name', 'first_name', 'last_name','mobile','created_at');
+        return $this->belongsTo('App\Models\Customers', 'customerid', 'id')
+            ->select('id', 'name', 'first_name', 'last_name', 'mobile', 'contact_number', 'email', 'profile_image', 'shop_image', 'customer_code', 'customertype', 'latitude', 'longitude', 'created_at');
     }
 
     public function users()

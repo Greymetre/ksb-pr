@@ -57,7 +57,7 @@ class CheckIn extends Model
     public function customer()
     {
         return $this->belongsTo(Customers::class, 'customer_id')
-            ->select('id', 'name', 'first_name', 'last_name', 'mobile', 'created_at', 'customertype');
+            ->select('id', 'name', 'first_name', 'last_name', 'mobile', 'contact_number', 'email', 'profile_image', 'shop_image', 'customer_code', 'latitude', 'longitude', 'created_at', 'customertype');
     }
 
     /**
@@ -80,7 +80,9 @@ class CheckIn extends Model
     'district_id',      
     'address_line')->with(['city', 'district', 'beat']) 
                                         ->find($this->entity_id),
-            'customer'           => $this->customer,
+            'customer'           => Customers::select('id', 'name', 'first_name', 'last_name', 'mobile', 'contact_number', 'email', 'profile_image', 'shop_image', 'customer_code', 'latitude', 'longitude', 'created_at', 'customertype')
+                                        ->with(['customertypes', 'customeraddress.cityname', 'customeraddress.statename'])
+                                        ->find($this->entity_id) ?: $this->customer,
             default              => null,
         };
     }
@@ -96,10 +98,15 @@ class CheckIn extends Model
             return 'Unknown';
         }
 
+        if ($entity instanceof Customers) {
+            $customerName = $entity->name ?: trim(($entity->first_name ?? '') . ' ' . ($entity->last_name ?? ''));
+
+            return $customerName ?: 'Unknown Customer';
+        }
+
         return match ($this->entity_type) {
             'distributor'        => $entity->trade_name ?? $entity->legal_name ?? 'Unnamed Distributor',
             'secondary_customer' => $entity->shop_name ?? 'Unnamed Shop',
-            // 'customer'           => $entity->name ?? ($entity->first_name . ' ' . $entity->last_name) ?? 'Unknown Customer',
             default              => 'Unknown',
         };
     }

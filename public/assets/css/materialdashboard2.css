@@ -16332,7 +16332,7 @@ a .material-icons {
     border-radius: 0px
 }
 
-.sidebar .logo:after {
+/* .sidebar .logo:after {
     content: '';
     position: absolute;
     bottom: 0;
@@ -16340,7 +16340,7 @@ a .material-icons {
     height: 1px;
     width: calc(100% - 30px);
     background-color: rgba(180,180,180,.3)
-}
+} */
 
 .sidebar .logo p {
     float: left;

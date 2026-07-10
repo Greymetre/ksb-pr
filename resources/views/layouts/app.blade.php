@@ -805,7 +805,7 @@
             align-items: stretch;
             justify-content: flex-start;
             padding: 0;
-            border-bottom: 1px solid rgba(90, 130, 220, .14);
+            padding-bottom: 10px;
             background: #081a40;
             overflow: hidden;
         }
@@ -876,16 +876,48 @@
             height: 31px;
             display: flex;
             align-items: center;
-            padding: 10px 16px 0;
+            padding: 0 10px;
             color: #6d82c0;
             font-family: 'Sora', 'Inter', sans-serif;
-            font-size: 7.5px;
-            font-weight: 700;
+            font-size: 8px;
+            font-weight: 400;
             letter-spacing: 2.4px;
-            line-height: 1;
+            line-height: 1.5;
             text-transform: uppercase;
-            white-space: nowrap;
             overflow: hidden;
+            cursor: pointer;
+
+            background-image: linear-gradient(110deg,
+                    #6d82c0 0%,
+                    #6d82c0 38%,
+                    #c7c4c4 47%,
+                    #ffffff 50%,
+                    #c7c4c4 53%,
+                    #6d82c0 62%,
+                    #6d82c0 100%);
+
+            background-size: 260% 100%;
+            background-position: 150% 0;
+
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: #44548a;
+        }
+
+        body.fk-dark-shell .fk-sidebar-tagline:hover {
+            -webkit-text-fill-color: transparent;
+            color: #68749c;
+            animation: fk-sidebar-text-shine 4s linear infinite;
+        }
+
+        @keyframes fk-sidebar-text-shine {
+            from {
+                background-position: 150% 0;
+            }
+
+            to {
+                background-position: -150% 0;
+            }
         }
 
         body.fk-dark-shell .sidebar.close .fk-field-logo {
@@ -2462,7 +2494,7 @@
                                     aria-expanded="false">
                                     <i class="material-icons icon">home_repair_service</i>
                                     <span> Service Charge Products</span>
-                                        <div class="d-none mobile_hide"> Service Charge Products</div>
+                                    <div class="d-none mobile_hide"> Service Charge Products</div>
                                 </a>
                                 <div class="collapse" id="serviceProductMenu" style="">
                                     <ul class="navd">
