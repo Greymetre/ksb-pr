@@ -27,6 +27,11 @@ class TourProgrammeApiController extends Controller
      
      
     //---------------------------
+
+    private function tourObjectiveOptions(): array
+    {
+        return config('constants.tour_objectives', []);
+    }
     
     private function addTourLog($tourId, $action, $status, $remark = null)
     {
@@ -65,6 +70,7 @@ class TourProgrammeApiController extends Controller
 
         return response()->json([
             'status'   => 'success',
+            'objective_options' => $this->tourObjectiveOptions(),
             'data'     => $tours->items(),
             'meta'     => [
                 'current_page' => $tours->currentPage(),
@@ -141,6 +147,7 @@ class TourProgrammeApiController extends Controller
         return response()->json([
             'status'  => 'success',
             'message' => count($created) . ' tour plan(s) created',
+            'objective_options' => $this->tourObjectiveOptions(),
             'data'    => $created
         ], 201);
     }
@@ -156,6 +163,7 @@ class TourProgrammeApiController extends Controller
 
         return response()->json([
             'status' => 'success',
+            'objective_options' => $this->tourObjectiveOptions(),
             'data'   => $tour
         ]);
     }
@@ -206,6 +214,7 @@ class TourProgrammeApiController extends Controller
         return response()->json([
             'status'  => 'success',
             'message' => 'Tour plan updated',
+            'objective_options' => $this->tourObjectiveOptions(),
             'data'    => $tour->fresh(['city', 'districtRelation'])
         ]);
     }
@@ -273,6 +282,7 @@ class TourProgrammeApiController extends Controller
         return response()->json([
             'status'     => 'success',
             'message'    => $tour_plans->isNotEmpty() ? 'Global tour plans retrieved.' : 'No records found.',
+            'objective_options' => $this->tourObjectiveOptions(),
             'data'       => $tour_plans->items(),
             'pagination' => [
                 'current_page' => $tour_plans->currentPage(),

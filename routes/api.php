@@ -336,6 +336,7 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
     Route::get('designations', [ReportingActivityController::class, 'getDesignations']);
     //Tour Plan
     Route::get('tour/userlist', [TourPlanController::class, 'user_list']);
+    Route::get('tour/objectives', [TourPlanController::class, 'objectives']);
     Route::get('tour/show', [TourPlanController::class, 'show']);
     Route::post('tour/add', [TourPlanController::class, 'add']);
     Route::post('tour/edit', [TourPlanController::class, 'edit']);
@@ -426,4 +427,3 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
     Route::get('get-last-call', [CallLogController::class, 'last_call']);
     Route::post('update-call-remark', [CallLogController::class, 'update_remark']);
 });
-

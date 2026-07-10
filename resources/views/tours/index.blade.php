@@ -294,6 +294,12 @@
     <!-- Pills container -->
     <div id="objectiveContainer" class="form-control d-flex flex-wrap" style="min-height:45px;"></div>
 
+    <div class="d-flex flex-wrap mt-2" id="objectiveQuickOptions">
+      @foreach(config('constants.tour_objectives') as $objective)
+        <button type="button" class="btn btn-outline-primary btn-sm mr-1 mb-1 objective-option" data-value="{{ $objective }}">{{ $objective }}</button>
+      @endforeach
+    </div>
+
     <!-- Input + Add button -->
     <div class="d-flex mt-2">
       <input type="text" id="objectiveInput" class="form-control" placeholder="Add objective">
@@ -799,6 +805,12 @@ function renderObjectives() {
 
     // Update hidden input
     $('#objectives').val(objectivesArray.join(','));
+
+    $('.objective-option').each(function() {
+        const value = $(this).data('value');
+        $(this).toggleClass('btn-primary active', objectivesArray.includes(value));
+        $(this).toggleClass('btn-outline-primary', !objectivesArray.includes(value));
+    });
 }
 
 // Add new objective
@@ -810,6 +822,18 @@ $('#addObjective').click(function() {
         renderObjectives();
         $('#objectiveInput').val('');
     }
+});
+
+$(document).on('click', '.objective-option', function() {
+    const value = $(this).data('value');
+
+    if (objectivesArray.includes(value)) {
+        objectivesArray = objectivesArray.filter(item => item !== value);
+    } else {
+        objectivesArray.push(value);
+    }
+
+    renderObjectives();
 });
 
 // Enter key support

@@ -22,6 +22,13 @@ return [
         '7' => 'Grade 7',
         '8' => 'Grade 8',
     ],
+    'tour_objectives' => [
+        'Customer Visit',
+        'Field Demo',
+        'Retailer Meet',
+        'Plumber Meet',
+        'Orther',
+    ],
     'redeem_mode' => [
         '1' => 'Gift',
         '2' => 'Neft'

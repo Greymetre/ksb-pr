@@ -405,6 +405,7 @@ return response()->json([
         'town'          => $tour->town,                             // keep ID
         'town_name'     => $tour->cityRelation?->city_name ?? '—',
         'objectives'    => $tour->objectives,
+        'objective_options' => config('constants.tour_objectives', []),
     ]);
 }
 
@@ -432,6 +433,7 @@ public function edit($id)
         'town'       => $tour->town,          // still keep ID
         'town_name'  => $cityName,            // name for dropdown
         'objectives' => $tour->objectives,
+        'objective_options' => config('constants.tour_objectives', []),
     ]);
 }
 

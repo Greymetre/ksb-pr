@@ -152,10 +152,9 @@
 
                 <!-- Buttons -->
                 <div class="mb-3">
-                    <button type="button" class="btn btn-outline-primary obj-btn" data-value="Retailer Visit">Retailer Visit</button>
-                    <button type="button" class="btn btn-outline-primary obj-btn" data-value="Retailer Meet">Retailer Meet</button>
-                    <button type="button" class="btn btn-outline-primary obj-btn" data-value="Nukkad Meet">Nukkad Meet</button>
-                    <button type="button" class="btn btn-outline-primary obj-btn" data-value="Field Demo">Field Demo</button>
+                    @foreach(config('constants.tour_objectives') as $objective)
+                        <button type="button" class="btn btn-outline-primary obj-btn" data-value="{{ $objective }}">{{ $objective }}</button>
+                    @endforeach
                 </div>
 
                 <!-- Manual Input -->

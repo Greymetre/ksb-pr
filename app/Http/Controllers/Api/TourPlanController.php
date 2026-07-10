@@ -17,6 +17,20 @@ use Illuminate\Support\Facades\Auth;
 
 class TourPlanController extends Controller
 {
+    private function tourObjectiveOptions(): array
+    {
+        return config('constants.tour_objectives', []);
+    }
+
+    public function objectives()
+    {
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Data retrieved successfully.',
+            'data' => $this->tourObjectiveOptions(),
+        ], 200);
+    }
+
     public function show(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -96,6 +110,7 @@ class TourPlanController extends Controller
         return response()->json([
             'status'  => 'success',
             'message' => $tour_plans->isNotEmpty() ? 'Data retrieved successfully.' : 'No records found.',
+            'objective_options' => $this->tourObjectiveOptions(),
             'data'    => $formatted,
             'pagination' => [
                 'current_page' => $tour_plans->currentPage(),
@@ -266,6 +281,7 @@ class TourPlanController extends Controller
         return response()->json([
             'status'     => 'success',
             'message'    => 'Data retrieved successfully.',
+            'objective_options' => $this->tourObjectiveOptions(),
             // 'branches'   => $branches,
             // 'users'      => $all_users,           // all matching users (for dropdown)
             'data'       => $data,                // current page
@@ -374,6 +390,7 @@ class TourPlanController extends Controller
         return response()->json([
             'status'  => 'success',
             'message' => trim($message) ?: 'No changes made.',
+            'objective_options' => $this->tourObjectiveOptions(),
         ], 200);
     }
 
@@ -411,7 +428,11 @@ class TourPlanController extends Controller
             }
         }
 
-        return response()->json(['status' => 'success', 'message' => 'Data updated successfully.'], 200);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Data updated successfully.',
+            'objective_options' => $this->tourObjectiveOptions(),
+        ], 200);
     }
 
     public function global(Request $request)
@@ -501,6 +522,7 @@ class TourPlanController extends Controller
             'message' => 'Global tour plans retrieved successfully.',
             'hierarchy_level' => $hierarchy_level,     // ← Outside the data (as requested)
             'hierarchy_label' => $hierarchy_label,     // ← Outside the data
+            'objective_options' => $this->tourObjectiveOptions(),
             'data'    => $formatted,
             'pagination' => [
                 'current_page' => $tour_plans->currentPage(),
