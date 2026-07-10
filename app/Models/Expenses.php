@@ -13,7 +13,7 @@ class Expenses extends Model implements HasMedia
 {
   use HasFactory, InteractsWithMedia;
 
-  protected $fillable = ['expenses_type', 'user_id', 'date', 'claim_amount', 'start_km', 'stop_km', 'total_km', 'note', 'checker_status', 'accountant_status', 'created_at', 'updated_at', 'created_by', 'approve_amount', 'reason', 'approve_reject_by'];
+  protected $fillable = ['expenses_type', 'rate', 'user_id', 'date', 'claim_amount', 'start_km', 'stop_km', 'total_km', 'note', 'checker_status', 'accountant_status', 'created_at', 'updated_at', 'created_by', 'approve_amount', 'reason', 'approve_reject_by'];
 
   protected $appends = ['is_self'];
   // public function expense_type(){

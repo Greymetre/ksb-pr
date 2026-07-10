@@ -57,6 +57,24 @@ class ExpensesController extends Controller
         return $expense;
     }
 
+    private function resolveExpenseRate($expenseTypeId, $requestRate = null): string
+    {
+        if ($requestRate !== null && $requestRate !== '') {
+            return (string) $requestRate;
+        }
+
+        return (string) (ExpensesType::where('id', $expenseTypeId)->value('rate') ?? 0);
+    }
+
+    private function expenseRate(Expenses $expense): string
+    {
+        if ($expense->rate !== null && $expense->rate !== '') {
+            return (string) $expense->rate;
+        }
+
+        return (string) ($expense->expense_type->rate ?? 0);
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -175,6 +193,7 @@ class ExpensesController extends Controller
 
                 $data = array(
                     'expenses_type' => $request->expenses_type ?? NULL,
+                    'rate' => $this->resolveExpenseRate($request->expenses_type, $request->rate),
                     'user_id' => $request->user_id ?? NULL,
                     'date' => $request->date ?? NULL,
                     'claim_amount' => $request->claim_amount ?? NULL,
@@ -216,6 +235,7 @@ class ExpensesController extends Controller
 
                     $data = array(
                         'expenses_type' => $request->expenses_type ?? NULL,
+                        'rate' => $this->resolveExpenseRate($request->expenses_type, $request->rate),
                         'user_id' => $request->user_id ?? NULL,
                         'date' => $request->date ?? NULL,
                         'claim_amount' => $request->claim_amount ?? NULL,
@@ -360,12 +380,16 @@ class ExpensesController extends Controller
 
             $expense_details = ExpensesType::where('id', $request->expenses_type)->first();
             $expense_details->allowance_type_id;
+            $rate = (string) $request->expenses_type !== (string) $expense->expenses_type
+                ? $this->resolveExpenseRate($request->expenses_type, $request->rate)
+                : $this->resolveExpenseRate($request->expenses_type, $request->rate ?? $expense->rate);
 
 
             if ($expense_details->allowance_type_id == '1') {
 
                 $data = array(
                     'expenses_type' => $request->expenses_type ?? NULL,
+                    'rate' => $rate,
                     'user_id' => $request->user_id ?? NULL,
                     'date' => $request->date ?? NULL,
                     'claim_amount' => $request->claim_amount ?? NULL,
@@ -383,6 +407,7 @@ class ExpensesController extends Controller
 
                 $data = array(
                     'expenses_type' => $request->expenses_type ?? NULL,
+                    'rate' => $rate,
                     'user_id' => $request->user_id ?? NULL,
                     'date' => $request->date ?? NULL,
                     'claim_amount' => $request->claim_amount ?? NULL,
@@ -558,7 +583,7 @@ class ExpensesController extends Controller
                 $item->users->getbranch->branch_name ?? '',
                 $item->users->getdivision->division_name ?? '',
                 $item->expense_type->name ?? "",
-                ($item->expense_type->rate && $item->expense_type->rate > 0) ? $item->expense_type->rate : "0",
+                ((float) $this->expenseRate($item) > 0) ? $this->expenseRate($item) : "0",
                 ($item->claim_amount && $item->claim_amount > 0) ? $item->claim_amount : "0",
                 ($item->approve_amount && $item->approve_amount > 0) ? $item->approve_amount : "0",
                 $item->note ?? "",

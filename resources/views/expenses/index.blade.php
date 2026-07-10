@@ -175,6 +175,7 @@
                  <th>Employee</th>
                  <th>{!! trans('panel.expenses.fields.designation') !!}</th>
                  <th>{!! trans('panel.expenses.fields.expense_type') !!}</th>
+                 <th>{!! trans('panel.expenses.fields.rate') !!}</th>
                  <th>{!! trans('panel.expenses.fields.claim_amount') !!}</th>
                  <th>{!! trans('panel.expenses.fields.approve_amount') !!}</th>
                  <th>{!! trans('panel.expenses.fields.expense_status') !!}</th>

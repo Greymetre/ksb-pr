@@ -52,6 +52,9 @@ class ExpensesDataTable extends DataTable
             ->editColumn('claim_amount', function ($query) {
                 return $query->claim_amount ?? '';
             })
+            ->editColumn('rate', function ($query) {
+                return $query->rate ?? $query->expense_type->rate ?? '';
+            })
             ->editColumn('approve_amount', function ($query) {
                 return $query->approve_amount ?? '';
             })

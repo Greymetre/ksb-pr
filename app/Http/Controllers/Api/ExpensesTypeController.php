@@ -69,6 +69,24 @@ class ExpensesTypeController extends Controller
         ];
     }
 
+    private function resolveExpenseRate($expenseTypeId, $requestRate = null): string
+    {
+        if ($requestRate !== null && $requestRate !== '') {
+            return (string) $requestRate;
+        }
+
+        return (string) (ExpensesType::where('id', $expenseTypeId)->value('rate') ?? 0);
+    }
+
+    private function expenseRate(Expenses $expense): string
+    {
+        if ($expense->rate !== null && $expense->rate !== '') {
+            return (string) $expense->rate;
+        }
+
+        return (string) ($expense->expense_type->rate ?? 0);
+    }
+
 
     public function getExpensesType(Request $request)
     {
@@ -132,6 +150,7 @@ class ExpensesTypeController extends Controller
             if ($expenses = Expenses::create([
                 'user_id' => $userid,
                 'expenses_type' => isset($request->expenses_type) ? $request->expenses_type : null,
+                'rate' => $this->resolveExpenseRate($request->expenses_type, $request->rate),
                 'date' => isset($request->date) ? $request->date : null,
                 'claim_amount' => isset($request->claim_amount) ? $request->claim_amount : null,
                 'start_km' => isset($request->start_km) ? $request->start_km : null,
@@ -226,7 +245,7 @@ class ExpensesTypeController extends Controller
                         'id' => $expense->id ?? "",
                         'expenses_type' => $expense->expenses_type ?? "",
                         'expenses_type_name' => $expense->expense_type->name ?? "",
-                        'rate' => $expense->expense_type->rate ?? "",
+                        'rate' => $this->expenseRate($expense),
                         'user_id' => $expense->user_id ?? "",
                         'date' => date("d-m-Y", strtotime($expense->date)),
                         'note' => $expense->note ?? "",
@@ -301,7 +320,7 @@ class ExpensesTypeController extends Controller
                 $datas['id'] = $expense->id ?? "";
                 $datas['expenses_type'] = $expense->expenses_type ?? "";
                 $datas['expenses_type_name'] = $expense->expense_type->name ?? "";
-                $datas['rate'] = $expense->expense_type->rate ?? "";
+                $datas['rate'] = $this->expenseRate($expense);
                 $datas['allowance_type_id'] = $expense->expense_type->allowance_type_id ?? "";
                 $datas['user_id'] = $expense->user_id ?? "";
                 $datas['user_name'] = $expense->users->name ?? "";
@@ -377,9 +396,14 @@ class ExpensesTypeController extends Controller
             }
 
             $expense_detail = Expenses::where('id', $request['expense_id'])->first();
+            $expenseTypeId = isset($request['expenses_type']) ? $request['expenses_type'] : $expense_detail->expenses_type;
+            $rate = isset($request['expenses_type']) && (string) $request['expenses_type'] !== (string) $expense_detail->expenses_type
+                ? $this->resolveExpenseRate($expenseTypeId, $request->rate)
+                : $this->resolveExpenseRate($expenseTypeId, $request->rate ?? $expense_detail->rate);
             if ($expenses = Expenses::where('id', $request['expense_id'])->update([
                 'user_id' => $userid,
-                'expenses_type' => isset($request['expenses_type']) ? $request['expenses_type'] : $expense_detail->expenses_type,
+                'expenses_type' => $expenseTypeId,
+                'rate' => $rate,
                 //'date' => isset($request['date'])? $request['date']:$expense_detail->date,
                 'note' => isset($request['note']) ? $request['note'] : $expense_detail->note,
                 'start_km' => isset($request['start_km']) ? $request['start_km'] : $expense_detail->start_km,
@@ -518,7 +542,7 @@ class ExpensesTypeController extends Controller
                         'id' => $expense->id ?? "",
                         'expenses_type' => $expense->expenses_type ?? "",
                         'expenses_type_name' => $expense->expense_type->name ?? "",
-                        'rate' => $expense->expense_type->rate ?? "",
+                        'rate' => $this->expenseRate($expense),
                         'user_id' => $expense->user_id ?? "",
                         'date' => date("d-m-Y", strtotime($expense->date)),
                         'note' => $expense->note ?? "",

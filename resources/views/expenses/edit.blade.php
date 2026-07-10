@@ -132,7 +132,7 @@
                                 <div class="form-group has-default bmd-form-group">
                                     <input placeholder="Rate"
                                         class="form-control {{ $errors->has('rate') ? 'is-invalid' : '' }}  rate"
-                                        type="text" name="rate" id="rate" value="{{ old('rate', '') }}"
+                                        type="text" name="rate" id="rate" value="{{ old('rate', $expense->rate ?? $expense->expense_type->rate ?? '') }}"
                                         autocomplete="off">
                                     @if($errors->has('rate'))
                                     <div class="invalid-feedback">
@@ -359,16 +359,20 @@
 
     <script type="text/javascript">
     $(document).ready(function() {
+        var savedExpenseType = "{{ $expense->expenses_type ?? '' }}";
+        var savedExpenseRate = "{{ old('rate', $expense->rate ?? $expense->expense_type->rate ?? '') }}";
 
         $('#expenses_type').change(function() {
             var type = $(this).children(":selected").data('allowtype');
             var rate = $(this).children(":selected").data('rate');
+            var selectedExpenseType = $(this).val();
+            var displayRate = selectedExpenseType == savedExpenseType ? savedExpenseRate : rate;
             var total_kms = $('#total_kms').val();
             var total_clm = $('#total_clm').val();
 
 
             if (total_kms) {
-                var tol_amt = rate;
+                var tol_amt = displayRate;
             } else {
                 var tol_amt = total_clm;
             }
@@ -377,13 +381,14 @@
             if (type == '1') {
                 $('.km').show()
                 $('.claim').prop("readonly", true)
-                $('#rate').val(rate);
+                $('#rate').val(displayRate);
                 $('.rate').prop("readonly", true)
             } else if (type == '2') {
                 $('.km').hide()
                 //$('.km').prop("disabled", true) 
                 //$('.claim').prop("disabled", false) 
                 $('.claim').prop("readonly", false)
+                $('#rate').val(displayRate);
                 $('.final_claim').val(tol_amt);
             } else {
                 $('.km').hide()

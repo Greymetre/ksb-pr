@@ -96,6 +96,12 @@ $(document).ready(function () {
                 searchable: false
             },
             {
+                data: 'rate',
+                name: 'rate',
+                orderable: false,
+                searchable: false
+            },
+            {
                 data: 'claim_amount',
                 name: 'claim_amount',
                 orderable: false,

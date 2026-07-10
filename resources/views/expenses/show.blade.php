@@ -327,7 +327,7 @@ margin-top: 3px;
                     <td>{!! $expense['start_km']??0 !!}</td>
                     <td>{!! $expense['stop_km']??0 !!}</td>
                     <td>{!! $expense['total_km']??0 !!}</td>
-                    <td>{!! $expense['expense_type']['rate']??0 !!}</td>
+                    <td>{!! $expense['rate'] ?? $expense['expense_type']['rate'] ?? 0 !!}</td>
                   </tr>
                 </tbody>
               </table>
@@ -349,7 +349,7 @@ margin-top: 3px;
                 </thead>
                 <tbody>
                   <tr>
-                    <td>{!! $expense['expense_type']['rate']??0 !!}</td>
+                    <td>{!! $expense['rate'] ?? $expense['expense_type']['rate'] ?? 0 !!}</td>
                   </tr>
                 </tbody>
               </table>
