@@ -84,6 +84,42 @@ class OrderController extends Controller
         return $this->applyOrderAccessScope(Order::query(), $user)->find($id);
     }
 
+    private function customerDisplayName($customer): string
+    {
+        if (!$customer) {
+            return '';
+        }
+
+        $personName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
+
+        return $customer->name ?: ($personName ?: ($customer->customer_code ?: ($customer->mobile ?: '')));
+    }
+
+    private function customerSummary($customer): ?array
+    {
+        if (!$customer) {
+            return null;
+        }
+
+        return [
+            'id' => $customer->id,
+            'name' => $this->customerDisplayName($customer),
+            'first_name' => $customer->first_name,
+            'last_name' => $customer->last_name,
+            'mobile' => $customer->mobile,
+            'contact_number' => $customer->contact_number,
+            'email' => $customer->email,
+            'customer_code' => $customer->customer_code,
+            'customer_type_id' => $customer->customertype,
+            'customer_type' => optional($customer->customertypes)->customertype_name,
+            'profile_image' => $customer->profile_image,
+            'shop_image' => $customer->shop_image,
+            'address' => optional($customer->customeraddress)->full_address,
+            'city' => optional(optional($customer->customeraddress)->cityname)->city_name,
+            'state' => optional(optional($customer->customeraddress)->statename)->state_name,
+        ];
+    }
+
     public function buyer()
     {
         return $this->belongsTo(SecondaryCustomer::class, 'buyer_id');
@@ -108,7 +144,15 @@ class OrderController extends Controller
             $user_ids = getUsersReportingToAuth($user->id);
             $pageSize = $request->input('pageSqueryize');
             $query = $this->orders->latest()
-                ->with(['buyer', 'seller', 'orderdetails.products']);
+                ->with([
+                    'buyerCustomer.customertypes',
+                    'buyerCustomer.customeraddress.cityname',
+                    'buyerCustomer.customeraddress.statename',
+                    'sellerCustomer.customertypes',
+                    'sellerCustomer.customeraddress.cityname',
+                    'sellerCustomer.customeraddress.statename',
+                    'orderdetails.products'
+                ]);
             $start_date = $request->startdate ?? '';
             $end_date   = $request->enddate ?? '';
             $selecteduser_id = $request->user_id ?? '';
@@ -178,16 +222,19 @@ class OrderController extends Controller
                         }
                     }
 
+                    $seller = $this->customerSummary($value->sellerCustomer);
+                    $buyer = $this->customerSummary($value->buyerCustomer);
+
                     $data->push([
                         'order_id' => isset($value['id']) ? $value['id'] : 0,
                         'seller_id'    => $value->seller_id ?? null,
-                        'seller_name'  => $value->seller?->trade_name
-                            ?? $value->seller?->legal_name
-                            ?? '',
+                        'seller_name'  => $seller['name'] ?? '',
+                        'seller_mobile' => $seller['mobile'] ?? null,
+                        'seller_customer' => $seller,
                         'buyer_id'     => $value->buyer_id ?? null,
-                        'buyer_name'   => $value->buyer?->shop_name
-                            ?? $value->buyer?->owner_name
-                            ?? '',
+                        'buyer_name'   => $buyer['name'] ?? '',
+                        'buyer_mobile' => $buyer['mobile'] ?? null,
+                        'buyer_customer' => $buyer,
                         // 'total_qty' => isset($value['total_qty']) ? $value['total_qty'] : 0,
                         'total_qty' => $value->orderdetails->sum('quantity') ?? 0,
                         'shipped_qty' => isset($value['shipped_qty']) ? $value['shipped_qty'] : 0,
@@ -223,7 +270,20 @@ class OrderController extends Controller
             $user = $request->user();
             $user_id = $user->id;
             $order_id = $request->input('order_id');
-            $data = $this->applyOrderAccessScope($this->orders->with('orderdetails', 'orderdetails.products', 'statusname', 'orderdetails.productdetails', 'createdbyname', 'getsalesdetail', 'seller', 'buyer'), $user)
+            $data = $this->applyOrderAccessScope($this->orders->with(
+                'orderdetails',
+                'orderdetails.products',
+                'statusname',
+                'orderdetails.productdetails',
+                'createdbyname',
+                'getsalesdetail',
+                'buyerCustomer.customertypes',
+                'buyerCustomer.customeraddress.cityname',
+                'buyerCustomer.customeraddress.statename',
+                'sellerCustomer.customertypes',
+                'sellerCustomer.customeraddress.cityname',
+                'sellerCustomer.customeraddress.statename'
+            ), $user)
                 ->where('id', $order_id)
                 ->first();
 
@@ -232,12 +292,18 @@ class OrderController extends Controller
             }
 
             $salesdetails = Sales::where('order_id', $order_id)->first() ?? [];
+            $seller = $this->customerSummary($data->sellerCustomer);
+            $buyer = $this->customerSummary($data->buyerCustomer);
             // Later when preparing response:
-            $data['seller_name']    = $data->seller?->trade_name ?? $data->seller?->legal_name ?? '';
-            $data['seller_address'] = $data->seller?->billing_address ?? '';
+            $data['seller_name']    = $seller['name'] ?? '';
+            $data['seller_mobile'] = $seller['mobile'] ?? null;
+            $data['seller_address'] = $seller['address'] ?? '';
+            $data['seller_customer'] = $seller;
 
-            $data['buyer_name']     = $data->buyer?->shop_name ?? $data->buyer?->owner_name ?? '';
-            $data['buyer_address']  = $data->buyer?->address_line ?? '';
+            $data['buyer_name']     = $buyer['name'] ?? '';
+            $data['buyer_mobile'] = $buyer['mobile'] ?? null;
+            $data['buyer_address']  = $buyer['address'] ?? '';
+            $data['buyer_customer'] = $buyer;
 
             $data['schme_amount'] = (string)$data['schme_amount'];
             $data['schme_val'] = (string)$data['schme_val'];
@@ -323,7 +389,7 @@ class OrderController extends Controller
                 // $data['seller_address'] = isset($data['sellers']['customeraddress']) ? $data['sellers']['customeraddress'] : '';
                 // $data['buyer_name'] = isset($data['buyers']['name']) ? $data['buyers']['name'] : '';
                 // $data['buyer_address'] = isset($data['buyers']['customeraddress']) ? $data['buyers']['customeraddress'] : '';
-                $data['buyer_type'] = isset($data['buyers']['customertypes']) ? $data['buyers']['customertypes']['customertype_name'] : '';
+                $data['buyer_type'] = $buyer['customer_type'] ?? '';
                 $data['orderdetails'] = $orderdetails;
                 return response()->json(['status' => 'success', 'message' => 'Data retrieved successfully.', 'data' => $data], $this->successStatus);
             }
