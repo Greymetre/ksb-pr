@@ -17,6 +17,7 @@ use App\DataTables\UnitDataTable;
 use App\Imports\UnitImport;
 use App\Exports\UnitExport;
 use App\Exports\UnitTemplate;
+use Maatwebsite\Excel\Facades\Excel;
 
 class UnitController extends Controller
 {
