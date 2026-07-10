@@ -16,7 +16,6 @@ use Yajra\DataTables\Html\Editor\Fields;
 use Yajra\DataTables\Services\DataTable;
 
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class ExpensesDataTable extends DataTable
 {
@@ -63,16 +62,7 @@ class ExpensesDataTable extends DataTable
                 return $query->total_km ?? '';
             })
             ->editColumn('attech', function ($query) {
-                $is_avail = 'No';
-                if ($query->getMedia('expense_file')->count() > 0) {
-                    foreach ($query->getMedia('expense_file') as $image) {
-                        if (Storage::disk('s3')->exists($image->getPath())) {
-                            $is_avail = 'Yes';
-                        }
-                    }
-                }
-
-                return $is_avail;
+                return $query->getMedia('expense_file')->count() > 0 ? 'Yes' : 'No';
             })
 
             ->addColumn('users.getbranch.branch_name', function ($query) {
@@ -187,9 +177,13 @@ class ExpensesDataTable extends DataTable
         
         if (!empty($request['attechments'])) {
             if ($request['attechments'] == 'yes') {
-                $data->whereHas('media');
+                $data->whereHas('media', function ($query) {
+                    $query->where('collection_name', 'expense_file');
+                });
             } elseif ($request['attechments'] == 'no') {
-                $data->whereDoesntHave('media');
+                $data->whereDoesntHave('media', function ($query) {
+                    $query->where('collection_name', 'expense_file');
+                });
             }
         }
 
