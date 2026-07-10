@@ -19,3 +19,4 @@ yarn-error.log
 /padmin
 /netProject
 *.DS_Store
+/docs

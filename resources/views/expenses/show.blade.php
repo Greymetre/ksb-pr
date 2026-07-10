@@ -412,7 +412,6 @@ $city = \App\Models\City::find($paln->town);
               <div class="form-group col-md-12">
                 @foreach($expense->getMedia('expense_file') as $image)
 
-                @if(Storage::disk('s3')->exists($image->getPath()))
                 <?php
                 $infoPath = pathinfo($image->getFullUrl());
                 $extension = $infoPath['extension'];
@@ -428,7 +427,6 @@ $city = \App\Models\City::find($paln->town);
                 <?php } ?>
 
                 <a class="btn btn-danger" href="{{route('deleteview', ['id' => $image->id,'expense_id'=>$expense->id])}}" role="button" onclick="return confirm('are you sure do you want delete file')" style="width:5px !important;">X</a>
-                @endif
                 @endforeach
               </div>
               @endif

@@ -206,7 +206,7 @@ class ExpensesController extends Controller
 
                         $expenses->addMedia($file)
                             ->usingFileName($customname)
-                            ->toMediaCollection('expense_file', 's3');
+                            ->toMediaCollection('expense_file', 'public');
                     }
                 }
             } else {
@@ -246,7 +246,7 @@ class ExpensesController extends Controller
                             $customname = time() . '.' . $file->getClientOriginalExtension();
                             $expenses->addMedia($file)
                                 ->usingFileName($customname)
-                                ->toMediaCollection('expense_file', 's3');
+                                ->toMediaCollection('expense_file', 'public');
                         }
                     }
                 } else {
@@ -417,7 +417,7 @@ class ExpensesController extends Controller
                     $customname = time() . '.' . $file->getClientOriginalExtension();
                     $expense->addMedia($file)
                         ->usingFileName($customname)
-                        ->toMediaCollection('expense_file', 's3');
+                        ->toMediaCollection('expense_file', 'public');
                 }
             }
             return redirect(route('expenses.index'))->with('message', 'expense updated successfully');
