@@ -16,6 +16,7 @@
                    <div class="d-flex flex-row">
                      <div class="p-2" style="width:195px;">
                        <select class="select2" name="payroll" id="payroll" data-style="select-with-transition">
+                         <option value="" selected>All Grades</option>
                          @foreach($pay_rolls as $key=>$payroll)
                          <option value="{!! $key !!}">{!! $payroll !!}</option>
                          @endforeach
@@ -297,6 +298,7 @@
 
      function resetFilter() {
        localStorage.setItem("is_reset", '1');
+       localStorage.setItem("payroll", '');
        localStorage.setItem("executive_id", '');
        localStorage.setItem("start_date", '');
        localStorage.setItem("end_date", '');

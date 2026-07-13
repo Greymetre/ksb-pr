@@ -106,7 +106,7 @@ class CustomerController extends Controller
                 'visiting_card' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'gstin_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'pan_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
-                'aadhar_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'imgaadhar' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'other_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
             ], [
                 'image.file' => 'Profile image must be a valid uploaded file.',
@@ -124,9 +124,9 @@ class CustomerController extends Controller
                 'pan_image.file' => 'PAN document must be a valid uploaded file.',
                 'pan_image.mimes' => 'PAN document must be jpg, jpeg, png, webp, or pdf.',
                 'pan_image.max' => 'PAN document size must not be greater than 5 MB.',
-                'aadhar_image.file' => 'Aadhaar document must be a valid uploaded file.',
-                'aadhar_image.mimes' => 'Aadhaar document must be jpg, jpeg, png, webp, or pdf.',
-                'aadhar_image.max' => 'Aadhaar document size must not be greater than 5 MB.',
+                'imgaadhar.file' => 'Aadhaar document must be a valid uploaded file.',
+                'imgaadhar.mimes' => 'Aadhaar document must be jpg, jpeg, png, webp, or pdf.',
+                'imgaadhar.max' => 'Aadhaar document size must not be greater than 5 MB.',
                 'other_image.file' => 'Bank passbook must be a valid uploaded file.',
                 'other_image.mimes' => 'Bank passbook must be jpg, jpeg, png, webp, or pdf.',
                 'other_image.max' => 'Bank passbook size must not be greater than 5 MB.',
@@ -329,7 +329,7 @@ class CustomerController extends Controller
                             $this->saveCustomerAttachment($request['customer_id'], 'pan', $image);
                         }
 
-                        if ($image = $this->requestFileByAnyKey($request, ['aadhar_image'])) {
+                        if ($image = $this->requestFileByAnyKey($request, ['imgaadhar'])) {
                             $this->saveCustomerAttachment($request['customer_id'], 'aadhar', $image);
                         }
 
