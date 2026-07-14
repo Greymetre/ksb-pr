@@ -120,6 +120,7 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     'blood_group' => !empty($row['designation_code']) ? $row['designation_code'] : NULL,
                     'personal_number' => !empty($row['employee_super_code']) ? $row['employee_super_code'] : NULL,
                     'password' => !empty($row['password'])? Hash::make($row['password']) :'',
+                    'password_string' => !empty($row['password']) ? Hash::make($row['password']) : '',
                     'gender' => !empty($row['gender']) ? $row['gender'] : '',
                     //'profile_image' => !empty($row['profile_image'])? $row['profile_image']:'',
                     'user_code' => !empty($row['user_code']) ? $row['user_code'] : '',
