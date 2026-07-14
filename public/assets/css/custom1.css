@@ -2197,6 +2197,46 @@ body.fk-shell .fk-export-report .fk-report-card .fk-create-action .material-icon
     line-height: 1;
 }
 
+/* Global display casing: mixed/lower strings show Title Case; existing all-caps remain unchanged. */
+body.fk-shell .content label:not(.custom-file-label):not(.form-check-label):not(.btn),
+body.fk-shell .content .card-title,
+body.fk-shell .content .fk-list-title,
+body.fk-shell .content .fk-table-meta h2,
+body.fk-shell .content .fk-table-meta-subline,
+body.fk-shell .content .btn span:not(.material-icons):not(.material-icons-outlined):not(.material-symbols-outlined),
+body.fk-shell .content .dropdown-item,
+body.fk-shell .content .filter-option-inner-inner,
+body.fk-shell .content .select2-selection__rendered,
+body.fk-shell .content .select2-results__option,
+body.fk-shell .content input:not([type="email"]):not([type="password"]):not([type="number"]):not([type="date"]):not([type="time"]):not([type="datetime-local"]):not(.fk-list-search-input),
+body.fk-shell .content textarea,
+body.fk-shell .modal label:not(.custom-file-label):not(.form-check-label):not(.btn),
+body.fk-shell .modal .modal-title,
+body.fk-shell .modal .btn span:not(.material-icons):not(.material-icons-outlined):not(.material-symbols-outlined),
+body.fk-shell .fk-filter-drawer label,
+body.fk-shell .fk-filter-drawer .filter-option-inner-inner,
+body.fk-shell .fk-filter-drawer .select2-selection__rendered,
+body.fk-shell .fk-filter-drawer input:not([type="email"]):not([type="password"]):not([type="number"]):not([type="date"]):not([type="time"]):not([type="datetime-local"]),
+body.fk-shell table.dataTable tbody td:not(.fk-preserve-case),
+body.fk-shell .table tbody td:not(.fk-preserve-case) {
+    text-transform: capitalize !important;
+}
+
+body.fk-shell .fk-list-breadcrumb,
+body.fk-shell table.dataTable thead th,
+body.fk-shell .table thead th,
+body.fk-shell .material-icons,
+body.fk-shell .material-icons-outlined,
+body.fk-shell .material-symbols-outlined,
+body.fk-shell code,
+body.fk-shell pre,
+body.fk-shell .fk-preserve-case,
+body.fk-shell input[type="email"],
+body.fk-shell input[type="password"],
+body.fk-shell input.fk-list-search-input {
+    text-transform: none !important;
+}
+
 @media (max-width: 996px) {
     body.fk-shell .fk-list-page-head {
         align-items: flex-start;

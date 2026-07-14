@@ -4428,6 +4428,17 @@
             document.querySelectorAll('body.fk-shell div.dataTables_wrapper').forEach(formatDataTableFooter);
         }
 
+        function preserveSensitiveTextCase(root) {
+            const scope = root && root.querySelectorAll ? root : document;
+            scope.querySelectorAll('body.fk-shell table tbody td, body.fk-shell .table tbody td').forEach(function(cell) {
+                const text = (cell.textContent || '').replace(/\s+/g, ' ').trim();
+                if (!text) return;
+                if (/@/.test(text) || /^https?:\/\//i.test(text) || /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/i.test(text)) {
+                    cell.classList.add('fk-preserve-case');
+                }
+            });
+        }
+
         function syncListingSearchForWrapper(wrapper) {
             if (!wrapper) return;
             const card = wrapper.closest('.fk-listing-card, .card');
@@ -4438,7 +4449,9 @@
         }
 
         formatAllDataTableFooters();
+        preserveSensitiveTextCase();
         window.addEventListener('load', formatAllDataTableFooters);
+        window.addEventListener('load', preserveSensitiveTextCase);
 
         if (window.jQuery) {
             window.jQuery(document).on('draw.dt xhr.dt init.dt', function(event, settings) {
@@ -4446,6 +4459,7 @@
                 setTimeout(function() {
                     formatDataTableFooter(wrapper);
                     syncListingSearchForWrapper(wrapper);
+                    preserveSensitiveTextCase(wrapper);
                 }, 0);
             });
         }

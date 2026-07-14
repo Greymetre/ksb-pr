@@ -1680,7 +1680,68 @@ if (! function_exists('sanitizeForExcel')) {
             return "'" . $value;
         }
 
-        return $value;
+        return formatExportStringCase($value);
+    }
+}
+
+if (! function_exists('formatExportStringCase')) {
+    function formatExportStringCase(string $value): string
+    {
+        $trimmed = trim($value);
+
+        if ($trimmed === '') {
+            return $value;
+        }
+
+        if (preg_match('/@|https?:\/\/|www\./i', $trimmed)) {
+            return $value;
+        }
+
+        if (preg_match('/\pL/u', $trimmed) && $trimmed === mb_strtoupper($trimmed, 'UTF-8')) {
+            return $value;
+        }
+
+        preg_match('/^\s*/', $value, $leading);
+        preg_match('/\s*$/', $value, $trailing);
+
+        $content = trim(str_replace('_', ' ', $value));
+        $content = preg_replace('/\s+/', ' ', $content);
+        $content = mb_convert_case($content, MB_CASE_TITLE, 'UTF-8');
+
+        $acronyms = [
+            'Id' => 'ID',
+            'Ids' => 'IDs',
+            'Ip' => 'IP',
+            'Url' => 'URL',
+            'Gst' => 'GST',
+            'Gstin' => 'GSTIN',
+            'Pan' => 'PAN',
+            'Ifsc' => 'IFSC',
+            'Dob' => 'DOB',
+            'Doj' => 'DOJ',
+            'Ctc' => 'CTC',
+            'Pf' => 'PF',
+            'Esi' => 'ESI',
+            'Qr' => 'QR',
+            'Bp' => 'BP',
+            'Sap' => 'SAP',
+            'Kyc' => 'KYC',
+            'Sku' => 'SKU',
+            'Mrp' => 'MRP',
+            'Hsn' => 'HSN',
+            'Uom' => 'UOM',
+            'Po' => 'PO',
+            'So' => 'SO',
+            'Fos' => 'FOS',
+            'Asm' => 'ASM',
+            'Ho' => 'HO',
+        ];
+
+        foreach ($acronyms as $search => $replace) {
+            $content = preg_replace('/\b' . preg_quote($search, '/') . '\b/u', $replace, $content);
+        }
+
+        return ($leading[0] ?? '') . $content . ($trailing[0] ?? '');
     }
 }
 
