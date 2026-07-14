@@ -1612,56 +1612,8 @@
                         </li>
                         @endif
 
-
-                        <!-- <li class="nav-link
-                              {{ request()->is('master-distributors*') ? 'active' : '' }}">
-
-                            <a class="collapsed hoveradd" data-toggle="collapse" href="#masterDistributorMenu"
-                                aria-expanded="false">
-
-                                <i class="material-icons icon">store</i>
-
-                                <span>
-                                    Customer Management
-                                </span>
-
-                                <div class="d-none mobile_hide">
-                                    Customer Management
-                                </div>
-                            </a>
-
-                            <div class="collapse" id="masterDistributorMenu">
-                                <ul class="navd">
-                                    @if(auth()->user()->can(['master_distributor_access']))
-                                    <li class="nav-link-btn {{ request()->is('master-distributors*') ? 'active' : '' }}">
-                                        <a class="hoveradd2" href="{{ route('master-distributors.index') }}">
-                                            <i class="material-icons icon">inventory</i>
-                                            <span>{!! trans('panel.sidemenu.master_distributor_list') !!}</span>
-                                            <div class="d-none mobile_hide">{!!
-                                                trans('panel.sidemenu.master_distributor_list') !!}</div>
-                                        </a>
-                                    </li>
-                                    @endif
-
-                                    @if(auth()->user()->can(['retailer_access']))
-                                    <li class="nav-link-btn {{ request()->is('retailers*') ? 'active' : '' }}">
-                                        <a class="hoveradd2" href="{{ route('retailers.index') }}">
-                                            <i class="material-icons icon">storefront</i>
-                                            <span>Retailer</span>
-                                            <div class="d-none mobile_hide">Retailer</div>
-                                        </a>
-                                    </li>
-                                    @endif
-
-                                </ul>
-
-                            </div>
-                        </li> -->
-                        <!-- ----------------------------------- -->
-
                         @if(auth()->user()->can(['customer_access']))
-                        <li
-                            class="nav-link {{ request()->is('customers*') || request()->is('customertype*') || request()->is('firmtype*') || request()->is('customersLogin*') || request()->is('customers-survey*') || request()->is('fields*') ? 'active' : '' }}">
+                        <li class="nav-link {{ request()->routeIs('customers.index', 'customers.create', 'customers.show', 'customers.edit') || request()->is('customertype*') || request()->is('firmtype*') || request()->is('customersLogin*') || request()->is('customers-survey*') || request()->is('fields*') ? 'active' : '' }}">
                             <a class="collapsed hoveradd" data-toggle="collapse" href="#customerMenu"
                                 aria-expanded="false">
                                 <i class="material-icons icon">diversity_3</i>
@@ -1669,10 +1621,10 @@
                                 </span>
                                 <div class="d-none mobile_hide">{!! trans('panel.sidemenu.customers_master') !!} Management</div>
                             </a>
-                            <div class="collapse" id="customerMenu" style="">
+                            <div class="collapse" id="customerMenu">
                                 <ul class="navd">
                                     @if(auth()->user()->can(['customer_access']))
-                                    <li class="nav-link-btn {{ request()->is('customers*') ? 'active' : '' }}">
+                                    <li class="nav-link-btn {{ request()->routeIs('customers.index', 'customers.create', 'customers.show', 'customers.edit') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('customers') }}">
                                             <i class="material-icons icon">transcribe</i>
                                             <span>{!! trans('panel.sidemenu.customers') !!}</span>

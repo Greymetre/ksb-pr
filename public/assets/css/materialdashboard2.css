@@ -15243,12 +15243,6 @@ thead.thead-inverse th,.table-inverse thead th {
         visibility: visible
     }
 }
-
-.card .card-body .col-form-label,.card .card-body .label-on-right {
-/*    padding: 17px 5px 0 0;*/
-    text-align: right
-}
-
 .card .card-body .col-form-label.label-checkbox,.card .card-body .label-on-right.label-checkbox {
     padding-top: 13px
 }

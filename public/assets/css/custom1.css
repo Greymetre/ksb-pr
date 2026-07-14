@@ -608,12 +608,12 @@ body.fk-shell .fk-filter-drawer-body .row>div[data-label]:before,
 body.fk-shell .fk-filter-drawer-body .search[data-label]:before {
     content: attr(data-label);
     display: block;
-    margin: 0 0 7px;
+    margin: 0 0 6px;
     color: var(--fk-list-head-text);
     font-family: 'Sora', 'Inter', sans-serif;
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 2.2px;
     line-height: 1;
     text-transform: uppercase;
 }
@@ -631,7 +631,7 @@ body.fk-shell .fk-filter-drawer-body input {
 }
 
 body.fk-shell .fk-filter-drawer-body .search_inner {
-    height: 48px;
+    height: 42px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -676,10 +676,10 @@ body.fk-shell .fk-filter-drawer-body .bootstrap-select>.dropdown-toggle,
 body.fk-shell .fk-filter-drawer-body .select2-container--default .select2-selection,
 body.fk-shell .fk-filter-drawer-body .select2-container--default .select2-selection--single,
 body.fk-shell .fk-filter-drawer-body .form-control {
-    height: 48px !important;
-    min-height: 48px !important;
+    height: 42px !important;
+    min-height: 42px !important;
     border: 1px solid rgba(90, 130, 220, .34) !important;
-    border-radius: 10px !important;
+    border-radius: 12px !important;
     background: rgba(5, 16, 40, .56) !important;
     color: var(--fk-list-text) !important;
     box-shadow: none !important;
@@ -694,7 +694,7 @@ body.fk-shell .fk-filter-drawer-body .select2-container--default .select2-select
 }
 
 body.fk-shell .fk-filter-drawer-body .select2-container--default .select2-selection--single .select2-selection__arrow {
-    height: 46px !important;
+    height: 40px !important;
     right: 10px !important;
 }
 
@@ -782,11 +782,11 @@ body.fk-shell .fk-filter-drawer-foot {
 }
 
 body.fk-shell .fk-filter-drawer-foot .btn {
-    min-height: 48px;
+    min-height: 42px;
     margin: 0 !important;
-    border-radius: 10px !important;
-    font-size: 15px;
-    font-weight: 600;
+    border-radius: 12px !important;
+    font-size: 13px;
+    font-weight: 500;
     text-transform: none;
     box-shadow: none !important;
 }
@@ -842,10 +842,10 @@ body.fk-shell .table-input:focus {
 
 body.fk-shell .select2-container--default .select2-selection,
 body.fk-shell .select2-container--default .select2-selection--multiple {
-    min-height: 35px !important;
-    width: 150px !important;
+    min-height: 42px !important;
+    width: 100% !important;
     border: 1px solid var(--fk-list-border-strong) !important;
-    border-radius: 4px !important;
+    border-radius: 12px !important;
     background: var(--fk-list-control) !important;
     color: var(--fk-list-text) !important;
 }
@@ -863,6 +863,464 @@ body.fk-shell .select2-container--default .select2-selection--multiple .select2-
     color: #ff5d7a !important;
     font-weight: 700;
     margin-right: 5px;
+}
+
+/* Global dark form and dropdown system for filters, create/edit pages, and popups. */
+body.fk-shell {
+    --fk-form-control-h: 42px;
+    --fk-form-radius: 12px;
+    --fk-form-bg: rgba(8, 20, 50, .60);
+    --fk-form-bg-strong: rgba(10, 24, 56, .86);
+    --fk-form-border: rgba(90, 130, 220, .30);
+    --fk-form-border-focus: rgba(34, 211, 238, .52);
+    --fk-form-label: #8fa1d2;
+    --fk-form-placeholder: #7385b6;
+    --fk-form-shadow: 0 0 0 3px rgba(34, 211, 238, .08);
+}
+
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)),
+body.fk-shell .modal-content,
+body.fk-shell .swal2-popup {
+    border: 1px solid rgba(90, 130, 220, .22) !important;
+    border-radius: 16px !important;
+    background: linear-gradient(180deg, rgba(9, 24, 58, .94), rgba(5, 14, 36, .96)) !important;
+    color: var(--fk-list-text) !important;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .32) !important;
+}
+
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) .card-header,
+body.fk-shell .modal-header,
+body.fk-shell .swal2-header {
+    border-bottom: 1px solid rgba(90, 130, 220, .18) !important;
+    background: transparent !important;
+    color: var(--fk-list-heading) !important;
+    box-shadow: none !important;
+}
+
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) .card-title,
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) h1,
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) h2,
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) h3,
+body.fk-shell .modal-title,
+body.fk-shell .swal2-title {
+    color: var(--fk-list-heading) !important;
+    font-family: 'Sora', 'Inter', sans-serif;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+}
+
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) .card-body,
+body.fk-shell .modal-body {
+    background: transparent !important;
+}
+
+body.fk-shell .content .form-group,
+body.fk-shell .content .input_section,
+body.fk-shell .content .input_Section,
+body.fk-shell .content .input-section,
+body.fk-shell .modal .form-group,
+body.fk-shell .fk-filter-drawer-body .form-group {
+    margin-bottom: 14px !important;
+}
+
+body.fk-shell .content label:not(.custom-file-label):not(.form-check-label):not(.btn),
+body.fk-shell .modal label:not(.custom-file-label):not(.form-check-label):not(.btn),
+body.fk-shell .fk-filter-drawer label:not(.custom-file-label):not(.form-check-label):not(.btn),
+body.fk-shell .swal2-label {
+    display: block;
+    margin: 0 0 6px !important;
+    color: var(--fk-form-label) !important;
+    font-family: 'Sora', 'Inter', sans-serif;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    letter-spacing: 1.8px !important;
+    line-height: 1.2 !important;
+    text-transform: uppercase !important;
+}
+
+body.fk-shell .content .bmd-label-floating,
+body.fk-shell .content .bmd-label-static {
+    position: static !important;
+    pointer-events: auto !important;
+}
+
+body.fk-shell .content .bmd-form-group {
+    padding-top: 0 !important;
+}
+
+body.fk-shell .content .form-control,
+body.fk-shell .modal .form-control,
+body.fk-shell .fk-filter-drawer .form-control,
+body.fk-shell .swal2-input,
+body.fk-shell .swal2-select,
+body.fk-shell .swal2-textarea,
+body.fk-shell .bootstrap-select>.dropdown-toggle,
+body.fk-shell .select2-container--default .select2-selection--single,
+body.fk-shell .select2-container--default .select2-selection--multiple {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: var(--fk-form-control-h) !important;
+    border: 1px solid var(--fk-form-border) !important;
+    border-radius: var(--fk-form-radius) !important;
+    background: var(--fk-form-bg) !important;
+    background-image: none !important;
+    color: var(--fk-list-text) !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 300 !important;
+    line-height: 1.35 !important;
+    transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+body.fk-shell .content input.form-control,
+body.fk-shell .content select.form-control,
+body.fk-shell .modal input.form-control,
+body.fk-shell .modal select.form-control,
+body.fk-shell .fk-filter-drawer input.form-control,
+body.fk-shell .fk-filter-drawer select.form-control,
+body.fk-shell .swal2-input,
+body.fk-shell .swal2-select {
+    height: var(--fk-form-control-h) !important;
+    padding: 0 13px !important;
+}
+
+body.fk-shell .content textarea.form-control,
+body.fk-shell .modal textarea.form-control,
+body.fk-shell .swal2-textarea {
+    min-height: 92px !important;
+    padding: 11px 13px !important;
+    resize: vertical;
+}
+
+body.fk-shell .content .form-control::placeholder,
+body.fk-shell .modal .form-control::placeholder,
+body.fk-shell .fk-filter-drawer .form-control::placeholder,
+body.fk-shell .swal2-input::placeholder,
+body.fk-shell .swal2-textarea::placeholder {
+    color: var(--fk-form-placeholder) !important;
+    opacity: 1 !important;
+}
+
+body.fk-shell .content .form-control:focus,
+body.fk-shell .modal .form-control:focus,
+body.fk-shell .fk-filter-drawer .form-control:focus,
+body.fk-shell .swal2-input:focus,
+body.fk-shell .swal2-select:focus,
+body.fk-shell .swal2-textarea:focus,
+body.fk-shell .bootstrap-select.show>.dropdown-toggle,
+body.fk-shell .bootstrap-select>.dropdown-toggle:focus,
+body.fk-shell .select2-container--open .select2-selection--single,
+body.fk-shell .select2-container--open .select2-selection--multiple {
+    border-color: var(--fk-form-border-focus) !important;
+    background: var(--fk-form-bg-strong) !important;
+    box-shadow: var(--fk-form-shadow) !important;
+}
+
+body.fk-shell .content .form-control[readonly],
+body.fk-shell .content .form-control:disabled,
+body.fk-shell .modal .form-control[readonly],
+body.fk-shell .modal .form-control:disabled,
+body.fk-shell .select2-container--default.select2-container--disabled .select2-selection--single {
+    background: rgba(80, 93, 120, .22) !important;
+    color: var(--fk-list-muted) !important;
+    opacity: .72 !important;
+}
+
+body.fk-shell select,
+body.fk-shell input[type="date"],
+body.fk-shell input[type="time"],
+body.fk-shell input[type="datetime-local"] {
+    color-scheme: dark;
+}
+
+body.fk-shell select option,
+body.fk-shell select optgroup {
+    background: #0a1a3c !important;
+    color: var(--fk-list-text) !important;
+}
+
+body.fk-shell .select2-container {
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+body.fk-shell .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--fk-list-text) !important;
+    padding-left: 13px !important;
+    padding-right: 34px !important;
+    line-height: 40px !important;
+    font-size: 13px !important;
+    font-weight: 300 !important;
+}
+
+body.fk-shell .select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: var(--fk-form-placeholder) !important;
+}
+
+body.fk-shell .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 40px !important;
+    right: 9px !important;
+}
+
+body.fk-shell .select2-container--default .select2-selection--single .select2-selection__arrow b {
+    border-color: var(--fk-list-soft) transparent transparent transparent !important;
+}
+
+body.fk-shell .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+    border-color: transparent transparent var(--fk-list-soft) transparent !important;
+}
+
+body.fk-shell .select2-container--default .select2-selection--multiple {
+    padding: 4px 7px !important;
+}
+
+body.fk-shell .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 0 !important;
+}
+
+body.fk-shell .select2-container .select2-search--inline .select2-search__field {
+    margin-top: 3px !important;
+    color: var(--fk-list-text) !important;
+    font-size: 13px !important;
+}
+
+body.fk-shell .select2-dropdown {
+    overflow: hidden !important;
+    border: 1px solid rgba(90, 130, 220, .34) !important;
+    border-radius: 14px !important;
+    background: rgba(7, 18, 44, .98) !important;
+    color: var(--fk-list-text) !important;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, .36) !important;
+}
+
+body.fk-shell .select2-search--dropdown {
+    padding: 8px !important;
+    background: transparent !important;
+}
+
+body.fk-shell .select2-container--default .select2-search--dropdown .select2-search__field {
+    height: 36px !important;
+    border: 1px solid var(--fk-form-border) !important;
+    border-radius: 10px !important;
+    background: var(--fk-form-bg) !important;
+    color: var(--fk-list-text) !important;
+    padding: 0 10px !important;
+    outline: 0 !important;
+}
+
+body.fk-shell .select2-results__options {
+    max-height: 260px !important;
+}
+
+body.fk-shell .select2-results__option {
+    padding: 10px 12px !important;
+    color: var(--fk-list-soft) !important;
+    font-size: 13px !important;
+    font-weight: 300 !important;
+    transition: background .15s ease, color .15s ease;
+}
+
+body.fk-shell .select2-container--default .select2-results__option--highlighted[aria-selected],
+body.fk-shell .select2-container--default .select2-results__option--highlighted[data-selected] {
+    background: rgba(34, 211, 238, .14) !important;
+    color: var(--fk-list-heading) !important;
+}
+
+body.fk-shell .select2-container--default .select2-results__option[aria-selected=true],
+body.fk-shell .select2-container--default .select2-results__option[data-selected=true] {
+    background: rgba(59, 130, 246, .18) !important;
+    color: var(--fk-list-heading) !important;
+}
+
+body.fk-shell .bootstrap-select>.dropdown-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    padding: 0 13px !important;
+    text-transform: none !important;
+}
+
+body.fk-shell .bootstrap-select>.dropdown-toggle:after {
+    color: var(--fk-list-soft) !important;
+}
+
+body.fk-shell .bootstrap-select .filter-option-inner-inner {
+    color: var(--fk-list-text) !important;
+    font-size: 13px !important;
+    font-weight: 300 !important;
+}
+
+body.fk-shell .bootstrap-select .dropdown-menu,
+body.fk-shell .dropdown-menu.show {
+    overflow: hidden;
+    border: 1px solid rgba(90, 130, 220, .34) !important;
+    border-radius: 14px !important;
+    background: rgba(7, 18, 44, .98) !important;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, .36) !important;
+}
+
+body.fk-shell .bootstrap-select .dropdown-menu .inner {
+    background: transparent !important;
+}
+
+body.fk-shell .bootstrap-select .bs-searchbox {
+    padding: 8px !important;
+}
+
+body.fk-shell .bootstrap-select .bs-searchbox input {
+    height: 36px !important;
+    border: 1px solid var(--fk-form-border) !important;
+    border-radius: 10px !important;
+    background: var(--fk-form-bg) !important;
+    color: var(--fk-list-text) !important;
+    box-shadow: none !important;
+}
+
+body.fk-shell .dropdown-item,
+body.fk-shell .bootstrap-select .dropdown-menu li a {
+    color: var(--fk-list-soft) !important;
+    font-size: 13px !important;
+    font-weight: 300 !important;
+}
+
+body.fk-shell .dropdown-item:focus,
+body.fk-shell .dropdown-item:hover,
+body.fk-shell .bootstrap-select .dropdown-menu li a:focus,
+body.fk-shell .bootstrap-select .dropdown-menu li a:hover {
+    background: rgba(34, 211, 238, .14) !important;
+    color: var(--fk-list-heading) !important;
+}
+
+body.fk-shell .dropdown-item.active,
+body.fk-shell .dropdown-item:active,
+body.fk-shell .bootstrap-select .dropdown-menu li.selected a {
+    background: rgba(59, 130, 246, .18) !important;
+    color: var(--fk-list-heading) !important;
+}
+
+body.fk-shell .custom-file-label,
+body.fk-shell .file-caption-name {
+    height: var(--fk-form-control-h) !important;
+    border: 1px solid var(--fk-form-border) !important;
+    border-radius: var(--fk-form-radius) !important;
+    background: var(--fk-form-bg) !important;
+    color: var(--fk-form-placeholder) !important;
+    line-height: 30px !important;
+}
+
+body.fk-shell .input-group-text {
+    border: 1px solid var(--fk-form-border) !important;
+    background: rgba(34, 211, 238, .08) !important;
+    color: var(--fk-list-soft) !important;
+}
+
+body.fk-shell #ui-datepicker-div {
+    border: 1px solid rgba(90, 130, 220, .34) !important;
+    border-radius: 14px !important;
+    background: rgba(7, 18, 44, .98) !important;
+    color: var(--fk-list-text) !important;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, .36) !important;
+}
+
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form .form-group input.form-control,
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form .form-group select.form-control,
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form .form-group textarea.form-control,
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form input.form-control,
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form select.form-control,
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form textarea.form-control,
+body.fk-shell .modal .modal-dialog .modal-content .modal-body form .form-group input.form-control,
+body.fk-shell .modal .modal-dialog .modal-content .modal-body form .form-group select.form-control,
+body.fk-shell .modal .modal-dialog .modal-content .modal-body form .form-group textarea.form-control {
+    border: 1px solid var(--fk-form-border) !important;
+    border-radius: var(--fk-form-radius) !important;
+    background: var(--fk-form-bg) !important;
+    background-image: none !important;
+    color: var(--fk-list-text) !important;
+    box-shadow: none !important;
+    font-size: 13px !important;
+    font-weight: 300 !important;
+}
+
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form .form-group input.form-control:focus,
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form .form-group select.form-control:focus,
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form .form-group textarea.form-control:focus,
+body.fk-shell .modal .modal-dialog .modal-content .modal-body form .form-group input.form-control:focus,
+body.fk-shell .modal .modal-dialog .modal-content .modal-body form .form-group select.form-control:focus,
+body.fk-shell .modal .modal-dialog .modal-content .modal-body form .form-group textarea.form-control:focus {
+    border-color: var(--fk-form-border-focus) !important;
+    background: var(--fk-form-bg-strong) !important;
+    box-shadow: var(--fk-form-shadow) !important;
+}
+
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form .form-group label,
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form label.col-form-label,
+body.fk-shell .modal .modal-dialog .modal-content .modal-body form .form-group label,
+body.fk-shell .modal .modal-dialog .modal-content .modal-body label {
+    color: var(--fk-form-label) !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    letter-spacing: 1.8px !important;
+    text-transform: uppercase !important;
+}
+
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) .select2-container--default .select2-selection--single,
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) .select2-container--default .select2-selection--multiple,
+body.fk-shell .modal .modal-dialog .modal-content .select2-container--default .select2-selection--single,
+body.fk-shell .modal .modal-dialog .modal-content .select2-container--default .select2-selection--multiple {
+    width: 100% !important;
+    min-height: var(--fk-form-control-h) !important;
+    border: 1px solid var(--fk-form-border) !important;
+    border-radius: var(--fk-form-radius) !important;
+    background: var(--fk-form-bg) !important;
+}
+
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form .btn:not(.btn-just-icon):not(.remove-mobile),
+body.fk-shell .modal .modal-dialog .modal-content .modal-footer .btn-primary,
+body.fk-shell .modal .modal-dialog .modal-content .modal-body form .btn-primary,
+body.fk-shell .swal2-confirm {
+    min-height: 42px !important;
+    border: 0 !important;
+    border-radius: 12px !important;
+    background: linear-gradient(135deg, var(--fk-list-accent), var(--fk-list-accent-2)) !important;
+    color: var(--fk-list-primary-text) !important;
+    box-shadow: 0 12px 30px rgba(34, 211, 238, .18) !important;
+    font-family: 'Sora', 'Inter', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+    padding: 0 18px !important;
+}
+
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form .btn.btn-danger,
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form .btn.btn-outline-secondary,
+body.fk-shell .modal .modal-dialog .modal-content .modal-footer .btn-outline-secondary,
+body.fk-shell .modal .modal-dialog .modal-content .modal-footer .btn-secondary,
+body.fk-shell .swal2-cancel {
+    min-height: 42px !important;
+    border: 1px solid var(--fk-form-border) !important;
+    border-radius: 12px !important;
+    background: var(--fk-form-bg) !important;
+    color: var(--fk-list-soft) !important;
+    box-shadow: none !important;
+    font-family: 'Sora', 'Inter', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+    padding: 0 18px !important;
+}
+
+body.fk-shell .content .card:not(.fk-listing-card):not(:has(table)) form .btn-just-icon,
+body.fk-shell .modal .modal-dialog .modal-content .btn-just-icon {
+    border: 1px solid var(--fk-form-border) !important;
+    background: rgba(34, 211, 238, .08) !important;
+    color: var(--fk-list-accent) !important;
+    box-shadow: none !important;
 }
 
 body.fk-shell .hover-effect {
