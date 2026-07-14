@@ -3518,6 +3518,8 @@
     <!-- OPTIONAL SCRIPTS -->
     <!-- Select2 -->
     <script src="{{ asset('assets/plugins/select2/js/select2.full.min.js') }}"></script>
+    <script src="{{ asset('assets/js/jquery.custom.js?v=' . now()->timestamp) }}"></script>
+    <script src="{{ asset('vendor/ckeditor/js/ckeditor.js') }}"></script>
     <script src="{{ asset('assets/js/plugins/perfect-scrollbar.jquery.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugins/sweetalert2.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.21.0/additional-methods.min.js"></script>
