@@ -196,7 +196,7 @@ class ExpensesTypeController extends Controller
             $userids = getUsersReportingToAuth();
             $pageSize = $request->input('pageSize');
             // $query = Expenses::with('media','expense_type')->whereIn('user_id',$userids)->orderBy('id','desc');
-            $query = Expenses::with('media', 'expense_type')->where(['user_id' => Auth::Id()])->orderBy('id', 'desc');
+            $query = Expenses::with('media', 'expense_type', 'users')->where(['user_id' => Auth::Id()])->orderBy('id', 'desc');
             $expence_types = ExpensesType::forPayroll($payroll_id ?: optional($request->user())->payroll)->get()->map(function($item) {
                 return $this->expenseTypeData($item);
             })->toArray();
@@ -254,6 +254,7 @@ class ExpensesTypeController extends Controller
                         'total_km' => $expense->total_km ?? "",
                         'claim_amount' => $expense->claim_amount ?? NULL,
                         'approve_amount' => $expense->approve_amount ?? "",
+                        'reason' => $expense->reason,
                         'status' => $exp_status,
                         // 'claim_amount' => '$'.number_format($expense->claim_amount ?? 0,2),
                         //'expense_image' =>  $expense->getFirstMedia('expense_file')->getFullUrl(),
@@ -282,7 +283,7 @@ class ExpensesTypeController extends Controller
             }
 
             $expense_id = $request->expense_id;
-            $expense = Expenses::with('media', 'expense_type')->where('id', $expense_id)->first();
+            $expense = Expenses::with('media', 'expense_type', 'users')->where('id', $expense_id)->first();
             if (!empty($expense)) {
 
                 [$image, $image_id] = $this->expenseFileData($expense, true);
@@ -324,6 +325,7 @@ class ExpensesTypeController extends Controller
                 $datas['allowance_type_id'] = $expense->expense_type->allowance_type_id ?? "";
                 $datas['user_id'] = $expense->user_id ?? "";
                 $datas['user_name'] = $expense->users->name ?? "";
+                $datas['employee_code'] = $expense->users->employee_codes ?? $expense->users->emp_code ?? "";
                 $datas['date'] = date("d-m-Y", strtotime($expense->date));
                 $datas['note'] = $expense->note ?? "";
                 $datas['start_km'] = $expense->start_km ?? "";
@@ -551,6 +553,7 @@ class ExpensesTypeController extends Controller
                         'total_km' => $expense->total_km ?? "",
                         'claim_amount' => $expense->claim_amount ?? "",
                         'approve_amount' => $expense->approve_amount ?? "",
+                        'reason' => $expense->reason,
                         'status' => $exp_status,
                         // 'claim_amount' => '$'.number_format($expense->claim_amount ?? 0,2),
                         //'expense_image' =>  $expense->getFirstMedia('expense_file')->getFullUrl(),
