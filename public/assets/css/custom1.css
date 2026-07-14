@@ -254,6 +254,61 @@ body.fk-shell .fk-list-count.is-visible {
     display: inline-flex;
 }
 
+body.fk-shell .fk-form-page-head {
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+body.fk-shell .fk-form-page-head .fk-list-title {
+    max-width: 100%;
+}
+
+body.fk-shell .fk-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+body.fk-shell .fk-form-actions .btn,
+body.fk-shell .fk-form-actions a.btn {
+    height: 42px;
+    min-width: 42px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0 !important;
+    border: 1px solid var(--fk-list-border-strong) !important;
+    border-radius: 12px !important;
+    background: var(--fk-list-control) !important;
+    color: var(--fk-list-soft) !important;
+    box-shadow: none !important;
+    font-family: 'Sora', 'Inter', sans-serif;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+    line-height: 1;
+    text-transform: none !important;
+    padding: 0 14px !important;
+}
+
+body.fk-shell .fk-form-actions .btn:hover,
+body.fk-shell .fk-form-actions a.btn:hover {
+    border-color: var(--fk-list-accent) !important;
+    color: var(--fk-list-heading) !important;
+    background: rgba(34, 211, 238, .10) !important;
+}
+
+body.fk-shell .fk-form-card>.card-header.fk-card-header-processed {
+    display: none !important;
+}
+
+body.fk-shell .fk-form-source-title-hidden {
+    display: none !important;
+}
+
 body.fk-shell .fk-list-actions {
     display: flex;
     align-items: center;

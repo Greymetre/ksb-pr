@@ -4239,8 +4239,145 @@
             });
         }
 
+        function buildFormTitleText(titleEl) {
+            const clone = titleEl.cloneNode(true);
+            clone.querySelectorAll('button, a, form, input, select, textarea, .btn, .float-right, .pull-right, .dropdown, .bootstrap-select, .select2').forEach(function(node) {
+                node.remove();
+            });
+            return (clone.textContent || '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function getActiveSubmenuLabel() {
+            const activeSubmenu = document.querySelector('.sidebar ul.navd li.active a span');
+            const activeTrigger = document.querySelector('.sidebar li.nav-link.active > a > span');
+            const label = (activeSubmenu && activeSubmenu.textContent) || (activeTrigger && activeTrigger.textContent) || '';
+            return label.replace(/\s+/g, ' ').trim();
+        }
+
+        function pluralizeFormEntity(label) {
+            const clean = (label || '').replace(/\s+/g, ' ').trim();
+            if (!clean) return '';
+            if (/s$/i.test(clean)) return clean;
+            if (/y$/i.test(clean)) return clean.replace(/y$/i, 'ies');
+            return clean + 's';
+        }
+
+        function getFormBreadcrumbParts(titleText) {
+            const sectionLabel = getActiveSectionLabel();
+            const activeItem = getActiveSubmenuLabel();
+            let actionLabel = 'Add New';
+            let entityLabel = titleText;
+
+            if (/^(edit|update)\s+/i.test(titleText)) {
+                actionLabel = 'Update';
+                entityLabel = titleText.replace(/^(edit|update)\s+/i, '');
+            } else if (/^(add new|create)\s+/i.test(titleText)) {
+                actionLabel = 'Add New';
+                entityLabel = titleText.replace(/^(add new|create)\s+/i, '');
+            } else if (/^new\s+/i.test(titleText)) {
+                actionLabel = 'Add New';
+                entityLabel = titleText.replace(/^new\s+/i, '');
+            }
+
+            entityLabel = (activeItem || pluralizeFormEntity(entityLabel))
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            return [sectionLabel, entityLabel, actionLabel].filter(Boolean);
+        }
+
+        function renderBreadcrumb(el, parts) {
+            el.innerHTML = '';
+            parts.forEach(function(part, index) {
+                if (index) {
+                    const sep = document.createElement('span');
+                    sep.innerHTML = '&rsaquo;';
+                    el.appendChild(sep);
+                }
+                const span = document.createElement('span');
+                if (index === parts.length - 1) span.className = 'fk-current';
+                span.textContent = String(part || '').toUpperCase();
+                el.appendChild(span);
+            });
+        }
+
+        function normalizeFormHeaders() {
+            document.querySelectorAll('.content .card').forEach(function(card) {
+                if (
+                    card.closest('.modal') ||
+                    card.dataset.fkFormReady === '1' ||
+                    card.dataset.fkListingReady === '1' ||
+                    card.querySelector('table') ||
+                    !card.querySelector('form')
+                ) return;
+
+                const header = Array.from(card.children).find(function(child) {
+                    return child.classList &&
+                        child.classList.contains('card-header') &&
+                        (child.classList.contains('card-header-theme') || child.classList.contains('card-header-icon'));
+                });
+                const form = card.querySelector('form');
+                const titleEl = header ? header.querySelector('.card-title') : form.querySelector('h1, h2, h3, h4, h5, .card-title');
+                if (!titleEl) return;
+
+                const titleText = buildFormTitleText(titleEl);
+                if (!titleText) return;
+
+                const pageHead = document.createElement('div');
+                pageHead.className = 'fk-list-page-head fk-form-page-head';
+
+                const headingBlock = document.createElement('div');
+                headingBlock.className = 'fk-list-heading-block';
+
+                const breadcrumb = document.createElement('div');
+                breadcrumb.className = 'fk-list-breadcrumb';
+                renderBreadcrumb(breadcrumb, getFormBreadcrumbParts(titleText));
+
+                const titleRow = document.createElement('div');
+                titleRow.className = 'fk-list-title-row';
+
+                const heading = document.createElement('h1');
+                heading.className = 'fk-list-title';
+                heading.textContent = titleText;
+
+                titleRow.appendChild(heading);
+                headingBlock.appendChild(breadcrumb);
+                headingBlock.appendChild(titleRow);
+
+                const actions = document.createElement('div');
+                actions.className = 'fk-form-actions';
+
+                if (header) {
+                    header.querySelectorAll('.pull-right a, .float-right a, .pull-right button, .float-right button, .card-title > a, .card-title > button').forEach(function(action) {
+                        action.classList.remove('btn-just-icon');
+                        if (!action.textContent.replace(/\s+/g, '').trim()) {
+                            const icon = action.querySelector('.material-icons');
+                            const iconText = icon ? icon.textContent.trim() : '';
+                            if (iconText === 'next_plan' || iconText === 'arrow_back' || iconText === 'keyboard_backspace') {
+                                action.innerHTML = '<span class="material-icons">arrow_back</span><span>Back</span>';
+                            }
+                        }
+                        actions.appendChild(action);
+                    });
+                }
+
+                pageHead.appendChild(headingBlock);
+                if (actions.children.length) pageHead.appendChild(actions);
+                card.parentNode.insertBefore(pageHead, card);
+
+                card.classList.add('fk-form-card');
+                card.dataset.fkFormReady = '1';
+                if (header) header.classList.add('fk-card-header-processed');
+                else titleEl.classList.add('fk-form-source-title-hidden');
+            });
+        }
+
         normalizeListingHeaders();
+        normalizeFormHeaders();
         window.addEventListener('load', normalizeListingHeaders);
+        window.addEventListener('load', normalizeFormHeaders);
         document.querySelectorAll('.fk-filter-drawer').forEach(decorateFilterDrawer);
 
         function getFooterEntityLabel(wrapper) {
