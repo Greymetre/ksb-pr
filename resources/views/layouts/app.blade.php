@@ -4397,9 +4397,10 @@
                 if (event.target.matches && event.target.matches('form input[type="file"]')) {
                     lastFileChangeAt = Date.now();
                     lastFileChangeForm = event.target.form;
+                    const isFkUploadTool = !!closest(event.target, '.fk-upload-tool, .fk-tool-upload');
                     if (
                         lastFileChangeForm &&
-                        lastFileChangeForm.dataset.fkAutoSubmitFile === '1' &&
+                        (lastFileChangeForm.dataset.fkAutoSubmitFile === '1' || isFkUploadTool) &&
                         event.target.files &&
                         event.target.files.length
                     ) {

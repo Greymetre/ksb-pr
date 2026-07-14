@@ -484,10 +484,13 @@ $user->save();
     public function upload(Request $request)
     {
         abort_if(Gate::denies('user_upload'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        $request->validate([
+            'import_file' => ['required', 'file', 'mimes:xls,xlsx'],
+        ]);
         if (ob_get_contents()) ob_end_clean();
         ob_start();
         Excel::import(new UserImport, request()->file('import_file'));
-        return back();
+        return back()->with('message_success', 'Users imported successfully.');
     }
     public function download(Request $request)
     {
