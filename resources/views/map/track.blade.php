@@ -123,7 +123,7 @@
     </script>
 
     <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}&callback=initMap">
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVSDwHbKULnZa93kYpYINTqX4eaWy9q18&callback=initMap">
     </script>
 </head>
 
