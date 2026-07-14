@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\DataTables\VisitorDataTable;
 use App\Exports\PrimarySalesExport;
 use Illuminate\Http\Request;
-use App\Models\{User, Customers, Order, Branch, Division, CheckIn, BeatSchedule, Sales, SalesTarget, OrderDetails, TourProgramme, Wallet, Product, UserActivity, UserCityAssign, Address, TourDetail, TransactionHistory, EmployeeDetail, SalesTargetUsers, Attendance, DealerPortalSettings, ParentDetail, VisitReport, PrimarySales, Redemption};
+use App\Models\{User, Customers, Order, Branch, Division, State, CheckIn, BeatSchedule, Sales, SalesTarget, OrderDetails, TourProgramme, Wallet, Product, UserActivity, UserCityAssign, Address, TourDetail, TransactionHistory, EmployeeDetail, SalesTargetUsers, Attendance, DealerPortalSettings, ParentDetail, VisitReport, PrimarySales, Redemption, Lead, Complaint};
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Auth;
@@ -21,14 +21,424 @@ use Spatie\Permission\Models\Role;
 
 class DashboardController extends Controller
 {
+    protected $DAILY_VISIT_TARGET = 15;
+
     public function __construct()
     {
-        $this->DAILY_VISIT_TARGET = 15;
     }
     public function index(Request $request)
     {
         abort_if(Gate::denies('dashboard_access'), Response::HTTP_FORBIDDEN, 'Forbidden,' . PHP_EOL . 'You don\'t have the right permissions. Please contact to the admin.');
-        return view('dashboard.index');
+
+        $today = Carbon::today();
+        $period = in_array($request->input('period'), ['mtd', 'ytd', 'custom'], true) ? $request->input('period') : 'mtd';
+        $dateStart = $today->copy()->startOfMonth();
+        $dateEnd = $today->copy();
+
+        if ($period === 'ytd') {
+            $dateStart = $today->copy()->startOfYear();
+        } elseif ($period === 'custom') {
+            try {
+                $dateStart = $request->filled('from_date') ? Carbon::parse($request->input('from_date'))->startOfDay() : $dateStart;
+                $dateEnd = $request->filled('to_date') ? Carbon::parse($request->input('to_date'))->endOfDay() : $dateEnd->endOfDay();
+                if ($dateStart->gt($dateEnd)) {
+                    [$dateStart, $dateEnd] = [$dateEnd->copy()->startOfDay(), $dateStart->copy()->endOfDay()];
+                }
+            } catch (\Throwable $e) {
+                $period = 'mtd';
+                $dateStart = $today->copy()->startOfMonth();
+                $dateEnd = $today->copy();
+            }
+        }
+
+        $dateEnd = $dateEnd->copy()->endOfDay();
+        $previousDays = max($dateStart->diffInDays($dateEnd), 0);
+        $previousEnd = $dateStart->copy()->subSecond();
+        $previousStart = $previousEnd->copy()->subDays($previousDays)->startOfDay();
+
+        $zones = Division::where('active', 'Y')->orderBy('division_name')->get(['id', 'division_name']);
+        $states = State::where('active', 'Y')->orderBy('state_name')->get(['id', 'state_name']);
+        $users = User::where('active', 'Y')->orderBy('name')->get(['id', 'name', 'employee_codes', 'division_id']);
+
+        $selectedZone = $request->input('zone_id');
+        $selectedState = $request->input('state_id');
+        $selectedUser = $request->input('user_id');
+        $selectedZoneName = optional($zones->firstWhere('id', (int) $selectedZone))->division_name;
+        $selectedStateName = optional($states->firstWhere('id', (int) $selectedState))->state_name;
+        $selectedUserModel = $selectedUser ? $users->firstWhere('id', (int) $selectedUser) : null;
+
+        $filteredUserIds = User::where('active', 'Y')
+            ->when($selectedZone, fn ($query) => $query->where('division_id', $selectedZone))
+            ->when($selectedUser, fn ($query) => $query->where('id', $selectedUser))
+            ->pluck('id');
+
+        $applyCustomerFilters = function ($query) use ($selectedZone, $selectedState, $selectedUser) {
+            return $query
+                ->when($selectedUser, function ($query) use ($selectedUser) {
+                    $query->where(function ($query) use ($selectedUser) {
+                        $query->where('customers.created_by', $selectedUser)
+                            ->orWhere('customers.executive_id', $selectedUser);
+                    });
+                })
+                ->when($selectedZone, function ($query) use ($selectedZone) {
+                    $query->whereExists(function ($subquery) use ($selectedZone) {
+                        $subquery->select(DB::raw(1))
+                            ->from('users')
+                            ->whereColumn('users.id', 'customers.executive_id')
+                            ->where('users.division_id', $selectedZone);
+                    });
+                })
+                ->when($selectedState, function ($query) use ($selectedState) {
+                    $query->whereExists(function ($subquery) use ($selectedState) {
+                        $subquery->select(DB::raw(1))
+                            ->from('addresses')
+                            ->whereColumn('addresses.customer_id', 'customers.id')
+                            ->where('addresses.state_id', $selectedState);
+                    });
+                });
+        };
+
+        $applyPrimarySalesFilters = function ($query) use ($selectedZoneName, $selectedStateName, $selectedUserModel) {
+            return $query
+                ->when($selectedZoneName, fn ($query) => $query->where('division', $selectedZoneName))
+                ->when($selectedStateName, fn ($query) => $query->where('state', $selectedStateName))
+                ->when($selectedUserModel, function ($query) use ($selectedUserModel) {
+                    $query->where(function ($query) use ($selectedUserModel) {
+                        if (!empty($selectedUserModel->employee_codes)) {
+                            $query->where('emp_code', $selectedUserModel->employee_codes);
+                        }
+                        $query->orWhere('sales_person', $selectedUserModel->name);
+                    });
+                });
+        };
+
+        $applyOrderFilters = function ($query) use ($selectedZone, $selectedState, $selectedUser) {
+            return $query
+                ->when($selectedUser, function ($query) use ($selectedUser) {
+                    $query->where(function ($query) use ($selectedUser) {
+                        $query->where('orders.created_by', $selectedUser)
+                            ->orWhere('orders.executive_id', $selectedUser);
+                    });
+                })
+                ->when($selectedZone, function ($query) use ($selectedZone) {
+                    $query->whereExists(function ($subquery) use ($selectedZone) {
+                        $subquery->select(DB::raw(1))
+                            ->from('users')
+                            ->whereColumn('users.id', 'orders.executive_id')
+                            ->where('users.division_id', $selectedZone);
+                    });
+                })
+                ->when($selectedState, function ($query) use ($selectedState) {
+                    $query->whereExists(function ($subquery) use ($selectedState) {
+                        $subquery->select(DB::raw(1))
+                            ->from('addresses')
+                            ->whereColumn('addresses.customer_id', 'orders.buyer_id')
+                            ->where('addresses.state_id', $selectedState);
+                    });
+                });
+        };
+
+        $applyLeadFilters = function ($query) use ($selectedZone, $selectedUser) {
+            return $query
+                ->when($selectedUser, function ($query) use ($selectedUser) {
+                    $query->where(function ($query) use ($selectedUser) {
+                        $query->where('assign_to', $selectedUser)
+                            ->orWhere('created_by', $selectedUser);
+                    });
+                })
+                ->when($selectedZone, function ($query) use ($selectedZone) {
+                    $query->whereExists(function ($subquery) use ($selectedZone) {
+                        $subquery->select(DB::raw(1))
+                            ->from('users')
+                            ->whereColumn('users.id', 'leads.assign_to')
+                            ->where('users.division_id', $selectedZone);
+                    });
+                });
+        };
+
+        $applyComplaintFilters = function ($query) use ($selectedZone, $selectedUser) {
+            return $query
+                ->when($selectedUser, function ($query) use ($selectedUser) {
+                    $query->where(function ($query) use ($selectedUser) {
+                        $query->where('created_by', $selectedUser)
+                            ->orWhere('assign_user', $selectedUser);
+                    });
+                })
+                ->when($selectedZone, fn ($query) => $query->where('division', $selectedZone));
+        };
+
+        $customerBase = $applyCustomerFilters(Customers::query());
+        $customerTotal = (clone $customerBase)->count();
+        $customerActive = (clone $customerBase)->where('active', 'Y')->count();
+        $customerPrevious = (clone $customerBase)->whereDate('created_at', '<=', $previousEnd)->count();
+
+        $attendanceBase = Attendance::query()
+            ->when($filteredUserIds->isNotEmpty(), fn ($query) => $query->whereIn('user_id', $filteredUserIds));
+        $attendancePresent = (clone $attendanceBase)->whereBetween('punchin_date', [$dateStart->toDateString(), $dateEnd->toDateString()])->distinct('user_id')->count('user_id');
+        $attendanceTotalUsers = max($filteredUserIds->count(), $attendancePresent);
+        $attendanceAbsent = max($attendanceTotalUsers - $attendancePresent, 0);
+        $attendanceMisPunch = (clone $attendanceBase)->whereDate('punchin_date', $today)->whereNull('punchout_time')->count();
+
+        $primarySalesBase = $applyPrimarySalesFilters(PrimarySales::query());
+        $primarySales = (float) (clone $primarySalesBase)->whereBetween('invoice_date', [$dateStart->toDateString(), $dateEnd->toDateString()])->sum('net_amount');
+        $primarySalesPrevious = (float) (clone $primarySalesBase)->whereBetween('invoice_date', [$previousStart->toDateString(), $previousEnd->toDateString()])->sum('net_amount');
+
+        $salesTarget = SalesTargetUsers::whereBetween('created_at', [$dateStart, $dateEnd])
+            ->when($selectedUser, fn ($query) => $query->where('user_id', $selectedUser))
+            ->when($selectedZone, function ($query) use ($selectedZone) {
+                $query->whereExists(function ($subquery) use ($selectedZone) {
+                    $subquery->select(DB::raw(1))
+                        ->from('users')
+                        ->whereColumn('users.id', 'salestargetusers.user_id')
+                        ->where('users.division_id', $selectedZone);
+                });
+            })
+            ->sum('target');
+        $salesTarget = max((float) $salesTarget, $primarySales, 1);
+        $salesAchievement = min(round(($primarySales / $salesTarget) * 100, 1), 999);
+
+        $orders = $applyOrderFilters(Order::query())->whereBetween('order_date', [$dateStart->toDateString(), $dateEnd->toDateString()]);
+        $ordersCount = (clone $orders)->count();
+        $ordersPrevious = $applyOrderFilters(Order::query())->whereBetween('order_date', [$previousStart->toDateString(), $previousEnd->toDateString()])->count();
+        $ordersCompleted = (clone $orders)->whereNotNull('completed_date')->count();
+        $ordersPending = max($ordersCount - $ordersCompleted, 0);
+
+        $leadBase = $applyLeadFilters(Lead::query());
+        $leadTotal = (clone $leadBase)->count();
+        $leadMonth = (clone $leadBase)->whereBetween('created_at', [$dateStart, $dateEnd])->count();
+        $leadConverted = (clone $leadBase)->whereNotNull('conversion_date')->count();
+        $leadOpen = max($leadTotal - $leadConverted, 0);
+
+        $complaints = $applyComplaintFilters(Complaint::query());
+        $complaintTotal = (clone $complaints)->count();
+        $complaintOpen = (clone $complaints)->whereIn('complaint_status', ['0', '1'])->count();
+        $complaintResolved = (clone $complaints)->whereIn('complaint_status', ['2', '3', '4'])->count();
+
+        $primaryTrend = [];
+        $secondaryTrend = [];
+        $trendLabels = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $start = $today->copy()->subMonthsNoOverflow($i)->startOfMonth();
+            $end = $today->copy()->subMonthsNoOverflow($i)->endOfMonth();
+            $trendLabels[] = $start->format('M');
+            $primaryTrend[] = round(((float) (clone $primarySalesBase)->whereBetween('invoice_date', [$start->toDateString(), $end->toDateString()])->sum('net_amount')) / 100000, 2);
+            $secondaryTrend[] = round(((float) Sales::whereBetween('invoice_date', [$start->toDateString(), $end->toDateString()])
+                ->when($selectedUser, fn ($query) => $query->where('created_by', $selectedUser))
+                ->when($selectedState, function ($query) use ($selectedState) {
+                    $query->whereExists(function ($subquery) use ($selectedState) {
+                        $subquery->select(DB::raw(1))
+                            ->from('addresses')
+                            ->whereColumn('addresses.customer_id', 'sales.buyer_id')
+                            ->where('addresses.state_id', $selectedState);
+                    });
+                })
+                ->sum('grand_total')) / 100000, 2);
+        }
+
+        $productPerformance = (clone $primarySalesBase)->selectRaw('product_name as label, SUM(net_amount) as total')
+            ->whereBetween('invoice_date', [$dateStart->toDateString(), $dateEnd->toDateString()])
+            ->whereNotNull('product_name')
+            ->groupBy('product_name')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get()
+            ->map(fn ($row) => ['label' => $row->label ?: 'Unknown Product', 'value' => round(((float) $row->total) / 100000, 2)])
+            ->values();
+
+        $topEmployees = (clone $primarySalesBase)->selectRaw('sales_person as name, SUM(net_amount) as total')
+            ->whereBetween('invoice_date', [$dateStart->toDateString(), $dateEnd->toDateString()])
+            ->whereNotNull('sales_person')
+            ->groupBy('sales_person')
+            ->orderByDesc('total')
+            ->limit(3)
+            ->get()
+            ->map(fn ($row) => ['name' => $row->name ?: 'Unassigned', 'value' => round(((float) $row->total) / 100000, 2)])
+            ->values();
+
+        $regionRows = $applyCustomerFilters(Customers::query())
+            ->leftJoin('addresses', function ($join) {
+                $join->on('addresses.model_id', '=', 'customers.id')
+                    ->orOn('addresses.customer_id', '=', 'customers.id')
+                    ->where('addresses.model_type', Customers::class);
+            })
+            ->leftJoin('states', 'states.id', '=', 'addresses.state_id')
+            ->selectRaw('COALESCE(states.state_name, "Unmapped") as name, COUNT(customers.id) as total')
+            ->groupBy('states.state_name')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get();
+
+        $dashboard = [
+            'today' => $today->format('D · d M Y'),
+            'periodLabel' => strtoupper($period) . ' · ' . $dateStart->format('d M') . ' to ' . $dateEnd->format('d M'),
+            'filters' => [
+                'period' => $period,
+                'from_date' => $dateStart->toDateString(),
+                'to_date' => $dateEnd->toDateString(),
+                'zone_id' => $selectedZone,
+                'state_id' => $selectedState,
+                'user_id' => $selectedUser,
+                'zones' => $zones,
+                'states' => $states,
+                'users' => $users,
+            ],
+            'slides' => [
+                [
+                    'kicker' => 'Milestone',
+                    'icon' => 'sell',
+                    'title' => $this->shortNumber($customerTotal) . '+ Customers Onboarded',
+                    'text' => 'Crossed a new customer milestone in the selected period view',
+                    'media' => 'Milestone image',
+                    'tone' => 'success',
+                ],
+                [
+                    'kicker' => 'Sales Command',
+                    'icon' => 'monitoring',
+                    'title' => $this->moneyLakh($primarySales) . ' Primary Sales',
+                    'text' => strtoupper($period) . ' performance snapshot from live primary sales data',
+                    'media' => 'Sales image',
+                    'tone' => 'cyan',
+                ],
+                [
+                    'kicker' => 'Field Force',
+                    'icon' => 'badge',
+                    'title' => $this->shortNumber($attendancePresent) . ' Users Present',
+                    'text' => 'Attendance health from the currently selected users and zone filters',
+                    'media' => 'Team image',
+                    'tone' => 'sky',
+                ],
+                [
+                    'kicker' => 'Pipeline',
+                    'icon' => 'leaderboard',
+                    'title' => $this->shortNumber($leadOpen) . ' Open Leads',
+                    'text' => 'Active opportunities tracked across the selected dashboard scope',
+                    'media' => 'Lead image',
+                    'tone' => 'warning',
+                ],
+            ],
+            'kpis' => [
+                [
+                    'icon' => 'groups',
+                    'label' => 'Total Customers',
+                    'value' => $this->shortNumber($customerTotal),
+                    'delta' => $this->deltaText($customerTotal, $customerPrevious),
+                    'tone' => 'cyan',
+                    'meta' => 'All customer types · live database',
+                    'spark' => [56, 58, 60, 61, 63, 64, 66],
+                    'url' => url('customers'),
+                ],
+                [
+                    'icon' => 'badge',
+                    'label' => 'Today Attendance',
+                    'value' => $this->shortNumber($attendanceTotalUsers),
+                    'delta' => $attendanceTotalUsers ? round(($attendancePresent / $attendanceTotalUsers) * 100, 1) . '% rate' : '0% rate',
+                    'tone' => 'success',
+                    'meta' => 'Marked till now · field + office',
+                    'subs' => [
+                        ['label' => 'Present', 'value' => $this->shortNumber($attendancePresent), 'tone' => 'success'],
+                        ['label' => 'Absent', 'value' => $this->shortNumber($attendanceAbsent), 'tone' => 'danger'],
+                        ['label' => 'Mis Punch', 'value' => $this->shortNumber($attendanceMisPunch), 'tone' => 'warning'],
+                    ],
+                    'spark' => [80, 83, 84, 82, 86, 85, 87],
+                    'url' => url('attendances'),
+                ],
+                [
+                    'icon' => 'monitoring',
+                    'label' => 'Sales Achievement',
+                    'value' => $salesAchievement . '%',
+                    'delta' => $this->deltaText($primarySales, $primarySalesPrevious),
+                    'tone' => 'sky',
+                    'meta' => 'Primary sales · ' . $this->moneyLakh($primarySales) . ' vs target',
+                    'progress' => min($salesAchievement, 100),
+                    'url' => url('primary_dashboard/sales/list'),
+                ],
+                [
+                    'icon' => 'shopping_cart',
+                    'label' => 'Orders',
+                    'value' => $this->shortNumber($ordersCount),
+                    'delta' => $this->deltaText($ordersCount, $ordersPrevious),
+                    'tone' => 'cyan',
+                    'meta' => 'Primary + secondary orders',
+                    'subs' => [
+                        ['label' => 'Completed', 'value' => $this->shortNumber($ordersCompleted), 'tone' => 'success'],
+                        ['label' => 'Pending', 'value' => $this->shortNumber($ordersPending), 'tone' => 'warning'],
+                    ],
+                    'spark' => [210, 235, 260, 240, 270, 278, 284],
+                    'url' => url('orders'),
+                ],
+                [
+                    'icon' => 'leaderboard',
+                    'label' => 'Open Leads',
+                    'value' => $this->shortNumber($leadOpen),
+                    'delta' => $this->shortNumber($leadMonth) . ' new ' . strtoupper($period),
+                    'tone' => 'warning',
+                    'meta' => 'Across all pipelines',
+                    'subs' => [
+                        ['label' => 'New', 'value' => $this->shortNumber($leadMonth), 'tone' => 'info'],
+                        ['label' => 'Won', 'value' => $this->shortNumber($leadConverted), 'tone' => 'success'],
+                    ],
+                    'spark' => [60, 70, 75, 68, 88, 91, 94],
+                    'url' => url('leads'),
+                ],
+                [
+                    'icon' => 'support_agent',
+                    'label' => 'Complaints',
+                    'value' => $this->shortNumber($complaintTotal),
+                    'delta' => $this->shortNumber($complaintResolved) . ' resolved',
+                    'tone' => 'danger',
+                    'meta' => 'Service complaint pipeline',
+                    'subs' => [
+                        ['label' => 'Open', 'value' => $this->shortNumber($complaintOpen), 'tone' => 'danger'],
+                        ['label' => 'Resolved', 'value' => $this->shortNumber($complaintResolved), 'tone' => 'success'],
+                    ],
+                    'spark' => [30, 27, 25, 24, 22, 21, 20],
+                    'url' => url('complaints'),
+                ],
+            ],
+            'types' => collect([
+                ['icon' => 'warehouse', 'label' => 'Distributors', 'type' => 3, 'tone' => 'warning'],
+                ['icon' => 'local_shipping', 'label' => 'Dealers', 'type' => 4, 'tone' => 'sky'],
+                ['icon' => 'storefront', 'label' => 'Retailers', 'type' => 2, 'tone' => 'cyan'],
+            ])->map(function ($item) use ($customerTotal, $applyCustomerFilters) {
+                $typedCustomers = $applyCustomerFilters(Customers::query())->where('customertype', $item['type']);
+                $total = (clone $typedCustomers)->count();
+                $active = (clone $typedCustomers)->where('active', 'Y')->count();
+                return array_merge($item, [
+                    'total' => $this->shortNumber($total),
+                    'active' => $this->shortNumber($active),
+                    'inactive' => $this->shortNumber(max($total - $active, 0)),
+                    'pct' => $total ? round(($active / $total) * 100) : 0,
+                    'share' => $customerTotal ? round(($total / $customerTotal) * 100, 1) : 0,
+                ]);
+            })->values(),
+            'charts' => [
+                'labels' => $trendLabels,
+                'primary' => $primaryTrend,
+                'secondary' => $secondaryTrend,
+                'products' => $productPerformance,
+            ],
+            'topEmployees' => $topEmployees,
+            'alerts' => [
+                ['icon' => 'pending_actions', 'text' => $this->shortNumber($ordersPending) . ' orders pending completion', 'tone' => 'warning'],
+                ['icon' => 'report', 'text' => $this->shortNumber($complaintOpen) . ' complaints awaiting response', 'tone' => 'danger'],
+                ['icon' => 'schedule', 'text' => $this->shortNumber($attendanceAbsent) . ' employees absent today', 'tone' => 'info'],
+            ],
+            'regions' => $regionRows->map(function ($row) use ($customerTotal) {
+                return [
+                    'name' => $row->name,
+                    'value' => $this->shortNumber((int) $row->total),
+                    'pct' => $customerTotal ? round(((int) $row->total / $customerTotal) * 100, 1) : 0,
+                ];
+            })->values(),
+            'mini' => [
+                ['label' => 'Primary Sales', 'value' => $this->moneyLakh($primarySales), 'meta' => 'Current month', 'spark' => $primaryTrend],
+                ['label' => 'Secondary Sales', 'value' => $this->moneyLakh(array_sum($secondaryTrend) * 100000), 'meta' => 'Last 6 months', 'spark' => $secondaryTrend],
+                ['label' => 'Active Customers', 'value' => $this->shortNumber($customerActive), 'meta' => 'Active flag = Y', 'spark' => [70, 73, 74, 76, 78, 80]],
+                ['label' => 'Lead Conversion', 'value' => $leadTotal ? round(($leadConverted / $leadTotal) * 100, 1) . '%' : '0%', 'meta' => 'Converted / total leads', 'spark' => [18, 21, 23, 26, 27, 31]],
+            ],
+        ];
+
+        return view('dashboard.index', compact('dashboard'));
         $users_ids = getUsersReportingToAuth();
         // $users= User::where('active','=','Y')->whereIn('reportingid', $users_ids)->select('id','name')->get();
         $branches = Branch::latest()->get();
@@ -112,6 +522,45 @@ class DashboardController extends Controller
         $dealer_poster_setting = DealerPortalSettings::first();
 
         return view('dashboard.index', compact('users', 'branches', 'divisions', 'years', 'sales_persons', 'retailers', 'dealers_and_distibutors', 'products', 'uniqueProductsNewGroup', 'ps_branches', 'ps_divisions', 'ps_months', 'ps_dealers', 'ps_product_models', 'ps_new_group_names', 'ps_sales_persons', 'labels', 'data', 'labels2', 'data2', 'labels3', 'data3', 'total_qty', 'total_sale', 'dealer_poster_setting'));
+    }
+
+    private function shortNumber($value): string
+    {
+        $value = (float) $value;
+
+        if (abs($value) >= 10000000) {
+            return rtrim(rtrim(number_format($value / 10000000, 1), '0'), '.') . ' Cr';
+        }
+
+        if (abs($value) >= 100000) {
+            return rtrim(rtrim(number_format($value / 100000, 1), '0'), '.') . ' L';
+        }
+
+        if (abs($value) >= 1000) {
+            return rtrim(rtrim(number_format($value / 1000, 1), '0'), '.') . ' K';
+        }
+
+        return number_format($value);
+    }
+
+    private function moneyLakh($value): string
+    {
+        return '₹' . rtrim(rtrim(number_format(((float) $value) / 100000, 2), '0'), '.') . ' L';
+    }
+
+    private function deltaText($current, $previous): string
+    {
+        $current = (float) $current;
+        $previous = (float) $previous;
+
+        if ($previous <= 0) {
+            return $current > 0 ? 'New' : '0%';
+        }
+
+        $delta = (($current - $previous) / $previous) * 100;
+        $prefix = $delta >= 0 ? '▲ ' : '▼ ';
+
+        return $prefix . abs(round($delta, 1)) . '%';
     }
 
     public function dashboardData(Request $request)

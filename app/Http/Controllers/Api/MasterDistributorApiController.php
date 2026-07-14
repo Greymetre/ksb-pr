@@ -30,6 +30,9 @@ class MasterDistributorApiController extends Controller
     private function collectDownlineIds(int $managerId, array &$ids): void
     {
         $directReports = User::where('reportingid', $managerId)
+            ->whereDoesntHave('roles', function ($q) {
+                $q->whereIn('id', config('constants.customer_roles'));
+            })
             ->pluck('id')
             ->toArray();
     
@@ -72,21 +75,6 @@ class MasterDistributorApiController extends Controller
 
     private function visibleUserIdsFor(User $user): array
     {
-        if ($this->hasAnyRole($user, ['BM.', 'Marketing Team'])) {
-            $branches = array_filter(array_map('trim', explode(',', (string) $user->branch_id)));
-
-            if (!empty($branches)) {
-                return User::where('active', 'Y')
-                    ->where(function ($query) use ($branches) {
-                        foreach ($branches as $branch) {
-                            $query->orWhereRaw('FIND_IN_SET(?, branch_id)', [$branch]);
-                        }
-                    })
-                    ->pluck('id')
-                    ->toArray();
-            }
-        }
-
         $visibleUserIds = $this->getVisibleUserIds($user);
         $visibleUserIds[] = $user->id;
 
@@ -99,7 +87,7 @@ class MasterDistributorApiController extends Controller
             return $query->where('id', $user->customerid);
         }
 
-        if ($this->hasAnyRole($user, ['superadmin', 'subAdmin'])) {
+        if ($this->hasAnyRole($user, ['superadmin', 'Admin', 'subAdmin', 'Sub_Admin'])) {
             return $query;
         }
 
@@ -150,7 +138,9 @@ class MasterDistributorApiController extends Controller
             if (method_exists($authUser, 'hasRole')) {
                     $isSuperAdmin = 
                         $authUser->hasRole('superadmin') || 
-                        $authUser->hasRole('subAdmin');
+                        $authUser->hasRole('Admin') ||
+                        $authUser->hasRole('subAdmin') ||
+                        $authUser->hasRole('Sub_Admin');
                 }
         
                 // Fallback: Check roles relation if loaded
@@ -159,7 +149,9 @@ class MasterDistributorApiController extends Controller
                 
                     $isSuperAdmin = 
                         $roles->contains('superadmin') || 
-                        $roles->contains('subAdmin');
+                        $roles->contains('Admin') ||
+                        $roles->contains('subAdmin') ||
+                        $roles->contains('Sub_Admin');
                 }
             if (!$isSuperAdmin && !empty($authUser->user_type)) {
                     $userTypes = $authUser->user_type;
@@ -170,7 +162,9 @@ class MasterDistributorApiController extends Controller
                 
                     $isSuperAdmin = 
                         in_array('superadmin', (array)$userTypes, true) ||
-                        in_array('subAdmin', (array)$userTypes, true);
+                        in_array('Admin', (array)$userTypes, true) ||
+                        in_array('subAdmin', (array)$userTypes, true) ||
+                        in_array('Sub_Admin', (array)$userTypes, true);
                 }
     
             if ($isSuperAdmin) {
@@ -244,6 +238,7 @@ class MasterDistributorApiController extends Controller
                     $roles = $authUser->roles->pluck('name');
                     $isBM = $roles->contains('BM.');
                 }
+                $isBM = false;
                 
                 // If BM → get all branch users
                 if ($isBM) {

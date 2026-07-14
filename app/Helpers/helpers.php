@@ -579,6 +579,9 @@ if (! function_exists('getUsersReportingToAuth')) {
     {
         $userid = !empty($userid) ? $userid : Auth::user()->id;
         $userinfo = User::where('id', '=', $userid)->first();
+        if (!$userinfo) {
+            return [];
+        }
 
         $all_users = User::whereDoesntHave('roles', function ($query) {
             $query->whereIn('id', config('constants.customer_roles'));
@@ -639,49 +642,36 @@ if (! function_exists('getUsersReportingToAuth')) {
         //         $query->whereIn('id', config('constants.customer_roles'));
         //     })->where('active', 'Y')->pluck('id')->toArray();
         // }
-
-
-        if (
-            $userinfo->hasRole('BM.') ||
-            $userinfo->hasRole('Marketing Team')
-        ) {
-
-            Log::info('BM BLOCK EXECUTED');
-
-            $branches = explode(',', $userinfo->branch_id);
-
-            $all_ids_array = User::where('active', 'Y')
-                ->where(function ($query) use ($branches) {
-
-                    foreach ($branches as $branch) {
-
-                        $query->orWhereRaw(
-                            "FIND_IN_SET(?, branch_id)",
-                            [$branch]
-                        );
-                    }
+        if ($userinfo->hasRole('superadmin') || $userinfo->hasRole('Admin') || $userinfo->hasRole('subAdmin') || $userinfo->hasRole('Sub_Admin')) {
+            $all_ids_array = User::whereDoesntHave('roles', function ($query) {
+                    $query->whereIn('id', config('constants.customer_roles'));
                 })
+                ->where('active', 'Y')
                 ->pluck('id')
                 ->toArray();
-
-        } elseif (!$userinfo->hasRole('superadmin') && !$userinfo->hasRole ('Admin') && !$userinfo->hasRole('ZONAL') && !$userinfo->hasRole('subAdmin') && !$userinfo->hasRole('GM.') && !$userinfo->hasRole('CRM') && !$userinfo->hasRole('HR_Admin') && !$userinfo->hasRole('HO_Account')  && !$userinfo->hasRole('Sub_Support') && !$userinfo->hasRole('Accounts Order') && !$userinfo->hasRole('Service Admin') && !$userinfo->hasRole('All Customers') && !$userinfo->hasRole('Sub billing') && !$userinfo->hasRole('Sales Admin') && !$userinfo->hasRole('Marketing_Admin') && !$userinfo->hasRole('MIS_ADMIN') && !$userinfo->hasRole('Marketing Team') && !$userinfo->hasRole('Data_Crm')) {
-
-            $all_ids_array = array($userid);
-
-            $test = getAllChild(array($userid), $all_users);
-
-            while (count($test) > 0) {
-
-                $all_ids_array = array_merge($all_ids_array, $test);
-
-                $test = getAllChild($test, $all_users);
-            }
-
         } else {
+            $all_ids_array = [$userid];
+            $visited = [$userid => true];
+            $currentLevel = [$userid];
 
-            $all_ids_array = User::where('active', 'Y')
-                ->pluck('id')
-                ->toArray();
+            while (!empty($currentLevel)) {
+                $children = getAllChild($currentLevel, $all_users);
+                $children = array_values(array_filter($children, function ($childId) use (&$visited) {
+                    if (isset($visited[$childId])) {
+                        return false;
+                    }
+
+                    $visited[$childId] = true;
+                    return true;
+                }));
+
+                if (empty($children)) {
+                    break;
+                }
+
+                $all_ids_array = array_merge($all_ids_array, $children);
+                $currentLevel = $children;
+            }
         }
 
         if ($userinfo->id == '41012') {
@@ -774,9 +764,10 @@ if (!function_exists('getHierarchyLevel')) {
 
         $level = 0;
         $current_id = $target_user_id;
-        $max_depth = 25;
+        $visited = [];
 
-        while ($level < $max_depth) {
+        while (!empty($current_id) && !isset($visited[$current_id])) {
+            $visited[$current_id] = true;
             $user = User::select('reportingid')
                         ->where('id', $current_id)
                         ->where('active', 'Y')

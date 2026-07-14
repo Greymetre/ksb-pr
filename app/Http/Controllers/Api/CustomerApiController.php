@@ -79,7 +79,9 @@ class CustomerApiController extends Controller
             if (method_exists($authUser, 'hasRole')) {
                 $isSuperAdmin = 
                     $authUser->hasRole('superadmin') || 
-                    $authUser->hasRole('subAdmin');
+                    $authUser->hasRole('Admin') ||
+                    $authUser->hasRole('subAdmin') ||
+                    $authUser->hasRole('Sub_Admin');
             }
     
             // Fallback: Check roles relation if loaded
@@ -88,7 +90,9 @@ class CustomerApiController extends Controller
             
                 $isSuperAdmin = 
                     $roles->contains('superadmin') || 
-                    $roles->contains('subAdmin');
+                    $roles->contains('Admin') ||
+                    $roles->contains('subAdmin') ||
+                    $roles->contains('Sub_Admin');
             }
             if (!$isSuperAdmin && !empty($authUser->user_type)) {
                 $userTypes = $authUser->user_type;
@@ -99,7 +103,9 @@ class CustomerApiController extends Controller
             
                 $isSuperAdmin = 
                     in_array('superadmin', (array)$userTypes, true) ||
-                    in_array('subAdmin', (array)$userTypes, true);
+                    in_array('Admin', (array)$userTypes, true) ||
+                    in_array('subAdmin', (array)$userTypes, true) ||
+                    in_array('Sub_Admin', (array)$userTypes, true);
             }
     
             if ($isSuperAdmin) {
@@ -141,6 +147,7 @@ class CustomerApiController extends Controller
                     $roles = $authUser->roles->pluck('name');
                     $isBM = $roles->contains('BM.');
                 }
+                $isBM = false;
             
                 $targetUserId = $request->query('for_user_id');
             
@@ -279,6 +286,9 @@ class CustomerApiController extends Controller
     private function collectDownlineIds(int $managerId, array &$ids): void
     {
         $directReports = User::where('reportingid', $managerId)
+            ->whereDoesntHave('roles', function ($q) {
+                $q->whereIn('id', config('constants.customer_roles'));
+            })
             ->pluck('id')
             ->toArray();
     
@@ -319,7 +329,9 @@ class CustomerApiController extends Controller
             if (method_exists($authUser, 'hasRole')) {
                 $isSuperAdmin = 
                     $authUser->hasRole('superadmin') || 
-                    $authUser->hasRole('subAdmin');
+                    $authUser->hasRole('Admin') ||
+                    $authUser->hasRole('subAdmin') ||
+                    $authUser->hasRole('Sub_Admin');
             }
     
             // Fallback: Check roles relation if loaded
@@ -328,7 +340,9 @@ class CustomerApiController extends Controller
             
                 $isSuperAdmin = 
                     $roles->contains('superadmin') || 
-                    $roles->contains('subAdmin');
+                    $roles->contains('Admin') ||
+                    $roles->contains('subAdmin') ||
+                    $roles->contains('Sub_Admin');
             }
             if (!$isSuperAdmin && !empty($authUser->user_type)) {
                 $userTypes = $authUser->user_type;
@@ -339,7 +353,9 @@ class CustomerApiController extends Controller
             
                 $isSuperAdmin = 
                     in_array('superadmin', (array)$userTypes, true) ||
-                    in_array('subAdmin', (array)$userTypes, true);
+                    in_array('Admin', (array)$userTypes, true) ||
+                    in_array('subAdmin', (array)$userTypes, true) ||
+                    in_array('Sub_Admin', (array)$userTypes, true);
             }
     
             // ────────────────────────────────────────────────
@@ -420,6 +436,7 @@ class CustomerApiController extends Controller
                     $roles = $authUser->roles->pluck('name');
                     $isBM = $roles->contains('BM.');
                 }
+                $isBM = false;
             
                 $targetUserId = request()->query('for_user_id');
             

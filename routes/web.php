@@ -148,6 +148,10 @@ Route::get('/captcha-refresh', function () {
     ]);
 });
 
+Route::get('/fieldkonnect-support', function () {
+    return view('public.fieldkonnect-support');
+})->name('fieldkonnect.support');
+
 Route::options('{any}', function () {
     abort(405);
 })->where('any', '.*');

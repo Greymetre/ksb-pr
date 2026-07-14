@@ -85,6 +85,28 @@ class CustomerController extends Controller
         return $filePath;
     }
 
+    private function normalizeCustomerMobile($mobile): ?string
+    {
+        if ($mobile === null || $mobile === '') {
+            return null;
+        }
+
+        $mobile = preg_replace('/[^0-9]/', '', (string) $mobile);
+
+        return strlen($mobile) === 10 ? '91' . $mobile : $mobile;
+    }
+
+    private function requestHasAny(Request $request, array $keys): bool
+    {
+        foreach ($keys as $key) {
+            if ($request->exists($key) || $request->hasFile($key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function storeCustomer(Request $request)
     {
         try {
@@ -158,6 +180,16 @@ class CustomerController extends Controller
                     $request['last_name'] = isset($request['last_name']) ? $request['last_name'] : array_pop($name);
                     $request['first_name'] = isset($request['first_name']) ? $request['first_name'] : implode(" ", $name);
                     $request['created_by'] = $user->id;
+                    $parentData = [];
+                    if (!empty($request['parent_id'])) {
+                        $parentData = array_filter(array_map('trim', explode(",", $request['parent_id'])), function ($value) {
+                            return is_numeric($value);
+                        });
+                    }
+                    $customFields = $request->input('custom_fields');
+                    if (is_array($customFields)) {
+                        $customFields = json_encode($customFields);
+                    }
 
                     $customertype = CustomerType::where('type_name', '=', 'retailer')->pluck('id')->first();
                     $request['customertype'] = isset($request['customertype']) ? $request['customertype'] : $customertype;
@@ -193,12 +225,17 @@ class CustomerController extends Controller
                         'status_id' =>  !empty($request['status_id']) ? $request['status_id'] : 2,
                         'customertype' =>  !empty($request['customertype']) ? $request['customertype'] : 1,
                         'firmtype' =>  (!empty($request['firmtype']) && is_numeric($request['firmtype'])) ? $request['firmtype'] : null,
-                        //'executive_id' =>  !empty($request['executive_id'])? $request['executive_id'] : $request['created_by'],
+                        'executive_id' =>  !empty($request['executive_id']) ? $request['executive_id'] : null,
                         'created_by' =>  !empty($request['created_by']) ? $request['created_by'] : null,
                         'manager_name' => !empty($request['manager_name']) ? $request['manager_name'] : '',
                         'manager_phone' => !empty($request['manager_phone']) ? $request['manager_phone'] : '',
                         'contact_number' => !empty($request['contact_number']) ? $request['contact_number'] : '',
-                        //'parent_id' => !empty($request['parent_id'])? $request['parent_id'] :null,
+                        'same_address' => !empty($request['same_address']) ? 1 : 0,
+                        'custom_fields' => !empty($customFields) ? $customFields : null,
+                        'working_status' => !empty($request['working_status']) ? $request['working_status'] : null,
+                        'creation_date' => !empty($request['creation_date']) ? $request['creation_date'] : null,
+                        'sap_code' => !empty($request['sap_code']) ? $request['sap_code'] : null,
+                        'parent_id' => !empty($parentData) ? reset($parentData) : null,
                         'created_at' => getcurentDateTime(),
                         'updated_at' => getcurentDateTime()
                     ])) {
@@ -218,12 +255,8 @@ class CustomerController extends Controller
                         //  }
                         // }
 
-                        if (!empty($request['parent_id'])) {
-
-                            $parent_data = array_filter(array_map('trim', explode(",", $request['parent_id'])), function ($value) {
-                                return is_numeric($value);
-                            });
-                            foreach ($parent_data as $key => $row_parent) {
+                        if (!empty($parentData)) {
+                            foreach ($parentData as $row_parent) {
                                 $parentDetail = ParentDetail::create(
                                     [
                                         'customer_id' => $customer->id,
@@ -238,13 +271,21 @@ class CustomerController extends Controller
 
                         //employee start
 
-                        $employeeDetail = EmployeeDetail::create(
-                            [
-                                'customer_id' => $customer->id,
-                                'user_id' => Auth::user()->id,
-                                'created_by' => Auth::user()->id,
-                            ]
-                        );
+                        $employeeInput = $request->input('employee_id', $request->input('user_id', Auth::user()->id));
+                        $employeeIds = is_array($employeeInput) ? $employeeInput : explode(',', (string) $employeeInput);
+                        $employeeIds = array_filter(array_map('trim', $employeeIds), function ($value) {
+                            return is_numeric($value);
+                        });
+
+                        foreach ($employeeIds as $employeeId) {
+                            EmployeeDetail::create(
+                                [
+                                    'customer_id' => $customer->id,
+                                    'user_id' => $employeeId,
+                                    'created_by' => Auth::user()->id,
+                                ]
+                            );
+                        }
 
                         // employee end  
 
@@ -944,7 +985,7 @@ class CustomerController extends Controller
             return;
         }
 
-        $isSuperAdmin = $this->customerListHasAnyRole($authUser, ['superadmin', 'subAdmin']);
+        $isSuperAdmin = $this->customerListHasAnyRole($authUser, ['superadmin', 'Admin', 'subAdmin', 'Sub_Admin']);
 
         if ($isSuperAdmin) {
             if ($request->filled('for_user_id')) {
@@ -972,13 +1013,6 @@ class CustomerController extends Controller
             }
 
             $visibleUserIds = [$targetUserId];
-        } elseif ($this->customerListHasAnyRole($authUser, ['BM.'])) {
-            $visibleUserIds = User::where('branch_id', $authUser->branch_id)
-                ->whereDoesntHave('roles', function ($q) {
-                    $q->whereIn('id', config('constants.customer_roles'));
-                })
-                ->pluck('id')
-                ->toArray();
         } else {
             $visibleUserIds = getUsersReportingToAuth($authUser->id);
             $visibleUserIds[] = $authUser->id;
@@ -1483,230 +1517,299 @@ class CustomerController extends Controller
     public function updateCustomerProfile(Request $request)
     {
         try {
-            $name = explode(" ", $request['full_name']);
-            $request['last_name'] = isset($request['last_name']) ? $request['last_name'] : array_pop($name);
-            $request['first_name'] = isset($request['first_name']) ? $request['first_name'] : implode(" ", $name);
-
-            $validator = Validator::make($request->all(), [
-                'name'      => 'required',
-                // 'email'     => 'required|email|unique:customers,email,'.$request->customer_id,
-                // 'mobile'    => 'required|unique:customers,mobile,'.$request->customer_id,
-            ]);
-            if ($validator->fails()) {
-                return response()->json(['status' => 201, 'msg' =>  implode(', ', $validator->messages()->all())], 200);
+            $user = $request->user();
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthenticated - please provide valid bearer token.',
+                ], $this->unauthorized);
             }
 
-            if ($customer = Customers::where('id', '=', $request->customer_id)->update([
-                'name'      => isset($request->name) ? $request->name : '',
-                'first_name' => isset($request->first_name) ? $request->first_name : '',
-                'last_name' => isset($request->last_name) ? $request->last_name : '',
-                'email'     => isset($request->email) ? $request->email : null,
-                'mobile'    => isset($request->mobile) ? $request->mobile : null,
-                'latitude'  => isset($request->latitude) ? $request->latitude : null,
-                'longitude' => isset($request->longitude) ? $request->longitude : null,
-                'gender'    => isset($request->gender) ? $request->gender : '',
-                'firmtype'  => isset($request->firmtype) ? $request->firmtype : null,
-                //'parent_id'  => isset($request->parent_id) ? $request->parent_id : null,
-                'contact_number'  => isset($request->contact_number) ? $request->contact_number : null,
-            ])) {
+            $validator = Validator::make($request->all(), [
+                'customer_id' => 'required|exists:customers,id',
+                'mobile' => 'nullable|numeric',
+                'customertype' => 'nullable|exists:customer_types,id',
+                'image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'shopimage' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'shop_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'visiting_card' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'gstin_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'pan_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'imgaadhar' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadhar_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'other_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'bank_proof' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+            ]);
+            if ($validator->fails()) {
+                return response()->json(['status' => 'error', 'message' => $validator->messages()->all()], $this->badrequest);
+            }
 
+            $customer = Customers::find($request->customer_id);
+            $mobile = $this->normalizeCustomerMobile($request->input('mobile'));
 
-                //parent start
-                // if(!empty($request['parent_id']))
-                // {
-                //     ParentDetail::where('customer_id',$request->customer_id)->delete(); 
-                //     foreach($request['parent_id'] as $key => $rows) {
-                // $parentDetail = ParentDetail::updateOrCreate(
-                //   [ 
-                //     'customer_id' => $request->customer_id,
-                //     'parent_id' => $rows,
-                //     'created_by' => Auth::user()->id,
-                //   ]
-                //  );
-                // }
-                // }
+            if ($mobile && Customers::where('mobile', $mobile)->where('id', '!=', $customer->id)->exists()) {
+                return response()->json(['status' => 'error', 'message' => 'Mobile Number Already Exist'], $this->badrequest);
+            }
 
-                if (!empty($request['parent_id'])) {
-                    ParentDetail::where('customer_id', $request->customer_id)->delete();
-                    $parent_data = explode(",", $request['parent_id']);
-                    foreach ($parent_data as $key => $row_parent) {
-                        $parentDetail = ParentDetail::create(
-                            [
-                                'customer_id' => $request->customer_id,
-                                'parent_id' => $row_parent,
-                                'created_by' => Auth::user()->id,
-                            ]
-                        );
+            if ($request->filled('gstin_no') && CustomerDetails::where('gstin_no', $request->gstin_no)
+                ->where('customer_id', '!=', $customer->id)
+                ->whereNotNull('gstin_no')
+                ->exists()) {
+                return response()->json(['status' => 'error', 'message' => 'GST Number Already Exist'], $this->badrequest);
+            }
+
+            if ($request->filled('full_name') && (!$request->filled('first_name') || !$request->filled('last_name'))) {
+                $name = explode(' ', trim((string) $request->input('full_name')));
+                $request->merge([
+                    'last_name' => $request->filled('last_name') ? $request->last_name : array_pop($name),
+                    'first_name' => $request->filled('first_name') ? $request->first_name : implode(' ', $name),
+                ]);
+            }
+
+            if ($image = $this->requestFileByAnyKey($request, ['image', 'profileImage', 'profile_image', 'owner_photo', 'ownerPhoto'])) {
+                $request->merge(['profile_image' => fileupload($image, $this->path, 'profile_')]);
+            }
+
+            if ($image = $this->requestFileByAnyKey($request, ['shopimage', 'shopImage', 'shop_image', 'shop_photo', 'shopPhoto'])) {
+                $request->merge(['shop_image' => fileupload($image, $this->path, 'shop_')]);
+            }
+
+            $customerUpdates = ['updated_by' => $user->id, 'updated_at' => getcurentDateTime()];
+            $customerFieldMap = [
+                'name' => 'name',
+                'first_name' => 'first_name',
+                'last_name' => 'last_name',
+                'email' => 'email',
+                'notification_id' => 'notification_id',
+                'latitude' => 'latitude',
+                'longitude' => 'longitude',
+                'device_type' => 'device_type',
+                'gender' => 'gender',
+                'customer_code' => 'customer_code',
+                'status_id' => 'status_id',
+                'customertype' => 'customertype',
+                'firmtype' => 'firmtype',
+                'executive_id' => 'executive_id',
+                'manager_name' => 'manager_name',
+                'manager_phone' => 'manager_phone',
+                'contact_number' => 'contact_number',
+                'same_address' => 'same_address',
+                'custom_fields' => 'custom_fields',
+                'working_status' => 'working_status',
+                'creation_date' => 'creation_date',
+                'sap_code' => 'sap_code',
+                'profile_image' => 'profile_image',
+                'shop_image' => 'shop_image',
+            ];
+
+            foreach ($customerFieldMap as $requestKey => $column) {
+                if ($request->exists($requestKey)) {
+                    $value = $request->input($requestKey);
+                    if ($requestKey === 'custom_fields' && is_array($value)) {
+                        $value = json_encode($value);
                     }
+                    if (in_array($requestKey, ['name', 'first_name', 'last_name', 'device_type', 'gender'], true) && $value !== null && $value !== '') {
+                        $value = ucfirst($value);
+                    }
+                    if ($requestKey === 'firmtype' && $value !== null && $value !== '' && !is_numeric($value)) {
+                        $value = null;
+                    }
+                    if ($requestKey === 'same_address') {
+                        $value = (int) (bool) $value;
+                    }
+                    $customerUpdates[$column] = $value;
+                }
+            }
+
+            if ($mobile) {
+                $customerUpdates['mobile'] = $mobile;
+            }
+            if ($request->filled('password')) {
+                $customerUpdates['password'] = Hash::make($request->password);
+            }
+
+            $customer->update($customerUpdates);
+
+            if ($request->exists('parent_id')) {
+                ParentDetail::where('customer_id', $customer->id)->delete();
+                $parentData = array_filter(array_map('trim', explode(',', (string) $request->parent_id)), function ($value) {
+                    return is_numeric($value);
+                });
+
+                foreach ($parentData as $parentId) {
+                    ParentDetail::create([
+                        'customer_id' => $customer->id,
+                        'parent_id' => $parentId,
+                        'created_by' => $user->id,
+                    ]);
                 }
 
-                //parent end
+                $customer->update(['parent_id' => !empty($parentData) ? reset($parentData) : null]);
+            }
 
-                Address::updateOrCreate(['id'   =>  $request['address_id'], 'customer_id'   =>  $request->customer_id], [
+            $employeeInput = $request->input('employee_id', $request->input('user_id'));
+            if ($employeeInput !== null) {
+                EmployeeDetail::where('customer_id', $customer->id)->delete();
+                $employeeIds = is_array($employeeInput) ? $employeeInput : explode(',', (string) $employeeInput);
+                $employeeIds = array_filter(array_map('trim', $employeeIds), function ($value) {
+                    return is_numeric($value);
+                });
+
+                foreach ($employeeIds as $employeeId) {
+                    EmployeeDetail::create([
+                        'customer_id' => $customer->id,
+                        'user_id' => $employeeId,
+                        'created_by' => $user->id,
+                    ]);
+                }
+            }
+
+            if ($this->requestHasAny($request, ['address_id', 'address1', 'address2', 'address', 'landmark', 'locality', 'country_id', 'state_id', 'district_id', 'city_id', 'pincode_id', 'zipcode'])) {
+                $pincode = $request->filled('zipcode') ? Pincode::with('cityname', 'cityname.districtname')->where('pincode', $request->zipcode)->first() : null;
+                $stateId = !empty($pincode['cityname']['districtname']['state_id']) ? $pincode['cityname']['districtname']['state_id'] : $request->input('state_id');
+                $districtId = !empty($pincode['cityname']['district_id']) ? $pincode['cityname']['district_id'] : $request->input('district_id');
+                $cityId = !empty($pincode['city_id']) ? $pincode['city_id'] : $request->input('city_id');
+                $pincodeId = !empty($pincode['id']) ? $pincode['id'] : $request->input('pincode_id');
+                $countryId = $request->input('country_id') ?: ($stateId ? State::where('id', $stateId)->pluck('country_id')->first() : null);
+                $addressMatch = ['customer_id' => $customer->id];
+                if ($request->filled('address_id')) {
+                    $addressMatch['id'] = $request->address_id;
+                }
+
+                Address::updateOrCreate($addressMatch, [
                     'active'    => 'Y',
-                    'customer_id'   =>  $request['customer_id'],
-                    'address1' => isset($request['address1']) ? $request['address1'] : '',
-                    'address2' => isset($request['address2']) ? $request['address2'] : '',
-                    'landmark' => isset($request['landmark']) ? $request['landmark'] : '',
-                    'locality' => isset($request['locality']) ? $request['locality'] : '',
-                    'country_id' => isset($request['country_id']) ? $request['country_id'] : null,
-                    'state_id' => isset($request['state_id']) ? $request['state_id'] : null,
-                    'district_id' => isset($request['district_id']) ? $request['district_id'] : null,
-                    'city_id' => isset($request['city_id']) ? $request['city_id'] : null,
-                    'pincode_id' => isset($request['pincode_id']) ? $request['pincode_id'] : null,
-                    'zipcode' => isset($request['zipcode']) ? $request['zipcode'] : '',
-                    'created_by' => $request->user()->id,
-                    'updated_at' => getcurentDateTime()
+                    'customer_id' => $customer->id,
+                    'address1' => $request->input('address1', $request->input('address', '')),
+                    'address2' => $request->input('address2', ''),
+                    'landmark' => $request->input('landmark', ''),
+                    'locality' => $request->input('locality', $request->input('landmark', '')),
+                    'country_id' => $countryId,
+                    'state_id' => $stateId,
+                    'district_id' => $districtId,
+                    'city_id' => $cityId,
+                    'pincode_id' => $pincodeId,
+                    'zipcode' => $request->input('zipcode', ''),
+                    'created_by' => $user->id,
+                    'updated_at' => getcurentDateTime(),
                 ]);
+            }
 
-                // if($request->file('shopimage')){
-                //     $image = $request->file('shopimage');
-                //     $filename = 'customer';
-                //     $request['shop_image'] = fileupload($image, $this->path, $filename);
-                // }
+            if ($image = $this->requestFileByAnyKey($request, ['visiting_card', 'visitingCard'])) {
+                $request->merge(['visiting_image' => fileupload($image, $this->path, 'visiting_card_')]);
+            }
+            if ($image = $this->requestFileByAnyKey($request, ['gstin_image', 'gstinImage', 'gst_attachment', 'gstAttachment'])) {
+                $this->saveCustomerAttachment($customer->id, 'gstin', $image);
+            }
+            if ($image = $this->requestFileByAnyKey($request, ['pan_image', 'panImage', 'pan_attachment', 'panAttachment'])) {
+                $this->saveCustomerAttachment($customer->id, 'pan', $image);
+            }
+            if ($image = $this->requestFileByAnyKey($request, ['imgaadhar', 'aadhar_image', 'aadharImage'])) {
+                $this->saveCustomerAttachment($customer->id, 'aadhar', $image);
+            }
+            if ($image = $this->requestFileByAnyKey($request, ['other_image', 'otherImage', 'additionalDocument', 'mouDocument'])) {
+                $this->saveCustomerAttachment($customer->id, 'other', $image);
+            }
+            if ($image = $this->requestFileByAnyKey($request, ['bank_proof', 'bankProof', 'bankProofImage', 'imgbankpass', 'cancelledCheque', 'cancelled_cheque'])) {
+                $this->saveCustomerAttachment($customer->id, 'bankpass', $image);
+            }
 
-                if ($image = $this->requestFileByAnyKey($request, ['gstin_image', 'gstinImage', 'gst_attachment', 'gstAttachment'])) {
-                    $filename = 'customer';
-                    $gstinimagepath = fileupload($image, $this->path, $filename);
-                    Attachment::updateOrCreate(['document_name'   =>  'gstin', 'customer_id'   =>  $request->customer_id], [
-                        'active'        => 'Y',
-                        'file_path'     => $gstinimagepath,
-                        'document_name' =>  'gstin',
-                        'customer_id' => $request['customer_id'],
-                        'updated_at' => getcurentDateTime()
-                    ]);
+            $detailUpdates = ['active' => 'Y', 'customer_id' => $customer->id, 'updated_at' => getcurentDateTime()];
+            $detailFieldMap = [
+                'gstin_no' => 'gstin_no',
+                'pan_no' => 'pan_no',
+                'aadhar_no' => 'aadhar_no',
+                'account_holder' => 'account_holder',
+                'account_number' => 'account_number',
+                'bank_name' => 'bank_name',
+                'ifsc_code' => 'ifsc_code',
+                'otherid_no' => 'otherid_no',
+                'enrollment_date' => 'enrollment_date',
+                'approval_date' => 'approval_date',
+                'grade' => 'grade',
+                'status_type' => 'visit_status',
+                'visiting_image' => 'visiting_card',
+                'shop_image' => 'shop_image',
+            ];
+
+            foreach ($detailFieldMap as $requestKey => $column) {
+                if ($request->exists($requestKey)) {
+                    $value = $request->input($requestKey);
+                    if (in_array($requestKey, ['gstin_no', 'pan_no', 'aadhar_no', 'account_holder', 'otherid_no'], true) && $value !== null && $value !== '') {
+                        $value = ucfirst($value);
+                    }
+                    $detailUpdates[$column] = $value;
                 }
+            }
 
-                if ($image = $this->requestFileByAnyKey($request, ['pan_image', 'panImage', 'pan_attachment', 'panAttachment'])) {
-                    $filename = 'customer';
-                    $panimagepath = fileupload($image, $this->path, $filename);
-                    Attachment::updateOrCreate(['document_name'   =>  'pan', 'customer_id'   =>  $request->customer_id], [
-                        'active'        => 'Y',
-                        'file_path'     => $panimagepath,
-                        'document_name' =>  'pan',
-                        'customer_id' => $request['customer_id'],
-                        'updated_at' => getcurentDateTime()
-                    ]);
-                }
+            if (count($detailUpdates) > 3) {
+                CustomerDetails::updateOrCreate(['customer_id' => $customer->id], $detailUpdates);
+            }
 
-                if ($image = $this->requestFileByAnyKey($request, ['aadhar_image', 'aadharImage'])) {
-                    $filename = 'customer';
-                    $aadharimagepath = fileupload($image, $this->path, $filename);
-                    Attachment::updateOrCreate(['document_name'   =>  'aadhar', 'customer_id'   =>  $request->customer_id], [
-                        'active'        => 'Y',
-                        'file_path'     => $aadharimagepath,
-                        'document_name' =>  'aadhar',
-                        'customer_id' => $request['customer_id'],
-                        'updated_at' => getcurentDateTime()
-                    ]);
-                }
-
-                if ($image = $this->requestFileByAnyKey($request, ['other_image', 'otherImage', 'additionalDocument', 'cancelledCheque', 'mouDocument'])) {
-                    $filename = 'customer';
-                    $otherimagepath = fileupload($image, $this->path, $filename);
-                    Attachment::updateOrCreate(['document_name'   =>  'other', 'customer_id'   =>  $request->customer_id], [
-                        'active'        => 'Y',
-                        'file_path'     => $otherimagepath,
-                        'document_name' =>  'other',
-                        'customer_id' => $request['customer_id'],
-                        'updated_at' => getcurentDateTime()
-                    ]);
-                }
-
-                if ($image = $this->requestFileByAnyKey($request, ['bank_proof', 'bankProof', 'bankProofImage', 'imgbankpass', 'cancelledCheque', 'cancelled_cheque'])) {
-                    $filename = 'customer';
-                    $bankProofPath = fileupload($image, $this->path, $filename);
-                    Attachment::updateOrCreate(['document_name'   =>  'bankpass', 'customer_id'   =>  $request->customer_id], [
-                        'active'        => 'Y',
-                        'file_path'     => $bankProofPath,
-                        'document_name' =>  'bankpass',
-                        'customer_id' => $request['customer_id'],
-                        'updated_at' => getcurentDateTime()
-                    ]);
-                }
-
-                if ($image = $this->requestFileByAnyKey($request, ['visiting_card', 'visitingCard'])) {
-                    $filename = 'customer';
-                    $request['visiting_image'] = fileupload($image, $this->path, $filename);
-                    CustomerDetails::updateOrCreate(['customer_id'   =>  $request->customer_id], [
-                        'visiting_card'  =>  isset($request['visiting_image']) ? $request['visiting_image'] : '',
-                    ]);
-                }
-
-                if ($image = $this->requestFileByAnyKey($request, ['shopimage', 'shopImage', 'shop_image', 'shop_photo', 'shopPhoto'])) {
-                    $filename = 'customer';
-                    $request['shop_image'] = fileupload($image, $this->path, $filename);
-                    CustomerDetails::updateOrCreate(['customer_id'   =>  $request->customer_id], [
-                        'shop_image'  =>  isset($request['shop_image']) ? $request['shop_image'] : '',
-                    ]);
-                }
-
-                CustomerDetails::updateOrCreate(['customer_id'   =>  $request->customer_id], [
-                    'active'        => 'Y',
-                    'customer_id'   => isset($request['customer_id']) ? $request['customer_id'] : null,
-                    'gstin_no'      => isset($request['gstin_no']) ? ucfirst($request['gstin_no']) : '',
-                    'pan_no'        => isset($request['pan_no']) ? ucfirst($request['pan_no']) : '',
-                    'aadhar_no'     => isset($request['aadhar_no']) ? ucfirst($request['aadhar_no']) : '',
-                    'otherid_no'    => isset($request['otherid_no']) ? ucfirst($request['otherid_no']) : '',
-                    'enrollment_date' => isset($request['enrollment_date']) ? $request['enrollment_date'] : null,
-                    'approval_date'  => isset($request['approval_date']) ? $request['approval_date'] : null,
-                    'grade' => isset($request['grade']) ? $request['grade'] : '',
-                    'visit_status' => isset($request['status_type']) ? $request['status_type'] : '',
-                    'updated_at'    => getcurentDateTime(),
+            if ($request->exists('beat_id')) {
+                BeatCustomer::updateOrCreate(['customer_id' => $customer->id], [
+                    'active' => 'Y',
+                    'beat_id' => $request->beat_id,
+                    'customer_id' => $customer->id,
+                    'updated_at' => getcurentDateTime(),
                 ]);
-                if ($request['beat_id']) {
-                    $beats = BeatCustomer::updateOrCreate(['beat_id'   =>  $request['beat_id'], 'customer_id'   =>  $request->customer_id], [
-                        'active' => 'Y',
-                        'beat_id' => $request['beat_id'],
-                        'customer_id' => $request['customer_id'],
-                        'updated_at' => getcurentDateTime(),
-                    ]);
-                }
-                if ($request['survey']) {
-                    $surveyqus = json_decode($request['survey'], true);
-                    foreach ($surveyqus as $key => $rows) {
+            }
 
-                        SurveyData::updateOrCreate(['field_id'   =>  $rows['field_id'], 'customer_id'   =>  $request->customer_id], [
-                            'customer_id'   => isset($request['customer_id']) ? $request['customer_id'] : null,
-                            'field_id' => !empty($rows['field_id']) ? $rows['field_id'] : null,
-                            'value' => !empty($rows['value']) ? $rows['value'] : '',
-                            'created_by' => !empty($request['created_by']) ? $request['created_by'] : $request->user()->id,
+            if ($request->filled('survey')) {
+                $surveyQuestions = json_decode($request->survey, true);
+                if (is_array($surveyQuestions)) {
+                    foreach ($surveyQuestions as $row) {
+                        if (empty($row['field_id'])) {
+                            continue;
+                        }
+
+                        SurveyData::updateOrCreate([
+                            'customer_id' => $customer->id,
+                            'field_id' => $row['field_id'],
+                        ], [
+                            'customer_id' => $customer->id,
+                            'field_id' => $row['field_id'],
+                            'value' => $row['value'] ?? '',
+                            'created_by' => $user->id,
                             'updated_at' => getcurentDateTime(),
                         ]);
                     }
                 }
-                if ($request['dealing']) {
-                    $dealings = json_decode($request['dealing'], true);
-                    foreach ($dealings as $key => $deal) {
+            }
+
+            if ($request->filled('dealing')) {
+                $dealings = json_decode($request->dealing, true);
+                if (is_array($dealings)) {
+                    foreach ($dealings as $deal) {
+                        if (empty($deal['types'])) {
+                            continue;
+                        }
+
                         DealIn::updateOrCreate([
-                            'customer_id' => $request['customer_id'],
-                            'types' => $deal['types']
+                            'customer_id' => $customer->id,
+                            'types' => $deal['types'],
                         ], [
-                            'customer_id'   => !empty($request['customer_id']) ? $request['customer_id'] : null,
-                            'types' => !empty($deal['types']) ? $deal['types'] : '',
-                            'hcv' => !empty($deal['hcv']) ? $deal['hcv'] : false,
-                            'mav' => !empty($deal['mav']) ? $deal['mav'] : false,
-                            'lmv' => !empty($deal['lmv']) ? $deal['lmv'] : false,
-                            'lcv' => !empty($deal['lcv']) ? $deal['lcv'] : false,
-                            'other' => !empty($deal['other']) ? $deal['other'] : false,
-                            'tractor' => !empty($deal['tractor']) ? $deal['tractor'] : false,
+                            'customer_id' => $customer->id,
+                            'types' => $deal['types'],
+                            'hcv' => $deal['hcv'] ?? false,
+                            'mav' => $deal['mav'] ?? false,
+                            'lmv' => $deal['lmv'] ?? false,
+                            'lcv' => $deal['lcv'] ?? false,
+                            'other' => $deal['other'] ?? false,
+                            'tractor' => $deal['tractor'] ?? false,
                         ]);
                     }
                 }
-                if ($image = $this->requestFileByAnyKey($request, ['image', 'profileImage', 'profile_image', 'owner_photo', 'ownerPhoto'])) {
-                    // $filename = 'punchin_'.autoIncrementId('Attendance', 'id');
-                    $filename = 'customer';
-                    $request['profile_image'] = fileupload($image, $this->path, $filename);
-                    Customers::where('id', '=', $request->customer_id)->update([
-                        'profile_image'      => $request['profile_image']
-                    ]);
-                }
-                return response()->json(['status' => 200, 'msg' => 'Customer Update Successfully', 'data' => $customer], 200);
             }
 
-            return response()->json(['status' => 201, 'msg' => 'Error in user registertion'], 200);
+            return response()->json([
+                'status' => 200,
+                'msg' => 'Customer Update Successfully',
+                'message' => 'Customer Update Successfully',
+                'customer_id' => $customer->id,
+                'data' => $customer->fresh(['customerdetails', 'customeraddress', 'customerdocuments']),
+            ], 200);
         } catch (\Exception $e) {
-            return response()->json(['status' => 201, 'msg' => $e->getMessage()], 500);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], $this->internalError);
         }
     }
 

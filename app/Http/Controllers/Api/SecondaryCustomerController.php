@@ -75,15 +75,6 @@ class SecondaryCustomerController extends Controller
 
     private function visibleUserIdsFor(User $user): array
     {
-        if ($this->hasAnyRole($user, ['BM.'])) {
-            return User::where('branch_id', $user->branch_id)
-                ->whereDoesntHave('roles', function ($q) {
-                    $q->whereIn('id', config('constants.customer_roles'));
-                })
-                ->pluck('id')
-                ->toArray();
-        }
-
         $visibleUserIds = $this->getVisibleUserIds($user);
         $visibleUserIds[] = $user->id;
 
@@ -92,7 +83,7 @@ class SecondaryCustomerController extends Controller
 
     private function applyCustomerAccessScope($query, User $user)
     {
-        if ($this->hasAnyRole($user, ['superadmin', 'subAdmin'])) {
+        if ($this->hasAnyRole($user, ['superadmin', 'Admin', 'subAdmin', 'Sub_Admin'])) {
             return $query;
         }
 
@@ -148,7 +139,9 @@ class SecondaryCustomerController extends Controller
             if (method_exists($authUser, 'hasRole')) {
                 $isSuperAdmin =
                     $authUser->hasRole('superadmin') ||
-                    $authUser->hasRole('subAdmin');
+                    $authUser->hasRole('Admin') ||
+                    $authUser->hasRole('subAdmin') ||
+                    $authUser->hasRole('Sub_Admin');
             }
 
             // Fallback: Check roles relation if loaded
@@ -157,7 +150,9 @@ class SecondaryCustomerController extends Controller
 
                 $isSuperAdmin =
                     $roles->contains('superadmin') ||
-                    $roles->contains('subAdmin');
+                    $roles->contains('Admin') ||
+                    $roles->contains('subAdmin') ||
+                    $roles->contains('Sub_Admin');
             }
 
             // Final fallback: Check user_type (as sent in login response)
@@ -177,7 +172,9 @@ class SecondaryCustomerController extends Controller
 
                 $isSuperAdmin =
                     in_array('superadmin', (array)$userTypes, true) ||
-                    in_array('subAdmin', (array)$userTypes, true);
+                    in_array('Admin', (array)$userTypes, true) ||
+                    in_array('subAdmin', (array)$userTypes, true) ||
+                    in_array('Sub_Admin', (array)$userTypes, true);
             }
 
 
@@ -261,6 +258,7 @@ class SecondaryCustomerController extends Controller
                     $roles = $authUser->roles->pluck('name');
                     $isBM = $roles->contains('BM.');
                 }
+                $isBM = false;
 
                 $query = SecondaryCustomer::with([
                     'country',
@@ -1057,7 +1055,9 @@ class SecondaryCustomerController extends Controller
             if (method_exists($authUser, 'hasRole')) {
                 $isSuperAdmin =
                     $authUser->hasRole('superadmin') ||
-                    $authUser->hasRole('subAdmin');
+                    $authUser->hasRole('Admin') ||
+                    $authUser->hasRole('subAdmin') ||
+                    $authUser->hasRole('Sub_Admin');
             }
 
             // Fallback: relation loaded
@@ -1066,7 +1066,9 @@ class SecondaryCustomerController extends Controller
 
                 $isSuperAdmin =
                     $roles->contains('superadmin') ||
-                    $roles->contains('subAdmin');
+                    $roles->contains('Admin') ||
+                    $roles->contains('subAdmin') ||
+                    $roles->contains('Sub_Admin');
             }
 
             // Final fallback: user_type
@@ -1079,7 +1081,9 @@ class SecondaryCustomerController extends Controller
 
                 $isSuperAdmin =
                     in_array('superadmin', (array)$userTypes, true) ||
-                    in_array('subAdmin', (array)$userTypes, true);
+                    in_array('Admin', (array)$userTypes, true) ||
+                    in_array('subAdmin', (array)$userTypes, true) ||
+                    in_array('Sub_Admin', (array)$userTypes, true);
             }
 
             $isBM = false;
@@ -1093,6 +1097,7 @@ class SecondaryCustomerController extends Controller
                 $roles = $authUser->roles->pluck('name');
                 $isBM = $roles->contains('BM.');
             }
+            $isBM = false;
 
             if ($isSuperAdmin) {
 
