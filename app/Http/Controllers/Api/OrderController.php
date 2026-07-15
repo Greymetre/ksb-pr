@@ -1170,33 +1170,28 @@ class OrderController extends Controller
 
             $total_checkins = $checkInQuery->count();
 
-            // ── 3. Secondary Customer Creations ────────────────────────
-            $secondaryCustomerQuery = SecondaryCustomer::whereIn('created_by', $userIds);
+            // ── 3. Customer Creations by Customer Type ────────────────
+            $customerCreationQuery = Customers::whereIn('created_by', $userIds);
 
             if ($isSingleUser && $isEndUser) {
-                $secondaryCustomerQuery->where('created_by', $targetUserId);
+                $customerCreationQuery->where('created_by', $targetUserId);
             }
 
             if (!empty($dateFilter)) {
-                $secondaryCustomerQuery->whereDate('created_at', '>=', $dateFilter[0])
+                $customerCreationQuery->whereDate('created_at', '>=', $dateFilter[0])
                     ->whereDate('created_at', '<=', $dateFilter[1]);
             }
 
-            $total_secondary_customers = $secondaryCustomerQuery->count();
+            $total_secondary_customers = (clone $customerCreationQuery)
+                ->whereHas('customertypes', fn($query) => $query->where('type_name', 'retailer'))
+                ->count();
 
-            // ── 4. Master Distributor Creations ────────────────────────
-            $masterDistributorQuery = MasterDistributor::whereIn('created_by', $userIds);
-
-            if ($isSingleUser && $isEndUser) {
-                $masterDistributorQuery->where('created_by', $targetUserId);
-            }
-
-            if (!empty($dateFilter)) {
-                $masterDistributorQuery->whereDate('created_at', '>=', $dateFilter[0])
-                    ->whereDate('created_at', '<=', $dateFilter[1]);
-            }
-
-            $total_master_distributors = $masterDistributorQuery->count();
+            // Preserve both legacy response fields for mobile compatibility.
+            $total_master_distributors = (clone $customerCreationQuery)
+                ->whereHas('customertypes', function ($query) {
+                    $query->whereIn('type_name', ['distributor', 'Dealer']);
+                })
+                ->count();
 
             // ── Per User Breakdown (Optional - can be extended later) ──
             $perUser = $orders->groupBy('created_by')->map(function ($group) {
