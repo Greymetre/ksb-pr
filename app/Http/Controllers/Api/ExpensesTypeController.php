@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CheckIn;
+use App\Models\Attendance;
 use App\Models\ExpensesType;
 use App\Models\Expenses;
 use App\Models\ExpenseLog;
 use App\Models\Media;
 use App\Models\TourProgramme;
 use App\Models\User;
+use App\Models\UserLiveLocation;
 use Validator;
 use Auth;
 use Carbon\Carbon;
@@ -76,6 +78,97 @@ class ExpensesTypeController extends Controller
         }
 
         return (string) (ExpensesType::where('id', $expenseTypeId)->value('rate') ?? 0);
+    }
+
+    private function calculateExpenseDistance(Expenses $expense): float
+    {
+        $events = collect();
+        $expenseDate = Carbon::parse($expense->date)->toDateString();
+
+        $addEvent = function ($latitude, $longitude, $timestamp) use ($events): void {
+            if (!is_numeric($latitude) || !is_numeric($longitude) || empty($timestamp)) {
+                return;
+            }
+
+            $latitude = round((float) $latitude, 6);
+            $longitude = round((float) $longitude, 6);
+
+            if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
+                return;
+            }
+
+            $events->push([
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'timestamp' => Carbon::parse($timestamp),
+            ]);
+        };
+
+        $attendance = Attendance::where('user_id', $expense->user_id)
+            ->where('punchin_date', $expenseDate)
+            ->orderBy('punchin_time')
+            ->first();
+
+        if ($attendance) {
+            // Punch-in coordinates are stored in the opposite columns.
+            $addEvent(
+                $attendance->punchin_longitude,
+                $attendance->punchin_latitude,
+                $attendance->punchin_date . ' ' . $attendance->punchin_time
+            );
+
+            if ($attendance->punchout_time) {
+                $addEvent(
+                    $attendance->punchout_latitude,
+                    $attendance->punchout_longitude,
+                    ($attendance->punchout_date ?: $expenseDate) . ' ' . $attendance->punchout_time
+                );
+            }
+        }
+
+        UserLiveLocation::where('userid', $expense->user_id)
+            ->whereDate('created_at', $expenseDate)
+            ->orderBy('created_at')
+            ->get(['latitude', 'longitude', 'created_at'])
+            ->each(function ($location) use ($addEvent) {
+                $addEvent($location->latitude, $location->longitude, $location->created_at);
+            });
+
+        CheckIn::where('user_id', $expense->user_id)
+            ->where('checkin_date', $expenseDate)
+            ->orderBy('checkin_time')
+            ->get()
+            ->each(function ($checkin) use ($addEvent, $expenseDate) {
+                $addEvent(
+                    $checkin->checkin_latitude,
+                    $checkin->checkin_longitude,
+                    $checkin->checkin_date . ' ' . $checkin->checkin_time
+                );
+
+                if ($checkin->checkout_time) {
+                    $addEvent(
+                        $checkin->checkout_latitude,
+                        $checkin->checkout_longitude,
+                        ($checkin->checkout_date ?: $expenseDate) . ' ' . $checkin->checkout_time
+                    );
+                }
+            });
+
+        $events = $events->sortBy('timestamp')->values();
+        $totalDistance = 0.0;
+
+        for ($index = 1; $index < $events->count(); $index++) {
+            $previous = $events[$index - 1];
+            $current = $events[$index];
+            $totalDistance += haversineGreatCircleDistance(
+                $previous['latitude'],
+                $previous['longitude'],
+                $current['latitude'],
+                $current['longitude']
+            );
+        }
+
+        return round($totalDistance, 3);
     }
 
     private function expenseRate(Expenses $expense): string
@@ -352,15 +445,15 @@ class ExpensesTypeController extends Controller
                 }
                 $total_visit = count(CheckIn::where('user_id', $expense->user_id)->where('checkin_date', $expense->date)->groupBy('customer_id')->get());
 
-                $checkins = CheckIn::where('user_id', $expense->user_id)
-                    ->where('checkin_date', $expense->date)
-                    ->orderBy('checkin_time', 'asc')
-                    ->get();
-                $total_dis = 0;                
-                foreach ($checkins as $checkin) {
-                    if (!empty($checkin->checkin_latitude) && !empty($checkin->checkin_longitude) && !empty($checkin->checkout_latitude) && !empty($checkin->checkout_longitude)) {
-                        $total_dis += haversineGreatCircleDistance($checkin->checkin_latitude, $checkin->checkin_longitude, $checkin->checkout_latitude, $checkin->checkout_longitude);
-                    }
+                $isPastExpense = Carbon::parse($expense->date)->startOfDay()->lt(Carbon::today());
+
+                if ($expense->distance_calculated) {
+                    $total_dis = (float) $expense->total_distance;
+                } else {
+                    $total_dis = $this->calculateExpenseDistance($expense);
+                    $expense->total_distance = $total_dis;
+                    $expense->distance_calculated = $isPastExpense;
+                    $expense->save();
                 }
 
                 $datas['plan'] = $plan;
