@@ -85,8 +85,8 @@ class ExpensesController extends Controller
                 return;
             }
 
-            $latitude = (float) $latitude;
-            $longitude = (float) $longitude;
+            $latitude = round((float) $latitude, 6);
+            $longitude = round((float) $longitude, 6);
 
             if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
                 return;
@@ -106,8 +106,8 @@ class ExpensesController extends Controller
 
         if ($attendance) {
             $addEvent(
-                $attendance->punchin_latitude,
                 $attendance->punchin_longitude,
+                $attendance->punchin_latitude,
                 $attendance->punchin_date . ' ' . $attendance->punchin_time
             );
 
