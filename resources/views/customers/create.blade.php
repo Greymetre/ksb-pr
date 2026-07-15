@@ -348,7 +348,7 @@
                       @foreach($parentcustomers as $parentcustomer)
                       <option value="{!! $parentcustomer['id'] !!}" <?php if (in_array($parentcustomer->id, $parentarray)) {
                                                                       echo "selected";
-                                                                    } ?>>{!! $parentcustomer['name'] !!}</option>
+                                                                    } ?>>{!! $parentcustomer['name'] !!} ({{ optional($parentcustomer->customertypes)->customertype_name }})</option>
                       @endforeach
                       @endif
 
@@ -1252,18 +1252,15 @@
       $('#type').change(function() {
 
         var type = $('#type').val();
-        if (type == '3') {
-          $('#parentcustomer').hide()
-          $('#parentcustomer').prop("disabled", true)
-        } else if (type == '1') {
-          $('#parentcustomer').hide()
-          $('#parentcustomer').prop("disabled", true)
-        } else if (type == '2') {
-          $('#parentcustomer').show()
-          $('#parentcustomer').prop("disabled", false)
-        } else {
-          $('#parentcustomer').hide()
-          $('#parentcustomer').prop("disabled", true)
+        var retailerTypeId = @json($retailerCustomerTypeId);
+        var needsParent = retailerTypeId !== null && String(type) === String(retailerTypeId);
+        var parentSelect = $('#parentcustomer .customer_parent');
+
+        $('#parentcustomer').toggle(needsParent);
+        parentSelect.prop('disabled', !needsParent);
+
+        if (!needsParent) {
+          parentSelect.val(null).trigger('change');
         }
 
       }).trigger('change');

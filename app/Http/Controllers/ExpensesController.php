@@ -396,12 +396,11 @@ class ExpensesController extends Controller
         } else {
             $total_dis = $this->calculateExpenseDistance($expense);
 
-            // Today's route can still receive locations, so only cache completed days.
-            if ($isPastExpense) {
-                $expense->total_distance = $total_dis;
-                $expense->distance_calculated = true;
-                $expense->save();
-            }
+            // Save today's current distance but keep it open for recalculation.
+            // Once the date has passed, save the final distance and close the cache.
+            $expense->total_distance = $total_dis;
+            $expense->distance_calculated = $isPastExpense;
+            $expense->save();
         }
 
         $logdetails = ExpenseLog::with('logusers')->where('expense_id', $expense->id)->orderBy('id', 'desc')->get();

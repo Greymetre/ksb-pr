@@ -40,6 +40,46 @@ class CustomerController extends Controller
         $this->path = 'customers';
     }
 
+    private function retailerCustomerTypeId(): ?int
+    {
+        return CustomerType::where('active', 'Y')
+            ->whereRaw('LOWER(type_name) = ?', ['retailer'])
+            ->value('id');
+    }
+
+    private function parentCustomerOptions(?int $excludeCustomerId = null)
+    {
+        return Customers::with('customertypes')
+            ->where('active', 'Y')
+            ->whereHas('customertypes', function ($query) {
+                $query->where('active', 'Y')
+                    ->whereRaw('LOWER(type_name) IN (?, ?)', ['dealer', 'distributor']);
+            })
+            ->when($excludeCustomerId, function ($query) use ($excludeCustomerId) {
+                $query->where('id', '!=', $excludeCustomerId);
+            })
+            ->select('id', 'name', 'customertype')
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function validParentCustomerIds($parentIds, $customerTypeId, ?int $excludeCustomerId = null): array
+    {
+        if ((int) $customerTypeId !== (int) $this->retailerCustomerTypeId()) {
+            return [];
+        }
+
+        $allowedIds = $this->parentCustomerOptions($excludeCustomerId)->pluck('id');
+
+        return collect((array) $parentIds)
+            ->map(fn($id) => (int) $id)
+            ->filter()
+            ->intersect($allowedIds)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public function index(Request $request)
     {
         abort_if(Gate::denies('customer_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
@@ -323,9 +363,10 @@ class CustomerController extends Controller
         })->select('id', 'name')->orderBy('id', 'desc')->get();
         $deals = array();
 
-        $parentcustomers = Customers::where('active', '=', 'Y')->where('customertype', '!=', '2')->select('id', 'name')->orderBy('id', 'desc')->get();
+        $retailerCustomerTypeId = $this->retailerCustomerTypeId();
+        $parentcustomers = $this->parentCustomerOptions();
         $custom_fields = CustomerCustomField::with('values')->orderBy('id', 'desc')->get();
-        return view('customers.create', compact('pincodes', 'customertype', 'firmtype', 'pincodes', 'countries', 'fields', 'users', 'deals', 'parentcustomers', 'custom_fields'))->with('customers', $this->customers);
+        return view('customers.create', compact('pincodes', 'customertype', 'firmtype', 'pincodes', 'countries', 'fields', 'users', 'deals', 'parentcustomers', 'retailerCustomerTypeId', 'custom_fields'))->with('customers', $this->customers);
     }
 
     public function createDistributor()
@@ -477,8 +518,9 @@ class CustomerController extends Controller
 
                 //parent start
 
-                if (!empty($request['parent_id'])) {
-                    foreach ($request['parent_id'] as $key => $rows) {
+                $parentIds = $this->validParentCustomerIds($request->input('parent_id', []), $request->customertype);
+                if (!empty($parentIds)) {
+                    foreach ($parentIds as $rows) {
                         $parentDetail = ParentDetail::create(
                             [
                                 'customer_id' => $request['customer_id'],
@@ -583,9 +625,10 @@ class CustomerController extends Controller
 
         $customers->custom_fields = json_decode($customers->custom_fields, true);
 
-        $parentcustomers = Customers::where('active', '=', 'Y')->where('customertype', '!=', '2')->select('id', 'name')->orderBy('id', 'desc')->get();
+        $retailerCustomerTypeId = $this->retailerCustomerTypeId();
+        $parentcustomers = $this->parentCustomerOptions((int) $customers->id);
         $custom_fields = CustomerCustomField::with('values')->orderBy('id', 'desc')->get();
-        return view('customers.create', compact('pincodes', 'customertype', 'firmtype', 'pincodes', 'countries', 'fields', 'users', 'deals', 'parentcustomers', 'custom_fields'))->with('customers', $customers);
+        return view('customers.create', compact('pincodes', 'customertype', 'firmtype', 'pincodes', 'countries', 'fields', 'users', 'deals', 'parentcustomers', 'retailerCustomerTypeId', 'custom_fields'))->with('customers', $customers);
     }
 
     /**
@@ -788,9 +831,14 @@ class CustomerController extends Controller
 
                 //parent start
 
-                if (!empty($request['parent_id'])) {
-                    ParentDetail::where('customer_id', $request['id'])->delete();
-                    foreach ($request['parent_id'] as $key => $rows) {
+                ParentDetail::where('customer_id', $request['id'])->delete();
+                $parentIds = $this->validParentCustomerIds(
+                    $request->input('parent_id', []),
+                    $request->customertype,
+                    (int) $request->id
+                );
+                if (!empty($parentIds)) {
+                    foreach ($parentIds as $rows) {
                         $parentDetail = ParentDetail::updateOrCreate(
                             // ['customer_id' => $request['id']],  
                             [

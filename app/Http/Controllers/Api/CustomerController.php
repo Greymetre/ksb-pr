@@ -129,6 +129,14 @@ class CustomerController extends Controller
                 'gstin_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'pan_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'imgaadhar' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadhar' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadhar_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadharImage' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadhar_attachment' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadharAttachment' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadhaar' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadhaar_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadhaarImage' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'other_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
             ], [
                 'image.file' => 'Profile image must be a valid uploaded file.',
@@ -370,7 +378,17 @@ class CustomerController extends Controller
                             $this->saveCustomerAttachment($request['customer_id'], 'pan', $image);
                         }
 
-                        if ($image = $this->requestFileByAnyKey($request, ['imgaadhar'])) {
+                        if ($image = $this->requestFileByAnyKey($request, [
+                            'imgaadhar',
+                            'aadhar',
+                            'aadhar_image',
+                            'aadharImage',
+                            'aadhar_attachment',
+                            'aadharAttachment',
+                            'aadhaar',
+                            'aadhaar_image',
+                            'aadhaarImage',
+                        ])) {
                             $this->saveCustomerAttachment($request['customer_id'], 'aadhar', $image);
                         }
 
@@ -1048,6 +1066,7 @@ class CustomerController extends Controller
             ? $customer->getemployeedetail->pluck('employee_detail.name')->filter()->values()->implode(', ')
             : '';
         $documents = $customer->customerdocuments ?? collect();
+        $aadharAttachment = optional($documents->firstWhere('document_name', 'aadhar'))->file_path;
 
         return [
             'id' => $customer->id,
@@ -1081,6 +1100,9 @@ class CustomerController extends Controller
             'pan_number' => optional($details)->pan_no ?? '',
             'gst_attachment' => optional($documents->firstWhere('document_name', 'gstin'))->file_path,
             'pan_attachment' => optional($documents->firstWhere('document_name', 'pan'))->file_path,
+            'aadhar' => $aadharAttachment,
+            'aadhar_attachment' => $aadharAttachment,
+            'aadhar_image' => $aadharAttachment,
             'bank_proof' => optional($documents->firstWhere('document_name', 'bankpass'))->file_path,
             'bank_account_type' => $customFields['bank_account_type'] ?? null,
             'bank_account_number' => optional($details)->account_number,
@@ -1536,7 +1558,14 @@ class CustomerController extends Controller
                 'gstin_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'pan_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'imgaadhar' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadhar' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'aadhar_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadharImage' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadhar_attachment' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadharAttachment' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadhaar' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadhaar_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'aadhaarImage' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'other_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'bank_proof' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
             ]);
@@ -1703,7 +1732,17 @@ class CustomerController extends Controller
             if ($image = $this->requestFileByAnyKey($request, ['pan_image', 'panImage', 'pan_attachment', 'panAttachment'])) {
                 $this->saveCustomerAttachment($customer->id, 'pan', $image);
             }
-            if ($image = $this->requestFileByAnyKey($request, ['imgaadhar', 'aadhar_image', 'aadharImage'])) {
+            if ($image = $this->requestFileByAnyKey($request, [
+                'imgaadhar',
+                'aadhar',
+                'aadhar_image',
+                'aadharImage',
+                'aadhar_attachment',
+                'aadharAttachment',
+                'aadhaar',
+                'aadhaar_image',
+                'aadhaarImage',
+            ])) {
                 $this->saveCustomerAttachment($customer->id, 'aadhar', $image);
             }
             if ($image = $this->requestFileByAnyKey($request, ['other_image', 'otherImage', 'additionalDocument', 'mouDocument'])) {
