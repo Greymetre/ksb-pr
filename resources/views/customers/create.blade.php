@@ -909,6 +909,24 @@
               </div>
               <div class="col-md-6">
                 <div class="input_section">
+                  <label class="col-form-label">Account Type (optional)</label>
+                  <div class="form-group has-default bmd-form-group">
+                    <select name="bank_account_type" id="bank_account_type" class="form-control select2" style="width: 100%;">
+                      <option value="">Select Account Type</option>
+                      @foreach(config('constants.bank_account_types', []) as $value => $label)
+                      <option value="{{ $value }}" {{ old('bank_account_type', optional($customers->customerdetails)->bank_account_type) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                      @endforeach
+                    </select>
+                    @if ($errors->has('bank_account_type'))
+                    <div class="error">
+                      <p class="text-danger">{{ $errors->first('bank_account_type') }}</p>
+                    </div>
+                    @endif
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="input_section">
                   <label class="col-form-label">{!! trans('panel.customers.fields.bank_name') !!} </label>
 
                   <div class="form-group has-default bmd-form-group">

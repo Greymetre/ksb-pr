@@ -123,6 +123,7 @@ class CustomerController extends Controller
                 'mobile'  => 'required|numeric|unique:customers,mobile',
                 // 'email'  => 'email|unique:customers,email',
                 'customertype'       => 'nullable|exists:customer_types,id',
+                'bank_account_type' => 'nullable|in:Savings,Current,savings,current',
                 'image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'shopimage' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'visiting_card' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
@@ -403,6 +404,7 @@ class CustomerController extends Controller
                             'pan_no'        => isset($request['pan_no']) ? ucfirst($request['pan_no']) : '',
                             'aadhar_no'     => isset($request['aadhar_no']) ? ucfirst($request['aadhar_no']) : '',
                             'account_holder' => isset($request['account_holder']) ? ucfirst($request['account_holder']) : '',
+                            'bank_account_type' => !empty($request['bank_account_type']) ? ucfirst(strtolower($request['bank_account_type'])) : null,
                             'account_number' => isset($request['account_number']) ? $request['account_number'] : '',
                             'bank_name' => isset($request['bank_name']) ? $request['bank_name'] : '',
                             'ifsc_code' => isset($request['ifsc_code']) ? $request['ifsc_code'] : '',
@@ -1104,7 +1106,7 @@ class CustomerController extends Controller
             'aadhar_attachment' => $aadharAttachment,
             'aadhar_image' => $aadharAttachment,
             'bank_proof' => optional($documents->firstWhere('document_name', 'bankpass'))->file_path,
-            'bank_account_type' => $customFields['bank_account_type'] ?? null,
+            'bank_account_type' => optional($details)->bank_account_type,
             'bank_account_number' => optional($details)->account_number,
             'bank_name' => optional($details)->bank_name,
             'ifsc_code' => optional($details)->ifsc_code,
@@ -1551,6 +1553,7 @@ class CustomerController extends Controller
                 'customer_id' => 'required|exists:customers,id',
                 'mobile' => 'nullable|numeric',
                 'customertype' => 'nullable|exists:customer_types,id',
+                'bank_account_type' => 'nullable|in:Savings,Current,savings,current',
                 'image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'shopimage' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'shop_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
@@ -1758,6 +1761,7 @@ class CustomerController extends Controller
                 'pan_no' => 'pan_no',
                 'aadhar_no' => 'aadhar_no',
                 'account_holder' => 'account_holder',
+                'bank_account_type' => 'bank_account_type',
                 'account_number' => 'account_number',
                 'bank_name' => 'bank_name',
                 'ifsc_code' => 'ifsc_code',
@@ -1775,6 +1779,9 @@ class CustomerController extends Controller
                     $value = $request->input($requestKey);
                     if (in_array($requestKey, ['gstin_no', 'pan_no', 'aadhar_no', 'account_holder', 'otherid_no'], true) && $value !== null && $value !== '') {
                         $value = ucfirst($value);
+                    }
+                    if ($requestKey === 'bank_account_type' && $value !== null && $value !== '') {
+                        $value = ucfirst(strtolower($value));
                     }
                     $detailUpdates[$column] = $value;
                 }

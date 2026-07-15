@@ -33,6 +33,10 @@ return [
         '1' => 'Gift',
         '2' => 'Neft'
     ],
+    'bank_account_types' => [
+        'Savings' => 'Savings',
+        'Current' => 'Current',
+    ],
     'LEAD_SOURCES' => [
         'Google' => 'Google',
         'Indiamart' => 'Indiamart',

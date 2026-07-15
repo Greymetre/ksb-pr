@@ -39,6 +39,7 @@ class CustomersRequest extends FormRequest
                     'city_id'       => 'nullable|numeric|exists:cities,id',
                     'pincode_id'    => 'nullable|numeric|exists:pincodes,id',
                     'status_id'     => 'nullable|numeric|exists:statuses,id',
+                    'bank_account_type' => 'nullable|in:Savings,Current',
                 ];
                 break;
             default :
@@ -60,6 +61,7 @@ class CustomersRequest extends FormRequest
                     'city_id'       => 'nullable|numeric|exists:cities,id',
                     'pincode_id'    => 'nullable|numeric|exists:pincodes,id',
                     'status_id'     => 'nullable|numeric|exists:statuses,id',
+                    'bank_account_type' => 'nullable|in:Savings,Current',
                 ];
                 break;
         }

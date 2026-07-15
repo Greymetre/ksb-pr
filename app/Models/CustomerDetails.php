@@ -11,7 +11,7 @@ class CustomerDetails extends Model
 
     protected $table = 'customer_details';
 
-    protected $fillable = [  'active', 'customer_id', 'gstin_no', 'pan_no', 'aadhar_no', 'account_holder', 'account_number', 'bank_name', 'ifsc_code', 'otherid_no', 'enrollment_date', 'approval_date', 'shop_image', 'visiting_card', 'grade', 'visit_status', 'fcm_token', 'deleted_at', 'created_at', 'updated_at'];
+    protected $fillable = [  'active', 'customer_id', 'gstin_no', 'pan_no', 'aadhar_no', 'account_holder', 'bank_account_type', 'account_number', 'bank_name', 'ifsc_code', 'otherid_no', 'enrollment_date', 'approval_date', 'shop_image', 'visiting_card', 'grade', 'visit_status', 'fcm_token', 'deleted_at', 'created_at', 'updated_at'];
 
     public function save_data($request)
     {
@@ -25,6 +25,7 @@ class CustomerDetails extends Model
             $customer->pan_no = isset($request['pan_no'])? ucfirst($request['pan_no']):'';
             $customer->aadhar_no = isset($request['aadhar_no'])? ucfirst($request['aadhar_no']):'';
             $customer->account_holder = isset($request['account_holder'])? ucfirst($request['account_holder']):'';
+            $customer->bank_account_type = !empty($request['bank_account_type'])? ucfirst(strtolower($request['bank_account_type'])):null;
             $customer->account_number = isset($request['account_number'])? $request['account_number']:'';
             $customer->bank_name = isset($request['bank_name'])? $request['bank_name']:'';
             $customer->ifsc_code = isset($request['ifsc_code'])? $request['ifsc_code']:'';
