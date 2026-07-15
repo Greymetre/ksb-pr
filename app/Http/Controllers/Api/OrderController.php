@@ -1183,7 +1183,6 @@ class OrderController extends Controller
             }
 
             $total_secondary_customers = (clone $customerCreationQuery)
-                ->whereHas('customertypes', fn($query) => $query->where('type_name', 'retailer'))
                 ->count();
 
             // Preserve both legacy response fields for mobile compatibility.
