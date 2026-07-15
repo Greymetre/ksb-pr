@@ -1622,7 +1622,7 @@ if (!function_exists('numberToWords')) {
 
 function getRoadDistance($lat1,$lng1,$lat2,$lng2)
 {
-    $apiKey = env('GOOGLE_MAPS_API_KEY');
+    $apiKey = 'AIzaSyAVSDwHbKULnZa93kYpYINTqX4eaWy9q18';
     if (empty($apiKey)) {
         return '';
     }
