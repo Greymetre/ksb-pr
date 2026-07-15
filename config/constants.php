@@ -24,10 +24,15 @@ return [
     ],
     'tour_objectives' => [
         'Customer Visit',
-        'Field Demo',
+        'Mechanic Meet',
+        'Borer Meet',
         'Retailer Meet',
-        'Plumber Meet',
-        'Other',
+        'Tractor show',
+        'Promotional Item Distribution',
+        'Dealer Board',
+        'Wall Painting',
+        'Dealer Factory Visit',
+        'Others'
     ],
     'redeem_mode' => [
         '1' => 'Gift',
