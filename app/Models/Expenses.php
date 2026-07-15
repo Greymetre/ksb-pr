@@ -15,6 +15,11 @@ class Expenses extends Model implements HasMedia
 
   protected $fillable = ['expenses_type', 'rate', 'user_id', 'date', 'claim_amount', 'start_km', 'stop_km', 'total_km', 'note', 'checker_status', 'accountant_status', 'created_at', 'updated_at', 'created_by', 'approve_amount', 'reason', 'approve_reject_by'];
 
+  protected $casts = [
+    'total_distance' => 'decimal:3',
+    'distance_calculated' => 'boolean',
+  ];
+
   protected $appends = ['is_self'];
   // public function expense_type(){
   //     return $this->hasOne(ExpensesType::class);
