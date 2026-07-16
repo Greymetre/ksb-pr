@@ -301,22 +301,8 @@ return view('orders.create', compact(
                 'createdbyname',
             ]))->findOrFail($id);
             $orderdetails = OrderDetails::with('products')->where('order_id', '=', $id)->get();
-            if ($orders->product_cat_id == '1') {
-                $totalLP = 0;
-                foreach ($orderdetails as $key => $value) {
-                    $totalLP += $value->price * $value->quantity;
-                }
-                if ($totalLP > 0) {
-                    $ttdis = number_format(((1 - ($orders->sub_total / $totalLP)) * 100), 2);
-                } else {
-                    $ttdis = false;
-                }
-            } else {
-                $ttdis = false;
-                $totalLP = false;
-            }
 
-            return view('orders.show', compact('orderdetails', 'orders', 'ttdis', 'totalLP'));
+            return view('orders.show', compact('orderdetails', 'orders'));
         }
 
         /**

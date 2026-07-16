@@ -90,7 +90,6 @@
                         <!-- <th>{!! trans('panel.global.product_detail') !!}</th> -->
                         <th>{!! trans('panel.global.list_price') !!}</th>
                         <th>Tax</th>
-                        <th>Trade Discount%</th>
                         <th>{!! trans('panel.global.amount') !!}</th>
                       </tr>
                     </thead>
@@ -115,7 +114,6 @@
 
                         <td>{!! $rows['price'] !!}</td>
                         <td>{!! $rows['gst'] !!}</td>
-                        <td>{!! $rows['discount'] !!}</td>
                         <td>{!! $rows['line_total'] !!}</td>
                       </tr>
                       @endforeach
@@ -140,142 +138,9 @@
                   <p class="lead"></p>
 
 
-                  <?php
-
-                  $scheme_dicount_sum = 0;
-                  $ebd_dicount_sum = 0;
-                  $clustor_dicount_sum = 0;
-                  $deal_dicount_sum = 0;
-                  $distributor_dicount_sum = 0;
-                  $frieght_dicount_sum = 0;
-
-                  $cluster_discount = 0;
-                  $deal_discount = 0;
-                  $distributor_discount = 0;
-                  $frieght_discount = 0;
-
-
-                  $gst_amount_5 = 0;
-                  $gst_amount_12 = 0;
-                  $gst_amount_18 = 0;
-                  $gst_amount_28 = 0;
-
-                  if (!empty($orderdetails)) {
-
-                    foreach ($orderdetails as $keys => $rowss) {
-
-                      $scheme_dicount_sum += $rowss['schme_amount'];
-                      $ebd_dicount_sum += $rowss['ebd_amount'];
-                      $clustor_dicount_sum += $rowss['cluster_amount'];
-                      $deal_dicount_sum += $rowss['deal_amount'];
-                      $distributor_dicount_sum += $rowss['distributor_amount'];
-                      $frieght_dicount_sum += $rowss['frieght_amount'];
-
-                      $cluster_discount = $rowss['cluster_discount'];
-                      $deal_discount = $rowss['deal_discount'];
-                      $distributor_discount = $rowss['distributor_discount'];
-                      $frieght_discount = $rowss['frieght_discount'];
-
-                      if ($rowss['gst'] == 5) {
-
-                        //$gst_amount_5+= $rowss['gst_amount'];
-                        $gst_amount_5 += $rowss['tax_amount'];
-                      } elseif ($rowss['gst'] == 12) {
-
-                        //$gst_amount_12+= $rowss['gst_amount'];
-                        $gst_amount_12 += $rowss['tax_amount'];
-                      } elseif ($rowss['gst'] == 18) {
-
-                        //$gst_amount_18+= $rowss['gst_amount'];
-                        $gst_amount_18 += $rowss['tax_amount'];
-                      } else {
-
-                        //$gst_amount_28+= $rowss['gst_amount'];
-                        $gst_amount_28 += $rowss['tax_amount'];
-                      }
-                    }
-                  }
-
-                  ?>
-
                   <div class="table-responsive">
                     <table class="table">
                       <tbody>
-                        @if($orders->product_cat_id == '2')
-                        <tr>
-                          <th style="width:50%">DOD Discount :</th>
-                          <td>{!! $orders->dod_discount !!}%</td>
-                          <td>-</td>
-                        </tr>
-                        <tr>
-                          <th style="width:50%">Special Distribution Discount :</th>
-                          <td>{!! $orders->special_distribution_discount !!}%</td>
-                          <td>-</td>
-                        </tr>
-                        <tr>
-                          <th style="width:50%">Distribution Margin Discount :</th>
-                          <td>{!! $orders->distribution_margin_discount !!}%</td>
-                          <td>-</td>
-                        </tr>
-                        <tr>
-                          <th style="width:50%">Cash Discount% :</th>
-                          <td>{!! $orders->cash_discount !!} %</td>
-                          <td>-</td>
-                        </tr>
-
-                        <tr>
-                          <th style="width:50%">Total Discount% :</th>
-                          <td>{!! $orders->total_fan_discount !!}%</td>
-                          <td>{!! $orders->total_fan_discount_amount !!}</td>
-                        </tr>
-                        @else
-                        <tr>
-                          <th style="width:50%">Scheme Discount :</th>
-                          <td>-</td>
-                          <td>{!! $scheme_dicount_sum !!}</td>
-                        </tr>
-                        <tr>
-                          <th style="width:50%">EBD Discount :</th>
-                          <td>{!! $orders->ebd_discount !!}</td>
-                          <td>{!! $orders->ebd_amount !!}</td>
-                        </tr>
-                        <tr>
-                          <th style="width:50%">MOU Discount% :</th>
-                          <td>{!! $orders->distributor_discount !!}</td>
-                          <td>{!! $orders->distributor_amount !!}</td>
-                        </tr>
-                        <tr>
-                          <th style="width:50%">Special Discount% :</th>
-                          <td>{!! $orders->special_discount !!}</td>
-                          <td>{!! $orders->special_amount !!}</td>
-                        </tr>
-
-                        <tr>
-                          <th style="width:50%">Frieght Discount% :</th>
-                          <td>{!! $orders->frieght_discount !!}</td>
-                          <td>{!! $orders->frieght_amount !!}</td>
-                        </tr>
-                        <tr>
-                          <th style="width:50%">Cluster Discount% :</th>
-                          <td>{!! $orders->cluster_discount!!}</td>
-                          <td>{!! $orders->cluster_amount !!}</td>
-                        </tr>
-                        <tr>
-                          <th style="width:50%">Deal Discount% :</th>
-                          <td>{!! $orders->deal_discount !!}</td>
-                          <td>{!! $orders->deal_amount !!}</td>
-                        </tr>
-                        <tr>
-                          <th style="width:50%">Cash Discount% :</th>
-                          <td>{!! $orders->cash_discount !!}</td>
-                          <td>{!! $orders->cash_amount !!}</td>
-                        </tr>
-                        <tr>
-                          <th style="width:50%">Total Discount% :</th>
-                          <td>{!! $ttdis !!}</td>
-                          <td>{!! $totalLP-$orders['sub_total'] !!}</td>
-                        </tr>
-                        @endif
                         <tr>
                           <th style="width:50%">Subtotal :</th>
                           <td>-</td>
