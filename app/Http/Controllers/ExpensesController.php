@@ -154,12 +154,19 @@ class ExpensesController extends Controller
         for ($index = 1; $index < $events->count(); $index++) {
             $previous = $events[$index - 1];
             $current = $events[$index];
-            $totalDistance += haversineGreatCircleDistance(
+            $roadDistance = getRoadDistance(
                 $previous['latitude'],
                 $previous['longitude'],
                 $current['latitude'],
                 $current['longitude']
             );
+
+            // Do not silently replace a driving route with straight-line distance.
+            if ($roadDistance === null) {
+                throw new \RuntimeException('Unable to calculate road-driving distance from Google Maps.');
+            }
+
+            $totalDistance += $roadDistance;
         }
 
         return round($totalDistance, 3);

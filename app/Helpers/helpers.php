@@ -1648,37 +1648,41 @@ if (!function_exists('numberToWords')) {
 }
 
 
-function getRoadDistance($lat1,$lng1,$lat2,$lng2)
+function getRoadDistance($lat1, $lng1, $lat2, $lng2): ?float
 {
-    $apiKey = 'AIzaSyAVSDwHbKULnZa93kYpYINTqX4eaWy9q18';
+    $apiKey = config('services.google.maps_api_key');
     if (empty($apiKey)) {
-        return '';
+        return null;
     }
 
-    $url = "https://maps.googleapis.com/maps/api/distancematrix/json?origins=".$lat1.",".$lng1."&destinations=".$lat2.",".$lng2."&key=".$apiKey;
+    try {
+        $response = \Illuminate\Support\Facades\Http::connectTimeout(3)
+            ->timeout(8)
+            ->retry(2, 200)
+            ->get('https://maps.googleapis.com/maps/api/directions/json', [
+                'origin' => $lat1 . ',' . $lng1,
+                'destination' => $lat2 . ',' . $lng2,
+                'mode' => 'driving',
+                'key' => $apiKey,
+            ]);
 
-    $ch = curl_init();
+        if (!$response->successful()) {
+            return null;
+        }
 
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        if ($response->json('status') !== 'OK') {
+            return null;
+        }
 
-    $response = curl_exec($ch);
-
-    curl_close($ch);
-
-    $result = json_decode($response,true);
-
-
-    if(isset($result['rows'][0]['elements'][0]['distance']['value']))
-    {
-        $meters = $result['rows'][0]['elements'][0]['distance']['value'];
-
-        $km = $meters / 1000;
-
-        return round($km,2);
+        $meters = $response->json('routes.0.legs.0.distance.value');
+        if (is_numeric($meters)) {
+            return round(((float) $meters) / 1000, 3);
+        }
+    } catch (\Throwable $exception) {
+        report($exception);
     }
 
-    return '';
+    return null;
 }
 
 if (! function_exists('sanitizeForExcel')) {

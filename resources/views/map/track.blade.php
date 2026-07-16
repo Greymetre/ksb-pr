@@ -62,7 +62,7 @@
                     origin: origin,
                     destination: destination,
                     waypoints: waypoints,
-                    travelMode: google.maps.TravelMode.WALKING
+                    travelMode: google.maps.TravelMode.DRIVING
                 }, (response, status) => {
                     if (status === 'OK') {
                         directionsRenderer.setDirections(response);
@@ -123,7 +123,7 @@
     </script>
 
     <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVSDwHbKULnZa93kYpYINTqX4eaWy9q18&callback=initMap">
+        src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}&callback=initMap">
     </script>
 </head>
 
