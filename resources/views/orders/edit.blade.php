@@ -172,7 +172,7 @@
 
                                 @if($orders->buyer_id && $orders->buyers)
                                 <option value="{{ $orders->buyer_id }}" selected>
-                                    {{ $orders->buyers->shop_name }}
+                                    {{ $orders->buyers->name }}
                                 </option>
                                 @endif
                             </select>
@@ -192,11 +192,11 @@
                                 </div> -->
                                 <div class="buyer_address address-text">
                                  @if($orders->buyers)
-                                    {{ $orders->buyers->address_line ?? $orders->buyers->customeraddress->address1 ?? '' }},
-                                    {{ $cities[$orders->buyers->city_id] ?? $orders->buyers->customeraddress->city->city_name ?? '' }},
-                                    {{ $districts[$orders->buyers->district_id] ?? '' }},
-                                    {{ $states[$orders->buyers->state_id] ?? '' }} -
-                                    {{ $pincodes[$orders->buyers->pincode_id] ?? '' }}
+                                    {{ data_get($orders, 'buyers.customeraddress.address1', '') }},
+                                    {{ data_get($orders, 'buyers.customeraddress.cityname.city_name', '') }},
+                                    {{ data_get($orders, 'buyers.customeraddress.districtname.district_name', '') }},
+                                    {{ data_get($orders, 'buyers.customeraddress.statename.state_name', '') }} -
+                                    {{ data_get($orders, 'buyers.customeraddress.pincodename.pincode', '') }}
                                  @else
                                     Select customer to view address
                                  @endif
@@ -215,7 +215,7 @@
 
                                 @if($orders->seller_id && $orders->sellers)
                                 <option value="{{ $orders->seller_id }}" selected>
-                                    {{ $orders->sellers->trade_name }}
+                                    {{ $orders->sellers->name }}
                                 </option>
                                 @endif
                             </select>
@@ -230,11 +230,11 @@
 
                                  <div id="customer_address_div" class="address-text">
                                  @if($orders->sellers)
-                                    {{ $orders->sellers->billing_address ?? '' }},
-                                    {{ $cities[$orders->sellers->billing_city] ?? '' }},
-                                    {{ $districts[$orders->sellers->billing_district] ?? '' }},
-                                    {{ $states[$orders->sellers->billing_state] ?? '' }} -
-                                    {{ $pincodes[$orders->sellers->billing_pincode] ?? '' }}
+                                    {{ data_get($orders, 'sellers.customeraddress.address1', '') }},
+                                    {{ data_get($orders, 'sellers.customeraddress.cityname.city_name', '') }},
+                                    {{ data_get($orders, 'sellers.customeraddress.districtname.district_name', '') }},
+                                    {{ data_get($orders, 'sellers.customeraddress.statename.state_name', '') }} -
+                                    {{ data_get($orders, 'sellers.customeraddress.pincodename.pincode', '') }}
                                  @else
                                     Select distributor to view address
                                  @endif

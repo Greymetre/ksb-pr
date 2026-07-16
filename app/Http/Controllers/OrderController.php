@@ -291,7 +291,15 @@ return view('orders.create', compact(
         {
             abort_if(Gate::denies('order_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
             $id = decrypt($id);
-            $orders = $this->applyAccessScope($this->orders->with('sellers', 'createdbyname'))->findOrFail($id);
+            $orders = $this->applyAccessScope($this->orders->with([
+                'buyers.customertypes',
+                'buyers.customeraddress.cityname',
+                'buyers.customeraddress.pincodename',
+                'sellers.customertypes',
+                'sellers.customeraddress.cityname',
+                'sellers.customeraddress.pincodename',
+                'createdbyname',
+            ]))->findOrFail($id);
             $orderdetails = OrderDetails::with('products')->where('order_id', '=', $id)->get();
             if ($orders->product_cat_id == '1') {
                 $totalLP = 0;

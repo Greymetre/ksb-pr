@@ -143,13 +143,13 @@ public function insertrules()
     }
     public function buyers()
     {
-        return $this->belongsTo(\App\Models\SecondaryCustomer::class, 'buyer_id');
+        return $this->belongsTo(\App\Models\Customers::class, 'buyer_id', 'id');
     }
     
         // Seller = MasterDistributor
     public function sellers()
     {
-        return $this->belongsTo(\App\Models\MasterDistributor::class,'seller_id' );
+        return $this->belongsTo(\App\Models\Customers::class, 'seller_id', 'id');
     }
 
     public function buyerCustomer()

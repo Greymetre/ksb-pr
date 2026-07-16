@@ -41,7 +41,7 @@
                 <div class="col-3">
                   <h4>
                     <!-- <img src="" class="brand-image" width="70px" alt="Logo"> <span> </span> -->
-                    <small class="float-left">Created By: {!! $orders['createdbyname']['name'] !!}</small>
+                    <small class="float-left">Created By: {{ data_get($orders, 'createdbyname.name', '-') }}</small>
                   </h4>
                 </div>
                 <!-- /.col -->
@@ -52,22 +52,28 @@
                 <div class="col-sm-6 invoice-col">
                   From
                   <address>
-                    <strong>{!! isset($orders['sellers']['name']) ? $orders['sellers']['name'] :'' !!} </strong><br>
-                    {!! $orders['sellers']['customeraddress']['address1']??'' !!} ,{!! $orders['sellers']['customeraddress']['address2']??'' !!}<br>
-                    {!! $orders['sellers']['customeraddress']['locality']??'-' !!}, {!! $orders['sellers']['customeraddress']['cityname']['city_name']??'-' !!} {!! $orders['sellers']['customeraddress']['pincodename']['pincode']??'-' !!}<br>
-                    Phone: {!! $orders['sellers']['mobile'] !!}<br>
-                    Email: {!! $orders['sellers']['email'] !!}
+                    <strong>{{ data_get($orders, 'sellers.name', '-') }}</strong>
+                    @if(data_get($orders, 'sellers.customertypes.customertype_name'))
+                      ({{ data_get($orders, 'sellers.customertypes.customertype_name') }})
+                    @endif<br>
+                    {{ data_get($orders, 'sellers.customeraddress.address1', '') }}, {{ data_get($orders, 'sellers.customeraddress.address2', '') }}<br>
+                    {{ data_get($orders, 'sellers.customeraddress.locality', '-') }}, {{ data_get($orders, 'sellers.customeraddress.cityname.city_name', '-') }} {{ data_get($orders, 'sellers.customeraddress.pincodename.pincode', '-') }}<br>
+                    Phone: {{ data_get($orders, 'sellers.mobile', '-') }}<br>
+                    Email: {{ data_get($orders, 'sellers.email', '-') }}
                   </address>
                 </div>
                 <!-- /.col -->
                 <div class="col-sm-6 invoice-col">
                   To
                   <address>
-                    <strong>{!! $orders['buyers']['name'] !!}</strong><br>
-                    {!! $orders['buyers']['customeraddress']['address1'] !!} ,{!! $orders['buyers']['customeraddress']['address2'] !!}<br>
-                    {!! $orders['buyers']['customeraddress']['locality'] ?? '' !!}, {!! $orders['buyers']['customeraddress']['cityname']['city_name'] ?? '' !!} {!! $orders['buyers']['customeraddress']['pincodename']['pincode'] ?? '' !!}<br>
-                    Phone: {!! $orders['buyers']['mobile'] !!}<br>
-                    Email: {!! $orders['buyers']['email'] !!}
+                    <strong>{{ data_get($orders, 'buyers.name', '-') }}</strong>
+                    @if(data_get($orders, 'buyers.customertypes.customertype_name'))
+                      ({{ data_get($orders, 'buyers.customertypes.customertype_name') }})
+                    @endif<br>
+                    {{ data_get($orders, 'buyers.customeraddress.address1', '') }}, {{ data_get($orders, 'buyers.customeraddress.address2', '') }}<br>
+                    {{ data_get($orders, 'buyers.customeraddress.locality', '-') }}, {{ data_get($orders, 'buyers.customeraddress.cityname.city_name', '-') }} {{ data_get($orders, 'buyers.customeraddress.pincodename.pincode', '-') }}<br>
+                    Phone: {{ data_get($orders, 'buyers.mobile', '-') }}<br>
+                    Email: {{ data_get($orders, 'buyers.email', '-') }}
                   </address>
                 </div>
               </div>
