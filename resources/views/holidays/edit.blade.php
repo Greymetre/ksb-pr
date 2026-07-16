@@ -37,11 +37,16 @@
                                 ]) !!}
 
                                 <div class="p-2 form-group">
-                                    <label for="branch">Branch</label>
-                                    <select class="form-control select2 {{ $errors->has('branch') ? 'is-invalid' : '' }}" name="branch" id="branch" required>
-                                        <option value="">Select Branch</option>
+                                    <label for="branch">Branches</label>
+                                    @php
+                                        $selectedBranches = old('branch', $holidays->branches->pluck('id')->all());
+                                        if (empty($selectedBranches) && $holidays->branch) {
+                                            $selectedBranches = [$holidays->branch];
+                                        }
+                                    @endphp
+                                    <select class="form-control select2 {{ $errors->has('branch') ? 'is-invalid' : '' }}" name="branch[]" id="branch" multiple required data-placeholder="Select Branches">
                                         @foreach($branches as $branche)
-                                        <option value="{{ $branche->id }}" <?php if($holidays->branch== $branche->id){ echo "selected";} ?> >{{ $branche->branch_name }}</option>
+                                        <option value="{{ $branche->id }}" {{ in_array($branche->id, $selectedBranches) ? 'selected' : '' }}>{{ $branche->branch_name }}</option>
                                         @endforeach
                                     </select>
                                     @if ($errors->has('branch'))

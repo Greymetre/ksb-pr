@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use DataTables;
 use Validator;
 use Gate;
+use Carbon\Carbon;
 
 
 class HolidayController extends Controller
@@ -35,16 +36,17 @@ class HolidayController extends Controller
 
      $userids = getUsersReportingToAuth();
         if ($request->ajax()) {
-            $data = Holiday::with('createdbyname','getbranch')->latest();
+            $data = Holiday::with('createdbyname', 'branches')->latest();
             return Datatables::of($data)
                     ->addIndexColumn()
                         ->editColumn('created_at', function($data)
                         {
                             return  date("Y", strtotime($data->created_at));
                         })
-                        // ->addColumn('branch_name', function ($query) {
-                        //  return $query->getbranch->branch_name??'';
-                        //  })
+                        ->addColumn('branch_names', function ($holiday) {
+                            return $holiday->branches->pluck('branch_name')->implode(', ')
+                                ?: optional($holiday->getbranch)->branch_name;
+                        })
                         ->addColumn('action', function ($query) {
                               $btn = '';
                               $activebtn ='';  
@@ -94,18 +96,28 @@ class HolidayController extends Controller
         
         $validator = Validator::make($request->all(), [
            // 'branch' => 'required',
-            'holiday_date' => 'required|array',
-            'name' => 'required|array',
-            'branch' => 'required',
+            'holiday_date' => 'required|array|min:1',
+            'holiday_date.*' => 'required|date',
+            'name' => 'required|array|min:1',
+            'name.*' => 'required|string',
+            'branch' => 'required|array|min:1',
+            'branch.*' => 'required|integer|distinct|exists:branches,id',
            
         ]);
+        $validator->after(function ($validator) use ($request) {
+            if (count($request->input('holiday_date', [])) !== count($request->input('name', []))) {
+                $validator->errors()->add('name', 'Each holiday date must have a holiday name.');
+            }
+        });
         if ($validator->fails()) {
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
         }
         
-         $holiday_date = $request->holiday_date;
+         $holiday_date = collect($request->holiday_date)
+            ->map(fn ($date) => Carbon::parse($date)->format('Y-m-d'))
+            ->all();
          if (!empty($holiday_date)) {
          $holiday_date = implode(",", $holiday_date);
          } else {
@@ -119,13 +131,17 @@ class HolidayController extends Controller
          $name = '';
          }
 
-        Holiday::create([
-            'branch' => $request->branch,
-            'name' => $name,
-            'holiday_date' => $holiday_date,
-            'created_by' => Auth::user()->id,
-            'active'=> 'Y'
-        ]);
+        DB::transaction(function () use ($request, $name, $holiday_date) {
+            $holiday = Holiday::create([
+                'branch' => $request->branch[0],
+                'name' => $name,
+                'holiday_date' => $holiday_date,
+                'created_by' => Auth::id(),
+                'active'=> 'Y'
+            ]);
+
+            $holiday->branches()->sync($request->branch);
+        });
 
         return redirect(route('holidays.index'))->with('message', 'Holiday added successfully');
   
@@ -153,7 +169,7 @@ class HolidayController extends Controller
     {
         $id = decrypt($id); 
         $branches = Branch::get();
-        $holidays = Holiday::find($id); 
+        $holidays = Holiday::with('branches')->findOrFail($id);
         return view('holidays.edit',compact('branches','holidays'));
     }
 
@@ -167,18 +183,28 @@ class HolidayController extends Controller
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'branch' => 'required',
-            'holiday_date' => 'required|array',
-            'name' => 'required|array',
+            'branch' => 'required|array|min:1',
+            'branch.*' => 'required|integer|distinct|exists:branches,id',
+            'holiday_date' => 'required|array|min:1',
+            'holiday_date.*' => 'required|date',
+            'name' => 'required|array|min:1',
+            'name.*' => 'required|string',
            
         ]);
+        $validator->after(function ($validator) use ($request) {
+            if (count($request->input('holiday_date', [])) !== count($request->input('name', []))) {
+                $validator->errors()->add('name', 'Each holiday date must have a holiday name.');
+            }
+        });
         if ($validator->fails()) {
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
         }
 
-         $holiday_date = $request->holiday_date;
+         $holiday_date = collect($request->holiday_date)
+            ->map(fn ($date) => Carbon::parse($date)->format('Y-m-d'))
+            ->all();
          if (!empty($holiday_date)) {
          $holiday_date = implode(",", $holiday_date);
          } else {
@@ -195,12 +221,15 @@ class HolidayController extends Controller
      
         $holidays = Holiday::find($id);
         if($holidays){
-            $holidays->branch = $request->branch;
+            $holidays->branch = $request->branch[0];
             $holidays->name = $name;
             $holidays->holiday_date = $holiday_date;
-            $holidays->created_by = Auth::user()->id;
+            $holidays->updated_by = Auth::id();
             $holidays->active = 'Y';
-            $holidays->save();
+            DB::transaction(function () use ($holidays, $request) {
+                $holidays->save();
+                $holidays->branches()->sync($request->branch);
+            });
             return redirect(route('holidays.index'))->with('message', 'Holiday updated successfully');
         }else{
             return redirect(route('holidays.index'))->with('error', 'Somthing went wroung');

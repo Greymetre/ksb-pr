@@ -23,5 +23,43 @@ class Holiday extends Model
         return $this->belongsTo('App\Models\Branch', 'branch', 'id');
     }
 
+    public function branches()
+    {
+        return $this->belongsToMany(Branch::class, 'branch_holiday')->withTimestamps();
+    }
+
+    public function scopeForBranches($query, $branchIds)
+    {
+        $branchIds = collect(is_array($branchIds) ? $branchIds : explode(',', (string) $branchIds))
+            ->map(fn ($id) => trim((string) $id))
+            ->filter(fn ($id) => $id !== '' && ctype_digit($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($branchIds->isEmpty()) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function ($query) use ($branchIds) {
+            $query->whereHas('branches', function ($query) use ($branchIds) {
+                $query->whereIn('branches.id', $branchIds);
+            })->orWhereIn('branch', $branchIds);
+        });
+    }
+
+    public static function datesForBranches($branchIds): array
+    {
+        return static::query()
+            ->where('active', 'Y')
+            ->forBranches($branchIds)
+            ->pluck('holiday_date')
+            ->flatMap(fn ($dates) => explode(',', (string) $dates))
+            ->map(fn ($date) => trim($date))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
 
 }

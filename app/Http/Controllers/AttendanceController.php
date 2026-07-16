@@ -450,9 +450,6 @@ public function attendanceSummaryDownload(Request $request)
         $start_date = $now->startOfMonth()->format('Y-m-d');
         $end_date   = $now->endOfMonth()->format('Y-m-d');
     }
-    $holidayRecords = Holiday::where('active', 'Y')->get();
-    
-
     // Prepare period (end date is exclusive → +1 day)
     $end_date_for_period = Carbon::parse($end_date)->addDay()->format('Y-m-d');
 
@@ -485,6 +482,15 @@ public function attendanceSummaryDownload(Request $request)
     }
 
     $users = $attendancesummary->limit(4500)->get();
+    $holidayData = getHolidayData(
+        $users->pluck('branch_id')
+            ->filter()
+            ->flatMap(fn ($ids) => explode(',', $ids))
+            ->map(fn ($id) => trim($id))
+            ->filter()
+            ->unique()
+            ->all()
+    );
     $allManagerIds = $users->pluck('reportingids')
     ->filter()
     ->flatMap(function ($ids) {
@@ -543,31 +549,13 @@ public function attendanceSummaryDownload(Request $request)
     $headings = array_merge($label1, $label2, $label3);
 
     // Generate data rows
-    $data = $users->map(function ($user) use ($period, $last60Days, $holidayRecords, $start_date, $end_date,$managers ) {
-        $holidays = $holidayRecords
-    ->where('branch', $user->branch_id)
-    ->flatMap(function ($holiday) use ($start_date, $end_date) {
-        return collect(explode(',', $holiday->holiday_date))
-            ->map(fn($d) => trim($d))
-            ->filter()
-            ->map(function ($date) use ($start_date, $end_date) {
-                try {
-                    $formatted = Carbon::parse($date)->format('Y-m-d');
-
-                    if ($formatted >= $start_date && $formatted <= $end_date) {
-                        return $formatted;
-                    }
-
-                    return null;
-                } catch (\Exception $e) {
-                    return null;
-                }
-            })
-            ->filter();
-    })
-    ->unique()
-    ->values()
-    ->toArray();
+    $data = $users->map(function ($user) use ($period, $last60Days, $holidayData, $start_date, $end_date, $managers) {
+        $holidays = collect(explode(',', (string) $user->branch_id))
+            ->flatMap(fn ($branchId) => $holidayData->get((int) trim($branchId), []))
+            ->filter(fn ($date) => $date >= $start_date && $date <= $end_date)
+            ->unique()
+            ->values()
+            ->all();
         $row = [];
         $totals = [
             'wo' => 0, 'a' => 0, 'lop' => 0, 'mis' => 0, 'pw' => 0,
@@ -854,14 +842,7 @@ $reportingManagers = !empty($managerNames)
     //     'request_all'      => $request->all(),
     // ]);
     $isSunday = Carbon::parse($request['punchin_date'])->isSunday();
-    $holidayDates = Holiday::whereIn('branch', $branchIds)
-      ->pluck('holiday_date')
-      ->map(function ($dateString) {
-        return explode(',', $dateString);
-      })
-      ->collapse()
-      ->map('trim')
-      ->toArray();
+    $holidayDates = Holiday::datesForBranches($branchIds);
    
     $isHoliday = in_array($punchinDate, $holidayDates);
 
@@ -941,12 +922,7 @@ $joiningDate = $user->date_of_joining
     $isSunday = $today->isSunday();
 
     $branchIds = explode(',', $user->branch_id);
-$holidayDates = Holiday::whereIn('branch', $branchIds)
-    ->pluck('holiday_date')
-    ->map(fn ($d) => explode(',', $d))
-    ->collapse()
-    ->map(fn ($d) => Carbon::parse(trim($d))->format('Y-m-d'))
-    ->toArray();
+$holidayDates = Holiday::datesForBranches($branchIds);
 
 $isHoliday = in_array($todayDate, $holidayDates);
 
@@ -1012,12 +988,7 @@ $accrualStartDate = $user->last_leave_accrual_date
 
 $branchIds = explode(',', $user->branch_id);
 
-$holidayDates = Holiday::whereIn('branch', $branchIds)
-    ->pluck('holiday_date')
-    ->map(fn ($d) => explode(',', $d))
-    ->collapse()
-    ->map(fn ($d) => Carbon::parse(trim($d))->format('Y-m-d'))
-    ->toArray();
+$holidayDates = Holiday::datesForBranches($branchIds);
 
 /*
 |--------------------------------------------------------------------------

@@ -1212,17 +1212,45 @@ function generatePassword($length = 10)
 
 function getHolidayData($branchIds)
 {
-    return Holiday::whereIn('branch', $branchIds)->get()->groupBy('branch');
+    $branchIds = collect(is_array($branchIds) ? $branchIds : explode(',', (string) $branchIds))
+        ->map(fn ($id) => trim((string) $id))
+        ->filter(fn ($id) => $id !== '' && ctype_digit($id))
+        ->map(fn ($id) => (int) $id)
+        ->unique();
+
+    $holidayData = $branchIds->mapWithKeys(fn ($branchId) => [$branchId => []]);
+    $holidays = Holiday::query()
+        ->with('branches:id')
+        ->where('active', 'Y')
+        ->forBranches($branchIds->all())
+        ->get();
+
+    foreach ($holidays as $holiday) {
+        $holidayBranchIds = $holiday->branches->pluck('id');
+        if ($holidayBranchIds->isEmpty() && $holiday->branch) {
+            $holidayBranchIds = collect([(int) $holiday->branch]);
+        }
+
+        $dates = collect(explode(',', (string) $holiday->holiday_date))
+            ->map(fn ($date) => trim($date))
+            ->filter();
+
+        foreach ($holidayBranchIds->intersect($branchIds) as $branchId) {
+            $holidayData->put($branchId, collect($holidayData->get($branchId, []))
+                ->merge($dates)
+                ->unique()
+                ->values()
+                ->all());
+        }
+    }
+
+    return $holidayData;
 }
 
 // Check if the date is a holiday for a specific branch
 function isHoliday($checkDate, $branchId, $holidayData)
 {
-    if (isset($holidayData[$branchId])) {
-        $holidays = explode(',', $holidayData[$branchId]->pluck('holiday_date')->first());
-        return in_array($checkDate, $holidays);
-    }
-    return false;
+    return in_array($checkDate, $holidayData->get((int) $branchId, []), true);
 }
 
 if (!function_exists('getCurrentFinancialYear')) {

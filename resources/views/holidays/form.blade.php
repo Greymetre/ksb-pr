@@ -35,11 +35,10 @@
 <div class="row">
     <div class="col-md-12">
                                 <div class="input_section">
-                                    <label for="branch">Branch</label>
-                                    <select class="form-control select2 {{ $errors->has('branch') ? 'is-invalid' : '' }}" name="branch" id="branch" required>
-                                        <option value="">Select Branch</option>
+                                    <label for="branch">Branches</label>
+                                    <select class="form-control select2 {{ $errors->has('branch') ? 'is-invalid' : '' }}" name="branch[]" id="branch" multiple required data-placeholder="Select Branches">
                                         @foreach($branches as $branche)
-                                        <option value="{{ $branche->id }}">{{ $branche->branch_name }}</option>
+                                        <option value="{{ $branche->id }}" {{ in_array($branche->id, old('branch', [])) ? 'selected' : '' }}>{{ $branche->branch_name }}</option>
                                         @endforeach
                                     </select>
                                     @if ($errors->has('branch'))

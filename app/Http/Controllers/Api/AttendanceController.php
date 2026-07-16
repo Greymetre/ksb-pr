@@ -200,14 +200,7 @@ class AttendanceController extends Controller
 
             $punchinDate = Carbon::parse($request['punchin_date'])->format('Y-m-d');
             $isSunday = Carbon::parse($request['punchin_date'])->isSunday();
-            $holidayDates = Holiday::whereIn('branch', $branchIds)
-                ->pluck('holiday_date')
-                ->map(function ($dateString) {
-                    return explode(',', $dateString);
-                })
-                ->collapse()
-                ->map('trim')
-                ->toArray();
+            $holidayDates = Holiday::datesForBranches($branchIds);
 
             $isHoliday = in_array($punchinDate, $holidayDates);
 

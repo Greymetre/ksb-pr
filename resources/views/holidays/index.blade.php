@@ -92,7 +92,7 @@
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
             { data: 'action', name: 'action',"defaultContent": '', orderable: false, searchable: false},
-            {data: 'getbranch.branch_name', name: 'getbranch.branch_name',"defaultContent": ''},
+            {data: 'branch_names', name: 'branch_names', "defaultContent": '', orderable: false, searchable: false},
             {data: 'created_at', name: 'created_at',"defaultContent": ''},
             {data: 'createdbyname.name', name: 'createdbyname.name',"defaultContent": '', orderable: false},
            
