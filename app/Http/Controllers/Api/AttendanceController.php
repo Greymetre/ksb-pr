@@ -840,10 +840,17 @@ class AttendanceController extends Controller
                 ], $this->successStatus);
             }
 
-            $totalUsers = count($myTeamUserIds);
+            $attendanceUserIds = User::whereIn('id', $myTeamUserIds)
+                ->where('active', 'Y')
+                ->where('show_attandance_report', 1)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $totalUsers = count($attendanceUserIds);
 
             // ===================== Attendance Summary =====================
-            $totalPunchInToday = Attendance::whereIn('user_id', $myTeamUserIds)
+            $totalPunchInToday = Attendance::whereIn('user_id', $attendanceUserIds)
                 ->whereDate('punchin_date', $today)
                 ->whereNotNull('punchin_time')
                 ->distinct('user_id')
@@ -853,8 +860,8 @@ class AttendanceController extends Controller
 
             $totalNotPunchInToday = $totalUsers - $totalPunchInToday;
 
-            // Keep the legacy ASR/DSR response keys for mobile compatibility,
-            // but calculate both from the complete permitted reporting hierarchy.
+            // Business metrics use the full hierarchy; attendance metrics use
+            // only employees enabled for attendance reporting.
             $asrUserIds = $myTeamUserIds;
             $dsrUserIds = $myTeamUserIds;
             $totalAsr = $totalUsers;
@@ -864,7 +871,7 @@ class AttendanceController extends Controller
             $currentYear = Carbon::now()->year;
             // ===================== LEAVE COUNT (ASR) =====================
 
-            $leaveAsrToday = Attendance::whereIn('user_id', $asrUserIds)
+            $leaveAsrToday = Attendance::whereIn('user_id', $attendanceUserIds)
                 ->whereDate('punchin_date', $today)
                 ->whereNotNull('working_type')
                 ->select(
@@ -878,7 +885,7 @@ class AttendanceController extends Controller
                         ) as total_leave
                     ")
                 )->first();
-            $leaveDsrToday = Attendance::whereIn('user_id', $dsrUserIds)
+            $leaveDsrToday = Attendance::whereIn('user_id', $attendanceUserIds)
                 ->whereDate('punchin_date', $today)
                 ->select(DB::raw("
                     SUM(
@@ -891,43 +898,41 @@ class AttendanceController extends Controller
                 "))->first();
             // ===================== TARGET SUMMARY =====================
 
-            // ASR Target
-            $asrTargetData = SalesTargetUsers::whereIn('user_id', $asrUserIds)
+            $targetRows = SalesTargetUsers::with('user:id,employee_codes,sales_type')
+                ->whereIn('user_id', $myTeamUserIds)
                 ->where('month', $currentMonthName) // ✅ FIXED
                 ->where('year', $currentYear)
-                ->select(
-                    DB::raw('COALESCE(SUM(target),0) as total_target'),
-                    DB::raw('COALESCE(SUM(achievement),0) as total_achievement')
-                )
-                ->first();
+                ->get();
 
-            $asrQtyTargetData = SalesTargetUsers::whereIn('user_id', $asrUserIds)
-                ->where('month', $currentMonthName) // ✅ FIXED
-                ->where('year', $currentYear)
-                ->select(
-                    DB::raw('COALESCE(SUM(qunatity_target),0) as total_qty_target'),
-                    DB::raw('COALESCE(SUM(qunatity_achievement),0) as total_qty_achievement')
-                )
-                ->first();
+            $totalAchievement = $targetRows->sum(function ($targetRow) use ($currentMonthStart, $currentMonthEnd) {
+                if ($targetRow->user?->sales_type === 'Primary') {
+                    return DB::table('primary_sales')
+                        ->where('emp_code', $targetRow->user->employee_codes)
+                        ->when($targetRow->branch_id, fn ($query) => $query->where('branch_id', $targetRow->branch_id))
+                        ->whereBetween('invoice_date', [$currentMonthStart, $currentMonthEnd])
+                        ->sum('net_amount') / 100000;
+                }
 
-            // DSR Target
-            $dsrTargetData = SalesTargetUsers::whereIn('user_id', $dsrUserIds)
-                ->where('month', $currentMonthName) // ✅ FIXED
-                ->where('year', $currentYear)
-                ->select(
-                    DB::raw('COALESCE(SUM(target),0) as total_target'),
-                    DB::raw('COALESCE(SUM(achievement),0) as total_achievement')
-                )
-                ->first();
-            // DSR Target
-            $dsrQtyTargetData = SalesTargetUsers::whereIn('user_id', $dsrUserIds)
-                ->where('month', $currentMonthName) // ✅ FIXED
-                ->where('year', $currentYear)
-                ->select(
-                    DB::raw('COALESCE(SUM(qunatity_target),0) as total_qty_target'),
-                    DB::raw('COALESCE(SUM(qunatity_achievement),0) as total_qty_achievement')
-                )
-                ->first();
+                $ordersTotal = DB::table('orders')
+                    ->where('created_by', $targetRow->user_id)
+                    ->whereBetween('order_date', [$currentMonthStart, $currentMonthEnd])
+                    ->sum('sub_total');
+
+                return $ordersTotal > 1
+                    ? ($ordersTotal - ($ordersTotal / 100)) / 100000
+                    : 0;
+            });
+
+            $asrTargetData = (object) [
+                'total_target' => $targetRows->sum('target'),
+                'total_achievement' => $totalAchievement,
+            ];
+            $asrQtyTargetData = (object) [
+                'total_qty_target' => $targetRows->sum('qunatity_target'),
+                'total_qty_achievement' => $targetRows->sum('qunatity_achievement'),
+            ];
+            $dsrTargetData = $asrTargetData;
+            $dsrQtyTargetData = $asrQtyTargetData;
 
             // Calculate %
             $asrAchievementPercent = $asrTargetData->total_target > 0
@@ -944,26 +949,26 @@ class AttendanceController extends Controller
                 ? round(($dsrQtyTargetData->total_qty_achievement / $dsrQtyTargetData->total_qty_target) * 100, 2)
                 : 0;
 
-            $checkedInUserIds = Attendance::whereIn('user_id', $myTeamUserIds)
+            $checkedInUserIds = Attendance::whereIn('user_id', $attendanceUserIds)
                 ->whereDate('punchin_date', $today)
                 ->whereNotNull('punchin_time')
                 ->pluck('user_id')->toArray();
 
-            $asrCheckedIn = count(array_intersect($asrUserIds, $checkedInUserIds));
+            $asrCheckedIn = count(array_intersect($attendanceUserIds, $checkedInUserIds));
             $asrNotCheckedIn = $totalAsr - $asrCheckedIn;
 
-            $dsrCheckedIn = count(array_intersect($dsrUserIds, $checkedInUserIds));
+            $dsrCheckedIn = count(array_intersect($attendanceUserIds, $checkedInUserIds));
             $dsrNotCheckedIn = $totalDsr - $dsrCheckedIn;
 
             // ===================== Punchout Remaining Today (ASR & DSR) =====================
             // Users who punched in today but have NOT punched out yet
-            $punchoutRemainingAsr = Attendance::whereIn('user_id', $asrUserIds)
+            $punchoutRemainingAsr = Attendance::whereIn('user_id', $attendanceUserIds)
                 ->whereDate('punchin_date', $today)
                 ->whereNotNull('punchin_time')
                 ->whereNull('punchout_time')           // Punchout not done
                 ->count();
 
-            $punchoutRemainingDsr = Attendance::whereIn('user_id', $dsrUserIds)
+            $punchoutRemainingDsr = Attendance::whereIn('user_id', $attendanceUserIds)
                 ->whereDate('punchin_date', $today)
                 ->whereNotNull('punchin_time')
                 ->whereNull('punchout_time')
@@ -1056,7 +1061,7 @@ class AttendanceController extends Controller
                 ->count('orders.buyer_id');
 
             // ===================== Working Type - ASR =====================
-            $baseAsr = Attendance::whereIn('user_id', $asrUserIds)
+            $baseAsr = Attendance::whereIn('user_id', $attendanceUserIds)
                 ->whereNotNull('working_type')->where('working_type', '!=', '');
 
             // $wtAsrToday = (clone $baseAsr)->whereDate('punchin_date', $today)
@@ -1326,7 +1331,7 @@ class AttendanceController extends Controller
                 ])->first();
 
             // ===================== Working Type - DSR =====================
-            $baseDsr = Attendance::whereIn('user_id', $dsrUserIds)
+            $baseDsr = Attendance::whereIn('user_id', $attendanceUserIds)
                 ->whereNotNull('working_type')->where('working_type', '!=', '');
 
             $wtDsrToday = (clone $baseDsr)->whereDate('punchin_date', $today)
@@ -1704,10 +1709,10 @@ class AttendanceController extends Controller
                     'value'    => round($currentMonthOrders->month_value ?? 0, 2),
                 ],
                 'total_target' => [
-                    'target' => (int) ($asrTargetData->total_target ?? 0),
-                    'achievement' => (int) ($asrTargetData->total_achievement ?? 0),
+                    'target' => round((float) ($asrTargetData->total_target ?? 0), 2),
+                    'achievement' => round((float) ($asrTargetData->total_achievement ?? 0), 2),
                     'achievement_percent' => $asrAchievementPercent,
-                    'target_qty' => (int) ($asrQtyTargetData->total_qty_target ?? 0),
+                    'target_qty' => round((float) ($asrQtyTargetData->total_qty_target ?? 0), 2),
                 ],
                 'unique_buyers' => $uniqueBuyersFromAsr,
                 'total_unique_buyers_current_year' => $totalUniqueBuyersCurrentYear,
