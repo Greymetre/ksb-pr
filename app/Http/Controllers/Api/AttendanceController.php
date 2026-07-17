@@ -806,98 +806,6 @@ class AttendanceController extends Controller
 
             $myTeamUserIds = $this->attendanceVisibleUserIds($user);
 
-            $teamUsers = User::with([
-                    'reportinginfo:id,name,mobile,employee_codes',
-                    'getbranch:id,branch_name',
-                    'getdivision:id,division_name',
-                    'getdesignation:id,designation_name',
-                ])
-                ->whereIn('id', $myTeamUserIds)
-                ->where('active', 'Y')
-                ->orderBy('reportingid')
-                ->orderBy('name')
-                ->get();
-
-            $todayAttendance = Attendance::whereIn('user_id', $myTeamUserIds)
-                ->whereDate('punchin_date', $today)
-                ->latest('id')
-                ->get()
-                ->unique('user_id')
-                ->keyBy('user_id');
-
-            $leaveTypes = ['Full Day Leave', 'First Half Leave', 'Second Half Leave'];
-            $usersData = $teamUsers->map(function ($teamUser) use ($todayAttendance, $leaveTypes) {
-                $attendance = $todayAttendance->get($teamUser->id);
-                $hasPunchedIn = !empty($attendance?->punchin_time);
-                $isOnLeave = $attendance && collect($leaveTypes)->contains(function ($leaveType) use ($attendance) {
-                    return stripos((string) $attendance->working_type, $leaveType) !== false;
-                });
-
-                return [
-                    'id' => $teamUser->id,
-                    'name' => $teamUser->name,
-                    'employee_code' => $teamUser->employee_codes,
-                    'mobile' => $teamUser->mobile,
-                    'email' => $teamUser->email,
-                    'sales_type' => $teamUser->sales_type,
-                    'designation' => [
-                        'id' => $teamUser->designation_id,
-                        'name' => $teamUser->getdesignation?->designation_name,
-                    ],
-                    'branch' => [
-                        'id' => $teamUser->branch_id,
-                        'name' => $teamUser->getbranch?->branch_name,
-                    ],
-                    'zone' => [
-                        'id' => $teamUser->division_id,
-                        'name' => $teamUser->getdivision?->division_name,
-                    ],
-                    'reporting' => [
-                        'id' => $teamUser->reportingid,
-                        'name' => $teamUser->reportinginfo?->name,
-                        'mobile' => $teamUser->reportinginfo?->mobile,
-                        'employee_code' => $teamUser->reportinginfo?->employee_codes,
-                    ],
-                    'attendance' => [
-                        'punched_in' => $hasPunchedIn,
-                        'punched_out' => !empty($attendance?->punchout_time),
-                        'on_leave' => (bool) $isOnLeave,
-                        'working' => $hasPunchedIn && !$isOnLeave,
-                        'working_type' => $attendance?->working_type,
-                        'punchin_time' => $attendance?->punchin_time,
-                        'punchout_time' => $attendance?->punchout_time,
-                        'punchin_address' => $attendance?->punchin_address,
-                        'punchout_address' => $attendance?->punchout_address,
-                    ],
-                ];
-            })->values();
-
-            $reportingGroups = $usersData->groupBy(fn ($employee) => (string) ($employee['reporting']['id'] ?? 0))
-                ->map(function ($employees, $reportingId) {
-                    $first = $employees->first();
-                    return [
-                        'reporting' => $first['reporting'],
-                        'total_users' => $employees->count(),
-                        'users' => $employees->values(),
-                    ];
-                })->values();
-
-            return response()->json([
-                'status' => 'success',
-                'message' => "Today's reporting-wise attendance retrieved successfully.",
-                'data' => [
-                    'summary' => [
-                        'total_users' => $usersData->count(),
-                        'total_punch_in' => $usersData->where('attendance.punched_in', true)->count(),
-                        'total_not_punch_in' => $usersData->where('attendance.punched_in', false)->count(),
-                        'total_on_leave' => $usersData->where('attendance.on_leave', true)->count(),
-                        'total_working' => $usersData->where('attendance.working', true)->count(),
-                    ],
-                    'users' => $usersData,
-                    'reporting_groups' => $reportingGroups,
-                ],
-            ], $this->successStatus);
-
             if (empty($myTeamUserIds)) {
                 return response()->json([
                     'status' => 'success',
@@ -951,19 +859,12 @@ class AttendanceController extends Controller
 
             $totalNotPunchInToday = $totalUsers - $totalPunchInToday;
 
-            $totalAsr = User::whereIn('id', $myTeamUserIds)->whereDoesntHave('roles', function ($q) {
-                $q->whereIn('id', config('constants.customer_roles'));
-            })->where('designation_id', 3)->count();
-            $totalDsr = User::whereIn('id', $myTeamUserIds)->whereDoesntHave('roles', function ($q) {
-                $q->whereIn('id', config('constants.customer_roles'));
-            })->where('designation_id', 6)->count();
-
-            $asrUserIds = User::whereIn('id', $myTeamUserIds)->whereDoesntHave('roles', function ($q) {
-                $q->whereIn('id', config('constants.customer_roles'));
-            })->where('designation_id', 3)->pluck('id')->toArray();
-            $dsrUserIds = User::whereIn('id', $myTeamUserIds)->whereDoesntHave('roles', function ($q) {
-                $q->whereIn('id', config('constants.customer_roles'));
-            })->where('designation_id', 6)->pluck('id')->toArray();
+            // Keep the legacy ASR/DSR response keys for mobile compatibility,
+            // but calculate both from the complete permitted reporting hierarchy.
+            $asrUserIds = $myTeamUserIds;
+            $dsrUserIds = $myTeamUserIds;
+            $totalAsr = $totalUsers;
+            $totalDsr = $totalUsers;
 
             $currentMonthName = Carbon::now()->format('M'); // Apr
             $currentYear = Carbon::now()->year;
@@ -998,7 +899,6 @@ class AttendanceController extends Controller
 
             // ASR Target
             $asrTargetData = SalesTargetUsers::whereIn('user_id', $asrUserIds)
-                ->where('type', 'secondary') // ✅ FIXED
                 ->where('month', $currentMonthName) // ✅ FIXED
                 ->where('year', $currentYear)
                 ->select(
@@ -1008,7 +908,6 @@ class AttendanceController extends Controller
                 ->first();
 
             $asrQtyTargetData = SalesTargetUsers::whereIn('user_id', $asrUserIds)
-                ->where('type', 'secondary') // ✅ FIXED
                 ->where('month', $currentMonthName) // ✅ FIXED
                 ->where('year', $currentYear)
                 ->select(
@@ -1019,7 +918,6 @@ class AttendanceController extends Controller
 
             // DSR Target
             $dsrTargetData = SalesTargetUsers::whereIn('user_id', $dsrUserIds)
-                ->where('type', 'secondary') // ✅ FIXED
                 ->where('month', $currentMonthName) // ✅ FIXED
                 ->where('year', $currentYear)
                 ->select(
@@ -1029,7 +927,6 @@ class AttendanceController extends Controller
                 ->first();
             // DSR Target
             $dsrQtyTargetData = SalesTargetUsers::whereIn('user_id', $dsrUserIds)
-                ->where('type', 'secondary') // ✅ FIXED
                 ->where('month', $currentMonthName) // ✅ FIXED
                 ->where('year', $currentYear)
                 ->select(
