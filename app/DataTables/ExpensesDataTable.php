@@ -35,11 +35,14 @@ class ExpensesDataTable extends DataTable
                 return '<input type="checkbox" class="row-checkbox" value="' . $query->id . '">';
             })
             ->addColumn('users.name', function ($query) {
-                $name = '(' . $query->users->employee_codes . ')' . $query->users->name;
-                return $name;
+                if (!$query->users) {
+                    return '';
+                }
+
+                return '(' . ($query->users->employee_codes ?? '') . ')' . ($query->users->name ?? '');
             })
-            ->addColumn('users.getdesignation.designation_name', function ($query) {
-                return $query->users->getdesignation->designation_name ?? '';
+            ->addColumn('designation_name', function ($query) {
+                return $query->users?->getdesignation?->designation_name ?? '';
             })
             ->addColumn('expense_type.name', function ($query) {
                 return $query->expense_type->name ?? '';
@@ -152,7 +155,7 @@ class ExpensesDataTable extends DataTable
         } else {
             $userids = User::pluck('id')->toArray();
         }
-        $data = $model->with('expense_type', 'users');
+        $data = $model->with('expense_type', 'users.getdesignation');
         if (!empty($request['payroll'])) {
 
             $payrollid = $request['payroll'];

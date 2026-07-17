@@ -28,13 +28,13 @@
         </div><!-- /.container-fluid -->
     </div>
     <!-- Main content -->
-    <section class="content new_item">
+    <section class="content new_item tour-create-page">
         <div class="container-fluid">
             <div class="row">
                 <!-- left column -->
                 <div class="col-md-12">
                     <!-- jquery validation -->
-                    <div class="card card-primary">
+                    <div class="card card-primary tour-create-card" data-fk-listing-ready="1">
                         <div class="card-header card-header-icon card-header-theme">
                             <h3 class="card-title">Tour Create</h3>
                         </div>
@@ -135,7 +135,10 @@
                                         </tbody>
                                     </table> -->
                                 </div>
-                                {{ Form::submit('Submit', array('class' => 'btn btn-theme pull-right')) }}
+                                <div class="tour-form-actions">
+                                    <a href="{{ route('tours.index') }}" class="btn tour-cancel-btn">Cancel</a>
+                                    {{ Form::submit('Create Tour Plan', array('class' => 'btn btn-theme tour-submit-btn')) }}
+                                </div>
                                 {{ Form::close() }}
 
 <!-- Objective Modal -->

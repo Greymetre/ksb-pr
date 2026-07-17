@@ -59,6 +59,12 @@ class ProductRequest extends FormRequest
                 ];
                 break;
         }
+        $rules['suc_del'] = 'required|string|max:200';
+        $rules['detail'] = 'required|array|min:1';
+        $rules['detail.0.mrp'] = 'required|numeric|min:0';
+        $rules['detail.0.price'] = 'required|numeric|min:0';
+        $rules['detail.0.selling_price'] = 'nullable|numeric|min:0';
+
         return $rules;
     }
 }

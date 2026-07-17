@@ -158,7 +158,7 @@ class AjaxController extends Controller
     {
         try {
             $customer_id = $request->input('customer_id');
-            $data = Customers::with('customeraddress', 'addresslists')
+            $data = Customers::with('customeraddress', 'addresslists', 'customertypes')
                 ->where('id', '=', $customer_id)
                 ->first();
             $addresslists = collect([]);
@@ -179,6 +179,8 @@ class AjaxController extends Controller
                 'last_name' => isset($data['last_name']) ? $data['last_name'] : '',
                 'mobile' => isset($data['mobile']) ? $data['mobile'] : '',
                 'customertype' => isset($data['customertype']) ? $data['customertype'] : '',
+                'customer_type_name' => $data->customertypes?->type_name,
+                'is_dealer' => $data->customertypes?->isDealer() ?? false,
                 'email' => isset($data['email']) ? $data['email'] : '',
                 'created_by' => isset($data['created_by']) ? $data['created_by'] : '',
                 'executive_id' => isset($data['executive_id']) ? $data['executive_id'] : '',
@@ -1140,12 +1142,12 @@ public function getRetailerlist(Request $request)
             // ====================== Orders ======================
             foreach ($orders as $order) {
                 
-                $sellerName = $order->seller?->trade_name 
-                            ?? $order->seller?->legal_name 
+                $sellerName = $order->seller?->name
+                            ?? $order->seller?->customer_code
                             ?? 'Unknown Seller';
         
-                $buyerName = $order->buyer?->shop_name 
-                            ?? $order->buyer?->owner_name 
+                $buyerName = $order->buyer?->name
+                            ?? $order->buyer?->customer_code
                             ?? 'Unknown Buyer';
         
                 $totalQty   = $order->orderdetails ? $order->orderdetails->sum('quantity') : 0;
@@ -1313,137 +1315,76 @@ public function getCustomerDataSelect(Request $request)
     }
 
     $term = trim($request->get('term', ''));
-    $type = $request->get('type');
+    $customerTypeId = $request->integer('customer_type_id') ?: null;
+    $parentOf = $request->integer('parent_of') ?: null;
+    $assignedParentIds = $parentOf
+        ? ParentDetail::where('customer_id', $parentOf)->pluck('parent_id')->map(fn ($id) => (int) $id)
+        : collect();
 
-    $results = collect();
+    $query = Customers::with([
+        'customertypes',
+        'customeraddress.cityname',
+        'customeraddress.districtname',
+        'customeraddress.statename',
+        'customeraddress.pincodename',
+        'customeraddress.countryname',
+    ])->where('active', 'Y');
 
-    // ────────────────────────────────────────────────
-    // DISTRIBUTORS (MasterDistributor)
-    // ────────────────────────────────────────────────
-    if (!$type || $type === 'DISTRIBUTOR') {
-        $masterDistributors = MasterDistributor::query()
-            ->when($term, function ($q) use ($term) {
-                $q->where('trade_name', 'LIKE', "%{$term}%")
-                  ->orWhere('distributor_code', 'LIKE', "%{$term}%")
-                  ->orWhere('sap_code', 'LIKE', "%{$term}%"); // if you have sap_code column
-            })
-            ->get()
-            ->map(function ($distributor) {
-                // Build full address using existing fields (no relations needed)
-                $addressParts = array_filter([
-                    $distributor->billing_address ?? '',
-                    $distributor->billing_city ?? '',
-                    $distributor->billing_district ?? '',
-                    $distributor->billing_state ?? '',
-                    $distributor->billing_country ?? '',
-                    $distributor->billing_pincode ?? ''
-                ]);
-
-                $full_address = trim(implode(', ', $addressParts));
-
-                return [
-                    'id'           => $distributor->id,
-                    'text'         => trim($distributor->trade_name . ($distributor->sap_code ? ' - ' . $distributor->sap_code : '')),
-                    'model_type'   => 'master',
-                    'full_address' => $full_address,
-                    'data-type'    => 'DISTRIBUTOR',
-                    'customeraddress' => [
-                        'id'           => $distributor->id,
-                        'address1'     => $distributor->billing_address ?? '',
-                        'address2'     => '',
-                        'landmark'     => '',
-                        'locality'     => '',
-                        'customer_id'  => $distributor->id,
-                        'country_id'   => $distributor->country_id,           // uses your accessor
-                        'state_id'     => $distributor->state_id,
-                        'district_id'  => $distributor->district_id,
-                        'city_id'      => $distributor->city_id,
-                        'pincode_id'   => $distributor->pincode_id,
-                        'full_address' => $full_address,
-                        'cityname'     => $distributor->billing_city ?? '',
-                        'districtname' => $distributor->billing_district ?? '',
-                        'statename'    => $distributor->billing_state ?? '',
-                        'pincodename'  => $distributor->billing_pincode ?? '',
-                        'countryname'  => $distributor->billing_country ?? '',
-                    ]
-                ];
-            });
-
-        $results = $results->merge($masterDistributors);
+    if ($parentOf) {
+        $query->whereHas('customertypes', function ($typeQuery) {
+            $typeQuery->where('active', 'Y')
+                ->nonRetailer();
+        });
+    } elseif ($customerTypeId) {
+        $query->where('customertype', $customerTypeId);
     }
 
-    // ────────────────────────────────────────────────
-    // SECONDARY CUSTOMERS (only when specific type is requested)
-    // ────────────────────────────────────────────────
-    if ($type && $type !== 'DISTRIBUTOR') {
-       $secondaryCustomers = \App\Models\SecondaryCustomer::with([
-    'city',
-    'district',
-    'state',
-    'country',
-    'pincode'
-])
-->where('type', $type)
-->when($term, function ($q) use ($term) {
-    $q->where('shop_name', 'LIKE', "%{$term}%");
-})
-->get()
-            ->map(function ($customer) use ($type) {
-                
-$addressParts = array_filter([
-    $customer->address_line ?? '',
-    $customer->city->city_name ?? '',
-    $customer->district->district_name ?? '',
-    $customer->state->state_name ?? '',
-    $customer->country->country_name ?? '',
-    $customer->pincode->pincode ?? '',
-]);
+    $query->when($term, function ($customerQuery) use ($term) {
+        $customerQuery->where(function ($searchQuery) use ($term) {
+            $searchQuery->where('name', 'LIKE', "%{$term}%")
+                ->orWhere('customer_code', 'LIKE', "%{$term}%")
+                ->orWhere('sap_code', 'LIKE', "%{$term}%")
+                ->orWhere('mobile', 'LIKE', "%{$term}%");
+        });
+    });
 
-                $full_address = trim(implode(', ', $addressParts));
-
-                return [
-                    'id'           => $customer->id,
-                    'text'         => trim($customer->shop_name . ($customer->belt_area_market_name ? ' - ' . $customer->belt_area_market_name : '')),
-                    'model_type'   => 'secondary',
-                    'full_address' => $full_address,
-                    'data-type'    => $type,
-                    'customeraddress' => [
-                        'id'           => $customer->id,
-                        'address1'     => $customer->address_line ?? '',
-                        'address2'     => $customer->belt_area_market_name ?? '',
-                        'landmark'     => '',
-                        'locality'     => '',
-                        'customer_id'  => $customer->id,
-                        'country_id'   => $customer->country_id,
-                        'state_id'     => $customer->state_id,
-                        'district_id'  => $customer->district_id,
-                        'city_id'      => $customer->city_id,
-                        'pincode_id'   => $customer->pincode_id,
-                        'full_address' => $full_address,
-'cityname'     => $customer->city->city_name ?? '',
-'districtname' => $customer->district->district_name ?? '',
-'statename'    => $customer->state->state_name ?? '',
-'pincodename'  => $customer->pincode->pincode ?? '',
-'countryname'  => $customer->country->country_name ?? '',
-                    ]
-                ];
-            });
-
- 
-        
-        $results = $results->merge($secondaryCustomers);
+    if ($assignedParentIds->isNotEmpty()) {
+        $assignedList = $assignedParentIds->implode(',');
+        $query->orderByRaw("CASE WHEN customers.id IN ({$assignedList}) THEN 0 ELSE 1 END");
     }
 
-    // Pagination
-    $page    = max(1, (int) ($request->page ?? 1));
-    $perPage = 10;
+    $paginated = $query->orderBy('name')->paginate(10);
+    $results = collect($paginated->items())->map(function ($customer) use ($assignedParentIds) {
+        $address = $customer->customeraddress;
+        $fullAddress = $address?->full_address ?? '';
 
-    $paginated = $results->forPage($page, $perPage);
+        return [
+            'id' => $customer->id,
+            'text' => trim(($customer->name ?: trim($customer->first_name . ' ' . $customer->last_name))
+                . ($customer->customer_code ? ' - ' . $customer->customer_code : '')
+                . ($assignedParentIds->contains((int) $customer->id) ? ' (Assigned Parent)' : '')),
+            'model_type' => 'customer',
+            'customer_type_id' => $customer->customertype,
+            'customer_type' => $customer->customertypes?->customertype_name,
+            'is_assigned_parent' => $assignedParentIds->contains((int) $customer->id),
+            'full_address' => $fullAddress,
+            'customeraddress' => [
+                'address1' => $address?->address1 ?? '',
+                'address2' => $address?->address2 ?? '',
+                'country_id' => $address?->country_id,
+                'state_id' => $address?->state_id,
+                'district_id' => $address?->district_id,
+                'city_id' => $address?->city_id,
+                'pincode_id' => $address?->pincode_id,
+                'full_address' => $fullAddress,
+            ],
+        ];
+    });
 
     return response()->json([
-        'results'    => $paginated->values()->all(),
+        'results'    => $results->values()->all(),
         'pagination' => [
-            'more' => $results->count() > ($page * $perPage)
+            'more' => $paginated->hasMorePages()
         ]
     ]);
 }

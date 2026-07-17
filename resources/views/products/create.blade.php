@@ -790,6 +790,43 @@
               
               
               
+              @php($primaryDetail = $products->productdetails->first())
+              <input type="hidden" name="detail[0][detail_id]" value="{{ optional($primaryDetail)->id }}">
+              <input type="hidden" name="detail[0][isprimary]" value="1">
+
+              <div class="col-md-4">
+                <div class="input_section">
+                  <label class="col-form-label">MRP <span class="text-danger">*</span></label>
+                  <div class="form-group has-default bmd-form-group">
+                    <input type="number" name="detail[0][mrp]" class="form-control"
+                      value="{{ old('detail.0.mrp', optional($primaryDetail)->mrp) }}" min="0" step="0.01" required>
+                    @error('detail.0.mrp')<p class="text-danger">{{ $message }}</p>@enderror
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="input_section">
+                  <label class="col-form-label">Price <span class="text-danger">*</span></label>
+                  <div class="form-group has-default bmd-form-group">
+                    <input type="number" name="detail[0][price]" class="form-control"
+                      value="{{ old('detail.0.price', optional($primaryDetail)->price) }}" min="0" step="0.01" required>
+                    @error('detail.0.price')<p class="text-danger">{{ $message }}</p>@enderror
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="input_section">
+                  <label class="col-form-label">Selling Price</label>
+                  <div class="form-group has-default bmd-form-group">
+                    <input type="number" name="detail[0][selling_price]" class="form-control"
+                      value="{{ old('detail.0.selling_price', optional($primaryDetail)->selling_price) }}" min="0" step="0.01">
+                    @error('detail.0.selling_price')<p class="text-danger">{{ $message }}</p>@enderror
+                  </div>
+                </div>
+              </div>
+
               <div class="col-md-3 col-sm-3">
                 <div class="fileinput fileinput-new" data-provides="fileinput">
                   <div class="fileinput-new thumbnail">

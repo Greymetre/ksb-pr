@@ -1,5 +1,14 @@
 <x-app-layout>
-   <div class="row">
+   <style>
+      .dispatch-page #tab_logic th:nth-child(6),
+      .dispatch-page #tab_logic th:nth-child(7),
+      .dispatch-page #tab_logic tbody td:nth-child(7),
+      .dispatch-page #tab_logic tbody td:nth-child(8),
+      .dispatch-page .form-group:has([name*="discount"]),
+      .dispatch-page .form-group:has(.cash_discount),
+      .dispatch-page [id^="all-discount-div"] { display: none !important; }
+   </style>
+   <div class="row dispatch-page">
       <div class="col-md-12">
          <div class="card">
             <div class="card-header card-header-icon card-header-theme">
@@ -37,20 +46,21 @@
                   <div class="col-sm-6 invoice-col">
                      From
                      <address>
-                        <strong>{!! isset($orders['sellers']['name']) ? $orders['sellers']['name'] :'' !!} </strong><br>
-                        {!! $orders['sellers']['customeraddress']['address1'] !!} {!! $orders['sellers']['customeraddress']['address2'] !!}<br>
-                        {!! $orders['sellers']['customeraddress']['cityname']['city_name']??'' !!} {!! $orders['sellers']['customeraddress']['pincodename']['pincode']??'' !!}<br>
-                        Phone: {!! $orders['sellers']['mobile']??'' !!}<br>
-                        Email: {!! $orders['sellers']['email']??'' !!}
+                        <strong>{{ data_get($orders, 'sellers.name', '-') }}</strong><br>
+                        {{ data_get($orders, 'sellers.customeraddress.address1', '') }} {{ data_get($orders, 'sellers.customeraddress.address2', '') }}<br>
+                        {{ data_get($orders, 'sellers.customeraddress.cityname.city_name', '') }} {{ data_get($orders, 'sellers.customeraddress.pincodename.pincode', '') }}<br>
+                        Phone: {{ data_get($orders, 'sellers.mobile', '') }}<br>
+                        Email: {{ data_get($orders, 'sellers.email', '') }}
                      </address>
                   </div>
                   <div class="col-sm-6 invoice-col">
                      <strong>To </strong>
                      <address>
-                        <strong>{!! $orders['buyers']['name'] !!}</strong><br>
-                        {!! $orders['buyers']['customeraddress']['address1'] !!} ,{!! $orders['buyers']['customeraddress']['address2'] !!}<br>{!! isset($orders['buyers']['customeraddress']['cityname']['city_name']) ? $orders['buyers']['customeraddress']['cityname']['city_name'] :'' !!} {!! isset($orders['buyers']['customeraddress']['pincodename']['pincode']) ? $orders['buyers']['customeraddress']['pincodename']['pincode'] :'' !!}<br>
-                        Phone: {!! $orders['buyers']['mobile'] !!}<br>
-                        Email: {!! $orders['buyers']['email'] !!}
+                        <strong>{{ data_get($orders, 'buyers.name', '-') }}</strong><br>
+                        {{ data_get($orders, 'buyers.customeraddress.address1', '') }} {{ data_get($orders, 'buyers.customeraddress.address2', '') }}<br>
+                        {{ data_get($orders, 'buyers.customeraddress.cityname.city_name', '') }} {{ data_get($orders, 'buyers.customeraddress.pincodename.pincode', '') }}<br>
+                        Phone: {{ data_get($orders, 'buyers.mobile', '') }}<br>
+                        Email: {{ data_get($orders, 'buyers.email', '') }}
                      </address>
                   </div>
                </div>
@@ -82,8 +92,8 @@
                <!--                <input type="hidden" name="buyer_id" value="{!! $orders['buyer_id'] !!}">
                <input type="hidden" name="seller_id" value="{!! $orders['seller_id'] !!}"> -->
 
-               <input type="hidden" name="buyer_id" value="{!! $orders['seller_id'] !!}">
-               <input type="hidden" name="seller_id" value="{!! $orders['buyer_id'] !!}">
+               <input type="hidden" name="buyer_id" value="{!! $orders['buyer_id'] !!}">
+               <input type="hidden" name="seller_id" value="{!! $orders['seller_id'] !!}">
 
                <input type="hidden" name="order_id" value="{!! $orders['id'] !!}">
                <input type="hidden" name="orderno" value="{!! $orders['orderno'] !!}">
@@ -1027,14 +1037,6 @@
          function sellerinfo() {
             var customer_id = $("select[name=seller_id]").val();
 
-            // var cust_type = $("select[name=seller_id]").children(":selected").data('allowtype');
-            // if(cust_type == '2'){
-            //  $('#de_dis').show();
-            // }else{
-            // $('#de_dis').hide();
-            // }
-
-
             if (customer_id) {
                $.ajax({
                   url: "{{ url('getCustomerData') }}",
@@ -1051,7 +1053,7 @@
                         $('.seller_address').append(res.address1 + '<br> ' + res.address2 + '<br>Phone : ' + res.mobile + '<br>Email: ' + res.email);
 
                         var category = $('#product_cat_id').val();
-                        if (res.customertype == '2') {
+                        if (res.is_dealer) {
                            $('#de_dis').show();
                            $('#all-discount-div-pump').css('opacity', '0');
                            $('#all-discount-div-pump').css('height', '0px');
@@ -1199,6 +1201,8 @@
 
          function calc() {
 
+            $('.dispatch-page [name*="discount"], .dispatch-page .scheme_dis, .dispatch-page .ebd_dis, .dispatch-page .ebd_amount, .dispatch-page .ebd_amounts, .dispatch-page .clustered_dis, .dispatch-page .clus_amounts, .dispatch-page .deal_dis, .dispatch-page .deal_amounts, .dispatch-page .special_dis, .dispatch-page .special_amounts, .dispatch-page .distributot_dis, .dispatch-page .distributot_amounts, .dispatch-page .frieght_dis, .dispatch-page .frieght_amounts, .dispatch-page .cash_dis, .dispatch-page .cash_amounts').val(0);
+
             $('#tab_logic tbody tr').each(function(i, element) {
 
                var html = $(this).html();
@@ -1206,6 +1210,22 @@
 
                   var quantity = $(this).find('.quantity').val();
                   var price = $(this).find('.price').val();
+                  var gst = parseFloat($(this).find('.gst_new').val()) || parseFloat($(this).find('.gst_percent').text()) || 0;
+                  var total = (parseFloat(quantity) || 0) * (parseFloat(price) || 0);
+                  var tax_amount = total * gst / 100;
+
+                  $(this).find('.five_gst, .twelve_gst, .eighteen_gst, .twenti_eight_gst').val(0);
+                  if (gst === 5) $(this).find('.five_gst').val(tax_amount.toFixed(2));
+                  if (gst === 12) $(this).find('.twelve_gst').val(tax_amount.toFixed(2));
+                  if (gst === 18) $(this).find('.eighteen_gst').val(tax_amount.toFixed(2));
+                  if (gst === 28) $(this).find('.twenti_eight_gst').val(tax_amount.toFixed(2));
+
+                  $(this).find('.total').val(total.toFixed(2));
+                  $(this).find('.tax_amount').val(tax_amount.toFixed(2));
+                  $(this).find('.discountamount').val(0);
+                  calc_total();
+                  return;
+
                   var discount = $(this).find('.discount').val();
                   var total = quantity * price;
                   var discount_amount = total * discount / 100;
@@ -1668,10 +1688,12 @@
          }
 
 
-
-
-
-
+         $(function() {
+            calc();
+            $('.dispatch-page form').on('submit', function() {
+               calc();
+            });
+         });
 
          // setTimeout(() => {
          //  var initialized = false; // Flag to track initialization   

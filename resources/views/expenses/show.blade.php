@@ -53,8 +53,8 @@ margin-top: 3px;
 </style>
 
 
-<div class="row">
-  <div class="col-9">
+<div class="row expense-show-popup">
+  <div class="col-lg-9 expense-show-main">
 
     @if(Session::has('success'))
     <div class="alert alert-success" id="hide_div">
@@ -80,11 +80,11 @@ margin-top: 3px;
 
     <div class="card">
       <div class="card-body">
-        <div class="row">
+        <div class="row expense-show-toolbar">
           <div class="col-4">
             <h3 class="card-title pb-3">Approve View</h3>
           </div>
-          <div class="col-8">
+          <div class="col-8 expense-show-actions">
 
 
             @if($expense->checker_status=='3')
@@ -446,7 +446,7 @@ margin-top: 3px;
 
 
 
-<div class="col-3">
+<div class="col-lg-3 expense-show-activity">
 
 <div class="card">
 <div class="card-body">

@@ -14,6 +14,7 @@
     use Illuminate\Support\Facades\Redirect;
     use Illuminate\Support\Facades\Auth;
     use Illuminate\Support\Facades\DB;
+    use Illuminate\Validation\ValidationException;
 
 
     use DataTables;
@@ -31,8 +32,7 @@
     use App\Models\CustomerType;
     use App\Models\Division;
     use App\Models\Sales;
-    use App\Models\MasterDistributor;
-    use App\Models\SecondaryCustomer;
+    use App\Services\OrderPartyResolver;
     use App\Models\SalesDetails;
     use App\Models\Subcategory;
     use App\Models\Designation;
@@ -109,20 +109,11 @@
 
             $userids = getUsersReportingToAuth();
             $sellers = array();
-            $masterDistributors = MasterDistributor::select('id','legal_name')->get();
-
-$secondaryCustomers = SecondaryCustomer::select('id','shop_name','owner_name')->get();
-
-            // $buyers = Customers::whereIn('customertype', ['1', '3', '4', '5', '6'])
-            //     ->where(function ($query) use ($userids) {
-            //         if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
-            //             $query->whereIn('executive_id', $userids);
-            //         }
-            //     })
-            //     ->where('active', '=', 'Y')
-            //     ->whereNotNull('sap_code')
-            //     ->select('id', 'name', 'mobile', 'sap_code')
-            //     ->get();
+            $customerTypes = CustomerType::where('active', 'Y')
+                ->select('id', 'customertype_name', 'type_name')
+                ->orderBy('customertype_name')
+                ->get();
+            $retailerCustomerTypeId = optional($customerTypes->first(fn ($type) => $type->isRetailer()))->id;
 
             $users = User::where(function ($query) use ($userids) {
                 if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
@@ -136,8 +127,8 @@ $secondaryCustomers = SecondaryCustomer::select('id','shop_name','owner_name')->
             $category = Category::where('active', 'Y')->get();
 return view('orders.create', compact(
     'products',
-    'masterDistributors',
-    'secondaryCustomers',
+    'customerTypes',
+    'retailerCustomerTypeId',
     'users',
     'category',
     'subcategories'
@@ -158,16 +149,16 @@ return view('orders.create', compact(
 
         $request['created_by'] = Auth::user()->id;
 
-        // ========================
-        // Order Type & Buyer/Seller Logic
-        // ========================
-        if (strtoupper($request->type ?? '') === 'DISTRIBUTER') {
-            $request['order_type'] = 'MASTER_DISTRIBUTER';
-            $request['buyer_id']   = null;
-        } else {
-            $request['order_type'] = 'SECONDARY_CUSTOMER';
-            // buyer_id and seller_id come from form
-        }
+        $parties = app(OrderPartyResolver::class)->resolve(
+            (int) $request->buyer_id,
+            $request->filled('seller_id') ? (int) $request->seller_id : null,
+            $request->filled('customer_type_id') ? (int) $request->customer_type_id : null
+        );
+        $request->merge([
+            'buyer_id' => $parties['buyer_id'],
+            'seller_id' => $parties['seller_id'],
+            'order_type' => $parties['order_type'],
+        ]);
 
         // ========================
         // Map discount fields from request
@@ -218,8 +209,6 @@ return view('orders.create', compact(
 
         $order->save();
 
-        DB::commit();
-
         // ========================
         // Insert Order Details
         // ========================
@@ -235,7 +224,7 @@ return view('orders.create', compact(
                 'product_detail_id'       => $rows['product_detail'] ?? null,
                 'quantity'                => $rows['quantity'] ?? 0,
                 'shipped_qty'             => $rows['shipped_qty'] ?? 0,
-                'price'                   => $rows['mrp'] ?? 0.00,
+                'price'                   => $rows['price'] ?? 0.00,
                 'tax_amount'              => $rows['tax_amount'] ?? 0.00,
                 'line_total'              => $rows['line_total'] ?? 0.00,
                 'gst'                     => $rows['gst'] ?? 0.00,
@@ -268,11 +257,16 @@ return view('orders.create', compact(
             OrderDetails::insert($orderDetailsData);
         }
 
+        DB::commit();
+
         // TODO: Add your Excel export + Email code here if needed
 
         return redirect()->route('orders.index')
                          ->with('message_success', 'Order Created Successfully');
 
+    } catch (ValidationException $e) {
+        DB::rollBack();
+        throw $e;
     } catch (\Exception $e) {
         DB::rollBack();
         \Log::error('Order Store Error: ' . $e->getMessage());
@@ -321,19 +315,20 @@ return view('orders.create', compact(
             $id = decrypt($id);
             $userids = getUsersReportingToAuth();
             $orders = $this->orders->with([
-                'buyers.city',
-                'buyers.state',
-                'buyers.district',
-                'buyers.pincode',
-                'sellers',
+                'buyers.customertypes',
+                'buyers.customeraddress.cityname',
+                'buyers.customeraddress.districtname',
+                'buyers.customeraddress.statename',
+                'buyers.customeraddress.pincodename',
+                'sellers.customertypes',
+                'sellers.customeraddress.cityname',
+                'sellers.customeraddress.districtname',
+                'sellers.customeraddress.statename',
+                'sellers.customeraddress.pincodename',
                 'orderdetails.products'
             ]);
             $orders = $this->applyAccessScope($orders)->findOrFail($id);
-            if ($orders->order_type === 'MASTER_DISTRIBUTER') {
-                $orders->type = 'DISTRIBUTER';
-            } else {
-                $orders->type = 'RETAILER';
-            }
+            $orders->customer_type_id = optional($orders->buyerCustomer)->customertype;
 
             // $orderdetail = OrderDetails::with('products')->where('order_id', '=', $id)->get();
             $products = Product::where('active', '=', 'Y')->select('id', 'display_name', 'product_image')->get();
@@ -355,17 +350,6 @@ return view('orders.create', compact(
             //     ->select('id', 'name', 'mobile')
             //     ->get();
 
-            // $buyers = Customers::whereIn('customertype', ['1', '3', '4', '5', '6'])
-            //     ->where(function ($query) use ($userids) {
-            //         if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
-            //             $query->whereIn('executive_id', $userids)
-            //                 ->orWhereIn('created_by', $userids);
-            //         }
-            //     })
-            //     ->where('active', '=', 'Y')
-            //     ->select('id', 'name', 'mobile')
-            //     ->get();
-
             $users = User::where(function ($query) use ($userids) {
                 if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
                     $query->whereIn('id', $userids);
@@ -375,11 +359,18 @@ return view('orders.create', compact(
             })->select('id', 'name')->orderBy('id', 'desc')->get();
 
             $category = Category::where('active', 'Y')->get();
+            $customerTypes = CustomerType::where('active', 'Y')
+                ->select('id', 'customertype_name', 'type_name')
+                ->orderBy('customertype_name')
+                ->get();
+            $retailerCustomerTypeId = optional($customerTypes->first(fn ($type) => $type->isRetailer()))->id;
             // dd($orders,$products,$cities,$states);
             return view('orders.edit', compact('orders','products', 'users', 'category','subcategories','cities',
     'states',
     'districts',
-    'pincodes'));
+    'pincodes',
+    'customerTypes',
+    'retailerCustomerTypeId'));
         }
 
         /**
@@ -407,15 +398,16 @@ return view('orders.create', compact(
             $request['gst12_amt'] = $request['12_gst'];
             $request['gst28_amt'] = $request['18_gst'];
             $request['gst18_amt'] = $request['28_gst'];
-            $ss_customer_type = Customers::where('id', $request['seller_id'])->pluck('customertype')->first();
-
-            if ($ss_customer_type == '1' || $ss_customer_type == '3') {
-                $request['buyer_id'] = $request['seller_id'];
-            }
+            $parties = app(OrderPartyResolver::class)->resolve(
+                (int) $request->buyer_id,
+                $request->filled('seller_id') ? (int) $request->seller_id : null,
+                $request->filled('customer_type_id') ? (int) $request->customer_type_id : null
+            );
 
             $orders = $this->applyAccessScope(Order::with('orderdetails.products.subcategories'))->findOrFail($id);
-            $orders->buyer_id = $request->buyer_id ?? null;
-$orders->seller_id = $request->seller_id ?? null;
+            $orders->buyer_id = $parties['buyer_id'];
+            $orders->seller_id = $parties['seller_id'];
+            $orders->order_type = $parties['order_type'];
 
             //$orders->buyer_id = isset($request['buyer_id']) ? $request['buyer_id'] :null ;
             $orders->executive_id = isset($request['executive_id']) ? $request['executive_id'] : null;
@@ -699,7 +691,13 @@ $orders->seller_id = $request->seller_id ?? null;
             // }
 
             $orderid = decrypt($orderid);
-            $orders = $this->applyAccessScope($this->orders->with('orderdetails'))->findOrFail($orderid);
+            $orders = $this->applyAccessScope($this->orders->with([
+                'orderdetails',
+                'buyers.customeraddress.cityname',
+                'buyers.customeraddress.pincodename',
+                'sellers.customeraddress.cityname',
+                'sellers.customeraddress.pincodename',
+            ]))->findOrFail($orderid);
             $category = Category::where('active', 'Y')->get();
             return view('orders.full_dispatched', compact('category'))->with('orders', $orders);
         }
@@ -787,7 +785,13 @@ $orders->seller_id = $request->seller_id ?? null;
         public function orderPartiallyDispatched($orderid)
         {
             $orderid = decrypt($orderid);
-            $orders = $this->findAccessibleOrderOrFail($orderid);
+            $orders = $this->applyAccessScope($this->orders->with([
+                'orderdetails',
+                'buyers.customeraddress.cityname',
+                'buyers.customeraddress.pincodename',
+                'sellers.customeraddress.cityname',
+                'sellers.customeraddress.pincodename',
+            ]))->findOrFail($orderid);
             $category = Category::where('active', 'Y')->get();
             return view('orders.dispatched', compact('category'))->with('orders', $orders);
         }
@@ -844,7 +848,11 @@ $orders->seller_id = $request->seller_id ?? null;
                         ->withInput();
                 }
                 $request['saledetail'] = $request['orderdetail'];
-                $this->findAccessibleOrderOrFail($request['order_id']);
+                $order = $this->findAccessibleOrderOrFail($request['order_id']);
+                $request->merge([
+                    'buyer_id' => $order->buyer_id,
+                    'seller_id' => $order->seller_id,
+                ]);
                 $request['status_id'] = 2;
                 $data = collect([$request]);
                 $response = insertSales($data);

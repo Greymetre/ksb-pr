@@ -1,12 +1,15 @@
 <x-app-layout>
     <style>
-    .address-card {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 12px;
-        background: #fafafa;
-        min-height: 70px;
-    }
+  .address-card {
+    border: 1px solid #374879;
+    border-radius: 8px;
+    padding: 12px;
+    min-height: 70px;
+    background: radial-gradient(120% 90% at 18% 8%, #0d2358 0, transparent 55%), radial-gradient(110% 80% at 95% 95%, #0a1b45 0, transparent 60%), var(--fk-bg) !important;
+}
+form#storeOrderData18 {
+    margin: 10px;
+}
 
     .address-title {
         font-weight: 600;
@@ -21,11 +24,6 @@
         font-size: 18px;
         margin-right: 5px;
         color: #ff9800;
-    }
-
-    .address-text {
-        font-size: 14px;
-        color: #333;
     }
 
     #tab_logic {
@@ -142,18 +140,14 @@
 
                         <div class="col-md-4">
                             <label class="col-form-label">Customer Type</label>
-                            <select name="type" id="type" class="form-control select2" required>
+                            <select name="customer_type_id" id="type" class="form-control select2" required>
                                 <option value="">Select Customer Type</option>
-                                <!-- <option value="MECHANIC" {{ old('type') == 'MECHANIC'   ? 'selected' : '' }}>MECHANIC
+                                @foreach($customerTypes as $customerType)
+                                <option value="{{ $customerType->id }}"
+                                    {{ (string) old('customer_type_id') === (string) $customerType->id ? 'selected' : '' }}>
+                                    {{ $customerType->customertype_name }}
                                 </option>
-                                <option value="GARAGE" {{ old('type') == 'GARAGE'     ? 'selected' : '' }}>GARAGE
-                                </option> -->
-                                <option value="RETAILER" {{ old('type') == 'RETAILER'   ? 'selected' : '' }}>RETAILER
-                                </option>
-                                <!-- <option value="WORKSHOP" {{ old('type') == 'WORKSHOP'   ? 'selected' : '' }}>WORKSHOP
-                                </option> -->
-                                <option value="DISTRIBUTER" {{ old('type') == 'DISTRIBUTER'? 'selected' : '' }}>
-                                    DISTRIBUTER</option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
@@ -186,16 +180,16 @@
 
                         <!-- Distributor -->
                         <div class="col-md-6" id="seller_div" style="display:none;">
-                            <label class="col-form-label">Dealer / Distributor <span
+                            <label class="col-form-label">Parent Customer <span
                                     class="text-danger">*</span></label>
 
                             <select class="form-control select2" name="seller_id" id="seller_id">
-                                <option value="">Select Dealer / Distributor</option>
+                                <option value="">Select Parent Customer</option>
                             </select>
 
                             <div class="address-card mt-2">
                                 <div class="address-title">
-                                    <i class="material-icons">local_shipping</i> Distributor Address
+                                    <i class="material-icons">account_tree</i> Parent Customer Address
                                 </div>
                                 <div id="customer_address_div" class="address-text">
                                     Select customer to view address
@@ -235,10 +229,10 @@
                                     <thead class="text-white">
                                         <tr>
                                             <th class="text-center">#</th>
-                                            <th class="text-center">Family</th>
+                                            <th class="text-center">Sub Category</th>
                                             <th class="text-center">Products</th>
                                             <th class="text-center">Quantity</th>
-                                            <th class="text-center">MRP / HSN</th>
+                                            <th class="text-center">Unit Price</th>
                                             <th class="text-center">Amount</th>
                                             <th></th>
                                         </tr>
@@ -252,7 +246,7 @@
                                                 <select name="orderdetail[{{ $key }}][subcategory_id]"
                                                     class="form-control select2 subcategory-select"
                                                     data-row="{{ $key }}">
-                                                    <option value="">Select Family</option>
+                                                    <option value="">Select Sub Category</option>
                                                     @foreach($subcategories as $sub)
                                                     <option value="{{ $sub->id }}"
                                                         {{ old("orderdetail.$key.subcategory_id", $detail->subcategory_id ?? '') == $sub->id ? 'selected' : '' }}>
@@ -273,9 +267,9 @@
                                                     value="{{ $detail->quantity ?? '' }}">
                                             </td>
                                             <td>
-                                                <input type="number" name="orderdetail[{{ $key }}][mrp]"
-                                                    class="form-control price" readonly
-                                                    value="{{ $detail->mrp ?? '' }}">
+                                                <input type="number" name="orderdetail[{{ $key }}][price]"
+                                                    class="form-control price rowchange" min="0" step="0.01"
+                                                    value="{{ $detail->price ?? '' }}">
                                             </td>
                                             <td>
                                                 <input type="number" name="orderdetail[{{ $key }}][line_total]"
@@ -295,7 +289,7 @@
                                             <td>
                                                 <select name="orderdetail[0][subcategory_id]"
                                                     class="form-control select2 subcategory-select" data-row="0">
-                                                    <option value="">Select Family</option>
+                                                    <option value="">Select Sub Category</option>
                                                     @foreach($subcategories as $sub)
                                                     <option value="{{ $sub->id }}">{{ $sub->subcategory_name }}</option>
                                                     @endforeach
@@ -309,8 +303,8 @@
                                             </td>
                                             <td><input type="number" name="orderdetail[0][quantity]"
                                                     class="form-control quantity rowchange" min="0"></td>
-                                            <td><input type="number" name="orderdetail[0][mrp]"
-                                                    class="form-control price rowchange"></td>
+                                            <td><input type="number" name="orderdetail[0][price]"
+                                                    class="form-control price rowchange" min="0" step="0.01"></td>
                                             <td><input type="number" name="orderdetail[0][line_total]"
                                                     class="form-control total" readonly></td>
                                             <td class="text-center">
@@ -402,7 +396,7 @@
 
         <td>
             <select name="orderdetail[${rowCount}][subcategory_id]" class="form-control select2 subcategory-select" data-row="${rowCount}">
-                <option value="">Select Family</option>
+                <option value="">Select Sub Category</option>
                 ${$('#tab_logic tbody tr:first .subcategory-select').html().replace(/selected/g,'')}
             </select>
         </td>
@@ -418,7 +412,7 @@
         </td>
 
         <td>
-            <input type="number" name="orderdetail[${rowCount}][mrp]" class="form-control price rowchange" >
+            <input type="number" name="orderdetail[${rowCount}][price]" class="form-control price rowchange" min="0" step="0.01">
         </td>
 
         <td>
@@ -496,7 +490,7 @@
             }, function(res) {
                 let html = '<option value="">Select Product</option>';
                 $.each(res.products || [], function(i, p) {
-                    html += `<option value="${p.id}" data-hsn="${p.hsn_sac ?? ''}">
+                    html += `<option value="${p.id}" data-price="${p.unit_price ?? 0}" data-hsn="${p.hsn_sac ?? ''}">
                         ${p.product_name} (${p.product_code || ''})
                     </option>`;
                 });
@@ -504,11 +498,18 @@
             });
         });
 
-        // Product selected → show HSN in price field (temporary — you may want real MRP later)
+        // Product price is the default; the order price remains editable.
         $(document).on('change', '.product', function() {
             let $row = $(this).closest('tr');
-            let hsn = $(this).find('option:selected').data('hsn') || '';
-            $row.find('.price').val(hsn);
+            let $selected = $(this).find('option:selected');
+            if (!$selected.val()) {
+                $row.find('.price').val('');
+                calc();
+                return;
+            }
+            if (typeof $selected.attr('data-price') === 'undefined') return;
+            let price = parseFloat($selected.attr('data-price')) || 0;
+            $row.find('.price').val(price.toFixed(2));
             calc();
         });
 
@@ -517,42 +518,31 @@
 
             let type = $(this).val();
 
-            if (type === 'DISTRIBUTER') {
+            const isRetailer = String(type) === String(@json($retailerCustomerTypeId));
 
-                $('#seller_div').show();
-                $('#de_dis').hide();
-
-                $('#seller_id').prop('required', true);
-                $('#buyer_id').prop('required', false);
-
-            } else if (['MECHANIC', 'GARAGE', 'RETAILER', 'WORKSHOP'].includes(type)) {
-
-                $('#seller_div').show();
-                $('#de_dis').show();
-
-                $('#seller_id').prop('required', true);
-                $('#buyer_id').prop('required', true);
-
-            } else {
-
-                $('#seller_div').hide();
-                $('#de_dis').hide();
-            }
+            $('#de_dis').toggle(Boolean(type));
+            $('#seller_div').toggle(isRetailer);
+            $('#buyer_id').prop('required', Boolean(type));
+            $('#seller_id').prop('required', isRetailer);
 
             $('#seller_id').val(null).trigger('change');
             $('#buyer_id').val(null).trigger('change');
 
             // Reinitialize both dropdowns
-            initSellerDropdown();
             initBuyerDropdown();
 
         }).trigger('change');
 
         function initSellerDropdown() {
 
+            if ($('#seller_id').hasClass('select2-hidden-accessible')) {
+                $('#seller_id').select2('destroy');
+            }
+            $('#seller_id').off('.orderParent');
+
             $('#seller_id').select2({
 
-                    placeholder: 'Select Dealer/Distributer...',
+                    placeholder: 'Select parent customer...',
                     allowClear: true,
 
                     ajax: {
@@ -562,7 +552,7 @@
 
                         data: params => ({
                             term: params.term || '',
-                            type: 'DISTRIBUTOR',
+                            parent_of: $('#buyer_id').val(),
                             page: params.page || 1
                         }),
 
@@ -614,7 +604,7 @@
 
                 })
 
-                .on('select2:select', function(e) {
+                .on('select2:select.orderParent', function(e) {
 
                     let data = e.params.data;
 
@@ -627,16 +617,32 @@
                         data.pincodename
                     ].filter(Boolean).join(', ');
 
-                    $('#customer_address_div').text(address);
+                    $('#customer_address_div').text(data.full_address || address);
 
                 })
 
-                .on('select2:unselect', function() {
+                .on('select2:unselect.orderParent', function() {
 
                     $('#customer_address_div').text('');
 
                 });
 
+        }
+
+        function autoSelectAssignedParent(customerId) {
+            if (!customerId) return;
+
+            $.get("{{ route('getCustomerDataSelect') }}", {
+                parent_of: customerId,
+                page: 1
+            }, function(response) {
+                const assignedParent = (response.results || []).find(item => item.is_assigned_parent);
+                if (!assignedParent) return;
+
+                const option = new Option(assignedParent.text, assignedParent.id, true, true);
+                $('#seller_id').append(option).trigger('change');
+                $('#customer_address_div').text(assignedParent.full_address || '');
+            });
         }
 
         function initBuyerDropdown() {
@@ -649,7 +655,7 @@
                     delay: 250,
                     data: params => ({
                         term: params.term || '',
-                        type: $('#type').val(),
+                        customer_type_id: $('#type').val(),
                         page: params.page || 1
                     }),
                     processResults: data => ({
@@ -666,8 +672,14 @@
                 }
             }).on('select2:select', e => {
                 $('.buyer_address').text(e.params.data.full_address || '');
+                if (String($('#type').val()) === String(@json($retailerCustomerTypeId))) {
+                    $('#seller_id').val(null).trigger('change');
+                    initSellerDropdown();
+                    autoSelectAssignedParent(e.params.data.id);
+                }
             }).on('select2:unselect', () => {
                 $('.buyer_address').text('');
+                $('#seller_id').val(null).trigger('change');
             });
         }
 

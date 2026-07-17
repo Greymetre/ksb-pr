@@ -97,23 +97,6 @@
                      <div class="p-2"><button type="button" class="btn btn-just-icon btn-theme" title="Reset Fliter" onclick="resetFilter();"><i class="fa fa-refresh" aria-hidden="true"></i></button></div>
 
                      <div class="p-2"><button class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.download') !!} {!! trans('panel.customers.title') !!}"><i class="material-icons">cloud_download</i></button></div>
-                     <div class="count-divs">
-                       <h4 class="card-text">Pending</h4>
-                       <h5 class="card-title" id="pending_count">{{$pending_count}}</h5>
-                     </div>
-                     <div class="count-divs">
-                       <h4 class="card-text text-center">Approved</h4>
-                       <h5 class="card-title" id="approve_count">{{$approve_count}}</h5>
-                     </div>
-                     <div class="count-divs">
-                       <h4 class="card-text text-center">Rejected</h4>
-                       <h5 class="card-title" id="reject_count">{{$reject_count}}</h5>
-                     </div>
-                     <div class="count-divs">
-                       <h4 class="card-text text-center">Checked</h4>
-                       <h5 class="card-title" id="checked_count">{{$checked_count}}</h5>
-                     </div>
-
                    </div>
                  </form>
 
@@ -166,6 +149,37 @@
              <span class="message"></span>
            </div>
 
+           <div class="expense-status-summary" aria-label="Expense status summary">
+             <div class="expense-status-card is-pending">
+               <div class="expense-status-icon"><i class="material-icons">schedule</i></div>
+               <div class="expense-status-content">
+                 <span class="expense-status-label">Pending</span>
+                 <strong class="expense-status-value" id="pending_count">{{$pending_count}}</strong>
+               </div>
+             </div>
+             <div class="expense-status-card is-approved">
+               <div class="expense-status-icon"><i class="material-icons">check_circle</i></div>
+               <div class="expense-status-content">
+                 <span class="expense-status-label">Approved</span>
+                 <strong class="expense-status-value" id="approve_count">{{$approve_count}}</strong>
+               </div>
+             </div>
+             <div class="expense-status-card is-rejected">
+               <div class="expense-status-icon"><i class="material-icons">cancel</i></div>
+               <div class="expense-status-content">
+                 <span class="expense-status-label">Rejected</span>
+                 <strong class="expense-status-value" id="reject_count">{{$reject_count}}</strong>
+               </div>
+             </div>
+             <div class="expense-status-card is-checked">
+               <div class="expense-status-icon"><i class="material-icons">verified</i></div>
+               <div class="expense-status-content">
+                 <span class="expense-status-label">Checked</span>
+                 <strong class="expense-status-value" id="checked_count">{{$checked_count}}</strong>
+               </div>
+             </div>
+           </div>
+
            <div class="table-responsive">
              <table id="getallexpenses" class="table table-striped- table-bordered table-hover table-checkable no-wrap">
                <thead class=" text-primary">
@@ -199,7 +213,7 @@
 
    <!-- Bootstrap Modal -->
 
-   <div class="modal fade" id="expenseModal" tabindex="-1" role="dialog" aria-labelledby="expenseModalLabel" aria-hidden="true">
+   <div class="modal fade fk-expense-modal" id="expenseModal" tabindex="-1" role="dialog" aria-labelledby="expenseModalLabel" aria-hidden="true">
      <div class="modal-dialog modal-fullscreen" role="document">
        <div class="modal-content">
          <div class="modal-header">
@@ -212,40 +226,13 @@
            <!-- Expense details will be loaded here -->
          </div>
          <div class="modal-footer">
-           <button type="button" class="close" data-dismiss="modal" aria-label="Close">Close</button>
+           <button type="button" class="btn btn-primary expense-modal-close" data-dismiss="modal">Close</button>
          </div>
        </div>
      </div>
    </div>
 
    <style type="text/css">
-     .count-divs h5 {
-       line-height: 0px;
-       border: 1px solid #377ab8;
-       height: 20px;
-       margin: -10px !important;
-       padding: 12px;
-       border-radius: 3px;
-       font-size: 14px;
-       font-weight: 400 !important;
-     }
-
-     .count-divs h4 {
-       font-size: 14px;
-       line-height: 5px;
-       background: linear-gradient(45deg, #3866a8, #3689c4);
-       color: #fff;
-       font-weight: 400 !important;
-       box-shadow: -2px 2px 5px 0px gray;
-     }
-
-     .count-divs {
-       padding: 10px;
-       margin: 10px;
-       line-height: 0px;
-       text-align: center;
-     }
-
      .flex-row .p-2 {
        width: 20% !important;
        /*   overflow: hidden;*/

@@ -139,6 +139,7 @@ $latitude = null;
             'payroll' => isset($request['payroll']) ? $request['payroll'] : '',
             'warehouse_id' => isset($request['warehouse_id']) ? $request['warehouse_id'] : NULL,
             'customerid' => isset($request['customerid']) ? $request['customerid'] : NULL,
+            'sales_type' => $request->input('sales_type', ''),
             'earned_leave_balance'    => $request->input('earned_leave_balance', '0.00'),
             'casual_leave_balance'    => $request->input('casual_leave_balance', '0.00'),
             'sick_leave_balance'      => $request->input('sick_leave_balance', '0.00'),
@@ -277,6 +278,10 @@ $latitude = null;
     //public function update(Request $request, User $user)
     public function update(Request $request, $id)
     {
+
+        $request->validate([
+            'sales_type' => ['nullable', 'in:Primary,Secondary'],
+        ]);
 
         $latitude = null;
     $longitude = null;

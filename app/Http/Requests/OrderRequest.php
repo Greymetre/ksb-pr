@@ -10,7 +10,10 @@ class OrderRequest extends FormRequest
 {
     public function authorize()
     {
-        abort_if(Gate::denies('order_create') || Gate::denies('order_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        $ability = $this->isMethod('post') ? 'order_create' : 'order_edit';
+
+        abort_if(Gate::denies($ability), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
         return true;
     }
 
@@ -21,8 +24,9 @@ class OrderRequest extends FormRequest
         switch($this) {
             case !empty($this->id) :
                 $rules = [
-                    // 'buyer_id'      => 'nullable|numeric|exists:customers,id',
-                    // 'seller_id'     => 'nullable|numeric|exists:customers,id',
+                    'customer_type_id' => 'required|integer|exists:customer_types,id',
+                    'buyer_id'      => 'required|integer|exists:customers,id',
+                    'seller_id'     => 'nullable|integer|exists:customers,id',
                     'total_qty'     => 'nullable|numeric',
                     'shipped_qty'   => 'nullable|numeric',
                     'orderno'       => 'nullable|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
@@ -40,8 +44,9 @@ class OrderRequest extends FormRequest
                 break;
             default :
                 $rules = [
-                    // 'buyer_id'      => 'nullable|numeric|exists:customers,id',
-                    // 'seller_id'     => 'nullable|numeric|exists:customers,id',
+                    'customer_type_id' => 'required|integer|exists:customer_types,id',
+                    'buyer_id'      => 'required|integer|exists:customers,id',
+                    'seller_id'     => 'nullable|integer|exists:customers,id',
                     'total_qty'     => 'nullable|numeric',
                     'shipped_qty'   => 'nullable|numeric',
                     'orderno'       => 'nullable|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
@@ -58,6 +63,12 @@ class OrderRequest extends FormRequest
                 ];
                 break;
         }
+
+        $rules['orderdetail'] = 'required|array|min:1';
+        $rules['orderdetail.*.product_id'] = 'required|integer|exists:products,id';
+        $rules['orderdetail.*.quantity'] = 'required|numeric|min:0.01';
+        $rules['orderdetail.*.price'] = 'required|numeric|min:0';
+
         return $rules;
     }
 }

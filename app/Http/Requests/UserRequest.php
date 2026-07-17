@@ -62,6 +62,8 @@ class UserRequest extends FormRequest
                 ];
                 break;
         }
+        $rules['sales_type'] = 'nullable|in:Primary,Secondary';
+
         return $rules;
     }
 }

@@ -1325,21 +1325,21 @@
                                             @endif
                                         </div>
                                     </div>
-                                </div>
+                                </div> -->
                                 
                                 <div class="col-md-6">
                                     <div class="input_section">
                                         <label class="col-form-label">{{ trans('panel.user.sales_type') }}</label>
                                         <div class="form-group has-default bmd-form-group">
-                                            <select class="selectpicker" data-style="select-with-transition"
-                                                name="sales_type">
-                                                <option value="" disabled selected>{{ trans('panel.user.sales_type') }}
+                                            <select class="form-control select2 {{ $errors->has('sales_type') ? 'is-invalid' : '' }}"
+                                                name="sales_type" id="sales_type">
+                                                <option value="">Select {{ trans('panel.user.sales_type') }}
                                                 </option>
                                                 <option value="Primary"
-                                                    {{ (old('sales_type')??$user->sales_type == 'Primary') ? 'selected' : '' }}>
+                                                    {{ old('sales_type', $user->sales_type) === 'Primary' ? 'selected' : '' }}>
                                                     Primary</option>
                                                 <option value="Secondary"
-                                                    {{ (old('sales_type')??$user->sales_type == 'Secondary') ? 'selected' : '' }}>
+                                                    {{ old('sales_type', $user->sales_type) === 'Secondary' ? 'selected' : '' }}>
                                                     Secondary</option>
                                             </select>
                                         </div>
@@ -1349,7 +1349,7 @@
                                         </div>
                                         @endif
                                     </div>
-                                </div> -->
+                                </div>
                                 <!-- <div class="col-md-6">
                   <div class="input_section">
                     <label class="col-form-label">Lave Balance</label>

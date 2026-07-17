@@ -455,7 +455,7 @@
           <hr class="my-3">
           <div class="row">
             <div class="col-md-6" id="billing_address">
-              <h4 class="section-heading mb-3  h4 mt-0 text-center text-theme2">Billing Address</h4>
+              <h4 class="section-heading mb-1  h4 mt-0 text-center text-theme2">Billing Address</h4>
               <div class="second-box">
                 <div class="row">
                   <div class="col-md-12">
@@ -631,7 +631,7 @@
               </div>
             </div>
             <div class="col-md-6" id="shipping_address">
-              <h4 class="section-heading mb-3  h4 mt-0 text-center text-theme2">Shipping Address</h4>
+              <h4 class="section-heading mb-1  h4 mt-0 text-center text-theme2">Shipping Address</h4>
               <div class="second-box">
                 <div class="row">
                   <div class="col-md-12">
@@ -807,8 +807,8 @@
             </div>
           </div>
 
-          <hr class="my-3">
-          <h4 class="section-heading mb-3  h4 mt-0 text-center text-theme2">Custom Fields</h4>
+          <!-- <hr class="my-3">
+          <h4 class="section-heading mb-1  h4 mt-0 text-center text-theme2">Custom Fields</h4>
           <div class="last-box">
             <div class="row">
               @foreach($custom_fields as $customfield)
@@ -834,10 +834,10 @@
               </div>
               @endforeach
             </div>
-          </div>
+          </div> -->
 
          <hr class="my-3">
-          <h4 class="section-heading mb-3  h4 mt-0 text-center text-theme2">{!! trans('panel.customers.title_kyc') !!}</h4>
+          <h4 class="section-heading mb-1  h4 mt-0 text-center text-theme2">{!! trans('panel.customers.title_kyc') !!}</h4>
           <div class="last-box">
             <div class="row">
               <div class="col-md-6">
@@ -1139,13 +1139,13 @@
             </div>
           </div>
           <hr class="my-3">
-          <!-- <h4 class="section-heading mb-3  h4 mt-0 text-center text-info">Customer survey</h4>  -->
+          <!-- <h4 class="section-heading mb-1  h4 mt-0 text-center text-info">Customer survey</h4>  -->
           <div class="row last-inner-form">
             <div class="col-md-12">
               <div id="accordion" role="tablist">
                 <div class="card-collapse">
                   <div class="card-header inner-form-heading" role="tab" id="headingOne">
-                    <h4 class="section-heading mb-3  h4 mt-0 text-theme2"><a data-toggle="collapse" href="#collapseOne" aria-expanded="false" aria-controls="collapseOne" class="collapsed">
+                    <h4 class="section-heading mb-1  h4 mt-0 text-theme2"><a data-toggle="collapse" href="#collapseOne" aria-expanded="false" aria-controls="collapseOne" class="collapsed">
                         Customer survey
                         <i class="material-icons">keyboard_arrow_down</i>
                       </a></h4>
@@ -1160,7 +1160,7 @@
                       <div class="row">
                         <!-- <label class="col-sm-1 col-form-label label-checkbox"></label> -->
                         <div class="col-sm-12 checkbox-radios">
-                          <h4 class="section-heading mb-3  h4 mt-0 text-center text-theme2"> {!! $field['label_name'] !!}</h4>
+                          <h4 class="section-heading mb-1  h4 mt-0 text-center text-theme2"> {!! $field['label_name'] !!}</h4>
                           <div class="row">
                             @if(@isset($field['fieldsData'] ))
                             @foreach($field['fieldsData'] as $rows)
@@ -1183,7 +1183,7 @@
                       <div class="row">
                         <!-- <label class="col-sm-1 col-form-label label-checkbox"></label> -->
                         <div class="col-sm-12 checkbox-radios">
-                          <h4 class="section-heading mb-3  h4 mt-0 text-center text-theme2"> {!! $field['label_name'] !!}</h4>
+                          <h4 class="section-heading mb-1  h4 mt-0 text-center text-theme2"> {!! $field['label_name'] !!}</h4>
 
                           <div class="row">
                             @if(@isset($field['fieldsData'] ))
@@ -1223,7 +1223,7 @@
                       <div class="row">
                         <!-- <label class="col-sm-1 col-form-label label-checkbox"></label> -->
                         <div class="col-sm-12 checkbox-radios">
-                          <h4 class="section-heading mb-3  h4 mt-0 text-center text-theme2"> {!! $field['label_name'] !!}</h4>
+                          <h4 class="section-heading mb-1  h4 mt-0 text-center text-theme2"> {!! $field['label_name'] !!}</h4>
                           <div class="form-group has-default bmd-form-group">
                             <input type="text" name="survey[{!! $index !!}][value]" class="form-control" value="{!! $customers['surveys']->where('field_id', $field['id'])->pluck('value')->first() !!}" maxlength="200">
                           </div>

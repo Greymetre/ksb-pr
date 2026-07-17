@@ -288,6 +288,7 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     'warehouse_id' => !empty($row['warehouse_id']) ? $row['warehouse_id'] : NULL,
                     'department_id' => !empty($row['department_id']) ? $row['department_id'] : '',
                     'reportingid' => !empty($row['reporting_id']) ? $row['reporting_id'] : '',
+                    'sales_type' => !empty($row['sales_type']) ? $row['sales_type'] : '',
                     'latitude'  => $latitude,
                     'longitude' => $longitude,
                     'created_at' => getcurentDateTime(),

@@ -202,7 +202,8 @@ class Customers extends Authenticatable
 
     public function customertypes()
     {
-        return $this->belongsTo('App\Models\CustomerType', 'customertype', 'id')->select('id', 'customertype_name');
+        return $this->belongsTo('App\Models\CustomerType', 'customertype', 'id')
+            ->select('id', 'customertype_name', 'type_name', 'active');
     }
 
     public function firmtypes()
@@ -262,6 +263,16 @@ class Customers extends Authenticatable
     public function parentdetail()
     {
         return $this->belongsTo(Customers::class, 'parent_id', 'id');
+    }
+
+    public function parentAssignments()
+    {
+        return $this->hasMany(ParentDetail::class, 'customer_id', 'id');
+    }
+
+    public function parentCustomers()
+    {
+        return $this->belongsToMany(Customers::class, 'parent_details', 'customer_id', 'parent_id');
     }
 
 

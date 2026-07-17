@@ -124,8 +124,9 @@ class ProductController extends Controller
                 'part_no'       => !empty($request['part_no']) ? $request['part_no'] :'',
                 'product_no'    => !empty($request['product_no']) ? $request['product_no'] :'',
                 'model_no'      => !empty($request['model_no']) ? $request['model_no'] :'',
-                'hsn_sac'      => isset($row['hsn_sac']) ? $row['hsn_sac'] :null,
-                'hsn_sac_no'      => isset($row['hsn_sac_no']) ? $row['hsn_sac_no'] :null,
+                'hsn_sac'       => $request->input('hsn_sac'),
+                'hsn_sac_no'    => $request->input('hsn_sac_no'),
+                'suc_del'       => $request->input('suc_del', ''),
             ]))
             {
                 if(!empty($request['detail']))
@@ -148,9 +149,8 @@ class ProductController extends Controller
                             'detail_description' => !empty($rows['detail_description']) ? $rows['detail_description'] :'',
                             'detail_image'  => !empty($rows['detail_image']) ? $rows['detail_image'] :'',
                             'mrp'       => !empty($rows['mrp']) ? $rows['mrp'] :0.00,
-                            'price'     => !empty($rows['mrp']) ? $rows['mrp'] :$rows['mrp'],
-                            //'price'     => $price,
-                            'selling_price' => !empty($rows['selling_price']) ? $rows['selling_price'] :$rows['mrp'],
+                            'price'     => $rows['price'] ?? $rows['mrp'] ?? 0.00,
+                            'selling_price' => $rows['selling_price'] ?? $rows['price'] ?? $rows['mrp'] ?? 0.00,
                             'discount' => !empty($request['discount']) ? $request['discount'] :0.00,
                             'max_discount' => !empty($request['max_discount']) ? $request['max_discount'] :0.00,
                             'rmc' => !empty($request['rmc']) ? $request['rmc'] :0.00,
@@ -302,8 +302,9 @@ class ProductController extends Controller
                                 'gst'       => !empty($request['gst']) ? $request['gst'] :0,
                                 'hsn_code'      => !empty($rows['hsn_code']) ? $rows['hsn_code'] :null,
                                 'ean_code'      => !empty($rows['ean_code']) ? $rows['ean_code'] :null,
-                                'top_sku'          => !empty($request['top_sku']) ? $request['top_sku'] :null,
-                                'budget_for_month' => !empty($request['budget_for_month']) ? $request['budget_for_month'] :null,
+                                'isprimary'      => $rows['isprimary'] ?? 1,
+                                'top_sku'          => $rows['top_sku'] ?? null,
+                                'budget_for_month' => $rows['budget_for_month'] ?? null,
                                 'created_at'    => getcurentDateTime(),
                                 'updated_at'    => getcurentDateTime(),
                             ]);
@@ -315,15 +316,15 @@ class ProductController extends Controller
                                 'detail_description' => isset($rows['detail_description']) ? $rows['detail_description'] :'',
                                 'detail_image'  => isset($rows['detail_image']) ? $rows['detail_image'] :'',
                                 'mrp'       => isset($rows['mrp']) ? $rows['mrp'] :0.00,
-                                // 'price'     => isset($rows['price']) ? $rows['price'] :0.00,
-                                'price'     => isset($rows['mrp']) ? $rows['mrp'] :0.00,
+                                'price'     => $rows['price'] ?? $rows['mrp'] ?? 0.00,
                                 'selling_price' => isset($rows['selling_price']) ? $rows['selling_price'] :0.00,
                                 'discount' => isset($request['discount']) ? $request['discount'] :0.00,
                                 'max_discount' => isset($request['max_discount']) ? $request['max_discount'] :0.00,
                                 'rmc' => isset($request['rmc']) ? $request['rmc'] :0.00,
                                 'gst'       => isset($request['gst']) ? $request['gst'] :0,
-                                'top_sku'          => !empty($request['top_sku']) ? $request['top_sku'] :null,
-                                'budget_for_month' => !empty($request['budget_for_month']) ? $request['budget_for_month'] :null,
+                                'isprimary'      => $rows['isprimary'] ?? 1,
+                                'top_sku'          => $rows['top_sku'] ?? null,
+                                'budget_for_month' => $rows['budget_for_month'] ?? null,
                                 'hsn_code'      => isset($rows['hsn_code']) ? $rows['hsn_code'] :null,
                                 'ean_code'      => isset($rows['ean_code']) ? $rows['ean_code'] :null,
                                 'updated_at'    => getcurentDateTime(),
@@ -527,11 +528,22 @@ class ProductController extends Controller
 
         return view('products.dealer_product_list', compact('products', 'category_id', 'categories'));
     }
-     public function getProductsBySubcategory(Request $request)
+public function getProductsBySubcategory(Request $request)
 {
-    $products = Product::where('subcategory_id',$request->subcategory_id)
-                ->select('id', 'product_name', 'product_image', 'display_name', 'product_code','subcategory_id','hsn_sac')
-                ->get();
+    $products = Product::with(['productdetails' => function ($query) {
+                    $query->orderByRaw("CASE WHEN isprimary IN ('Y', '1') THEN 0 ELSE 1 END")
+                        ->orderBy('id');
+                }])
+                ->where('subcategory_id', $request->subcategory_id)
+                ->where('active', 'Y')
+                ->select('id', 'product_name', 'product_image', 'display_name', 'product_code', 'subcategory_id', 'hsn_sac')
+                ->orderBy('product_name')
+                ->get()
+                ->map(function ($product) {
+                    $detail = $product->productdetails->first();
+                    $product->unit_price = (float) ($detail?->price ?? $detail?->mrp ?? $detail?->selling_price ?? 0);
+                    return $product;
+                });
 
     return response()->json([
         'products' => $products

@@ -84,10 +84,11 @@ $(document).ready(function () {
                 searchable: false
             },
             {
-                data: 'users.getdesignation.designation_name',
-                name: 'users.getdesignation.designation_name',
+                data: 'designation_name',
+                name: 'designation_name',
                 orderable: false,
-                searchable: false
+                searchable: false,
+                defaultContent: ''
             },
             {
                 data: 'expense_type.name',

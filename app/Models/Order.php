@@ -132,21 +132,11 @@ public function insertrules()
         return $this->belongsTo('App\Models\User', 'updated_by', 'id')->select('id','name','profile_image');
     }
 
-    public function masterDistributor()
-    {
-        return $this->belongsTo(\App\Models\MasterDistributor::class, 'buyer_id');
-    }
-
-    public function secondaryCustomer()
-    {
-        return $this->belongsTo(\App\Models\SecondaryCustomer::class, 'seller_id');
-    }
     public function buyers()
     {
         return $this->belongsTo(\App\Models\Customers::class, 'buyer_id', 'id');
     }
     
-        // Seller = MasterDistributor
     public function sellers()
     {
         return $this->belongsTo(\App\Models\Customers::class, 'seller_id', 'id');
@@ -162,16 +152,14 @@ public function insertrules()
         return $this->belongsTo(\App\Models\Customers::class, 'seller_id', 'id');
     }
     
-             // Buyer = SecondaryCustomer
     public function buyer()
     {
-        return $this->belongsTo(\App\Models\SecondaryCustomer::class, 'buyer_id');
+        return $this->belongsTo(\App\Models\Customers::class, 'buyer_id');
     }
     
-        // Seller = MasterDistributor
     public function seller()
     {
-        return $this->belongsTo(\App\Models\MasterDistributor::class,'seller_id' );
+        return $this->belongsTo(\App\Models\Customers::class, 'seller_id');
     }
 
     public function customeraddress()

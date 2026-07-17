@@ -81,7 +81,7 @@ class UserExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMa
                    'Base Location Coordinates (latitude, longitude)',
                 //    'High School', 'Higher Secondary', 'Graducation', 'Post Graducation', 'Other', 'Current Company TENURE', 'Previous Exp', 'Total Exp', 'Sales Type', 'Status', 'profile_image',
                     // 'designation_id', 'branch_id','primary_branch_id', 'division_id', 'department_id',
-                     'Reporting ID', 'Role Ids', 'payroll' ,'designation_id', 'branch_id','division_id', 'department_id','Attandance Summary Report',
+                     'Reporting ID', 'Role Ids', 'payroll' ,'designation_id', 'branch_id','division_id', 'department_id','Attandance Summary Report', 'Sales Type',
                     //  'payroll',
                     //   'warehouse_id', 'Attandance Summary Report', 'Order Mails', 'Order Mail Type', 'Order Mail Type ID',
                     //    'Leave Balance'
@@ -98,7 +98,7 @@ class UserExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMa
                 'Designation Code', 'Employee Super Code',
              'Base Location Coordinates (latitude, longitude)',
             //  'High School', 'Higher Secondary', 'Graducation', 'Post Graducation', 'Other', 'Current Company TENURE', 'Previous Exp', 'Total Exp', 'Sales Type', 'Status', 'profile_image', 'designation_id', 'branch_id','primary_branch_id', 'division_id', 'department_id',
-              'Reporting ID', 'Role Ids', 'payroll' ,'designation_id', 'branch_id','division_id', 'department_id','Attandance Summary Report',
+              'Reporting ID', 'Role Ids', 'payroll' ,'designation_id', 'branch_id','division_id', 'department_id','Attandance Summary Report', 'Sales Type',
             //   'warehouse_id',  'Order Mails', 'Order Mail Type', 'Order Mail Type ID', 
             //   'Leave Balance',
                ];
@@ -231,6 +231,7 @@ class UserExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMa
                 $data['department_id'] ?? '-',
                 // $data['warehouse_id'] ?? '-',
                 ($data['show_attandance_report'] == 1 ? 'Yes' : 'No'),
+                $data['sales_type'] ?? '',
                 // $data['userinfo'] ? $data['userinfo']['order_mails'] : '',
                 // implode(',', $mail_types_name),
                 // $data['userinfo'] ? $data['userinfo']['order_mails_type'] : '',
@@ -326,6 +327,7 @@ class UserExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMa
                 $data['department_id'] ?? '-',
                 // $data['warehouse_id'] ?? '-',
                 ($data['show_attandance_report'] == 1 ? 'Yes' : 'No'),
+                $data['sales_type'] ?? '',
                 // $data['userinfo'] ? $data['userinfo']['order_mails'] : '',
                 // implode(',', $mail_types_name),
                 // $data['userinfo'] ? $data['userinfo']['order_mails_type'] : '',

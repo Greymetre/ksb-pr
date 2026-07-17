@@ -1,12 +1,5 @@
 <x-app-layout>
-   <style>
-      .card.text-center.card-body.p-3 {
-         font-size: 16px;
-         font-weight: 900;
-         line-height: 40px;
-         text-shadow: 2px 2px 10px gray;
-      }
-   </style>
+   <div class="customer-show-page">
    <div class="row all-points">
       <div class="col-md-2">
          <div class="card card-primary text-center card-body p-3">Total Point Earn <br> <span>{{$total_points}}</span> </div>
@@ -461,7 +454,7 @@
                   <div class="row align-items-center">
                      <div class="col-md-6 col-sm-12" style="position: relative;">
                         <div class="img-cvr">
-                           <label class="bmd-label-floating">Shop Image dd</label>
+                           <label class="bmd-label-floating">Shop Image</label>
                            <div class="empty-div"></div>
                            <div class="fileinput fileinput-new text-center" data-provides="fileinput">
                               <div class="fileinput-new thumbnail">
@@ -772,6 +765,8 @@
          </div>
       </div>
    </div>
+   </div>
+
    <script src="https://maps.google.com/maps/api/js?key={{ config('services.google.maps_api_key') }}" type="text/javascript"></script>
    <script type="text/javascript">
       $(function() {

@@ -17,4 +17,29 @@ class CustomerType extends Model
     {
         return $this->belongsTo('App\Models\User', 'created_by', 'id')->select('id','name');
     }
+
+    public function customers()
+    {
+        return $this->hasMany(Customers::class, 'customertype', 'id');
+    }
+
+    public function isRetailer(): bool
+    {
+        return strtolower(trim((string) $this->type_name)) === 'retailer';
+    }
+
+    public function isDealer(): bool
+    {
+        return strtolower(trim((string) $this->type_name)) === 'dealer';
+    }
+
+    public function scopeRetailer($query)
+    {
+        return $query->whereRaw('LOWER(type_name) = ?', ['retailer']);
+    }
+
+    public function scopeNonRetailer($query)
+    {
+        return $query->whereRaw('LOWER(type_name) != ?', ['retailer']);
+    }
 }

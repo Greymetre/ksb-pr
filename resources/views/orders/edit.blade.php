@@ -1,70 +1,69 @@
 <x-app-layout>
-    <style>
-    .address-card {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 12px;
-        background: #fafafa;
-        min-height: 70px;
-    }
+     <style>
+        .address-card {
+            border: 1px solid #374879;
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 70px;
+            background: radial-gradient(120% 90% at 18% 8%, #0d2358 0, transparent 55%), radial-gradient(110% 80% at 95% 95%, #0a1b45 0, transparent 60%), var(--fk-bg) !important;
+        }
 
-    .address-title {
-        font-weight: 600;
-        font-size: 13px;
-        color: #666;
-        display: flex;
-        align-items: center;
-        margin-bottom: 5px;
-    }
+        form#storeOrderData18 {
+            margin: 10px;
+        }
 
-    .address-title i {
-        font-size: 18px;
-        margin-right: 5px;
-        color: #ff9800;
-    }
+        .address-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
 
-    .address-text {
-        font-size: 14px;
-        color: #333;
-    }
+        .address-title i {
+            font-size: 18px;
+            margin-right: 5px;
+            color: #ff9800;
+        }
 
-    #tab_logic {
-        table-layout: fixed;
-        width: 100%;
-    }
+        #tab_logic {
+            table-layout: fixed;
+            width: 100%;
+        }
 
-    #tab_logic th,
-    #tab_logic td {
-        width: 16.6%;
-    }
+        #tab_logic th,
+        #tab_logic td {
+            width: 16.6%;
+        }
 
-    #tab_logic select,
-    #tab_logic input {
-        width: 100% !important;
-    }
+        #tab_logic select,
+        #tab_logic input {
+            width: 100% !important;
+        }
 
-    #tab_logic th:nth-child(1),
-    #tab_logic td:nth-child(1) {
-        width: 5%;
-    }
+        #tab_logic th:nth-child(1),
+        #tab_logic td:nth-child(1) {
+            width: 5%;
+        }
 
-    #tab_logic th:nth-child(7),
-    #tab_logic td:nth-child(7) {
-        width: 8%;
-    }
+        #tab_logic th:nth-child(7),
+        #tab_logic td:nth-child(7) {
+            width: 8%;
+        }
 
-    #tab_logic th:nth-child(2),
-    #tab_logic td:nth-child(2),
-    #tab_logic th:nth-child(3),
-    #tab_logic td:nth-child(3),
-    #tab_logic th:nth-child(4),
-    #tab_logic td:nth-child(4),
-    #tab_logic th:nth-child(5),
-    #tab_logic td:nth-child(5),
-    #tab_logic th:nth-child(6),
-    #tab_logic td:nth-child(6) {
-        width: 17%;
-    }
+        #tab_logic th:nth-child(2),
+        #tab_logic td:nth-child(2),
+        #tab_logic th:nth-child(3),
+        #tab_logic td:nth-child(3),
+        #tab_logic th:nth-child(4),
+        #tab_logic td:nth-child(4),
+        #tab_logic th:nth-child(5),
+        #tab_logic td:nth-child(5),
+        #tab_logic th:nth-child(6),
+        #tab_logic td:nth-child(6) {
+            width: 17%;
+        }
     </style>
     <div class="row">
         <div class="col-md-12">
@@ -142,22 +141,14 @@
 
                         <div class="col-md-4">
                             <label class="col-form-label">Customer Type</label>
-                            <select name="type" id="type" class="form-control select2" required>
+                            <select name="customer_type_id" id="type" class="form-control select2" required>
                                 <option value="">Select Customer Type</option>
-                                <!-- <option value="MECHANIC" {{ old('type') == 'MECHANIC'   ? 'selected' : '' }}>MECHANIC
+                                @foreach($customerTypes as $customerType)
+                                <option value="{{ $customerType->id }}"
+                                    {{ (string) old('customer_type_id', $orders->customer_type_id) === (string) $customerType->id ? 'selected' : '' }}>
+                                    {{ $customerType->customertype_name }}
                                 </option>
-                                <option value="GARAGE" {{ old('type') == 'GARAGE'     ? 'selected' : '' }}>GARAGE
-                                </option> -->
-                                <option value="RETAILER"
-                                    {{ old('type', $orders->type ?? '') == 'RETAILER' ? 'selected' : '' }}>
-                                    RETAILER
-                                </option>
-                                <!-- <option value="WORKSHOP" {{ old('type') == 'WORKSHOP'   ? 'selected' : '' }}>WORKSHOP
-                                </option> -->
-                                <option value="DISTRIBUTER"
-                                    {{ old('type', $orders->type ?? '') == 'DISTRIBUTER' ? 'selected' : '' }}>
-                                    DISTRIBUTER
-                                </option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
@@ -207,11 +198,11 @@
 
                         <!-- Distributor -->
                         <div class="col-md-6" id="seller_div" style="display:none;">
-                            <label class="col-form-label">Dealer / Distributor <span
+                            <label class="col-form-label">Parent Customer <span
                                     class="text-danger">*</span></label>
 
                             <select class="form-control select2" name="seller_id" id="seller_id">
-                                <option value="">Select Dealer / Distributor</option>
+                                <option value="">Select Parent Customer</option>
 
                                 @if($orders->seller_id && $orders->sellers)
                                 <option value="{{ $orders->seller_id }}" selected>
@@ -277,7 +268,7 @@
                                             <th class="text-center">Family</th>
                                             <th class="text-center">Products</th>
                                             <th class="text-center">Quantity</th>
-                                            <th class="text-center">MRP / HSN</th>
+                                            <th class="text-center">Unit Price</th>
                                             <th class="text-center">Amount</th>
                                             <th></th>
                                         </tr>
@@ -320,7 +311,7 @@
                                             </td>
                                             <td>
                                                 <input type="number" name="orderdetail[{{ $key }}][price]"
-                                                    class="form-control price rowchange"
+                                                    class="form-control price rowchange" min="0" step="0.01"
                                                     value="{{ $detail->price ?? '' }}">
                                             </td>
                                             <td>
@@ -364,7 +355,7 @@
                                             <td><input type="number" name="orderdetail[0][quantity]"
                                                     class="form-control quantity rowchange" min="0"></td>
                                             <td><input type="number" name="orderdetail[0][price]"
-                                                    class="form-control price rowchange"></td>
+                                                    class="form-control price rowchange" min="0" step="0.01"></td>
                                             <td><input type="number" name="orderdetail[0][line_total]"
                                                     class="form-control total" readonly></td>
                                             <td class="text-center">
@@ -435,10 +426,8 @@ $(document).ready(function () {
     initBuyerDropdown();
 
       if (window.isEdit) {
-         let type = $('#type').val();
-
-         preloadDropdown('#buyer_id', type);
-         preloadDropdown('#seller_id', 'DISTRIBUTOR');
+         preloadDropdown('#buyer_id', { customer_type_id: $('#type').val() });
+         preloadDropdown('#seller_id', { parent_of: $('#buyer_id').val() });
       }
 
     /* ==============================
@@ -499,7 +488,7 @@ $(document).ready(function () {
 
             <td>
                 <input type="number" name="orderdetail[${rowCount}][price]"
-                       class="form-control price rowchange">
+                       class="form-control price rowchange" min="0" step="0.01">
             </td>
 
             <td>
@@ -596,7 +585,7 @@ $(document).ready(function () {
             let html = '<option value="">Select Product</option>';
 
             $.each(res.products || [], function (i, p) {
-                html += `<option value="${p.id}" data-hsn="${p.hsn || ''}">
+                html += `<option value="${p.id}" data-price="${p.unit_price ?? 0}" data-hsn="${p.hsn_sac ?? ''}">
                     ${p.product_name} (${p.product_code || ''})
                 </option>`;
             });
@@ -615,9 +604,17 @@ $(document).ready(function () {
     ============================== */
     $(document).on('change', '.product', function () {
         let $row = $(this).closest('tr');
-        let hsn = $(this).find(':selected').data('hsn') || 0;
+        let $selected = $(this).find(':selected');
+        if (!$selected.val()) {
+            $row.find('.price').val('');
+            calc();
+            return;
+        }
+        // Preserve an existing order price until the user selects a new product.
+        if (typeof $selected.attr('data-price') === 'undefined') return;
+        let price = parseFloat($selected.attr('data-price')) || 0;
 
-        $row.find('.price').val(hsn);
+        $row.find('.price').val(price.toFixed(2));
         calc();
     });
 
@@ -628,24 +625,19 @@ $(document).ready(function () {
 
         let type = $(this).val();
 
-        if (type === 'DISTRIBUTER') {
-            $('#seller_div').show();
-            $('#de_dis').hide();
+        const isRetailer = String(type) === String(@json($retailerCustomerTypeId));
+        $('#de_dis').toggle(Boolean(type));
+        $('#seller_div').toggle(isRetailer);
+        $('#buyer_id').prop('required', Boolean(type));
+        $('#seller_id').prop('required', isRetailer);
 
-            $('#seller_id').prop('required', true);
-            $('#buyer_id').prop('required', false);
-
-        } else if (['RETAILER', 'MECHANIC', 'GARAGE', 'WORKSHOP'].includes(type)) {
-
-            $('#seller_div').show();
-            $('#de_dis').show();
-
-            $('#seller_id').prop('required', true);
-            $('#buyer_id').prop('required', true);
-
-        } else {
-            $('#seller_div, #de_dis').hide();
+        if (!window.isEdit || String(type) !== String(@json($orders->customer_type_id))) {
+            $('#buyer_id').val(null).trigger('change');
+            $('#seller_id').val(null).trigger('change');
+            $('.buyer_address, #customer_address_div').text('');
         }
+
+        initBuyerDropdown();
 
     }).trigger('change');
 
@@ -668,6 +660,11 @@ $(document).ready(function () {
          `;
 
          $('.buyer_address').html(address);
+         if (String($('#type').val()) === String(@json($retailerCustomerTypeId))) {
+             $('#seller_id').val(null).trigger('change');
+             initSellerDropdown();
+             autoSelectAssignedParent(d.id);
+         }
       });
 
 
@@ -691,10 +688,10 @@ $(document).ready(function () {
       });
 });
 
-function preloadDropdown(selector, type) {
+function preloadDropdown(selector, filters) {
     $.get("{{ route('getCustomerDataSelect') }}", {
         term: '',
-        type: type,
+        ...(filters || {}),
         page: 1
     }, function (data) {
 
@@ -728,8 +725,12 @@ function preloadDropdown(selector, type) {
 ============================== */
 function initSellerDropdown() {
 
+    if ($('#seller_id').hasClass('select2-hidden-accessible')) {
+        $('#seller_id').select2('destroy');
+    }
+
     $('#seller_id').select2({
-        placeholder: 'Select Dealer/Distributor...',
+        placeholder: 'Select assigned parent customer...',
         allowClear: true,
 
         ajax: {
@@ -739,7 +740,7 @@ function initSellerDropdown() {
 
             data: params => ({
                 term: params.term || '',
-                type: 'DISTRIBUTER',
+                parent_of: $('#buyer_id').val(),
                 page: params.page || 1
             }),
 
@@ -748,6 +749,22 @@ function initSellerDropdown() {
                 pagination: { more: data.pagination?.more }
             })
         }
+    });
+}
+
+function autoSelectAssignedParent(customerId) {
+    if (!customerId) return;
+
+    $.get("{{ route('getCustomerDataSelect') }}", {
+        parent_of: customerId,
+        page: 1
+    }, function (response) {
+        const assignedParent = (response.results || []).find(item => item.is_assigned_parent);
+        if (!assignedParent) return;
+
+        const option = new Option(assignedParent.text, assignedParent.id, true, true);
+        $('#seller_id').append(option).trigger('change');
+        $('#customer_address_div').text(assignedParent.full_address || '');
     });
 }
 
@@ -769,7 +786,7 @@ function initBuyerDropdown() {
 
             data: params => ({
                 term: params.term || '',
-                type: $('#type').val(),
+                customer_type_id: $('#type').val(),
                 page: params.page || 1
             }),
 

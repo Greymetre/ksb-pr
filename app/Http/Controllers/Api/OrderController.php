@@ -12,8 +12,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Carbon\Carbon;
-use App\Models\SecondaryCustomer;
-use App\Models\MasterDistributor;
+use App\Models\CustomerType;
+use App\Models\ParentDetail;
+use App\Services\OrderPartyResolver;
+use Illuminate\Validation\ValidationException;
 use Validator;
 use Gate;
 use App\Models\Order;
@@ -120,19 +122,73 @@ class OrderController extends Controller
         ];
     }
 
-    public function buyer()
+    public function getOrderCustomerTypes()
     {
-        return $this->belongsTo(SecondaryCustomer::class, 'buyer_id');
+        $types = CustomerType::where('active', 'Y')
+            ->select('id', 'customertype_name', 'type_name')
+            ->withCount(['customers' => fn ($query) => $query->where('active', 'Y')])
+            ->orderBy('customertype_name')
+            ->get()
+            ->map(fn ($type) => [
+                'id' => $type->id,
+                'name' => $type->customertype_name,
+                'type_name' => $type->type_name,
+                'requires_parent_customer' => $type->isRetailer(),
+                'customers_count' => $type->customers_count,
+            ]);
+
+        return response()->json(['status' => 'success', 'data' => $types], $this->successStatus);
     }
 
-    public function seller()
+    public function getOrderCustomers(Request $request)
     {
-        return $this->belongsTo(MasterDistributor::class, 'seller_id');
-    }
+        $validator = Validator::make($request->all(), [
+            'customer_type_id' => 'nullable|integer|exists:customer_types,id',
+            'parent_of' => 'nullable|integer|exists:customers,id',
+        ]);
 
-    public function scopeWithParties($query)
-    {
-        return $query->with(['buyer', 'seller']);
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => $validator->errors()], $this->badrequest);
+        }
+
+        $query = Customers::with(['customertypes', 'customeraddress.cityname', 'customeraddress.statename'])
+            ->where('active', 'Y');
+        $assignedParentIds = collect();
+
+        if ($request->filled('parent_of')) {
+            $assignedParentIds = ParentDetail::where('customer_id', $request->integer('parent_of'))
+                ->pluck('parent_id')
+                ->map(fn ($id) => (int) $id);
+            $query->whereHas('customertypes', fn ($typeQuery) => $typeQuery
+                    ->where('active', 'Y')
+                    ->nonRetailer());
+        } elseif ($request->filled('customer_type_id')) {
+            $query->where('customertype', $request->integer('customer_type_id'));
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(fn ($searchQuery) => $searchQuery
+                ->where('name', 'LIKE', "%{$search}%")
+                ->orWhere('customer_code', 'LIKE', "%{$search}%")
+                ->orWhere('mobile', 'LIKE', "%{$search}%"));
+        }
+
+        if ($assignedParentIds->isNotEmpty()) {
+            $assignedList = $assignedParentIds->implode(',');
+            $query->orderByRaw("CASE WHEN customers.id IN ({$assignedList}) THEN 0 ELSE 1 END");
+        }
+
+        $pageSize = min(max($request->integer('page_size') ?: 20, 1), 100);
+        $customers = $query->orderBy('name')->paginate($pageSize);
+        $customers->getCollection()->transform(function ($customer) use ($assignedParentIds) {
+            $summary = $this->customerSummary($customer);
+            $summary['is_assigned_parent'] = $assignedParentIds->contains((int) $customer->id);
+
+            return $summary;
+        });
+
+        return response()->json(['status' => 'success', 'data' => $customers], $this->successStatus);
     }
 
     public function getOrderList(Request $request)
@@ -414,10 +470,16 @@ class OrderController extends Controller
                 $request['product_cat_id'] = $fprodu ? $fprodu->category_id : null;
             }
 
+            $parties = app(OrderPartyResolver::class)->resolve(
+                (int) $request->buyer_id,
+                $request->filled('seller_id') ? (int) $request->seller_id : null,
+                $request->filled('customer_type_id') ? (int) $request->customer_type_id : null
+            );
+
             // ========================
             // Order Type & Defaults
             // ========================
-            $request['order_type']   = 'SECONDARY_CUSTOMER';
+            $request['order_type']   = $parties['order_type'];
             $request['active']       = 'Y';
             $request['total_qty']    = 0;
             $request['shipped_qty']  = 0;
@@ -430,8 +492,8 @@ class OrderController extends Controller
             // ========================
             $order = Order::create([
                 'active'         => 'Y',
-                'buyer_id'       => $request->buyer_id ?? null,
-                'seller_id'      => $request->seller_id ?? null,
+                'buyer_id'       => $parties['buyer_id'],
+                'seller_id'      => $parties['seller_id'],
                 'executive_id'   => $user->id,
                 'total_qty'      => 0,
                 'shipped_qty'    => 0,
@@ -536,8 +598,7 @@ class OrderController extends Controller
             // ========================
             // Notifications
             // ========================
-            $buyerName = SecondaryCustomer::where('id', $request->buyer_id)
-                ->value('shop_name') ?? 'Unknown Buyer';
+            $buyerName = $this->customerDisplayName($parties['customer']) ?: 'Unknown Buyer';
 
             $adminnotify = collect([
                 'title' => 'Order collected',
@@ -558,6 +619,13 @@ class OrderController extends Controller
                 'orderno'    => $order->orderno,
                 'grand_total' => round($grand_total, 2)
             ], 200);
+        } catch (ValidationException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->validator->errors(),
+            ], $this->badrequest);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('API Order Insert Error: ' . $e->getMessage());
@@ -1008,12 +1076,12 @@ class OrderController extends Controller
             $buyers = Order::query()
                 ->whereIn('created_by', $user_ids)
                 ->whereNotNull('buyer_id')
-                ->join('secondary_customers', 'orders.buyer_id', '=', 'secondary_customers.id')
+                ->join('customers', 'orders.buyer_id', '=', 'customers.id')
                 ->select(
-                    'secondary_customers.id as buyer_id',
-                    DB::raw("COALESCE(secondary_customers.shop_name, secondary_customers.owner_name, 'Unknown') as name"),
-                    'secondary_customers.mobile_no',
-                    'secondary_customers.city'
+                    'customers.id as buyer_id',
+                    DB::raw("COALESCE(customers.name, customers.customer_code, customers.mobile, 'Unknown') as name"),
+                    'customers.mobile',
+                    'customers.customertype as customer_type_id'
                 )
                 ->distinct()
                 ->orderBy('name', 'asc')
@@ -1046,12 +1114,12 @@ class OrderController extends Controller
             $sellers = Order::query()
                 ->whereIn('created_by', $user_ids)
                 ->whereNotNull('seller_id')
-                ->join('master_distributors', 'orders.seller_id', '=', 'master_distributors.id')
+                ->join('customers', 'orders.seller_id', '=', 'customers.id')
                 ->select(
-                    'master_distributors.id as seller_id',
-                    DB::raw("COALESCE(master_distributors.trade_name, master_distributors.legal_name, 'Unknown') as name"),
-                    'master_distributors.mobile_no',
-                    'master_distributors.city'
+                    'customers.id as seller_id',
+                    DB::raw("COALESCE(customers.name, customers.customer_code, customers.mobile, 'Unknown') as name"),
+                    'customers.mobile',
+                    'customers.customertype as customer_type_id'
                 )
                 ->distinct()
                 ->orderBy('name', 'asc')
@@ -1182,15 +1250,19 @@ class OrderController extends Controller
                     ->whereDate('created_at', '<=', $dateFilter[1]);
             }
 
-            $total_secondary_customers = (clone $customerCreationQuery)
-                ->count();
-
-            // Preserve both legacy response fields for mobile compatibility.
-            $total_master_distributors = (clone $customerCreationQuery)
-                ->whereHas('customertypes', function ($query) {
-                    $query->whereIn('type_name', ['distributor', 'Dealer']);
-                })
-                ->count();
+            $totalCreatedCustomers = (clone $customerCreationQuery)->count();
+            $customersByType = (clone $customerCreationQuery)
+                ->join('customer_types', 'customers.customertype', '=', 'customer_types.id')
+                ->where('customer_types.active', 'Y')
+                ->select(
+                    'customer_types.id',
+                    'customer_types.customertype_name as name',
+                    'customer_types.type_name',
+                    DB::raw('COUNT(customers.id) as total')
+                )
+                ->groupBy('customer_types.id', 'customer_types.customertype_name', 'customer_types.type_name')
+                ->orderBy('customer_types.customertype_name')
+                ->get();
 
             // ── Per User Breakdown (Optional - can be extended later) ──
             $perUser = $orders->groupBy('created_by')->map(function ($group) {
@@ -1219,8 +1291,8 @@ class OrderController extends Controller
 
                     // NEW STATS
                     'total_checkins' => $total_checkins,
-                    'total_secondary_customers' => $total_secondary_customers,
-                    'total_master_distributors' => $total_master_distributors,
+                    'total_created_customers' => $totalCreatedCustomers,
+                    'customers_by_type' => $customersByType,
 
                     'per_user_breakdown' => $perUser,
                 ]

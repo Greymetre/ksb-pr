@@ -64,6 +64,7 @@ class UserTemplate implements FromCollection,WithHeadings,ShouldAutoSize
             'division_id',
             'department_id',
             'attandance_summary_report',
+            'sales_type',
             // 'earned_leave_el_balance',
             // 'casual_leave_cl_balance',
             // 'sick_leave_sl_balance',

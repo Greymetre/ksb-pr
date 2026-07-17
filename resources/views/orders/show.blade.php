@@ -1,4 +1,25 @@
 <x-app-layout>
+  <style>
+    .order-show-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 7px;
+      padding-top: 12px;
+    }
+    body.fk-shell .order-show-actions .btn {
+      width: auto !important;
+      min-width: 0 !important;
+      min-height: 32px !important;
+      height: 32px !important;
+      margin: 0 !important;
+      padding: 0 12px !important;
+      border-radius: 8px !important;
+      font-size: 11px !important;
+      line-height: 30px !important;
+      text-transform: none !important;
+    }
+  </style>
   <div class="content-header">
     <div class="container-fluid">
       <div class="row mb-2">
@@ -193,7 +214,7 @@
 
               <!-- this row will not appear when printing -->
               <div class="row no-print">
-                <div class="col-12">
+                <div class="col-12 order-show-actions">
                   @if($orders['status_id'] != 1 && $orders['status_id'] != 4)
                   <a href="{!! url('order-dispatched/'.encrypt($orders->id)) !!}" class="btn btn-success float-right">Fully Dispatched</a>
                   @endif
