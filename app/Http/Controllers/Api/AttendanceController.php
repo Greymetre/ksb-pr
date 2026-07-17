@@ -814,16 +814,13 @@ class AttendanceController extends Controller
                         'total_users' => 0,
                         'total_punch_in' => 0,
                         'total_not_punch_in' => 0,
-                        'asr' => ['total' => 0, 'checked_in_today' => 0, 'not_checked_in_today' => 0],
-                        'dsr' => ['total' => 0, 'checked_in_today' => 0, 'not_checked_in_today' => 0],
+                        'total_leave_today' => 0,
+                        'total_target' => ['target' => 0, 'achievement' => 0, 'achievement_percent' => 0, 'target_qty' => 0],
                         'today_orders' => ['quantity' => 0, 'value' => 0],
                         'current_month_orders' => ['quantity' => 0, 'value' => 0],
-                        'today_orders_dsr' => ['quantity' => 0, 'value' => 0],
-                        'current_month_orders_dsr' => ['quantity' => 0, 'value' => 0],
-                        'unique_buyers_from_asr' => 0,
+                        'unique_buyers' => 0,
                         'total_unique_buyers_current_year' => 0,
-                        'punchout_remaining_asr_today' => 0,
-                        'punchout_remaining_dsr_today' => 0,
+                        'punchout_remaining_today' => 0,
                         'secondary_customers_registered_approved_today' => 0,
                         'secondary_customers_registered_approved_current_year' => 0,
                         'secondary_customers_with_order_current_year' => 0,
@@ -836,12 +833,9 @@ class AttendanceController extends Controller
                         'top_5_products_current_year' => [],
                         'top_5_products_total_current_month' => ['quantity' => 0, 'value' => 0],
                         'top_5_products_total_current_year' => ['quantity' => 0, 'value' => 0],
-                        'working_type_asr_today' => ['retailer_visit' => 0, 'nukkad_meet' => 0, 'field_demo' => 0, 'other' => 0],
-                        'working_type_asr_current_month' => ['retailer_visit' => 0, 'nukkad_meet' => 0, 'field_demo' => 0, 'other' => 0],
-                        'working_type_asr_current_year' => ['retailer_visit' => 0, 'nukkad_meet' => 0, 'field_demo' => 0, 'other' => 0],
-                        'working_type_dsr_today' => ['retailer_visit' => 0, 'nukkad_meet' => 0, 'field_demo' => 0, 'other' => 0],
-                        'working_type_dsr_current_month' => ['retailer_visit' => 0, 'nukkad_meet' => 0, 'field_demo' => 0, 'other' => 0],
-                        'working_type_dsr_current_year' => ['retailer_visit' => 0, 'nukkad_meet' => 0, 'field_demo' => 0, 'other' => 0]
+                        'working_type_today' => ['retailer_visit' => 0, 'retailer_meet' => 0, 'nukkad_meet' => 0, 'field_demo' => 0, 'other' => 0],
+                        'working_type_current_month' => ['retailer_visit' => 0, 'retailer_meet' => 0, 'nukkad_meet' => 0, 'field_demo' => 0, 'other' => 0],
+                        'working_type_current_year' => ['retailer_visit' => 0, 'retailer_meet' => 0, 'nukkad_meet' => 0, 'field_demo' => 0, 'other' => 0]
                     ]
                 ], $this->successStatus);
             }
@@ -1698,20 +1692,7 @@ class AttendanceController extends Controller
                 'total_users'        => $totalUsers,
                 'total_punch_in'     => $totalPunchInToday,
                 'total_not_punch_in' => $totalNotPunchInToday,
-                'leave_asr_today' => (float) ($leaveAsrToday->total_leave ?? 0),
-
-                'leave_dsr_today' => (float) ($leaveDsrToday->total_leave ?? 0),
-                'asr' => [
-                    'total'                => $totalAsr,
-                    'checked_in_today'     => $asrCheckedIn,
-                    'not_checked_in_today' => $asrNotCheckedIn,
-                ],
-
-                'dsr' => [
-                    'total'                => $totalDsr,
-                    'checked_in_today'     => $dsrCheckedIn,
-                    'not_checked_in_today' => $dsrNotCheckedIn,
-                ],
+                'total_leave_today' => (float) ($leaveAsrToday->total_leave ?? 0),
 
                 'today_orders' => [
                     'quantity' => (int) ($todayOrders->today_quantity ?? 0),
@@ -1722,35 +1703,15 @@ class AttendanceController extends Controller
                     'quantity' => (int) ($currentMonthOrders->month_quantity ?? 0),
                     'value'    => round($currentMonthOrders->month_value ?? 0, 2),
                 ],
-                // DSR Orders
-                'today_orders_dsr' => [
-                    'quantity' => (int) ($todayOrdersDsr->today_quantity ?? 0),
-                    'value' => round($todayOrdersDsr->today_value ?? 0, 2),
-                ],
-                'current_month_orders_dsr' => [
-                    'quantity' => (int) ($currentMonthOrdersDsr->month_quantity ?? 0),
-                    'value' => round($currentMonthOrdersDsr->month_value ?? 0, 2),
-                ],
-                'asr_target' => [
+                'total_target' => [
                     'target' => (int) ($asrTargetData->total_target ?? 0),
                     'achievement' => (int) ($asrTargetData->total_achievement ?? 0),
                     'achievement_percent' => $asrAchievementPercent,
                     'target_qty' => (int) ($asrQtyTargetData->total_qty_target ?? 0),
                 ],
-
-                'dsr_target' => [
-                    'target' => (int) ($dsrTargetData->total_target ?? 0),
-                    'achievement' => (int) ($dsrTargetData->total_achievement ?? 0),
-                    'achievement_percent' => $dsrAchievementPercent,
-                    'target_qty' => (int) ($dsrQtyTargetData->total_qty_target ?? 0),
-                ],
-
-                'unique_buyers_from_asr' => $uniqueBuyersFromAsr,
-                'unique_buyers_from_dsr' => $uniqueBuyersFromDsr,
+                'unique_buyers' => $uniqueBuyersFromAsr,
                 'total_unique_buyers_current_year' => $totalUniqueBuyersCurrentYear,
-                // Punchout Remaining Today
-                'punchout_remaining_asr_today' => $punchoutRemainingAsr,
-                'punchout_remaining_dsr_today' => $punchoutRemainingDsr,
+                'punchout_remaining_today' => $punchoutRemainingAsr,
 
                 // New Secondary Customer Metrics
                 'secondary_customers_registered_approved_today' => $secondaryRegisteredApprovedToday,
@@ -1821,50 +1782,26 @@ class AttendanceController extends Controller
                     'value'    => round($top5MonthValueWiseTotalValue, 2),
                 ],
 
-                // Working Type - ASR
-                'working_type_asr_today' => [
+                'working_type_today' => [
                     'retailer_visit' => (int) ($wtAsrToday->retailer_visit ?? 0),
                     'retailer_meet' => (int) ($wtAsrToday->retailer_meet ?? 0),
                     'nukkad_meet'    => (int) ($wtAsrToday->nukkad_meet ?? 0),
                     'field_demo'     => (int) ($wtAsrToday->field_demo ?? 0),
                     'other'          => (int) ($wtAsrToday->other ?? 0),
                 ],
-                'working_type_asr_current_month' => [
+                'working_type_current_month' => [
                     'retailer_visit' => (int) ($wtAsrMonth->retailer_visit ?? 0),
                     'retailer_meet' => (int) ($wtAsrToday->retailer_meet ?? 0),
                     'nukkad_meet'    => (int) ($wtAsrMonth->nukkad_meet ?? 0),
                     'field_demo'     => (int) ($wtAsrMonth->field_demo ?? 0),
                     'other'          => (int) ($wtAsrMonth->other ?? 0),
                 ],
-                'working_type_asr_current_year' => [
+                'working_type_current_year' => [
                     'retailer_visit' => (int) ($wtAsrYear->retailer_visit ?? 0),
                     'retailer_meet' => (int) ($wtAsrToday->retailer_meet ?? 0),
                     'nukkad_meet'    => (int) ($wtAsrYear->nukkad_meet ?? 0),
                     'field_demo'     => (int) ($wtAsrYear->field_demo ?? 0),
                     'other'          => (int) ($wtAsrYear->other ?? 0),
-                ],
-
-                // Working Type - DSR
-                'working_type_dsr_today' => [
-                    'retailer_visit' => (int) ($wtDsrToday->retailer_visit ?? 0),
-                    'retailer_meet' => (int) ($wtAsrToday->retailer_meet ?? 0),
-                    'nukkad_meet'    => (int) ($wtDsrToday->nukkad_meet ?? 0),
-                    'field_demo'     => (int) ($wtDsrToday->field_demo ?? 0),
-                    'other'          => (int) ($wtDsrToday->other ?? 0),
-                ],
-                'working_type_dsr_current_month' => [
-                    'retailer_visit' => (int) ($wtDsrMonth->retailer_visit ?? 0),
-                    'retailer_meet' => (int) ($wtAsrToday->retailer_meet ?? 0),
-                    'nukkad_meet'    => (int) ($wtDsrMonth->nukkad_meet ?? 0),
-                    'field_demo'     => (int) ($wtDsrMonth->field_demo ?? 0),
-                    'other'          => (int) ($wtDsrMonth->other ?? 0),
-                ],
-                'working_type_dsr_current_year' => [
-                    'retailer_visit' => (int) ($wtDsrYear->retailer_visit ?? 0),
-                    'retailer_meet' => (int) ($wtAsrToday->retailer_meet ?? 0),
-                    'nukkad_meet'    => (int) ($wtDsrYear->nukkad_meet ?? 0),
-                    'field_demo'     => (int) ($wtDsrYear->field_demo ?? 0),
-                    'other'          => (int) ($wtDsrYear->other ?? 0),
                 ]
             ];
 
