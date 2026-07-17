@@ -23,7 +23,7 @@ use App\Models\TourDetail;
 use App\Models\User;
 use App\Models\Division;
 use App\Models\SalesTargetUsers;
-use App\Models\SecondaryCustomer;
+use App\Models\Customers;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -821,9 +821,15 @@ class AttendanceController extends Controller
                         'unique_buyers' => 0,
                         'total_unique_buyers_current_year' => 0,
                         'punchout_remaining_today' => 0,
-                        'secondary_customers_registered_approved_today' => 0,
-                        'secondary_customers_registered_approved_current_year' => 0,
+                        'customers_registered_today' => 0,
+                        'customers_registered_mtd' => 0,
+                        'customers_registered_ytd' => 0,
+                        'total_customers' => 0,
+                        'secondary_customers_with_order_current_month' => 0,
                         'secondary_customers_with_order_current_year' => 0,
+                        'total_orders_current_month' => 0,
+                        'total_order_quantity_current_month' => 0,
+                        'total_order_value_current_month' => 0,
                         'total_orders_current_year' => 0,
                         'total_order_quantity_current_year' => 0,
                         'total_order_value_current_year' => 0,
@@ -974,31 +980,46 @@ class AttendanceController extends Controller
                 ->whereNull('punchout_time')
                 ->count();
 
-            // ===================== Secondary Customer Summary =====================
+            // ===================== Customer Registration Summary =====================
             $visibleUserIds = array_merge([$user_id], $myTeamUserIds); // You + All assigned users
 
-            // 1. Secondary Customers registered AND approved today
-            $secondaryRegisteredApprovedToday = SecondaryCustomer::whereIn('created_by', $visibleUserIds)
+            $customerRegistrationQuery = Customers::whereIn('created_by', $visibleUserIds);
+            $customersRegisteredToday = (clone $customerRegistrationQuery)
                 ->whereDate('created_at', $today)
-                ->where('status', 'approved')        // Adjust if your approved status is different
-                ->where('active', 'Y')
                 ->count();
-
-            // 1.5 Registered & Approved in CURRENT YEAR (New as per your request)
-            $secondaryRegisteredApprovedCurrentYear = SecondaryCustomer::whereIn('created_by', $visibleUserIds)
-                ->whereBetween('created_at', [$currentYearStart, $currentYearEnd])
-                ->where('status', 'approved')
-                ->where('active', 'Y')
+            $customersRegisteredMtd = (clone $customerRegistrationQuery)
+                ->whereYear('created_at', $currentYear)
+                ->whereMonth('created_at', Carbon::now()->month)
                 ->count();
-
-            // 2. Unique Secondary Customers who gave at least one order in current year
-            $secondaryWithOrderCurrentYear = SecondaryCustomer::whereHas('orders', function ($q) use ($currentYearStart, $currentYearEnd) {
-                $q->whereBetween('order_date', [$currentYearStart, $currentYearEnd]);
-            })
-                ->whereIn('created_by', $visibleUserIds)   // Only customers created by your team
+            $customersRegisteredYtd = (clone $customerRegistrationQuery)
+                ->whereYear('created_at', $currentYear)
                 ->count();
+            $totalCustomers = (clone $customerRegistrationQuery)->count();
 
-            // 3. Total Orders, Quantity & Value in Current Year (by your team)
+            $secondaryWithOrderCurrentMonth = DB::table('orders')
+                ->whereIn('created_by', $visibleUserIds)
+                ->whereBetween('order_date', [$currentMonthStart, $currentMonthEnd])
+                ->whereNotNull('buyer_id')
+                ->distinct()
+                ->count('buyer_id');
+
+            $secondaryWithOrderCurrentYear = DB::table('orders')
+                ->whereIn('created_by', $visibleUserIds)
+                ->whereBetween('order_date', [$currentYearStart, $currentYearEnd])
+                ->whereNotNull('buyer_id')
+                ->distinct()
+                ->count('buyer_id');
+
+            $orderStatsCurrentMonth = DB::table('orders')
+                ->whereIn('created_by', $visibleUserIds)
+                ->whereBetween('order_date', [$currentMonthStart, $currentMonthEnd])
+                ->select(
+                    DB::raw('COUNT(*) as total_orders'),
+                    DB::raw('COALESCE(SUM(total_qty), 0) as total_quantity'),
+                    DB::raw('COALESCE(SUM(grand_total), 0) as total_value')
+                )
+                ->first();
+
             $orderStatsCurrentYear = DB::table('orders')
                 ->whereIn('created_by', $visibleUserIds)
                 ->whereBetween('order_date', [$currentYearStart, $currentYearEnd])
@@ -1718,10 +1739,15 @@ class AttendanceController extends Controller
                 'total_unique_buyers_current_year' => $totalUniqueBuyersCurrentYear,
                 'punchout_remaining_today' => $punchoutRemainingAsr,
 
-                // New Secondary Customer Metrics
-                'secondary_customers_registered_approved_today' => $secondaryRegisteredApprovedToday,
-                'secondary_customers_registered_approved_current_year' => $secondaryRegisteredApprovedCurrentYear,   // ← New Field
-                'secondary_customers_with_order_current_year'   => $secondaryWithOrderCurrentYear,
+                'customers_registered_today' => $customersRegisteredToday,
+                'customers_registered_mtd' => $customersRegisteredMtd,
+                'customers_registered_ytd' => $customersRegisteredYtd,
+                'total_customers' => $totalCustomers,
+                'secondary_customers_with_order_current_month' => $secondaryWithOrderCurrentMonth,
+                'secondary_customers_with_order_current_year' => $secondaryWithOrderCurrentYear,
+                'total_orders_current_month' => (int) ($orderStatsCurrentMonth->total_orders ?? 0),
+                'total_order_quantity_current_month' => (int) ($orderStatsCurrentMonth->total_quantity ?? 0),
+                'total_order_value_current_month' => round($orderStatsCurrentMonth->total_value ?? 0, 2),
                 'total_orders_current_year'                     => (int) ($orderStatsCurrentYear->total_orders ?? 0),
                 'total_order_quantity_current_year'             => (int) ($orderStatsCurrentYear->total_quantity ?? 0),
                 'total_order_value_current_year'                => round($orderStatsCurrentYear->total_value ?? 0, 2),
