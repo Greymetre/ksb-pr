@@ -26,6 +26,7 @@ use App\Models\SalesTargetUsers;
 use App\Models\Customers;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class AttendanceController extends Controller
 {
@@ -104,6 +105,48 @@ class AttendanceController extends Controller
         }
 
         return array_values(array_unique($visibleIds));
+    }
+
+    private function emptyTourObjectiveCounts(): array
+    {
+        return collect(config('constants.tour_objectives', []))
+            ->mapWithKeys(fn ($objective) => [Str::snake($objective) => 0])
+            ->all();
+    }
+
+    private function tourObjectiveCounts(array $userIds, string $startDate, string $endDate): array
+    {
+        $objectives = collect(config('constants.tour_objectives', []));
+        $counts = $this->emptyTourObjectiveCounts();
+
+        if (empty($userIds) || $objectives->isEmpty()) {
+            return $counts;
+        }
+
+        $objectiveKeys = $objectives->mapWithKeys(
+            fn ($objective) => [mb_strtolower(trim($objective)) => Str::snake($objective)]
+        );
+
+        TourProgramme::whereIn('userid', $userIds)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->whereNull('deleted_at')
+            ->whereNotNull('objectives')
+            ->pluck('objectives')
+            ->each(function ($storedObjectives) use (&$counts, $objectiveKeys) {
+                collect(explode(',', (string) $storedObjectives))
+                    ->map(fn ($objective) => mb_strtolower(trim($objective)))
+                    ->filter()
+                    ->unique()
+                    ->each(function ($objective) use (&$counts, $objectiveKeys) {
+                        $key = $objectiveKeys->get($objective);
+
+                        if ($key !== null) {
+                            $counts[$key]++;
+                        }
+                    });
+            });
+
+        return $counts;
     }
 
     private function sortZoneList(array $zones)
@@ -805,6 +848,7 @@ class AttendanceController extends Controller
             $currentYearEnd    = Carbon::now()->endOfYear()->format('Y-m-d');
 
             $myTeamUserIds = $this->attendanceVisibleUserIds($user);
+            $emptyTourObjectiveCounts = $this->emptyTourObjectiveCounts();
 
             if (empty($myTeamUserIds)) {
                 return response()->json([
@@ -839,12 +883,24 @@ class AttendanceController extends Controller
                         'top_5_products_current_year' => [],
                         'top_5_products_total_current_month' => ['quantity' => 0, 'value' => 0],
                         'top_5_products_total_current_year' => ['quantity' => 0, 'value' => 0],
-                        'working_type_today' => ['retailer_visit' => 0, 'retailer_meet' => 0, 'nukkad_meet' => 0, 'field_demo' => 0, 'other' => 0],
-                        'working_type_current_month' => ['retailer_visit' => 0, 'retailer_meet' => 0, 'nukkad_meet' => 0, 'field_demo' => 0, 'other' => 0],
-                        'working_type_current_year' => ['retailer_visit' => 0, 'retailer_meet' => 0, 'nukkad_meet' => 0, 'field_demo' => 0, 'other' => 0]
+                        'working_type_today' => $emptyTourObjectiveCounts,
+                        'working_type_current_month' => $emptyTourObjectiveCounts,
+                        'working_type_current_year' => $emptyTourObjectiveCounts
                     ]
                 ], $this->successStatus);
             }
+
+            $tourObjectivesToday = $this->tourObjectiveCounts($myTeamUserIds, $today, $today);
+            $tourObjectivesCurrentMonth = $this->tourObjectiveCounts(
+                $myTeamUserIds,
+                $currentMonthStart,
+                $currentMonthEnd
+            );
+            $tourObjectivesCurrentYear = $this->tourObjectiveCounts(
+                $myTeamUserIds,
+                $currentYearStart,
+                $currentYearEnd
+            );
 
             $attendanceUserIds = User::whereIn('id', $myTeamUserIds)
                 ->where('active', 'Y')
@@ -1813,27 +1869,9 @@ class AttendanceController extends Controller
                     'value'    => round($top5MonthValueWiseTotalValue, 2),
                 ],
 
-                'working_type_today' => [
-                    'retailer_visit' => (int) ($wtAsrToday->retailer_visit ?? 0),
-                    'retailer_meet' => (int) ($wtAsrToday->retailer_meet ?? 0),
-                    'nukkad_meet'    => (int) ($wtAsrToday->nukkad_meet ?? 0),
-                    'field_demo'     => (int) ($wtAsrToday->field_demo ?? 0),
-                    'other'          => (int) ($wtAsrToday->other ?? 0),
-                ],
-                'working_type_current_month' => [
-                    'retailer_visit' => (int) ($wtAsrMonth->retailer_visit ?? 0),
-                    'retailer_meet' => (int) ($wtAsrToday->retailer_meet ?? 0),
-                    'nukkad_meet'    => (int) ($wtAsrMonth->nukkad_meet ?? 0),
-                    'field_demo'     => (int) ($wtAsrMonth->field_demo ?? 0),
-                    'other'          => (int) ($wtAsrMonth->other ?? 0),
-                ],
-                'working_type_current_year' => [
-                    'retailer_visit' => (int) ($wtAsrYear->retailer_visit ?? 0),
-                    'retailer_meet' => (int) ($wtAsrToday->retailer_meet ?? 0),
-                    'nukkad_meet'    => (int) ($wtAsrYear->nukkad_meet ?? 0),
-                    'field_demo'     => (int) ($wtAsrYear->field_demo ?? 0),
-                    'other'          => (int) ($wtAsrYear->other ?? 0),
-                ]
+                'working_type_today' => $tourObjectivesToday,
+                'working_type_current_month' => $tourObjectivesCurrentMonth,
+                'working_type_current_year' => $tourObjectivesCurrentYear
             ];
 
             return response()->json([
