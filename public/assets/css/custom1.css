@@ -764,7 +764,6 @@ body.fk-shell .fk-filter-drawer-body .btn {
     background: linear-gradient(135deg, var(--fk-list-accent), var(--fk-list-accent-2)) !important;
     color: var(--fk-list-primary-text) !important;
     font-weight: 700;
-    max-width: 40px;
 }
 
 body.fk-shell .fk-filter-drawer-body button[type="submit"],
