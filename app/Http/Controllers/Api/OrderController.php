@@ -198,7 +198,7 @@ class OrderController extends Controller
             $user_id = $user->id;
             $customer_id = $request->customer_id ?? '';
             $user_ids = getUsersReportingToAuth($user->id);
-            $pageSize = $request->input('pageSqueryize');
+            $pageSize = min(max($request->integer('pageSize', 10), 1), 100);
             $query = $this->orders->latest()
                 ->with([
                     'buyerCustomer.customertypes',
@@ -207,7 +207,9 @@ class OrderController extends Controller
                     'sellerCustomer.customertypes',
                     'sellerCustomer.customeraddress.cityname',
                     'sellerCustomer.customeraddress.statename',
-                    'orderdetails.products'
+                    'orderdetails.products',
+                    'statusname',
+                    'createdbyname',
                 ]);
             $start_date = $request->startdate ?? '';
             $end_date   = $request->enddate ?? '';
@@ -242,10 +244,83 @@ class OrderController extends Controller
                 }
             }
 
+            if ($request->filled('global_search')) {
+                $search = trim((string) $request->global_search);
+                $like = "%{$search}%";
+                $matchesPending = stripos('Pending', $search) !== false;
+
+                $customerSearch = function ($customerQuery) use ($like) {
+                    $customerQuery->where(function ($customer) use ($like) {
+                        $customer->where('name', 'like', $like)
+                            ->orWhere('first_name', 'like', $like)
+                            ->orWhere('last_name', 'like', $like)
+                            ->orWhereRaw("CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) like ?", [$like])
+                            ->orWhere('mobile', 'like', $like)
+                            ->orWhere('contact_number', 'like', $like)
+                            ->orWhere('email', 'like', $like)
+                            ->orWhere('customer_code', 'like', $like)
+                            ->orWhere('customertype', 'like', $like)
+                            ->orWhereHas('customertypes', function ($type) use ($like) {
+                                $type->where('customertype_name', 'like', $like)
+                                    ->orWhere('type_name', 'like', $like);
+                            })
+                            ->orWhereHas('customeraddress', function ($address) use ($like) {
+                                $address->where('address1', 'like', $like)
+                                    ->orWhere('address2', 'like', $like)
+                                    ->orWhere('landmark', 'like', $like)
+                                    ->orWhere('locality', 'like', $like)
+                                    ->orWhere('zipcode', 'like', $like)
+                                    ->orWhereHas('cityname', fn ($city) => $city->where('city_name', 'like', $like))
+                                    ->orWhereHas('statename', fn ($state) => $state->where('state_name', 'like', $like))
+                                    ->orWhereHas('districtname', fn ($district) => $district->where('district_name', 'like', $like))
+                                    ->orWhereHas('countryname', fn ($country) => $country->where('country_name', 'like', $like))
+                                    ->orWhereHas('pincodename', fn ($pincode) => $pincode->where('pincode', 'like', $like));
+                            });
+                    });
+                };
+
+                $query->where(function ($searchQuery) use ($like, $matchesPending, $customerSearch) {
+                    $searchQuery->where('orders.id', 'like', $like)
+                        ->orWhere('orders.seller_id', 'like', $like)
+                        ->orWhere('orders.buyer_id', 'like', $like)
+                        ->orWhere('orders.orderno', 'like', $like)
+                        ->orWhere('orders.order_date', 'like', $like)
+                        ->orWhere('orders.completed_date', 'like', $like)
+                        ->orWhere('orders.total_qty', 'like', $like)
+                        ->orWhere('orders.shipped_qty', 'like', $like)
+                        ->orWhere('orders.grand_total', 'like', $like)
+                        ->orWhere('orders.sub_total', 'like', $like)
+                        ->orWhere('orders.order_remark', 'like', $like)
+                        ->orWhere('orders.status_id', 'like', $like)
+                        ->orWhere('orders.created_by', 'like', $like)
+                        ->orWhereHas('buyerCustomer', $customerSearch)
+                        ->orWhereHas('sellerCustomer', $customerSearch)
+                        ->orWhereHas('createdbyname', fn ($creator) => $creator->where('name', 'like', $like))
+                        ->orWhereHas('statusname', function ($status) use ($like) {
+                            $status->where('status_name', 'like', $like)
+                                ->orWhere('display_name', 'like', $like);
+                        })
+                        ->orWhereHas('orderdetails', function ($detail) use ($like) {
+                            $detail->where('id', 'like', $like)
+                                ->orWhere('product_id', 'like', $like)
+                                ->orWhere('quantity', 'like', $like)
+                                ->orWhere('price', 'like', $like)
+                                ->orWhere('line_total', 'like', $like)
+                                ->orWhereHas('products', function ($product) use ($like) {
+                                    $product->where('product_name', 'like', $like);
+                                });
+                        });
+
+                    if ($matchesPending) {
+                        $searchQuery->orWhereNull('orders.status_id');
+                    }
+                });
+            }
+
 
             // dd($query->toSql(), $selecteduser_id, $customer_id);
             // dd($request->all());
-            $db_data = (!empty($pageSize)) ? $query->paginate($pageSize) : $query->get();
+            $db_data = $query->paginate($pageSize);
             $data = collect([]);
             $users = User::whereDoesntHave('roles', function ($q) {
                 $q->whereIn('id', config('constants.customer_roles'));
