@@ -175,7 +175,7 @@
                   <label class="col-form-label">{!! trans('panel.global.mobile') !!}<span class="text-danger"> *</span></label>
 
                   <div class="form-group has-default bmd-form-group">
-                    <input type="text" name="mobile" pattern="[0-9]{10}" id="mobile" class="form-control" value="{!! old( 'mobile', $customers['mobile']) !!}" required>
+                    <input type="text" name="mobile" pattern="[0-9]{10}" id="mobile" class="form-control" value="{{ old('mobile', $editMobile ?? $customers['mobile']) }}" required>
                   </div>
                   @if ($errors->has('mobile'))
                   <label class="error">{{ $errors->first('mobile') }}</label>

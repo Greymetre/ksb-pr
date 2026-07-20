@@ -625,10 +625,21 @@ class CustomerController extends Controller
 
         $customers->custom_fields = json_decode($customers->custom_fields, true);
 
+        // Display a local 10-digit number in the edit form while preserving the
+        // country-code-prefixed value stored in the database.
+        $editMobile = trim((string) $customers->mobile);
+        if (strlen($editMobile) > 10) {
+            if (str_starts_with($editMobile, '+91')) {
+                $editMobile = substr($editMobile, 3);
+            } elseif (str_starts_with($editMobile, '91')) {
+                $editMobile = substr($editMobile, 2);
+            }
+        }
+
         $retailerCustomerTypeId = $this->retailerCustomerTypeId();
         $parentcustomers = $this->parentCustomerOptions((int) $customers->id);
         $custom_fields = CustomerCustomField::with('values')->orderBy('id', 'desc')->get();
-        return view('customers.create', compact('pincodes', 'customertype', 'firmtype', 'pincodes', 'countries', 'fields', 'users', 'deals', 'parentcustomers', 'retailerCustomerTypeId', 'custom_fields'))->with('customers', $customers);
+        return view('customers.create', compact('pincodes', 'customertype', 'firmtype', 'pincodes', 'countries', 'fields', 'users', 'deals', 'parentcustomers', 'retailerCustomerTypeId', 'custom_fields', 'editMobile'))->with('customers', $customers);
     }
 
     /**

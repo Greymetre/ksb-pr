@@ -667,7 +667,7 @@ body.fk-shell .fk-filter-drawer-body .row>div[data-label]:before,
 body.fk-shell .fk-filter-drawer-body .search[data-label]:before {
     content: attr(data-label);
     display: block;
-    margin: 0 0 6px;
+    margin: 0 0 2px;
     color: var(--fk-list-head-text);
     font-family: 'Sora', 'Inter', sans-serif;
     font-size: 10px;
@@ -1201,6 +1201,7 @@ body.fk-shell .bootstrap-select>.dropdown-toggle {
     align-items: center;
     padding: 0 13px !important;
     text-transform: none !important;
+    justify-content: space-between !important;
 }
 
 body.fk-shell .bootstrap-select>.dropdown-toggle:after {

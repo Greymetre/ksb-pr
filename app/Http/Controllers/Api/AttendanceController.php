@@ -1936,7 +1936,8 @@ class AttendanceController extends Controller
                         ->whereDate('attendances.punchin_date', $today);
                 })
                 ->whereIn('users.id', $myTeamUserIds)
-                ->where('users.active', 'Y');
+                ->where('users.active', 'Y')
+                ->where('users.show_attandance_report', 1);
 
             // =========================
             // ✅ APPLY FILTERS
