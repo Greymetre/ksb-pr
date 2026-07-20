@@ -249,7 +249,7 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
     Route::post('updateCustomerProfile', [CustomerController::class, 'updateCustomerProfile']);
     Route::any('getRetailers', [CustomerController::class, 'getRetailers']);
     Route::any('getDistributors', [CustomerController::class, 'getDistributors']);
-    Route::any('getCustomerList', [CustomerController::class, 'getCustomerList']);
+    Route::get('getCustomerList', [CustomerController::class, 'getCustomerList']);
     Route::any('getCustomerInfo', [CustomerController::class, 'getCustomerInfo']);
     Route::post('leadToCustomer', [CustomerController::class, 'leadToCustomer']);
     // Get Order List

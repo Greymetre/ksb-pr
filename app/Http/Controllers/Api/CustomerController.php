@@ -714,21 +714,28 @@ class CustomerController extends Controller
                 ], $this->unauthorized);
             }
 
-            $customerTypeId = $this->resolveCustomerListTypeId(
-                $request->query('type')
-                ?? $request->query('customer_type')
-                ?? $request->input('customerType')
-                ?? $request->input('customertype')
-                ?? $request->input('customer_type_id')
-            );
+            $validator = Validator::make($request->all(), [
+                'customer_type_id' => 'required|integer|exists:customer_types,id',
+                'global_search'    => 'nullable|string|max:255',
+                'for_user_id'      => 'nullable|integer|exists:users,id',
+                'city_name'        => 'nullable|string|max:255',
+                'page'             => 'nullable|integer|min:1',
+                'pageSize'         => 'nullable|integer|min:1|max:100',
+            ]);
 
-            if ($request->filled('type') || $request->filled('customer_type') || $request->filled('customerType') || $request->filled('customertype') || $request->filled('customer_type_id')) {
-                if (!$customerTypeId) {
-                    return response()->json([
-                        'status'  => false,
-                        'message' => 'Invalid customer type parameter.',
-                    ], $this->badrequest);
-                }
+            if ($validator->fails()) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => $validator->errors(),
+                ], $this->badrequest);
+            }
+
+            $customerTypeId = $this->resolveCustomerListTypeId($request->query('customer_type_id'));
+            if (!$customerTypeId) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'The selected customer type is inactive or invalid.',
+                ], $this->badrequest);
             }
 
             $today = now()->startOfDay()->toDateString();
@@ -747,26 +754,46 @@ class CustomerController extends Controller
 
             $this->applyCustomerListAccessScope($query, $authUser, $request);
 
-            if ($customerTypeId) {
-                $this->applyCustomerTypeFilter($query, $customerTypeId);
-            }
+            $this->applyCustomerTypeFilter($query, $customerTypeId);
 
             if ($request->filled('global_search')) {
-                $search = $request->global_search;
+                $search = trim($request->query('global_search'));
                 $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('mobile', 'like', "%{$search}%")
-                        ->orWhere('contact_number', 'like', "%{$search}%");
+                    $q->where('customers.name', 'like', "%{$search}%")
+                        ->orWhere('customers.first_name', 'like', "%{$search}%")
+                        ->orWhere('customers.last_name', 'like', "%{$search}%")
+                        ->orWhereRaw("CONCAT(COALESCE(customers.first_name, ''), ' ', COALESCE(customers.last_name, '')) like ?", ["%{$search}%"])
+                        ->orWhere('customers.customer_code', 'like', "%{$search}%")
+                        ->orWhere('customers.sap_code', 'like', "%{$search}%")
+                        ->orWhere('customers.mobile', 'like', "%{$search}%")
+                        ->orWhere('customers.contact_number', 'like', "%{$search}%")
+                        ->orWhere('customers.email', 'like', "%{$search}%")
+                        ->orWhere('customers.manager_name', 'like', "%{$search}%")
+                        ->orWhere('customers.manager_phone', 'like', "%{$search}%")
+                        ->orWhereHas('customerdetails', function ($details) use ($search) {
+                            $details->where('gstin_no', 'like', "%{$search}%")
+                                ->orWhere('pan_no', 'like', "%{$search}%")
+                                ->orWhere('aadhar_no', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('customeraddress', function ($address) use ($search) {
+                            $address->where('address1', 'like', "%{$search}%")
+                                ->orWhere('address2', 'like', "%{$search}%")
+                                ->orWhere('landmark', 'like', "%{$search}%")
+                                ->orWhere('locality', 'like', "%{$search}%")
+                                ->orWhere('zipcode', 'like', "%{$search}%")
+                                ->orWhereHas('cityname', function ($city) use ($search) {
+                                    $city->where('city_name', 'like', "%{$search}%");
+                                });
+                        });
                 });
             }
             if ($request->filled('status')) {
                 $query->where('status_id', $request->status);
             }
             if ($request->filled('city_name')) {
-                $query->whereHas('customeraddress.cityname', function ($q) use ($request) {
-                    $q->where('city_name', 'like', '%' . $request->city_name . '%');
+                $cityName = trim($request->query('city_name'));
+                $query->whereHas('customeraddress.cityname', function ($q) use ($cityName) {
+                    $q->where('city_name', $cityName);
                 });
             }
             if ($request->filled('owner_name')) {
@@ -915,7 +942,7 @@ class CustomerController extends Controller
                     ->limit(1),
             ]);
 
-            $perPage = $request->query('per_page', $request->input('pageSize', 10));
+            $perPage = (int) $request->query('pageSize', 5);
             $customers = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
             $cleanData = [
