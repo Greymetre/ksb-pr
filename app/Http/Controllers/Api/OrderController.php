@@ -1239,15 +1239,15 @@ class OrderController extends Controller
             $total_checkins = $checkInQuery->count();
 
             // ── 3. Customer Creations by Customer Type ────────────────
-            $customerCreationQuery = Customers::whereIn('created_by', $userIds);
+            $customerCreationQuery = Customers::whereIn('customers.created_by', $userIds);
 
             if ($isSingleUser && $isEndUser) {
-                $customerCreationQuery->where('created_by', $targetUserId);
+                $customerCreationQuery->where('customers.created_by', $targetUserId);
             }
 
             if (!empty($dateFilter)) {
-                $customerCreationQuery->whereDate('created_at', '>=', $dateFilter[0])
-                    ->whereDate('created_at', '<=', $dateFilter[1]);
+                $customerCreationQuery->whereDate('customers.created_at', '>=', $dateFilter[0])
+                    ->whereDate('customers.created_at', '<=', $dateFilter[1]);
             }
 
             $totalCreatedCustomers = (clone $customerCreationQuery)->count();
