@@ -2225,6 +2225,314 @@ class AttendanceController extends Controller
 
     public function getTodayTeamSalesList(Request $request)
     {
+        $periodValidator = Validator::make($request->all(), [
+            'period' => 'required|in:mtd,ytd',
+        ]);
+
+        if ($periodValidator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The period must be either mtd or ytd.',
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'zone' => 'nullable|string|max:255',
+            'designation' => 'nullable|string|max:255',
+            'user_id' => 'nullable|integer|exists:users,id',
+            'branch' => 'prohibited',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $authUser = $request->user();
+            $period = strtolower($request->period);
+            $now = now();
+            $toDate = $now->copy()->startOfDay();
+            $fromDate = $period === 'mtd'
+                ? $now->copy()->startOfMonth()->startOfDay()
+                : $now->copy()->startOfYear()->startOfDay();
+            $from = $fromDate->toDateString();
+            $to = $toDate->toDateString();
+
+            // Authorization scope is resolved before any client-supplied filter.
+            $visibleUserIds = $this->attendanceVisibleUserIds($authUser);
+            $requestedUserId = $request->filled('user_id') ? (int) $request->user_id : null;
+            if ($requestedUserId && !in_array($requestedUserId, $visibleUserIds, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to view this user.',
+                ], 403);
+            }
+
+            $userQuery = DB::table('users')
+                ->leftJoin('users as reporting_user', 'users.reportingid', '=', 'reporting_user.id')
+                ->leftJoin('divisions', 'users.division_id', '=', 'divisions.id')
+                ->leftJoin('designations', 'users.designation_id', '=', 'designations.id')
+                ->whereIn('users.id', $visibleUserIds)
+                ->where('users.active', 'Y')
+                ->whereNull('users.deleted_at');
+
+            if ($request->filled('zone')) {
+                $userQuery->whereRaw('LOWER(divisions.division_name) = ?', [strtolower(trim($request->zone))]);
+            }
+            if ($request->filled('designation')) {
+                $userQuery->whereRaw('LOWER(designations.designation_name) = ?', [strtolower(trim($request->designation))]);
+            }
+            if ($requestedUserId) {
+                $userQuery->where('users.id', $requestedUserId);
+            }
+
+            $users = $userQuery->select(
+                'users.id',
+                'users.name',
+                'users.reportingid',
+                'users.branch_id',
+                'reporting_user.name as reporting_name',
+                'reporting_user.mobile as reporting_mobile',
+                'designations.designation_name',
+                'divisions.division_name'
+            )->orderBy('users.name')->get();
+
+            $userIds = $users->pluck('id')->map(fn ($id) => (int) $id)->all();
+            if (empty($userIds)) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'period' => $period,
+                        'from_date' => $from,
+                        'to_date' => $to,
+                        'zones' => [],
+                    ],
+                ]);
+            }
+
+            // Targets are stored in lakhs. YTD sums explicitly configured
+            // calendar-year target rows and never multiplies one monthly target.
+            $targetQuery = SalesTargetUsers::whereIn('user_id', $userIds)
+                ->where('type', 'secondary')
+                ->where('year', $now->year);
+            if ($period === 'mtd') {
+                $targetQuery->where('month', $now->format('M'));
+            }
+            $targets = $targetQuery
+                ->select('user_id', DB::raw('COALESCE(SUM(target), 0) as target_value'))
+                ->groupBy('user_id')
+                ->pluck('target_value', 'user_id');
+
+            // Status 4 is cancelled; only dispatched/approved order states count.
+            $validOrderStatuses = [1, 2, 3];
+            $periodSales = DB::table('orders')
+                ->whereIn('created_by', $userIds)
+                ->whereIn('status_id', $validOrderStatuses)
+                ->whereNull('deleted_at')
+                ->whereBetween('order_date', [$from, $to])
+                ->select('created_by', DB::raw('COALESCE(SUM(grand_total), 0) as total_value'))
+                ->groupBy('created_by')
+                ->pluck('total_value', 'created_by');
+            $todaySales = DB::table('orders')
+                ->whereIn('created_by', $userIds)
+                ->whereIn('status_id', $validOrderStatuses)
+                ->whereNull('deleted_at')
+                ->whereDate('order_date', $to)
+                ->select('created_by', DB::raw('COALESCE(SUM(grand_total), 0) as total_value'))
+                ->groupBy('created_by')
+                ->pluck('total_value', 'created_by');
+
+            $attendanceDays = DB::table('attendances')
+                ->whereIn('user_id', $userIds)
+                ->where('active', 'Y')
+                ->whereNull('deleted_at')
+                ->whereNotNull('punchin_time')
+                ->whereBetween('punchin_date', [$from, $to])
+                ->where(function ($query) {
+                    $query->whereNull('working_type')
+                        ->orWhereNotIn('working_type', ['Full Day Leave', 'Leave', 'Holiday']);
+                })
+                ->select('user_id', DB::raw('COUNT(DISTINCT punchin_date) as working_days'))
+                ->groupBy('user_id')
+                ->pluck('working_days', 'user_id');
+
+            $visits = DB::table('check_in')
+                ->whereIn('user_id', $userIds)
+                ->whereBetween('checkin_date', [$from, $to])
+                ->whereNotNull('checkout_date')
+                ->whereNotNull('checkout_time')
+                ->where(function ($query) {
+                    $query->whereNotNull('customer_id')
+                        ->orWhere(function ($entityQuery) {
+                            $entityQuery->where('entity_type', 'customer')
+                                ->whereNotNull('entity_id');
+                        });
+                })
+                ->select(
+                    'user_id',
+                    DB::raw('COUNT(*) as visits'),
+                    DB::raw("COUNT(DISTINCT CASE WHEN customer_id IS NOT NULL THEN customer_id WHEN entity_type = 'customer' THEN entity_id END) as unique_visits")
+                )
+                ->groupBy('user_id')
+                ->get()->keyBy('user_id');
+
+            // Count Customers-model records once across ownership, executive
+            // assignment, and employee mapping. Customer type is represented by
+            // customers.customertype and must reference an active customer type.
+            $ownedCustomers = DB::table('customers')
+                ->join('customer_types', 'customers.customertype', '=', 'customer_types.id')
+                ->whereIn('customers.created_by', $userIds)
+                ->where('customers.active', 'Y')
+                ->where('customer_types.active', 'Y')
+                ->whereNull('customers.deleted_at')
+                ->selectRaw('customers.created_by as user_id, customers.id as customer_id');
+            $executiveCustomers = DB::table('customers')
+                ->join('customer_types', 'customers.customertype', '=', 'customer_types.id')
+                ->whereIn('customers.executive_id', $userIds)
+                ->where('customers.active', 'Y')
+                ->where('customer_types.active', 'Y')
+                ->whereNull('customers.deleted_at')
+                ->selectRaw('customers.executive_id as user_id, customers.id as customer_id');
+            $mappedCustomers = DB::table('employee_details')
+                ->join('customers', 'employee_details.customer_id', '=', 'customers.id')
+                ->join('customer_types', 'customers.customertype', '=', 'customer_types.id')
+                ->whereIn('employee_details.user_id', $userIds)
+                ->where('employee_details.active', 'Y')
+                ->whereNull('employee_details.deleted_at')
+                ->where('customers.active', 'Y')
+                ->where('customer_types.active', 'Y')
+                ->whereNull('customers.deleted_at')
+                ->selectRaw('employee_details.user_id as user_id, customers.id as customer_id');
+            $customerAssociations = $ownedCustomers
+                ->unionAll($executiveCustomers)
+                ->unionAll($mappedCustomers);
+            $customerCounts = DB::query()->fromSub($customerAssociations, 'customer_associations')
+                ->select('user_id', DB::raw('COUNT(DISTINCT customer_id) as total_customers'))
+                ->groupBy('user_id')->pluck('total_customers', 'user_id');
+
+            $totalWorkingDays = $this->salesSummaryWorkingDays($users, $fromDate, $toDate);
+            $zones = [];
+            foreach ($users as $row) {
+                $uid = (int) $row->id;
+                $zoneName = $row->division_name ?: 'Unassigned';
+                $targetLacs = round((float) ($targets[$uid] ?? 0), 2);
+                $achievementLacsRaw = ((float) ($periodSales[$uid] ?? 0)) / 100000;
+                $achievementLacs = round($achievementLacsRaw, 2);
+                $todaySalesLacs = round(((float) ($todaySales[$uid] ?? 0)) / 100000, 2);
+                $visitData = $visits->get($uid);
+
+                $zones[$zoneName] ??= ['zone' => $zoneName, 'users' => []];
+                $zones[$zoneName]['users'][] = [
+                    'id' => $uid,
+                    'name' => $row->name ?: '',
+                    'reporting' => $row->reportingid ? [
+                        'id' => (int) $row->reportingid,
+                        'name' => $row->reporting_name ?: '',
+                        'mobile' => $row->reporting_mobile ?: '',
+                    ] : null,
+                    'designation' => $row->designation_name ?: '',
+                    'working_days' => (int) ($attendanceDays[$uid] ?? 0),
+                    'total_working_days' => (int) ($totalWorkingDays[$uid] ?? 0),
+                    'total_customers' => (int) ($customerCounts[$uid] ?? 0),
+                    'target_value_lacs' => $targetLacs,
+                    'achievement_value_lacs' => $achievementLacs,
+                    'achievement_percent' => $targetLacs > 0 ? round(($achievementLacsRaw / $targetLacs) * 100, 2) : 0,
+                    'today_sales_value_lacs' => $todaySalesLacs,
+                    'visits' => (int) ($visitData->visits ?? 0),
+                    'unique_visits' => (int) ($visitData->unique_visits ?? 0),
+                ];
+            }
+
+            foreach ($zones as &$zoneBucket) {
+                usort($zoneBucket['users'], fn ($first, $second) => strcasecmp($first['name'], $second['name']));
+            }
+            unset($zoneBucket);
+            $zones = $this->sortZoneBuckets($zones);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'period' => $period,
+                    'from_date' => $from,
+                    'to_date' => $to,
+                    'zones' => array_values($zones),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => [],
+            ], $this->internalError);
+        }
+    }
+
+    private function salesSummaryWorkingDays($users, Carbon $fromDate, Carbon $toDate): array
+    {
+        $branchIds = $users->flatMap(fn ($user) => explode(',', (string) $user->branch_id))
+            ->map(fn ($id) => trim($id))
+            ->filter(fn ($id) => $id !== '' && ctype_digit($id))
+            ->map(fn ($id) => (int) $id)->unique()->values();
+
+        $holidays = $branchIds->isEmpty() ? collect() : Holiday::with('branches:id')
+            ->where('active', 'Y')
+            ->where(function ($query) use ($branchIds) {
+                $query->whereIn('branch', $branchIds)
+                    ->orWhereHas('branches', fn ($branches) => $branches->whereIn('branches.id', $branchIds));
+            })->get(['id', 'branch', 'holiday_date']);
+
+        $holidayDatesByBranch = [];
+        foreach ($holidays as $holiday) {
+            $holidayBranchIds = $holiday->branches->pluck('id')->push($holiday->branch)
+                ->filter()->map(fn ($id) => (int) $id)->unique();
+            foreach (array_filter(array_map('trim', explode(',', (string) $holiday->holiday_date))) as $holidayDate) {
+                try {
+                    $date = Carbon::parse($holidayDate)->toDateString();
+                } catch (\Throwable $e) {
+                    continue;
+                }
+                foreach ($holidayBranchIds as $branchId) {
+                    $holidayDatesByBranch[$branchId][$date] = true;
+                }
+            }
+        }
+
+        $calendarTotals = [];
+        $totals = [];
+        foreach ($users as $user) {
+            $userBranchIds = collect(explode(',', (string) $user->branch_id))
+                ->map(fn ($id) => trim($id))
+                ->filter(fn ($id) => $id !== '' && ctype_digit($id))
+                ->map(fn ($id) => (int) $id)->sort()->values()->all();
+            $calendarKey = implode(',', $userBranchIds) ?: 'unassigned';
+
+            if (!array_key_exists($calendarKey, $calendarTotals)) {
+                $workingDays = 0;
+                for ($date = $fromDate->copy(); $date->lte($toDate); $date->addDay()) {
+                    if ($date->isSunday()) {
+                        continue;
+                    }
+                    $dateString = $date->toDateString();
+                    $isHoliday = collect($userBranchIds)->contains(
+                        fn ($branchId) => isset($holidayDatesByBranch[$branchId][$dateString])
+                    );
+                    if (!$isHoliday) {
+                        $workingDays++;
+                    }
+                }
+                $calendarTotals[$calendarKey] = $workingDays;
+            }
+            $totals[(int) $user->id] = $calendarTotals[$calendarKey];
+        }
+
+        return $totals;
+    }
+
+    private function getTodayTeamSalesListLegacy(Request $request)
+    {
         try {
             $user = $request->user();
             $user_id = $user->id;
