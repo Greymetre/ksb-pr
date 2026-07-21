@@ -41,6 +41,7 @@ use App\Models\Designation;
 use App\Models\Division;
 use App\Models\Department;
 use App\Models\District;
+use App\Models\State;
 use App\Models\Order;
 use App\Models\TransactionHistory;
 use App\Models\UserEducation;
@@ -534,7 +535,21 @@ $user->save();
 
     public function userCity(UserCityDataTable $dataTable)
     {
-        return $dataTable->render('users.usercity');
+        $users = User::whereHas('cities')
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+        $assignedStateIds = DB::table('user_city_assigns')
+            ->join('cities', 'user_city_assigns.city_id', '=', 'cities.id')
+            ->join('districts', 'cities.district_id', '=', 'districts.id')
+            ->distinct()
+            ->pluck('districts.state_id');
+        $states = State::whereIn('id', $assignedStateIds)
+            ->select('id', 'state_name')
+            ->orderBy('state_name')
+            ->get();
+
+        return $dataTable->render('users.usercity', compact('users', 'states'));
     }
 
     public function userCityUpload(Request $request)

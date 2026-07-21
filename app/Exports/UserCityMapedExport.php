@@ -20,6 +20,8 @@ class UserCityMapedExport implements FromCollection,WithHeadings,ShouldAutoSize,
         
         $this->page_number = $request->input('page_number');
         $this->page_length = $request->input('page_length'); 
+        $this->user_id = $request->input('user_id');
+        $this->state_id = $request->input('state_id');
         $this->userids = getUsersReportingToAuth();
     }
 
@@ -45,6 +47,14 @@ class UserCityMapedExport implements FromCollection,WithHeadings,ShouldAutoSize,
                                 {
                                     $query->whereIn('userid', $this->userids);
                                 }
+                            })
+                            ->when($this->user_id, function ($query) {
+                                $query->where('userid', $this->user_id);
+                            })
+                            ->when($this->state_id, function ($query) {
+                                $query->whereHas('cityname.districtname', function ($districtQuery) {
+                                    $districtQuery->where('state_id', $this->state_id);
+                                });
                             })
                             //->select('userid','reportingid','city_id')
                             ->orderBy('userid')

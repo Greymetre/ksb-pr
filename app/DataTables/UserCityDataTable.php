@@ -45,7 +45,20 @@ class UserCityDataTable extends DataTable
      */
     public function query(UserCityAssign $model)
     {
-         return $model->with('userinfo','userinfo.getdesignation','reportinginfo','reportinginfo.getdesignation','cityname','cityname.districtname','cityname.districtname.statename')->orderBy('userid')->newQuery();
+        $query = $model->newQuery()
+            ->with('userinfo','userinfo.getdesignation','reportinginfo','reportinginfo.getdesignation','cityname','cityname.districtname','cityname.districtname.statename');
+
+        if (request()->filled('user_id')) {
+            $query->where('userid', request()->input('user_id'));
+        }
+
+        if (request()->filled('state_id')) {
+            $query->whereHas('cityname.districtname', function ($districtQuery) {
+                $districtQuery->where('state_id', request()->input('state_id'));
+            });
+        }
+
+        return $query->orderBy('userid');
 
     }
 
