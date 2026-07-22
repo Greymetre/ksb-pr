@@ -213,6 +213,7 @@
                   </label>
 
                   <div class="form-group has-default bmd-form-group">
+                    <input type="hidden" name="executive_id[]" value="">
                     <select class="form-control select2" name="executive_id[]" style="width: 100%;" multiple>
                       <!-- <option value="">Select Employee</option> -->
                       @if(@isset($users ))

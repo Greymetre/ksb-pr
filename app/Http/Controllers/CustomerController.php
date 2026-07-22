@@ -139,12 +139,15 @@ class CustomerController extends Controller
                 $request['parent_id'] = auth()->user()->customerid;
             }
             // dd($request['executive_id']);
-            $data = Customers::with('customertypes', 'firmtypes', 'createdbyname')
+            $data = Customers::with('customertypes', 'firmtypes', 'createdbyname', 'getemployeedetail.employee_detail')
                 ->where(function ($query) use ($request, $userids) {
                     if (!empty($request['executive_id'])) {
                         $query->where(function ($q) use ($request) {
                             $q->where('executive_id', $request['executive_id'])
-                                ->orWhere('created_by', $request['executive_id']);
+                                ->orWhere('created_by', $request['executive_id'])
+                                ->orWhereHas('getemployeedetail', function ($employeeQuery) use ($request) {
+                                    $employeeQuery->where('user_id', $request['executive_id']);
+                                });
                         });
                     }
                     if (!empty($request['parent_id'])) {
@@ -195,7 +198,10 @@ class CustomerController extends Controller
                         $division_users = User::where('division_id', $request['division_id'])->pluck('id')->toArray();
                         $query->where(function ($query) use ($division_users) {
                             $query->whereIn('executive_id', $division_users)
-                                ->orWhereIn('created_by', $division_users);
+                                ->orWhereIn('created_by', $division_users)
+                                ->orWhereHas('getemployeedetail', function ($employeeQuery) use ($division_users) {
+                                    $employeeQuery->whereIn('user_id', $division_users);
+                                });
                         });
                     }
                     if (!empty($request['active'])) {
@@ -219,8 +225,13 @@ class CustomerController extends Controller
                         });
                     }
                     if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin') && !Auth::user()->hasRole('Sub_Support')  && !Auth::user()->hasRole('HO_Account')  && !Auth::user()->hasRole('HR_Admin') && !Auth::user()->hasRole('Service Admin') && !Auth::user()->hasRole('All Customers') && !Auth::user()->hasRole('Sub_Admin') && !Auth::user()->hasRole('Customer Dealer') && !Auth::user()->hasRole('Data_Crm')  && !Auth::user()->hasRole('Sub billing')) {
-                        $query->whereIn('executive_id', $userids)
-                            ->orWhereIn('created_by', $userids);
+                        $query->where(function ($visibilityQuery) use ($userids) {
+                            $visibilityQuery->whereIn('executive_id', $userids)
+                                ->orWhereIn('created_by', $userids)
+                                ->orWhereHas('getemployeedetail', function ($employeeQuery) use ($userids) {
+                                    $employeeQuery->whereIn('user_id', $userids);
+                                });
+                        });
                     }
                     // $query->whereIn('customertype', ['2','3','4','5','6']);
                 })
@@ -236,6 +247,15 @@ class CustomerController extends Controller
                 })
                 ->editColumn('contact_person', function ($data) {
                     return $data->first_name . ' ' . $data->last_name;
+                })
+                ->addColumn('assigned_users', function ($data) {
+                    $names = $data->getemployeedetail
+                        ->pluck('employee_detail.name')
+                        ->filter()
+                        ->unique()
+                        ->values();
+
+                    return $names->isNotEmpty() ? $names->implode(', ') : '-';
                 })
                 ->editColumn('beat_name', function ($data) {
                     $beat_names = array();
@@ -501,8 +521,8 @@ class CustomerController extends Controller
 
                 //employee start
 
-                if (!empty($request['executive_id'])) {
-                    foreach ($request['executive_id'] as $key => $rows) {
+                if ($request->exists('executive_id')) {
+                    foreach (collect($request->input('executive_id', []))->filter()->unique() as $rows) {
                         $employeeDetail = EmployeeDetail::create(
                             [
                                 'customer_id' => $request['customer_id'],
@@ -822,10 +842,9 @@ class CustomerController extends Controller
 
                 //employee start
 
-                if (!empty($request['executive_id'])) {
-
+                if ($request->exists('executive_id')) {
                     EmployeeDetail::where('customer_id', $request['id'])->delete();
-                    foreach ($request['executive_id'] as $key => $rows) {
+                    foreach (collect($request->input('executive_id', []))->filter()->unique() as $rows) {
                         $employeeDetail = EmployeeDetail::updateOrCreate(
                             //['customer_id' => $request['id']],
 

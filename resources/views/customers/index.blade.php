@@ -239,6 +239,7 @@
                 <th>Contact Person</th>
                 <th>{!! trans('panel.customers.fields.mobile') !!}</th>
                 <th>{!! trans('panel.customers.fields.customertype') !!}</th>
+                <th>Assigned User</th>
                 <th>{!! trans('panel.global.created_by') !!}</th>
                 <th>City Name</th>
                 <th>Address</th>
@@ -332,6 +333,13 @@
             name: 'customertypes.customertype_name',
             "defaultContent": '',
             orderable: false
+          },
+          {
+            data: 'assigned_users',
+            name: 'assigned_users',
+            "defaultContent": '-',
+            orderable: false,
+            searchable: false
           },
           {
             data: 'createdbyname.name',

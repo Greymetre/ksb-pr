@@ -215,6 +215,16 @@ class CustomerController extends Controller
                         $request['shop_image'] = fileupload($image, $this->path, $filename);
                     }
 
+                    $employeeInput = $request->input(
+                        'assigned_user_ids',
+                        $request->input('employee_id', $request->input('executive_id', $request->input('user_id', $user->id)))
+                    );
+                    $employeeIds = collect(is_array($employeeInput) ? $employeeInput : explode(',', (string) $employeeInput))
+                        ->filter(fn($value) => is_numeric($value))
+                        ->map(fn($value) => (int) $value)
+                        ->unique()
+                        ->values();
+
                     if ($customer = Customers::updateOrCreate(['mobile' => $request['mobile']], [
                         'active' => 'Y',
                         'name' => !empty($request['name']) ? ucfirst($request['name']) : '',
@@ -234,7 +244,7 @@ class CustomerController extends Controller
                         'status_id' =>  !empty($request['status_id']) ? $request['status_id'] : 2,
                         'customertype' =>  !empty($request['customertype']) ? $request['customertype'] : 1,
                         'firmtype' =>  (!empty($request['firmtype']) && is_numeric($request['firmtype'])) ? $request['firmtype'] : null,
-                        'executive_id' =>  !empty($request['executive_id']) ? $request['executive_id'] : null,
+                        'executive_id' => $employeeIds->first(),
                         'created_by' =>  !empty($request['created_by']) ? $request['created_by'] : null,
                         'manager_name' => !empty($request['manager_name']) ? $request['manager_name'] : '',
                         'manager_phone' => !empty($request['manager_phone']) ? $request['manager_phone'] : '',
@@ -279,12 +289,6 @@ class CustomerController extends Controller
                         // parent end
 
                         //employee start
-
-                        $employeeInput = $request->input('employee_id', $request->input('user_id', Auth::user()->id));
-                        $employeeIds = is_array($employeeInput) ? $employeeInput : explode(',', (string) $employeeInput);
-                        $employeeIds = array_filter(array_map('trim', $employeeIds), function ($value) {
-                            return is_numeric($value);
-                        });
 
                         foreach ($employeeIds as $employeeId) {
                             EmployeeDetail::create(
@@ -1648,7 +1652,6 @@ class CustomerController extends Controller
                 'status_id' => 'status_id',
                 'customertype' => 'customertype',
                 'firmtype' => 'firmtype',
-                'executive_id' => 'executive_id',
                 'manager_name' => 'manager_name',
                 'manager_phone' => 'manager_phone',
                 'contact_number' => 'contact_number',
@@ -1706,13 +1709,18 @@ class CustomerController extends Controller
                 $customer->update(['parent_id' => !empty($parentData) ? reset($parentData) : null]);
             }
 
-            $employeeInput = $request->input('employee_id', $request->input('user_id'));
-            if ($employeeInput !== null) {
+            $assignmentKeys = ['assigned_user_ids', 'employee_id', 'executive_id', 'user_id'];
+            if ($this->requestHasAny($request, $assignmentKeys)) {
+                $employeeInput = $request->input(
+                    'assigned_user_ids',
+                    $request->input('employee_id', $request->input('executive_id', $request->input('user_id')))
+                );
                 EmployeeDetail::where('customer_id', $customer->id)->delete();
-                $employeeIds = is_array($employeeInput) ? $employeeInput : explode(',', (string) $employeeInput);
-                $employeeIds = array_filter(array_map('trim', $employeeIds), function ($value) {
-                    return is_numeric($value);
-                });
+                $employeeIds = collect(is_array($employeeInput) ? $employeeInput : explode(',', (string) $employeeInput))
+                    ->filter(fn($value) => is_numeric($value))
+                    ->map(fn($value) => (int) $value)
+                    ->unique()
+                    ->values();
 
                 foreach ($employeeIds as $employeeId) {
                     EmployeeDetail::create([
@@ -1721,6 +1729,8 @@ class CustomerController extends Controller
                         'created_by' => $user->id,
                     ]);
                 }
+
+                $customer->update(['executive_id' => $employeeIds->first()]);
             }
 
             if ($this->requestHasAny($request, ['address_id', 'address1', 'address2', 'address', 'landmark', 'locality', 'country_id', 'state_id', 'district_id', 'city_id', 'pincode_id', 'zipcode'])) {
