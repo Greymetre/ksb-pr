@@ -16,6 +16,7 @@ use DateTime;
 use Carbon\Carbon;
 use App\Exports\LeavesExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\DB;
 class LeaveController extends Controller
 {
     /**
@@ -194,15 +195,25 @@ class LeaveController extends Controller
             'from_date' => 'required|date|before_or_equal:to_date',
             'to_date'   => 'required|date|after_or_equal:from_date',
             'type'      => 'required|in:First Half Leave,Second Half Leave,Full Day Leave,Leave',
-            'bal_type'  => 'required|in:Earned Leave,Casual Leave,Sick Leave,Comp-off Balance,Compoff Balance',
+            'bal_type'  => 'required|in:Casual Leave,Comp-off Balance',
             'reason'    => 'nullable|string|max:500',
         ]);
+
+        $validator->after(function ($validator) use ($request) {
+            if (
+                in_array($request->type, ['First Half Leave', 'Second Half Leave'], true)
+                && $request->from_date !== $request->to_date
+            ) {
+                $validator->errors()->add('to_date', 'Half-day leave must start and end on the same date.');
+            }
+        });
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        $user = User::findOrFail($request->user_id);
+        DB::beginTransaction();
+        $user = User::whereKey($request->user_id)->lockForUpdate()->firstOrFail();
 
         // Calculate number of days
         $from = Carbon::parse($request->from_date);
@@ -223,23 +234,9 @@ class LeaveController extends Controller
         $balance_column = null;
 
         switch ($request->bal_type) {
-            case 'Earned Leave':
-                $balance_column = 'earned_leave_balance';
-                $enough_balance = $user->earned_leave_balance >= $deduct_amount;
-                break;
-
             case 'Casual Leave':
                 $balance_column = 'casual_leave_balance';
-                $enough_balance = true;
-                break;
-
-            case 'Sick Leave':
-                $balance_column = 'sick_leave_balance';
-                $enough_balance = $user->sick_leave_balance >= $deduct_amount;
-                break;
-                 case 'Compoff Balance':
-                $balance_column = 'compb_off';
-                $enough_balance = $user->compb_off >= $deduct_amount;
+                $enough_balance = $user->casual_leave_balance >= $deduct_amount;
                 break;
 
             case 'Comp-off Balance':
@@ -247,16 +244,19 @@ class LeaveController extends Controller
                 if ($request->type == 'First Half Leave' || $request->type == 'Second Half Leave') {
                     $compOff = CompOffLeave::where('user_id', $request->user_id)
                         ->where('is_used', false)
-                        ->where('expiry_date', '>=', now())
+                        ->whereDate('expiry_date', '>=', now())
                         ->where('balance', '>=', 0.5)
+                        ->orderBy('expiry_date')
+                        ->lockForUpdate()
                         ->first();
 
                     $enough_balance = $compOff !== null;
                 } else {
                     $compOffs = CompOffLeave::where('user_id', $request->user_id)
                         ->where('is_used', false)
-                        ->where('expiry_date', '>=', now())
+                        ->whereDate('expiry_date', '>=', now())
                         ->where('balance', '>', 0)
+                        ->lockForUpdate()
                         ->get();
 
                     $total_comp_off = $compOffs->sum('balance');
@@ -267,6 +267,7 @@ class LeaveController extends Controller
        
 
         if (!$enough_balance) {
+            DB::rollBack();
             return redirect()->back()
                 ->with('message_danger', "Insufficient {$request->bal_type} balance.")
                 ->withInput();
@@ -331,8 +332,10 @@ class LeaveController extends Controller
                 $remaining = $deduct_amount;
                 $compOffs = CompOffLeave::where('user_id', $user->id)
                     ->where('is_used', false)
-                    ->where('expiry_date', '>=', now())
+                    ->whereDate('expiry_date', '>=', now())
+                    ->where('balance', '>', 0)
                     ->orderBy('expiry_date', 'asc')
+                    ->lockForUpdate()
                     ->get();
 
                 foreach ($compOffs as $comp) {
@@ -347,17 +350,16 @@ class LeaveController extends Controller
                     $comp->save();
                 }
 
-                if ($remaining > 0) {
-                    // Should not happen if we checked earlier — but safety
-                    $leave->delete();
-                    foreach ($dates as $date) {
-                        Attendance::where('user_id', $user->id)
-                            ->where('punchin_date', $date)
-                            ->delete();
-                    }
-                    return redirect()->back()->with('message_danger', 'Comp-off balance became insufficient during processing.');
+                if ($remaining > 0.00001) {
+                    throw new \RuntimeException('Comp-off balance became insufficient during processing.');
                 }
             }
+
+            $user->compb_off = CompOffLeave::where('user_id', $user->id)
+                ->where('is_used', false)
+                ->whereDate('expiry_date', '>=', now())
+                ->sum('balance');
+            $user->save();
         } else {
             // Normal leave types — deduct from correct column
             $user->$balance_column -= $deduct_amount;
@@ -370,10 +372,15 @@ class LeaveController extends Controller
             $user->save();
         }
 
+        DB::commit();
+
         return redirect()->route('leaves.index')
             ->with('message_success', 'Leave added successfully.');
 
     } catch (\Exception $e) {
+        if (DB::transactionLevel() > 0) {
+            DB::rollBack();
+        }
         return redirect()->back()
             ->with('message_danger', 'Error: ' . $e->getMessage())
             ->withInput();
@@ -517,13 +524,18 @@ class LeaveController extends Controller
             $compOff->is_used = false;
             $compOff->save();
         }
+
+        if ($user) {
+            $user->compb_off = CompOffLeave::where('user_id', $user->id)
+                ->where('is_used', false)
+                ->whereDate('expiry_date', '>=', now())
+                ->sum('balance');
+            $user->save();
+        }
     } else {
         // Refund normal leave
         $column_map = [
-            'Earned Leave'  => 'earned_leave_balance',
-            // 'Casual Leave'  => 'casual_leave_balance',
-            'Sick Leave'    => 'sick_leave_balance',
-            'Compoff Balance' =>'compb_off'
+            'Casual Leave' => 'casual_leave_balance',
         ];
 
         $column = $column_map[$leave->bal_type] ?? null;

@@ -2194,13 +2194,15 @@ public function userCityList(Request $request)
     public function getLeaveBalance(Request $request)
     {
         $data = User::where('id', $request->user_id)->first();
-        $last60Days = Carbon::now()->subDays(60);
-        $comp_off_balance = CompOffLeave::where('comp_off_date', '>=', $last60Days)->where('is_used', false)
+        $comp_off_balance = CompOffLeave::where('is_used', false)
+            ->whereDate('expiry_date', '>=', now())
             ->where('user_id', $request->user_id)
             ->sum('balance');
-        return response()->json(['status' => 'success', 'leave_balance' => $data->leave_balance,'compb_off' => $data->compb_off, 'comp_off_balance' => $comp_off_balance,    'earned_leave_balance' => $data->earned_leave_balance,
-    'casual_leave_balance' => $data->casual_leave_balance,
-    'sick_leave_balance'   => $data->sick_leave_balance,]);
+        return response()->json([
+            'status' => 'success',
+            'casual_leave_balance' => (float) ($data->casual_leave_balance ?? 0),
+            'compb_off' => round((float) $comp_off_balance, 2),
+        ]);
     }
 
 

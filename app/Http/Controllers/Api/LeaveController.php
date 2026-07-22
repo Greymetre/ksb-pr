@@ -32,23 +32,30 @@ class LeaveController extends Controller
     public function addLeaves(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-        'user_id'    => 'required|exists:users,id',
-        'from_date'  => 'required|date|date_format:Y-m-d',
-        'to_date'    => 'required|date|date_format:Y-m-d|after_or_equal:from_date',
-        'type'       => ['required', Rule::in([
-            'Leave',
-            'Full Day Leave',
-            'First Half Leave',
-            'Second Half Leave'
-        ])],
-        'bal_type'   => ['required', Rule::in([
-            'Casual Balance',
-            'Sick Balance',
-            'Earned Balance',
-            'Comp-off Balance'
-        ])],
-        'reason'     => 'nullable|string|max:500',
-    ]);
+            'user_id'    => 'required|exists:users,id',
+            'from_date'  => 'required|date|date_format:Y-m-d',
+            'to_date'    => 'required|date|date_format:Y-m-d|after_or_equal:from_date',
+            'type'       => ['required', Rule::in([
+                'Leave',
+                'Full Day Leave',
+                'First Half Leave',
+                'Second Half Leave'
+            ])],
+            'bal_type'   => ['required', Rule::in([
+                'Casual Balance',
+                'Comp-off Balance'
+            ])],
+            'reason'     => 'nullable|string|max:500',
+        ]);
+
+        $validator->after(function ($validator) use ($request) {
+            if (
+                in_array($request->type, ['First Half Leave', 'Second Half Leave'], true)
+                && $request->from_date !== $request->to_date
+            ) {
+                $validator->errors()->add('to_date', 'Half-day leave must start and end on the same date.');
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json([
@@ -68,21 +75,21 @@ class LeaveController extends Controller
         $isHalfDay = in_array($request->type, ['First Half Leave', 'Second Half Leave']);
         $leaveDays = $isHalfDay ? 0.5 : $days;
 
-        // ────────────────────────────────────────────────
-        // 1. Check & deduct balance
-        // ────────────────────────────────────────────────
-        $balanceResult = $this->checkAndDeductBalance($user, $request->bal_type, $leaveDays, $request->type);
-
-        if (!$balanceResult['success']) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => $balanceResult['message']
-            ], $this->badRequest);
-        }
-
         DB::beginTransaction();
 
         try {
+            $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $balanceResult = $this->checkBalance($user, $request->bal_type, $leaveDays);
+
+            if (!$balanceResult['success']) {
+                DB::rollBack();
+
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => $balanceResult['message']
+                ], $this->badRequest);
+            }
+
             // Create Leave record
             $leave = Leave::create([
                 'user_id'    => $user->id,
@@ -99,10 +106,17 @@ class LeaveController extends Controller
             // Mark attendance records
             $this->markLeaveInAttendance($user->id, $from, $to, $request->type, $request->reason);
 
-            // For comp-off: mark used
             if ($request->bal_type === 'Comp-off Balance') {
-                $this->markCompOffAsUsed($user->id, $leave->id, $leaveDays, $isHalfDay);
+                $this->markCompOffAsUsed($user->id, $leave->id, $leaveDays);
+                $user->compb_off = CompOffLeave::where('user_id', $user->id)
+                    ->where('is_used', false)
+                    ->whereDate('expiry_date', '>=', now())
+                    ->sum('balance');
+            } else {
+                $user->casual_leave_balance -= $leaveDays;
             }
+
+            $user->save();
 
             DB::commit();
 
@@ -111,12 +125,8 @@ class LeaveController extends Controller
                 'message' => 'Leave applied successfully',
                 'data'    => $leave->load('users')
             ], $this->created);
-
         } catch (\Exception $e) {
             DB::rollBack();
-
-            // Rollback balance deduction if needed
-            // (you can implement rollback logic here if you want strict consistency)
 
             return response()->json([
                 'status'  => 'error',
@@ -158,36 +168,27 @@ class LeaveController extends Controller
     //          Helper Methods
     // ────────────────────────────────────────────────
 
-    private function checkAndDeductBalance(User $user, string $balType, float $days, string $leaveType): array
+    private function checkBalance(User $user, string $balType, float $days): array
     {
-        $fieldMap = [
-            'Casual Balance'   => 'casual_leave_balance',
-            'Sick Balance'     => 'sick_leave_balance',
-            'Earned Balance'   => 'earned_leave_balance', // or claimable_earned_leave_balance
-            'Comp-off Balance' => 'compb_off',
-        ];
-
-        $field = $fieldMap[$balType] ?? null;
-
-        if (!$field) {
+        if ($balType === 'Casual Balance') {
+            $available = (float) ($user->casual_leave_balance ?? 0);
+        } elseif ($balType === 'Comp-off Balance') {
+            $available = (float) CompOffLeave::where('user_id', $user->id)
+                ->where('is_used', false)
+                ->whereDate('expiry_date', '>=', now())
+                ->lockForUpdate()
+                ->get()
+                ->sum('balance');
+        } else {
             return ['success' => false, 'message' => 'Invalid balance type'];
         }
 
-        $available = (float) $user->$field;
-
-        if ($balType !== 'Casual Balance') {
-
-            if ($available < $days) {
-                return [
-                    'success' => false,
-                    'message' => "Insufficient {$balType} balance. Available: {$available}, Required: {$days}"
-                ];
-            }
+        if ($available < $days) {
+            return [
+                'success' => false,
+                'message' => "Insufficient {$balType} balance. Available: {$available}, Required: {$days}"
+            ];
         }
-
-        // Deduct balance (you can move this to approval stage if you want)
-        $user->$field = max(0, $available - $days);
-        $user->save();
 
         return ['success' => true];
     }
@@ -219,37 +220,40 @@ class LeaveController extends Controller
         }
     }
 
-    private function markCompOffAsUsed(int $userId, int $leaveId, float $daysNeeded, bool $isHalfDay): void
+    private function markCompOffAsUsed(int $userId, int $leaveId, float $daysNeeded): void
     {
-        $query = CompOffLeave::where('user_id', $userId)
+        $compOffs = CompOffLeave::where('user_id', $userId)
             ->where('is_used', false)
-            ->where('expiry_date', '>=', now());
+            ->whereDate('expiry_date', '>=', now())
+            ->where('balance', '>', 0)
+            ->orderBy('expiry_date')
+            ->lockForUpdate()
+            ->get();
 
-        if ($isHalfDay) {
-            $compOff = $query->where('balance', '>=', 0.5)->first();
+        $remaining = $daysNeeded;
 
-            if ($compOff) {
-                $compOff->balance -= 0.5;
-                $compOff->leave_id = $compOff->leave_id ? $compOff->leave_id . ',' . $leaveId : $leaveId;
-                $compOff->is_used = $compOff->balance <= 0;
-                $compOff->save();
+        foreach ($compOffs as $compOff) {
+            if ($remaining <= 0) {
+                break;
             }
-        } else {
-            // Full day – consume whole records
-            $compOffs = $query->where('balance', '>=', 1)->take((int)$daysNeeded)->get();
 
-            foreach ($compOffs as $comp) {
-                $comp->update([
-                    'is_used'  => true,
-                    'balance'  => 0,
-                    'leave_id' => $comp->leave_id ? $comp->leave_id . ',' . $leaveId : $leaveId,
-                ]);
-            }
+            $used = min($remaining, (float) $compOff->balance);
+            $compOff->balance -= $used;
+            $remaining -= $used;
+            $compOff->leave_id = $compOff->leave_id
+                ? $compOff->leave_id . ',' . $leaveId
+                : (string) $leaveId;
+            $compOff->is_used = $compOff->balance <= 0;
+            $compOff->save();
+        }
+
+        if ($remaining > 0.00001) {
+            throw new \RuntimeException('Comp-off balance changed during leave processing.');
         }
     }
 
     /**
-     * Get current leave & comp-off balances of the authenticated user
+     * Get the current casual leave and comp-off balances of the authenticated user.
      */
     public function getMyBalances(Request $request): JsonResponse
     {
@@ -270,11 +274,8 @@ class LeaveController extends Controller
                 ->sum('balance');
 
             $data = [
-                'casual'     => (float) ($user->casual_leave_balance   ?? 0),
-                'sick'       => (float) ($user->sick_leave_balance     ?? 0),
-                'earned'     => (float) ($user->earned_leave_balance   ?? 0),
-                'claimable_earned' => (float) ($user->claimable_earned_leave_balance ?? 0),
-                'comp_off'   => round((float) $activeCompOff, 2),
+                'casual'   => (float) ($user->casual_leave_balance ?? 0),
+                'comp_off' => round((float) $activeCompOff, 2),
             ];
 
             return response()->json([
@@ -282,7 +283,6 @@ class LeaveController extends Controller
                 'message' => 'Balances fetched successfully',
                 'data'    => $data
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => false,

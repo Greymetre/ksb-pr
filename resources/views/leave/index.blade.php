@@ -285,10 +285,8 @@
                     <select class=" form-control" name="bal_type" id="bal_type" style="width: 100%;" required>
                       <option value="">Select Type</option>
                       <!-- <option value="Leave Balance" data-is-city="false">Leave Balance</option> -->
-                      <!-- <option value="Earned Leave" data-is-city="false">Earned Leave</option> -->
                       <option value="Casual Leave" data-is-city="false">Casual Leave</option>
-                      <!-- <option value="Sick Leave" data-is-city="false">Sick Leave</option> -->
-                      <option value="Compoff Balance" data-is-city="false">Comp-off Balance</option>
+                      <option value="Comp-off Balance" data-is-city="false">Comp-off Balance</option>
                     </select>
                   </div>
                 </div>
@@ -722,28 +720,13 @@
       $('#bal_type option[value="Comp-off Balance"]').prop('disabled', true);
     }
 
-    if (res.earned_leave_balance > 0) {
-      $('#bal_type option[value="Earned Leave"]').prop('disabled', false);
+    if (res.casual_leave_balance > 0) {
+      $('#bal_type option[value="Casual Leave"]').prop('disabled', false);
     } else {
-      $('#bal_type option[value="Earned Leave"]').prop('disabled', true);
+      $('#bal_type option[value="Casual Leave"]').prop('disabled', true);
     }
 
-    // if (res.casual_leave_balance > 0) {
-    //   $('#bal_type option[value="Casual Leave"]').prop('disabled', false);
-    // } else {
-    //   $('#bal_type option[value="Casual Leave"]').prop('disabled', true);
-    // }
-
-    if (res.sick_leave_balance > 0) {
-      $('#bal_type option[value="Sick Leave"]').prop('disabled', false);
-    } else {
-      $('#bal_type option[value="Sick Leave"]').prop('disabled', true);
-    }
-
-    // 🔥 Update CARDS instead of inputs
-    $("#earned_leave_balance_l").text(res.earned_leave_balance ?? 0);
     $("#casual_leave_balance_l").text(res.casual_leave_balance ?? 0);
-    $("#sick_leave_balance_l").text(res.sick_leave_balance ?? 0);
     $("#compb_off_l").text(res.compb_off ?? 0);
   }
 }
@@ -786,9 +769,7 @@
             }
             $("#leave_balance_c").val(res.leave_balance);
             $("#compb_off_c").val(res.compb_off);
-            $("#earned_leave_balance_c").val(res.earned_leave_balance);
-$("#casual_leave_balance_c").val(res.casual_leave_balance);
-$("#sick_leave_balance_c").val(res.sick_leave_balance);
+            $("#casual_leave_balance_c").val(res.casual_leave_balance);
           }
         }
       })
