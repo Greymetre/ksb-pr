@@ -108,7 +108,7 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
 
                 
 
-                User::where('id', '=', $row['id'])->update([
+                $userData = [
                     'name' => !empty($name) ? ucfirst(strtolower($name)) : '',
                     'first_name' => !empty($first_name) ? ucfirst(strtolower($first_name)) : '',
                     'last_name' => !empty($last_name) ? ucfirst(strtolower($last_name)) : '',
@@ -121,8 +121,6 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     'grade' => !empty($row['grade']) ? $row['grade'] : NULL,
                     'blood_group' => !empty($row['designation_code']) ? $row['designation_code'] : NULL,
                     'personal_number' => !empty($row['employee_super_code']) ? $row['employee_super_code'] : NULL,
-                    'password' => !empty($row['password'])? Hash::make($row['password']) :'',
-                    'password_string' => !empty($row['password']) ? $row['password'] : '',
                     'gender' => !empty($row['gender']) ? $row['gender'] : '',
                     //'profile_image' => !empty($row['profile_image'])? $row['profile_image']:'',
                     'user_code' => !empty($row['user_code']) ? $row['user_code'] : '',
@@ -142,7 +140,15 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     'longitude' => $longitude,
                     //'created_at' => getcurentDateTime(),
                     //'updated_at' => getcurentDateTime()
-                ]);
+                ];
+
+                $password = trim((string) ($row['password'] ?? ''));
+                if ($password !== '') {
+                    $userData['password'] = Hash::make($password);
+                    $userData['password_string'] = $password;
+                }
+
+                User::where('id', '=', $row['id'])->update($userData);
                 $user = User::find($row['id']);
                 $user->roles()->sync(explode(',', $row['role_ids']));
 
@@ -266,7 +272,7 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                 $name = trim($row['user_name']);
                 $last_name = (strpos($name, ' ') === false) ? '' : preg_replace('#.*\s([\w-]*)$#', '$1', $name);
                 $first_name = trim(preg_replace('#' . preg_quote($last_name, '#') . '#', '', $name));
-                if ($user = User::create([
+                $userData = [
                     'active' => 'Y',
                     'name' => !empty($name) ? ucfirst(strtolower($name)) : '',
                     'first_name' => !empty($first_name) ? ucfirst(strtolower($first_name)) : '',
@@ -279,7 +285,6 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     'grade' => !empty($row['grade']) ? $row['grade'] : NULL,
                     'blood_group' => !empty($row['blood_group']) ? $row['blood_group'] : NULL,
                     'personal_number' => !empty($row['personal_number']) ? $row['personal_number'] : NULL,
-                    'password' => !empty($row['password']) ? Hash::make($row['password']) : '',
                     'gender' => !empty($row['gender']) ? $row['gender'] : '',
                     'profile_image' => !empty($row['profile_image']) ? $row['profile_image'] : '',
                     'user_code' => !empty($row['user_code']) ? $row['user_code'] : '',
@@ -297,7 +302,15 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     'longitude' => $longitude,
                     'created_at' => getcurentDateTime(),
                     'updated_at' => getcurentDateTime()
-                ])) {
+                ];
+
+                $password = trim((string) ($row['password'] ?? ''));
+                if ($password !== '') {
+                    $userData['password'] = Hash::make($password);
+                    $userData['password_string'] = $password;
+                }
+
+                if ($user = User::create($userData)) {
                     $user->roles()->sync(explode(',', $row['role_ids']));
                     // $permissions = $user->getPermissionsViaRoles()->pluck('name');
                     // $user->givePermissionTo($permissions);
@@ -434,7 +447,8 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
         return [
             'user_name' => 'required|string|regex:/[a-zA-Z0-9\s]+/',
             'primary_branch_id' => 'nullable|exists:branches,id',
-            'password' => strongPasswordRules(null, false),
+            // New users require a password; existing users may leave it blank to keep their current password.
+            'password' => array_merge(['required_without:id'], strongPasswordRules(null, false)),
             'casual_leave_cl_balance' => 'nullable|numeric|min:0',
             'comp_off_balance' => 'nullable|numeric|min:0',
         ];
