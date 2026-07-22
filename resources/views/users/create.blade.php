@@ -428,28 +428,9 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="input_section">
-                                        <label class="col-form-label">Earned Leave (EL) Balance</label>
-                                        <div class="form-group has-default bmd-form-group">
-                                            <input type="number" name="earned_leave_balance" step="0.01"
-                                                class="form-control {{ $errors->has('earned_leave_balance') ? 'is-invalid' : '' }}"
-                                                value="{{ old('earned_leave_balance', $user->earned_leave_balance ?? '0.00') }}"
-                                                placeholder="e.g. 12.50">
-                                            @if ($errors->has('earned_leave_balance'))
-                                            <div class="error">
-                                                <p class="text-danger">{{ $errors->first('earned_leave_balance') }}</p>
-                                            </div>
-                                            @endif
-                                        </div>
-                                        <small class="text-muted">1 EL earned per 20 working days (credited next year
-                                            after joining)</small>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="input_section">
                                         <label class="col-form-label">Casual Leave (CL) Balance</label>
                                         <div class="form-group has-default bmd-form-group">
-                                            <input type="number" name="casual_leave_balance" step="0.01"
+                                            <input type="number" name="casual_leave_balance" step="0.01" min="0"
                                                 class="form-control {{ $errors->has('casual_leave_balance') ? 'is-invalid' : '' }}"
                                                 value="{{ old('casual_leave_balance', $user->casual_leave_balance ?? '0.00') }}"
                                                 placeholder="e.g. 1.50">
@@ -466,38 +447,18 @@
 
                                 <div class="col-md-6">
                                     <div class="input_section">
-                                        <label class="col-form-label">Sick Leave (SL) Balance</label>
+                                        <label class="col-form-label">Comp-off Balance</label>
                                         <div class="form-group has-default bmd-form-group">
-                                            <input type="number" name="sick_leave_balance" step="0.01"
-                                                class="form-control {{ $errors->has('sick_leave_balance') ? 'is-invalid' : '' }}"
-                                                value="{{ old('sick_leave_balance', $user->sick_leave_balance ?? '0.00') }}"
-                                                placeholder="e.g. 0.50">
-                                            @if ($errors->has('sick_leave_balance'))
+                                            <input type="number" name="compb_off" step="0.01" min="0"
+                                                class="form-control {{ $errors->has('compb_off') ? 'is-invalid' : '' }}"
+                                                value="{{ old('compb_off', $user->compb_off ?? '0.00') }}"
+                                                placeholder="e.g. 1.00">
+                                            @if ($errors->has('compb_off'))
                                             <div class="error">
-                                                <p class="text-danger">{{ $errors->first('sick_leave_balance') }}</p>
+                                                <p class="text-danger">{{ $errors->first('compb_off') }}</p>
                                             </div>
                                             @endif
                                         </div>
-                                        <small class="text-muted">0.5 SL earned per 20 working days (credited after 20
-                                            days)</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="input_section">
-                                        <label class="col-form-label">Comp off</label>
-                                        <div class="form-group has-default bmd-form-group">
-                                            <input type="number" name="sick_leave_balance" step="0.01"
-                                                class="form-control {{ $errors->has('sick_leave_balance') ? 'is-invalid' : '' }}"
-                                                value="{{ old('sick_leave_balance', $user->sick_leave_balance ?? '0.00') }}"
-                                                placeholder="e.g. 0.50">
-                                            @if ($errors->has('sick_leave_balance'))
-                                            <div class="error">
-                                                <p class="text-danger">{{ $errors->first('sick_leave_balance') }}</p>
-                                            </div>
-                                            @endif
-                                        </div>
-                                        <small class="text-muted">0.5 SL earned per 20 working days (credited after 20
-                                            days)</small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">

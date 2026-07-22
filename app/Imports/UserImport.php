@@ -116,6 +116,8 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     // 'mobile' => !empty($row['mobile']) ? $row['mobile'] : null,
                     'email' => !empty($row['email']) ? $row['email'] : null,
                     'leave_balance' => !empty($row['leave_balance']) ? $row['leave_balance'] : 0.00,
+                    'casual_leave_balance' => isset($row['casual_leave_cl_balance']) && is_numeric($row['casual_leave_cl_balance']) ? $row['casual_leave_cl_balance'] : 0.00,
+                    'compb_off' => isset($row['comp_off_balance']) && is_numeric($row['comp_off_balance']) ? $row['comp_off_balance'] : 0.00,
                     'grade' => !empty($row['grade']) ? $row['grade'] : NULL,
                     'blood_group' => !empty($row['designation_code']) ? $row['designation_code'] : NULL,
                     'personal_number' => !empty($row['employee_super_code']) ? $row['employee_super_code'] : NULL,
@@ -272,6 +274,8 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     'mobile' => $row['mobile'],
                     'email' => !empty($row['email']) ? $row['email'] : null,
                     'leave_balance' => !empty($row['leave_balance']) ? $row['leave_balance'] : 0.00,
+                    'casual_leave_balance' => isset($row['casual_leave_cl_balance']) && is_numeric($row['casual_leave_cl_balance']) ? $row['casual_leave_cl_balance'] : 0.00,
+                    'compb_off' => isset($row['comp_off_balance']) && is_numeric($row['comp_off_balance']) ? $row['comp_off_balance'] : 0.00,
                     'grade' => !empty($row['grade']) ? $row['grade'] : NULL,
                     'blood_group' => !empty($row['blood_group']) ? $row['blood_group'] : NULL,
                     'personal_number' => !empty($row['personal_number']) ? $row['personal_number'] : NULL,
@@ -431,6 +435,8 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
             'user_name' => 'required|string|regex:/[a-zA-Z0-9\s]+/',
             'primary_branch_id' => 'nullable|exists:branches,id',
             'password' => strongPasswordRules(null, false),
+            'casual_leave_cl_balance' => 'nullable|numeric|min:0',
+            'comp_off_balance' => 'nullable|numeric|min:0',
         ];
     }
 

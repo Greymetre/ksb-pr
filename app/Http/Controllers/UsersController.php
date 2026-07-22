@@ -141,9 +141,8 @@ $latitude = null;
             'warehouse_id' => isset($request['warehouse_id']) ? $request['warehouse_id'] : NULL,
             'customerid' => isset($request['customerid']) ? $request['customerid'] : NULL,
             'sales_type' => $request->input('sales_type', ''),
-            'earned_leave_balance'    => $request->input('earned_leave_balance', '0.00'),
             'casual_leave_balance'    => $request->input('casual_leave_balance', '0.00'),
-            'sick_leave_balance'      => $request->input('sick_leave_balance', '0.00'),
+            'compb_off'               => $request->input('compb_off', '0.00'),
             'date_of_joining' => $request->input('date_of_joining'),   
         ]);
         $user->roles()->sync($request->input('roles', []));
@@ -422,9 +421,8 @@ $latitude = null;
         $user->branch_show = isset($request['branch_show']) ? implode(',', $request['branch_show']) : null;
         $user->sales_type = isset($request['sales_type']) ? $request['sales_type'] : '';
         // $user->leave_balance           = $request->leave_balance ?? $user->leave_balance ?? '0.00';
-$user->earned_leave_balance    = $request->earned_leave_balance ?? $user->earned_leave_balance ?? '0.00';
 $user->casual_leave_balance    = $request->casual_leave_balance ?? $user->casual_leave_balance ?? '0.00';
-$user->sick_leave_balance      = $request->sick_leave_balance ?? $user->sick_leave_balance ?? '0.00';
+$user->compb_off               = $request->compb_off ?? $user->compb_off ?? '0.00';
 $user->date_of_joining = $request->input('date_of_joining');
 $user->save();
         if ($user->save()) {

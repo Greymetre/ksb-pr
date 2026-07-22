@@ -63,6 +63,8 @@ class UserRequest extends FormRequest
                 break;
         }
         $rules['sales_type'] = 'nullable|in:Primary,Secondary';
+        $rules['casual_leave_balance'] = 'nullable|numeric|min:0';
+        $rules['compb_off'] = 'nullable|numeric|min:0';
 
         return $rules;
     }
