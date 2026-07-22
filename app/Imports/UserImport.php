@@ -449,7 +449,7 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
             'user_name' => 'required|string|regex:/[a-zA-Z0-9\s]+/',
             'primary_branch_id' => 'nullable|exists:branches,id',
             // New users require a password; existing users may leave it blank to keep their current password.
-            'password' => array_merge(['required_without:id'], strongPasswordRules(null, false)),
+            'password' => array_merge(['required_without:*.id'], strongPasswordRules(null, false)),
             'casual_leave_cl_balance' => 'nullable|numeric|min:0',
             'comp_off_balance' => 'nullable|numeric|min:0',
         ];
