@@ -24,14 +24,32 @@ class PincodeImport implements ToModel,WithValidation,WithHeadingRow, WithBatchI
 {
     use Importable, SkipsFailures;
 
-    
+    private array $seenPincodes = [];
     
     public function model(array $row)
     {
+        $cityId = $row['city_id'] ?? null;
+        $pincode = trim((string) ($row['pincode'] ?? ''));
+        $key = $cityId . '-' . $pincode;
+
+        if (isset($this->seenPincodes[$key])) {
+            throw new \DomainException(
+                "Duplicate pincode {$pincode} found for city ID {$cityId} in the import file."
+            );
+        }
+
+        if (Pincode::where('city_id', $cityId)->where('pincode', $pincode)->exists()) {
+            throw new \DomainException(
+                "Pincode {$pincode} already exists for city ID {$cityId}."
+            );
+        }
+
+        $this->seenPincodes[$key] = true;
+
         return new Pincode([
             'active' => 'Y',
-            'pincode' => isset($row['pincode'])? $row['pincode']:'',
-            'city_id' => isset($row['city_id'])? $row['city_id']:null,
+            'pincode' => $pincode,
+            'city_id' => $cityId,
             'created_by' => Auth::user()->id,
             'created_at' => getcurentDateTime() ,
             'updated_at' => getcurentDateTime()

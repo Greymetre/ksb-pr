@@ -19,6 +19,8 @@ use App\DataTables\PincodeDataTable;
 use App\Imports\PincodeImport;
 use App\Exports\PincodeExport;
 use App\Exports\PincodeTemplate;
+use Illuminate\Database\QueryException;
+use Maatwebsite\Excel\Validators\ValidationException;
 
 class PincodeController extends Controller
 {
@@ -131,11 +133,40 @@ class PincodeController extends Controller
 
     public function upload(Request $request) 
     {
-      //abort_if(Gate::denies('pincode_upload'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-        if (ob_get_contents()) ob_end_clean();
-        ob_start();
-        Excel::import(new PincodeImport,request()->file('import_file'));
-        return back();
+        //abort_if(Gate::denies('pincode_upload'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        $request->validate([
+            'import_file' => 'required|file|mimes:xlsx,xls,csv',
+        ]);
+
+        try {
+            Excel::import(new PincodeImport, $request->file('import_file'));
+
+            return back()->with('message_success', 'Pincodes imported successfully.');
+        } catch (ValidationException $e) {
+            $errors = collect($e->failures())->map(function ($failure) {
+                return 'Row ' . $failure->row() . ': ' . implode(', ', $failure->errors());
+            })->all();
+
+            return back()->withErrors($errors);
+        } catch (\DomainException $e) {
+            return back()->withErrors($e->getMessage());
+        } catch (QueryException $e) {
+            if ((string) $e->getCode() === '23000'
+                && preg_match("/Duplicate entry '([^']+)'/", $e->getMessage(), $matches)) {
+                $duplicate = $matches[1];
+                $separator = strpos($duplicate, '-');
+                $cityId = $separator === false ? $duplicate : substr($duplicate, 0, $separator);
+                $pincode = $separator === false ? '' : substr($duplicate, $separator + 1);
+
+                return back()->withErrors(
+                    "Pincode {$pincode} already exists for city ID {$cityId}."
+                );
+            }
+
+            report($e);
+
+            return back()->withErrors('The pincode import could not be completed. Please verify the file and try again.');
+        }
     }
     public function download()
     {
