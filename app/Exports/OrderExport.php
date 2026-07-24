@@ -51,7 +51,7 @@ class OrderExport implements FromCollection, WithHeadings, ShouldAutoSize, WithM
             $query = OrderDetails::with(
                 'orders',
                 'orders.createdbyname',
-                'orders.buyers',
+                'orders.buyers.customertypes',
                 'orders.sellers'
             )->whereHas('orders', function ($query) {
                 if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
@@ -114,7 +114,7 @@ class OrderExport implements FromCollection, WithHeadings, ShouldAutoSize, WithM
             $query =  OrderDetails::with(
                 'orders',
                 'orders.createdbyname',
-                'orders.buyers',
+                'orders.buyers.customertypes',
                 'orders.executive',
                 'orders.sellers'
             )->whereHas('orders', function ($query) {
@@ -288,7 +288,7 @@ class OrderExport implements FromCollection, WithHeadings, ShouldAutoSize, WithM
             isset($data['orders']['createdbyname']['name']) ? $data['orders']['createdbyname']['name'] : '',
             $reportingNames,
             isset($data['orders']['getuserdetails']['getdesignation']['designation_name']) ? $data['orders']['getuserdetails']['getdesignation']['designation_name'] : '',
-            isset($data['orders']['buyers']['customertypes']['customer_type_name']) ? $data['orders']['buyers']['customertypes']['customer_type_name'] : '',
+            $data->orders?->buyers?->customertypes?->customertype_name ?? '',
             isset($data['orders']['buyers']['name']) ? $data['orders']['buyers']['name'] : '',
             isset($data['orders']['sellers']['name']) ? $data['orders']['sellers']['name'] : '',
             isset($data['orders']['sellers']['customer_code']) ? $data['orders']['sellers']['customer_code'] : '',
