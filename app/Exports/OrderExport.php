@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Auth;
 
 class OrderExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMapping
 {
-protected $reportingUsers;
+    protected $reportingUsers;
 
     public function __construct($request)
     {
@@ -48,8 +48,12 @@ protected $reportingUsers;
         //                     })->select('id','order_id', 'product_id', 'product_detail_id', 'quantity', 'shipped_qty', 'price', 'discount', 'discount_amount', 'tax_amount', 'line_total', 'status_id', 'created_at')->latest()->get();  
 
         if ($this->pending_status != '' && $this->pending_status != NULL) {
-            $query = OrderDetails::with('orders', 'orders.createdbyname', 'orders.buyers',
-    'orders.sellers')->whereHas('orders', function ($query) {
+            $query = OrderDetails::with(
+                'orders',
+                'orders.createdbyname',
+                'orders.buyers',
+                'orders.sellers'
+            )->whereHas('orders', function ($query) {
                 if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
                     $query->whereIn('created_by', $this->userids);
                 }
@@ -86,7 +90,7 @@ protected $reportingUsers;
                 if (!empty($this->designation_id)) {
 
                     $userIds = \App\Models\User::whereIn('designation_id', $this->designation_id)
-                                ->pluck('id');
+                        ->pluck('id');
 
                     $query->whereIn('created_by', $userIds);
                 }
@@ -107,8 +111,13 @@ protected $reportingUsers;
 
             return $final;
         } else {
-            $query =  OrderDetails::with('orders', 'orders.createdbyname','orders.buyers','orders.executive',
-    'orders.sellers')->whereHas('orders', function ($query) {
+            $query =  OrderDetails::with(
+                'orders',
+                'orders.createdbyname',
+                'orders.buyers',
+                'orders.executive',
+                'orders.sellers'
+            )->whereHas('orders', function ($query) {
                 if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
                     $query->whereIn('created_by', $this->userids);
                 }
@@ -151,7 +160,7 @@ protected $reportingUsers;
                     if (!empty($this->designation_id)) {
 
                         $userIds = \App\Models\User::whereIn('designation_id', $this->designation_id)
-                                    ->pluck('id');
+                            ->pluck('id');
 
                         $query->whereIn('created_by', $userIds);
                     }
@@ -193,7 +202,7 @@ protected $reportingUsers;
                     if (!empty($this->designation_id)) {
 
                         $userIds = \App\Models\User::whereIn('designation_id', $this->designation_id)
-                                    ->pluck('id');
+                            ->pluck('id');
 
                         $query->whereIn('created_by', $userIds);
                     }
@@ -220,81 +229,34 @@ protected $reportingUsers;
 
     public function headings(): array
     {
-        if ($this->dividion_id == '1') {
-            return ['Order Date', 'Order No', 'Employee Name','Reporting Manager','Designation',  'Branch','Retailer Name','Distributor Name','Distributor Code', 'Product Code', 'Product Name',  'Quantity','Rate', 'Total Order Value',
-            // 'Status', 
-            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family', 'id', 'Branch',
-            //  'Division', 
-             
-            //   'Customer', 
-               
-            //    'Dealer & Distributor BP Code',
-            
-            //  'Order ID', 
-              
-            //    'Product ID', 'Product Stage', 'kW', 'HP', 'Suc x Del', 
-              
-                // 'Shipped Qty', 'Pending Qty', 
-                
-                // 'Trade Discount%', 'Scheme Discount%', 'Scheme Name', 'EBD Discount%', 'MOU Discount%', 'Special Discount%', 'Frieght Discount%', 'Cluster Discount%', 'Deal Dicount%', 'Cash Discount%', 'Total Discount%', 'Tax%', 'Sub Total',
-                 
-                   
-                //   'Discount Approvel Remark', 'Discount Approve By', 
-                  ];
-        } elseif ($this->dividion_id == '2') {
-            return [ 'Order Date', 'Order No', 'Employee Name','Reporting Manager','Designation',  'Branch','Retailer Name', 'Distributor Name','Distributor Code',  'Product Code', 'Product Name', 'Quantity','Rate', 'Total Order Value',
-            // 'Status', 
-            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family','id', 'Branch',
-            // 'Division', 'Designation', 
-            
-            //  'Customer', 
-              
-            //   'Dealer & Distributor BP Code', 'Order No', 'Order ID', 
-             
-            //   'Product ID', 
-              
-            //   'Shipped Qty', 'Pending Qty', 
-             
-            //    'DOD Discount%', 'Special Distribution Discount%', 'Distribution Margin Discount%', 'Cash Discount%', 'Total Discount%', 'Total Discount', 'Tax%', 'Sub Total', 
-               
-            //    'Discount Approvel Remark', 'Discount Approve By',
-               ];
-        } else {
-            return [ 'Order Date', 'Order No','Employee Name','Reporting Manager','Designation',  'Branch','Retailer Name','Distributor Name','Distributor Code', 'Product Code', 'Product Name', 'Quantity','Rate', 'Total Order Value',
-            // 'Status', 
-            'Employee Code','Retailer ID','Distributor ID', 'Order Remark', 'Segment', 'Family','id', 'Branch',
-            //  'Division', 'Designation', 
-             
-            //  'Customer', 
-              
-            //   'Dealer & Distributor BP Code', 'Order No', 'Order ID',
-              
-            //    'Product ID', 'Product Stage', 'kW', 'HP', 'Suc x Del', 
-               
-            //    'Shipped Qty', 'Pending Qty', 
-               
-                // 'Tax%', 'Sub Total', 
-               
-                
-                //   'Discount Approvel Remark', 'Discount Approve By',
-                   ];
-        }
+        return [
+            'Order Date',
+            'Order No',
+            'Employee Name',
+            'Reporting Manager',
+            'Designation',
+            'Customer Type',
+            'Customer Name',
+            'Distributor Name',
+            'Distributor Code',
+            'Product Code',
+            'Product Name',
+            'Quantity',
+            'Rate',
+            'Total Order Value',
+            'Employee Code',
+            'Customer ID',
+            'Distributor ID',
+            'Order Remark',
+            'Category',
+            'Subcategory',
+            'id',
+            'Zone',
+        ];
     }
 
     public function map($data): array
     {
-        //$subtotal = $data['price']*$data['quantity'];
-        // dd($data);
-        $grandtotal;
-
-        if (!empty($data['products']['productpriceinfo']['gst'])) {
-            $gstdis = $data['products']['productpriceinfo']['gst'];
-            $gstamnt = $data['line_total'] * $gstdis / 100;
-
-            $grandtotal = number_format($data['line_total'] + $gstamnt, 2);
-        } else {
-            $grandtotal = number_format($data['line_total']);
-        }
 
         $pending_qty = 0;
         $qty = $data['quantity'] ?? 0;
@@ -318,208 +280,36 @@ protected $reportingUsers;
                 ->implode(', ');
         }
 
-        if ($this->dividion_id == '1') {
-            return [
-                
-                isset($data['orders']['order_date']) ? date('Y-m-d', strtotime($data['orders']['order_date'])) : '',
-                isset($data['orders']['orderno']) ? $data['orders']['orderno'] : '',
 
-                isset($data['orders']['createdbyname']['name']) ? $data['orders']['createdbyname']['name'] : '',
-                $reportingNames,
-                isset($data['orders']['getuserdetails']['getdesignation']['designation_name']) ? $data['orders']['getuserdetails']['getdesignation']['designation_name'] : '',
-                
-                isset($data['orders']['getuserdetails']['getbranch']['branch_name']) ? $data['orders']['getuserdetails']['getbranch']['branch_name'] : '',
-                isset($data['orders']['buyers']['name']) ? $data['orders']['buyers']['name'] : '',
-                isset($data['orders']['sellers']['name']) ? $data['orders']['sellers']['name'] : '',
-                isset($data['orders']['sellers']['customer_code']) ? $data['orders']['sellers']['customer_code'] : '',
-                isset($data['products']['product_code']) ? $data['products']['product_code'] : '',
-                isset($data['products']['product_name']) ? $data['products']['product_name'] : '',
-                isset($data['quantity']) ? $data['quantity'] : '',
-                isset($data['price']) ? $data['price'] : '',
-                // isset($data['orders']['grand_total'])  ? $data['orders']['grand_total'] : '',
-                isset($data['line_total']) ? $data['line_total'] : '',
-                // isset($data['orders']['statusname']) ? $data['orders']['statusname']['status_name'] : 'Pending',
-                isset($data['orders']['getuserdetails']['employee_codes']) ? $data['orders']['getuserdetails']['employee_codes'] : '',
-                isset($data['orders']['buyer_id']) ? $data['orders']['buyer_id'] : '',
-                isset($data['orders']['seller_id']) ? $data['orders']['seller_id'] : '',
-                isset($data['orders']['order_remark']) ? $data['orders']['order_remark'] : '',
-                isset($data['products']['categories']['category_name']) ? $data['products']['categories']['category_name'] : '',
-                isset($data['products']['subcategories']['subcategory_name']) ? $data['products']['subcategories']['subcategory_name'] : '',
-                $data['id'],
-                isset($data['orders']['getuserdetails']['getdivision']['division_name']) ? $data['orders']['getuserdetails']['getdivision']['division_name'] : '',
-                // isset($data['orders']['getuserdetails']['getdivision']['division_name']) ? $data['orders']['getuserdetails']['getdivision']['division_name'] : '',
-                
-                // isset($data['orders']['buyers']['customertypes']['customertype_name']) ? $data['orders']['buyers']['customertypes']['customertype_name'] : '',
-                
-                
-                
-                // isset($data['orders']['sellers']['sap_code']) ? $data['orders']['sellers']['sap_code'] : '',
-                // isset($data['orders']['id']) ? $data['orders']['id'] : '',
+        return [
 
-                
-                
-                // isset($data['product_id']) ? $data['product_id'] : '',
-                // isset($data['products']['product_no']) ? $data['products']['product_no'] : '',
-                // isset($data['products']['part_no']) ? $data['products']['part_no'] : '',
-                // isset($data['products']['specification']) ? $data['products']['specification'] : '',
-                // isset($data['products']['suc_del']) ? $data['products']['suc_del'] : '',
-                
-                // isset($data['shipped_qty']) ? $data['shipped_qty'] : '',
-                // $pending_qty ?? 0,
+            isset($data['orders']['order_date']) ? date('Y-m-d', strtotime($data['orders']['order_date'])) : '',
+            isset($data['orders']['orderno']) ? $data['orders']['orderno'] : '',
+            isset($data['orders']['createdbyname']['name']) ? $data['orders']['createdbyname']['name'] : '',
+            $reportingNames,
+            isset($data['orders']['getuserdetails']['getdesignation']['designation_name']) ? $data['orders']['getuserdetails']['getdesignation']['designation_name'] : '',
+            isset($data['orders']['buyers']['customertypes']['customer_type_name']) ? $data['orders']['buyers']['customertypes']['customer_type_name'] : '',
+            isset($data['orders']['buyers']['name']) ? $data['orders']['buyers']['name'] : '',
+            isset($data['orders']['sellers']['name']) ? $data['orders']['sellers']['name'] : '',
+            isset($data['orders']['sellers']['customer_code']) ? $data['orders']['sellers']['customer_code'] : '',
+            isset($data['products']['product_code']) ? $data['products']['product_code'] : '',
+            isset($data['products']['product_name']) ? $data['products']['product_name'] : '',
+            isset($data['quantity']) ? $data['quantity'] : '',
+            isset($data['price']) ? $data['price'] : '',
+            // isset($data['orders']['grand_total'])  ? $data['orders']['grand_total'] : '',
+            isset($data['line_total']) ? $data['line_total'] : '',
+            // isset($data['orders']['statusname']) ? $data['orders']['statusname']['status_name'] : 'Pending',
+            isset($data['orders']['getuserdetails']['employee_codes']) ? $data['orders']['getuserdetails']['employee_codes'] : '',
+            isset($data['orders']['buyer_id']) ? $data['orders']['buyer_id'] : '',
+            isset($data['orders']['seller_id']) ? $data['orders']['seller_id'] : '',
+            isset($data['orders']['order_remark']) ? $data['orders']['order_remark'] : '',
+            isset($data['products']['categories']['category_name']) ? $data['products']['categories']['category_name'] : '',
+            isset($data['products']['subcategories']['subcategory_name']) ? $data['products']['subcategories']['subcategory_name'] : '',
 
-                // isset($data['products']['productpriceinfo']['mrp']) ? $data['products']['productpriceinfo']['mrp'] : '',
-                
-                // isset($data['products']['productpriceinfo']['discount']) ? $data['products']['productpriceinfo']['discount'] : '',
+            $data['id'],
+            isset($data['orders']['getuserdetails']['getdivision']['division_name']) ? $data['orders']['getuserdetails']['getdivision']['division_name'] : '',
 
-                // isset($data['scheme_discount']) ? $data['scheme_discount'] : '',
-                // isset($data['scheme_name']) ? $data['scheme_name'] : '',
-                // isset($data['orders']['ebd_discount']) ? $data['orders']['ebd_discount'] : '',
-                // isset($data['orders']['distributor_discount']) ? $data['orders']['distributor_discount'] : '',
-                // isset($data['orders']['special_discount']) ? $data['orders']['special_discount'] : '',
-                // isset($data['orders']['frieght_discount']) ? $data['orders']['frieght_discount'] : '',
-                // isset($data['orders']['cluster_discount']) ? $data['orders']['cluster_discount'] : '',
-                // isset($data['orders']['deal_discount']) ? $data['orders']['deal_discount'] : '',
-                // isset($data['orders']['cash_discount']) ? $data['orders']['cash_discount'] : '',
-                // $data['products'] && isset($data['products']['productpriceinfo'], $data['products']['productpriceinfo']['mrp'], $data['quantity']) && $data['products']['productpriceinfo']['mrp'] > 0 && $data['quantity'] > 0 ? number_format(((1 - ($data['line_total'] / ($data['products']['productpriceinfo']['mrp'] * $data['quantity']))) * 100), 2) : '0',
-                // isset($data['products']['productpriceinfo']['gst']) ? $data['products']['productpriceinfo']['gst'] : '',
-                // isset($data['line_total']) ? $data['line_total'] : '',
-                
-                // $grandtotal,
-                
-                // isset($data['orders']['order_remark']) ? $data['orders']['order_remark'] : '',
-                // isset($data['orders']['updatedbyname']) ? $data['orders']['updatedbyname']['name'] : '',
 
-                
-                
-                ];
-        } elseif ($this->dividion_id == '2') {
-            return [
-                
-                isset($data['orders']['order_date']) ? date('Y-m-d', strtotime($data['orders']['order_date'])) : '',
-                isset($data['orders']['orderno']) ? $data['orders']['orderno'] : '',
-                isset($data['orders']['createdbyname']['name']) ? $data['orders']['createdbyname']['name'] : '',
-                $reportingNames,
-                isset($data['orders']['getuserdetails']['getdesignation']['designation_name']) ? $data['orders']['getuserdetails']['getdesignation']['designation_name'] : '',
-                isset($data['orders']['getuserdetails']['getbranch']['branch_name']) ? $data['orders']['getuserdetails']['getbranch']['branch_name'] : '',
-                isset($data['orders']['buyers']['name']) ? $data['orders']['buyers']['name'] : '',
-                isset($data['orders']['sellers']['name']) ? $data['orders']['sellers']['name'] : '',
-                isset($data['orders']['sellers']['customer_code']) ? $data['orders']['sellers']['customer_code'] : '',
-                isset($data['products']['product_code']) ? $data['products']['product_code'] : '',
-                isset($data['products']['product_name']) ? $data['products']['product_name'] : '',
-                isset($data['quantity']) ? $data['quantity'] : '',
-                isset($data['price']) ? $data['price'] : '',
-                // isset($data['orders']['grand_total'])  ? $data['orders']['grand_total'] : '',
-                isset($data['line_total']) ? $data['line_total'] : '',
-                // isset($data['orders']['statusname']) ? $data['orders']['statusname']['status_name'] : 'Pending',
-                isset($data['orders']['getuserdetails']['employee_codes']) ? $data['orders']['getuserdetails']['employee_codes'] : '',
-                isset($data['orders']['buyer_id']) ? $data['orders']['buyer_id'] : '',
-                isset($data['orders']['seller_id']) ? $data['orders']['seller_id'] : '',
-                isset($data['orders']['order_remark']) ? $data['orders']['order_remark'] : '',
-                isset($data['products']['categories']['category_name']) ? $data['products']['categories']['category_name'] : '',
-                isset($data['products']['subcategories']['subcategory_name']) ? $data['products']['subcategories']['subcategory_name'] : '',
-
-                $data['id'],
-                isset($data['orders']['getuserdetails']['getdivision']['division_name']) ? $data['orders']['getuserdetails']['getdivision']['division_name'] : '',
-                
-                
-                // isset($data['orders']['buyers']['customertypes']['customertype_name']) ? $data['orders']['buyers']['customertypes']['customertype_name'] : '',
-                
-                
-                
-                // isset($data['orders']['sellers']['sap_code']) ? $data['orders']['sellers']['sap_code'] : '',
-                
-                // isset($data['orders']['id']) ? $data['orders']['id'] : '',
-
-                
-                
-                // isset($data['product_id']) ? $data['product_id'] : '',
-                
-                // isset($data['shipped_qty']) ? $data['shipped_qty'] : '',
-                // $pending_qty ?? 0,
-                
-                // isset($data['products']['productpriceinfo']['mrp']) ? $data['products']['productpriceinfo']['mrp'] : '',
-                
-
-                // isset($data['orders']['dod_discount']) ? $data['orders']['dod_discount'] : '',
-                // isset($data['orders']['special_distribution_discount']) ? $data['orders']['special_distribution_discount'] : '',
-                // isset($data['orders']['distribution_margin_discount']) ? $data['orders']['distribution_margin_discount'] : '',
-                // isset($data['orders']['cash_discount']) ? $data['orders']['cash_discount'] : '',
-                // isset($data['orders']['total_fan_discount']) ? $data['orders']['total_fan_discount'] : '',
-                // ($data['orders']['sub_total'] / (1 - $data['orders']['total_fan_discount'] / 100)) - $data['orders']['sub_total'],
-
-                // isset($data['products']['productpriceinfo']['gst']) ? $data['products']['productpriceinfo']['gst'] : '',
-                // isset($data['line_total']) ? $data['line_total'] : '',
-                
-                // $grandtotal,
-                
-                // isset($data['orders']['order_remark']) ? $data['orders']['order_remark'] : '',
-                // isset($data['orders']['updatedbyname']) ? $data['orders']['updatedbyname']['name'] : '',
-
-                
-            ];
-        } else {
-            return [
-                
-                isset($data['orders']['order_date']) ? date('Y-m-d', strtotime($data['orders']['order_date'])) : '',
-                isset($data['orders']['orderno']) ? $data['orders']['orderno'] : '',
-                isset($data['orders']['createdbyname']['name']) ? $data['orders']['createdbyname']['name'] : '',
-                $reportingNames,
-                isset($data['orders']['getuserdetails']['getdesignation']['designation_name']) ? $data['orders']['getuserdetails']['getdesignation']['designation_name'] : '',
-                isset($data['orders']['getuserdetails']['getbranch']['branch_name']) ? $data['orders']['getuserdetails']['getbranch']['branch_name'] : '',
-                
-                isset($data['orders']['buyers']['name']) ? $data['orders']['buyers']['name'] : '',
-                isset($data['orders']['sellers']['name']) ? $data['orders']['sellers']['name'] : '',
-                isset($data['orders']['sellers']['customer_code']) ? $data['orders']['sellers']['customer_code'] : '',
-                isset($data['products']['product_code']) ? $data['products']['product_code'] : '',
-                isset($data['products']['product_name']) ? $data['products']['product_name'] : '',
-                isset($data['quantity']) ? $data['quantity'] : '',
-                isset($data['price']) ? $data['price'] : '',
-                // isset($data['orders']['grand_total'])  ? $data['orders']['grand_total'] : '',
-                isset($data['line_total']) ? $data['line_total'] : '',
-                // isset($data['orders']['statusname']) ? $data['orders']['statusname']['status_name'] : 'Pending',
-                isset($data['orders']['getuserdetails']['employee_codes']) ? $data['orders']['getuserdetails']['employee_codes'] : '',
-                isset($data['orders']['buyer_id']) ? $data['orders']['buyer_id'] : '',
-                isset($data['orders']['seller_id']) ? $data['orders']['seller_id'] : '',
-                isset($data['orders']['order_remark']) ? $data['orders']['order_remark'] : '',
-                isset($data['products']['categories']['category_name']) ? $data['products']['categories']['category_name'] : '',
-                isset($data['products']['subcategories']['subcategory_name']) ? $data['products']['subcategories']['subcategory_name'] : '',
-                
-                $data['id'],
-                isset($data['orders']['getuserdetails']['getdivision']['division_name']) ? $data['orders']['getuserdetails']['getdivision']['division_name'] : '',
-                
-                
-                // isset($data['orders']['buyers']['customertypes']['customertype_name']) ? $data['orders']['buyers']['customertypes']['customertype_name'] : '',
-                
-                
-                
-                // isset($data['orders']['sellers']['sap_code']) ? $data['orders']['sellers']['sap_code'] : '',
-                
-                // isset($data['orders']['id']) ? $data['orders']['id'] : '',
-
-                
-                
-                // isset($data['product_id']) ? $data['product_id'] : '',
-                // isset($data['products']['product_no']) ? $data['products']['product_no'] : '',
-                // isset($data['products']['part_no']) ? $data['products']['part_no'] : '',
-                // isset($data['products']['specification']) ? $data['products']['specification'] : '',
-                // isset($data['products']['suc_del']) ? $data['products']['suc_del'] : '',
-                
-                // isset($data['shipped_qty']) ? $data['shipped_qty'] : '',
-                // $pending_qty ?? 0,
-
-                // isset($data['products']['productpriceinfo']['mrp']) ? $data['products']['productpriceinfo']['mrp'] : '',
-                
-
-                // isset($data['products']['productpriceinfo']['gst']) ? $data['products']['productpriceinfo']['gst'] : '',
-                // isset($data['line_total']) ? $data['line_total'] : '',
-                
-                // $grandtotal,
-                
-                // isset($data['orders']['order_remark']) ? $data['orders']['order_remark'] : '',
-                // isset($data['orders']['updatedbyname']) ? $data['orders']['updatedbyname']['name'] : '',
-
-                
-            ];
-        }
+        ];
     }
 }
