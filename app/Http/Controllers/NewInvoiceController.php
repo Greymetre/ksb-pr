@@ -455,6 +455,7 @@ class NewInvoiceController extends Controller
                 ->usingFileName(time() . '_' . $file->getClientOriginalName())
                 ->toMediaCollection('attachments');
         }
+
     }
 
     private function approvalResponse(Request $request, string $status, string $message)
