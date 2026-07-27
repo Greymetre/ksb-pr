@@ -94,6 +94,29 @@
                                 </select>
                             </div>
 
+                            <div class="col-md-3">
+                                <label class="bmd-label-floating">Zone <span class="text-danger">*</span></label>
+                                <select class="form-control select2" id="retailer_zone_id" name="zone_id" required>
+                                    <option value="">Select Zone</option>
+                                    @foreach($zones as $zone)
+                                        <option value="{{ $zone->id }}">{{ $zone->division_name }}</option>
+                                    @endforeach
+                                </select>
+                                <small id="retailer_zone_error" class="text-danger" style="display:none;">
+                                    Please select a zone before downloading the report.
+                                </small>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="bmd-label-floating">State</label>
+                                <select class="form-control select2" id="retailer_state_id" name="state_id">
+                                    <option value="">All States</option>
+                                    @foreach($states as $state)
+                                        <option value="{{ $state->id }}">{{ $state->state_name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -463,6 +486,13 @@ $.get("{{ url('getDesignations') }}", function(data) {
             text: 'Download Retailer Productivity',
             className: 'btn btn-primary',
             action: function () {
+                let zoneId = $('#retailer_zone_id').val();
+
+                if (!zoneId) {
+                    $('#retailer_zone_error').show();
+                    $('#retailer_zone_id').focus();
+                    return;
+                }
 
                 let params = {
                     start_date: $('#start_date').val(),
@@ -471,6 +501,8 @@ $.get("{{ url('getDesignations') }}", function(data) {
                     retailer_id: $('#retailer_id').val(),
                     distributor_id: $('#distributor_id').val(),
                     year: $('#year').val(),
+                    zone_id: zoneId,
+                    state_id: $('#retailer_state_id').val(),
                 
                 };
 
@@ -593,6 +625,16 @@ $.get("{{ url('getDesignations') }}", function(data) {
 
     // Download Report Button
 $('#downloadReportBtn').on('click', function() {
+    let zoneId = $('#retailer_zone_id').val();
+
+    if (!zoneId) {
+        $('#retailer_zone_error').show();
+        $('#retailer_zone_id').focus();
+        return;
+    }
+
+    $('#retailer_zone_error').hide();
+
      let params = {
         start_date:     $('#start_date').val(),
         end_date:       $('#end_date').val(),
@@ -600,8 +642,8 @@ $('#downloadReportBtn').on('click', function() {
         retailer_id:    $('#retailer_id').val(),
         distributor_id: $('#distributor_id').val(),
         year:           $('#year').val(),
-        division_id:    $('#division_id').val(),
-        branch_id:      $('#branch_id').val(),
+        zone_id:        zoneId,
+        state_id:       $('#retailer_state_id').val(),
         designation_id: $('#designation_id_retailer').val()
     };
 
@@ -613,6 +655,12 @@ $('#downloadReportBtn').on('click', function() {
     let queryString = $.param(params);
 let downloadUrl = "{{ route('retailer.productivity.export') }}" + (queryString ? '?' + queryString : '');
     window.location.href = downloadUrl;
+});
+
+$('#retailer_zone_id').on('change', function() {
+    if ($(this).val()) {
+        $('#retailer_zone_error').hide();
+    }
 });
 
 $('#dealerDownloadReportBtn').on('click', function() {
@@ -732,7 +780,7 @@ $('#designation_id_dealer').on('changed.bs.select change', function () {
     loadDealerEmployees();
 });
 
-$('#employee_id, #retailer_id, #distributor_id, #year, #dealer_employee_id, #dealer_id, #dealer_year').change(function () {
+$('#employee_id, #retailer_id, #distributor_id, #year, #retailer_zone_id, #retailer_state_id, #dealer_employee_id, #dealer_id, #dealer_year').change(function () {
     table.draw();
 });
 

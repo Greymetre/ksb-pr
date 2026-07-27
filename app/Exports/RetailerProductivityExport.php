@@ -111,6 +111,16 @@ if (!empty($this->filters['allowed_user_ids'])) {
             $query->where('secondary_customers.distributor_name', $this->filters['distributor_id']);
         }
 
+        if (!empty($this->filters['state_id'])) {
+            $query->where('secondary_customers.state_id', $this->filters['state_id']);
+        }
+
+        if (!empty($this->filters['zone_id'])) {
+            $query->whereHas('employee', function ($q) {
+                $q->where('division_id', $this->filters['zone_id']);
+            });
+        }
+
         if (!empty($this->filters['designation_id'])) {
 
             $designationIds = is_array($this->filters['designation_id'])

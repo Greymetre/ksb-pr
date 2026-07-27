@@ -352,12 +352,27 @@ class ReportController extends Controller
                 // })
                 ->make(true);
         }
-        return view('reports.adherencesummary');
+        $zones = Division::where('active', 'Y')
+            ->orderBy('division_name')
+            ->get(['id', 'division_name']);
+
+        $states = State::where('active', 'Y')
+            ->orderBy('state_name')
+            ->get(['id', 'state_name']);
+
+        return view('reports.adherencesummary', compact('zones', 'states'));
     }
 
 
 public function retailerProductivityExport(Request $request)
 {
+    $request->validate([
+        'zone_id' => ['required', 'integer', 'exists:divisions,id'],
+        'state_id' => ['nullable', 'integer', 'exists:states,id'],
+    ], [
+        'zone_id.required' => 'Please select a zone before downloading the report.',
+    ]);
+
     $filters = $request->only([
         // 'start_date', 
         // 'end_date', 
@@ -365,7 +380,9 @@ public function retailerProductivityExport(Request $request)
         'retailer_id', 
         'distributor_id', 
         'year',
-        'designation_id'
+        'designation_id',
+        'zone_id',
+        'state_id',
     ]);
     // dd($filters);
     
