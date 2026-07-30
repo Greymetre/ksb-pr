@@ -592,6 +592,13 @@ class TourPlanController extends Controller
                 : 'Status changed to ' . ($statusLabels[$request->status] ?? 'Unknown')
         );
 
+        if (in_array((int) $tour->status, [1, 2], true)) {
+            $statusLabel = (int) $tour->status === 1 ? 'approved' : 'rejected';
+            $message = 'Your tour plan for ' . $tour->date . ' has been ' . $statusLabel . '.';
+            if ((int) $tour->status === 2 && $tour->remark) $message .= ' Remark: ' . $tour->remark;
+            SendPushNotification($tour->userid, $message, 'tour_plan', $tour->id, 'Tour plan ' . $statusLabel);
+        }
+
         //------------------------
 
         return response()->json([

@@ -120,6 +120,10 @@ class LeaveController extends Controller
 
             DB::commit();
 
+            if (!empty($user->reportingid)) {
+                SendPushNotification($user->reportingid, $user->name . ' has applied for leave from ' . $leave->from_date . ' to ' . $leave->to_date . '.', 'leave', $leave->id, 'Leave request');
+            }
+
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Leave applied successfully',

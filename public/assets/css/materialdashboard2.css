@@ -3636,7 +3636,7 @@ tbody.collapse.show {
     display: none;
     float: left;
     min-width: 10rem;
-    padding: .5rem 0;
+    padding: 0;
     margin: .125rem 0 0;
     font-size: 1rem;
     color: #212529;
@@ -15597,7 +15597,7 @@ label {
 
 .dropdown-menu {
     display: none;
-    padding: .3125rem 0;
+    padding: 0;
     border: 0;
     opacity: 0;
     transform: scale(0);

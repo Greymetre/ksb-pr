@@ -1161,11 +1161,14 @@ dd(
     try {
       $ids = explode(',', $request['id']);
       foreach ($ids as $key => $value) {
-        Attendance::where('id', '=', $value)->update([
+        $attendance = Attendance::find($value);
+        if (!$attendance) continue;
+        $attendance->update([
           'attendance_status' => 1,
           'approve_reject_by' => Auth::user()->id,
           'remark_status' => null
         ]);
+        SendPushNotification($attendance->user_id, 'Your attendance for ' . $attendance->punchin_date . ' has been approved.', 'attendance', $attendance->id, 'Attendance approved');
       }
       return  response()->json(['status' => 'success', 'message' => 'Attendance Approved Successfully']);
     } catch (\Exception $e) {
@@ -1180,11 +1183,16 @@ dd(
     try {
       $id_array = explode(',', $request['attendance_id']);
       foreach ($id_array as $key => $value) {
-        Attendance::where('id', '=', $value)->update([
+        $attendance = Attendance::find($value);
+        if (!$attendance) continue;
+        $attendance->update([
           'attendance_status' => 2,
           'approve_reject_by' => Auth::user()->id,
           'remark_status' => $remark_status ?? null,
         ]);
+        $message = 'Your attendance for ' . $attendance->punchin_date . ' has been rejected.';
+        if ($remark_status) $message .= ' Remark: ' . $remark_status;
+        SendPushNotification($attendance->user_id, $message, 'attendance', $attendance->id, 'Attendance rejected');
       }
       return Redirect::to('reports/attendancereport')->with('message_success', 'Attendance Rejected Successfully');
     } catch (\Exception $e) {

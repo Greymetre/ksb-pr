@@ -771,11 +771,19 @@ class AttendanceController extends Controller
             $ids = explode(',', $attendance_id);
 
             foreach ($ids as $key => $value) {
-                Attendance::where('id', '=', $value)->update([
+                $attendance = Attendance::find($value);
+                if (!$attendance) continue;
+                $attendance->update([
                     'attendance_status' => $status,
                     'approve_reject_by' => $user_id,
                     'remark_status' => $request->input('remark_status')
                 ]);
+                if (in_array((int) $status, [1, 2], true)) {
+                    $statusLabel = (int) $status === 1 ? 'approved' : 'rejected';
+                    $message = 'Your attendance for ' . $attendance->punchin_date . ' has been ' . $statusLabel . '.';
+                    if ((int) $status === 2 && $remark_status) $message .= ' Remark: ' . $remark_status;
+                    SendPushNotification($attendance->user_id, $message, 'attendance', $attendance->id, 'Attendance ' . $statusLabel);
+                }
             }
             return response()->json(['status' => 'success', 'message' => 'Status changed successfully.'], $this->successStatus);
         } catch (\Exception $e) {

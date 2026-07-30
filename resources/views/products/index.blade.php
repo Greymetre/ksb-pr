@@ -22,8 +22,8 @@
                     </div>
 
                     <div class="p-2" style="width:200px;">
-                      <select class="selectpicker" name="category_id" id="category_id" data-style="select-with-transition" title="Select Zone">
-                        <option value="">Select Zone</option>
+                      <select class="selectpicker" name="category_id" id="category_id" data-style="select-with-transition" title="Select Category">
+                        <option value="">Select Category</option>
                         @if(@isset($categories ))
                         @foreach($categories as $category)
                         <option value="{!! $category['id'] !!}" {{ old( 'category_id') == $category->id ? 'selected' : '' }}>{!! $category['category_name'] !!}</option>

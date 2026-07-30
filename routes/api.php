@@ -322,6 +322,7 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
     Route::any('getUserActivity', [UserController::class, 'getUserActivity']);
     Route::any('requestReport', [UserController::class, 'requestReport']);
     Route::any('getNotification', [UserController::class, 'getNotification']);
+    Route::post('notifications/read', [UserController::class, 'readNotification']);
     Route::any('masterStateCity', [UserController::class, 'masterStateCity']);
     Route::any('getPunchinMasterData', [UserController::class, 'getPunchinMasterData']);
     Route::any('userDistrictList', [UserController::class, 'userDistrictList']);

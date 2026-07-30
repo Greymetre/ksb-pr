@@ -677,15 +677,21 @@ class OrderController extends Controller
 
             $adminnotify = collect([
                 'title' => 'Order collected',
-                'body'  => $user->name . ' has collected order at ' . $buyerName
+                'body'  => $user->name . ' has collected order at ' . $buyerName,
+                'model' => 'order',
+                'model_id' => $order->id,
             ]);
             sendNotification(39, $adminnotify);
 
             $zsmnotify = collect([
                 'title' => 'Order collected',
-                'body'  => $user->name . ' has collected order at ' . $buyerName
+                'body'  => $user->name . ' has collected order at ' . $buyerName,
+                'model' => 'order',
+                'model_id' => $order->id,
             ]);
-            sendNotification($user->reportingid ?? 0, $zsmnotify);
+            if (!empty($user->reportingid)) {
+                sendNotification($user->reportingid, $zsmnotify);
+            }
 
             return response()->json([
                 'status'     => 'success',

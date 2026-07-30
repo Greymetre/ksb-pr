@@ -11,7 +11,15 @@ class Notification extends Model
 
     protected $table = 'notifications';
 
-    protected $fillable = [ 'active', 'type', 'data','customer_id','user_id', 'deleted_at','created_at', 'updated_at'];
+    protected $fillable = [
+        'active', 'type', 'data', 'read', 'model', 'model_id',
+        'delivery_status', 'sent_at', 'failure_reason', 'customer_id', 'user_id',
+    ];
+
+    protected $casts = [
+        'read' => 'boolean',
+        'sent_at' => 'datetime',
+    ];
 
     public function users()
     {

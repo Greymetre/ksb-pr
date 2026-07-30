@@ -11,7 +11,7 @@ class Leave extends Model
 
     protected $table = 'leaves';
 
-    protected $fillable = [ 'active', 'user_id', 'from_date', 'to_date', 'type', 'bal_type', 'reason', 'created_by','status', 'created_at', 'updated_at'];
+    protected $fillable = [ 'active', 'user_id', 'from_date', 'to_date', 'type', 'bal_type', 'reason', 'created_by','status', 'remark_status', 'created_at', 'updated_at'];
 
     public function users()
     {

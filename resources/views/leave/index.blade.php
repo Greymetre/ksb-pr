@@ -78,19 +78,14 @@
 
   
 
-                  @if(auth()->user()->can(['leave_create']))
-                  <a data-toggle="modal" data-target="#submitLeave" class="custom-btn create" title="Punch In">
+                  @if(auth()->user()->hasRole('superadmin') || auth()->user()->can('leave_create'))
+                  <a data-toggle="modal" data-target="#submitLeave" class="custom-btn create" title="Add Leave">
                     Add Leave
                   </a>
                   @endif
                   <a href="{{ URL::to('attendance-location') }}" class="btn btn-just-icon btn-theme d-none" title="Update Location">
                     <i class="material-icons">add_location</i>
                   </a>
-                  @if(auth()->user()->can(['add_comp_off_leave']))
-                  <a data-toggle="modal" data-target="#AddComboLeave" class="custom-btn create" title="Add Combo Leave">
-                    Add Comp Off Leave
-                  </a>
-                  @endif
                 </div>
               </div>
             </span>
@@ -285,10 +280,17 @@
                     <select class=" form-control" name="bal_type" id="bal_type" style="width: 100%;" required>
                       <option value="">Select Type</option>
                       <!-- <option value="Leave Balance" data-is-city="false">Leave Balance</option> -->
-                      <option value="Casual Leave" data-is-city="false">Casual Leave</option>
+                      <option value="Casual Balance" data-is-city="false">Casual Leave</option>
                       <option value="Comp-off Balance" data-is-city="false">Comp-off Balance</option>
                     </select>
                   </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="input_section">
+                  <label class="col-form-label">Available Balance</label>
+                  <input type="number" id="selected_leave_balance" class="form-control" step="0.01" readonly>
+                  <small id="leave_balance_message" class="form-text"></small>
                 </div>
               </div>
               <div class="col-md-6">
@@ -337,92 +339,6 @@
     </div>
   </div>
 
-
-  <div class="modal fade bd-example-modal-lg" id="AddComboLeave" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-      <div class="modal-content card">
-        <div class="card-header card-header-icon card-header-theme">
-          <div class="card-icon">
-            <i class="material-icons">perm_identity</i>
-          </div>
-          <h4 class="card-title">
-            <span class="modal-title">Add </span> Comp Off Leave <span class="pull-right">
-              <a href="javascript:void(0)" class="btn btn-just-icon btn-danger" data-dismiss="modal">
-                <i class="material-icons">clear</i>
-              </a>
-            </span>
-          </h4>
-        </div>
-        <div class="modal-body">
-          <form method="POST" action="{{ route('comboOffLeave') }}" enctype="multipart/form-data" id="createComboLeave">
-            @csrf
-            <div class="row">
-              <div class="col-md-6">
-                <div class="input_section">
-                  <label class="col-form-label">User</label>
-                  <select class="form-control select2" name="user_id" id="user_id_c" style="width: 100%;" required>
-                    <option value="">Select User</option>
-                    @if(@isset($users))
-                    @foreach($users as $user)
-                    <option value="{!! $user['id'] !!}">{!! $user['name'] !!}</option>
-                    @endforeach
-                    @endif
-                  </select>
-                </div>
-              </div>
-              <!-- <div class="col-md-6">
-                <div class="input_section">
-                  <label class="col-form-label">Leave Balance</label>
-                  <div>
-                    <input type="number" readonly name="leave_balance" id="leave_balance_c" class="form-control" value="">
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-  <div class="input_section">
-    <label class="col-form-label">Earned Leave Balance</label>
-    <input type="number" readonly id="earned_leave_balance_c" class="form-control">
-  </div>
-</div>
-
-<div class="col-md-6">
-  <div class="input_section">
-    <label class="col-form-label">Casual Leave Balance</label>
-    <input type="number" readonly id="casual_leave_balance_c" class="form-control">
-  </div>
-</div>
-
-<div class="col-md-6">
-  <div class="input_section">
-    <label class="col-form-label">Sick Leave Balance</label>
-    <input type="number" readonly id="sick_leave_balance_c" class="form-control">
-  </div>
-</div> -->
-              <div class="col-md-6">
-                <div class="input_section">
-                  <label class="col-form-label">Comp off Balance</label>
-                  <div>
-                    <input type="number" readonly name="compb_off" id="compb_off_c" class="form-control" value="">
-                  </div>
-                </div>
-              </div>
-
-
-              <div class="col-md-6">
-                <div class="input_section">
-                  <label class="col-form-label">Date</label>
-                  <div>
-                    <input type="text" name="combo_off_date" id="combo_off_date" class="datepicker" value="{!! old( 'to_date') !!}" required>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <button id="add_leave" class="btn btn-info save pull-right"> Submit</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- new model for reject attendance -->
 
@@ -699,6 +615,49 @@
       }
     });
 
+    var leaveBalances = {
+      casual: 0,
+      compOff: 0
+    };
+
+    function requiredLeaveDays() {
+      var fromDate = moment($("#from_date").val(), ["YYYY-MM-DD", "DD-MM-YYYY"], true);
+      var toDate = moment($("#to_date").val(), ["YYYY-MM-DD", "DD-MM-YYYY"], true);
+
+      if (!fromDate.isValid() || !toDate.isValid() || toDate.isBefore(fromDate)) {
+        return 0;
+      }
+
+      var days = toDate.diff(fromDate, "days") + 1;
+      return ["First Half Leave", "Second Half Leave"].includes($("#type").val()) ? 0.5 : days;
+    }
+
+    function updateLeaveBalanceCheck() {
+      var balanceType = $("#bal_type").val();
+      var available = balanceType === "Casual Balance"
+        ? leaveBalances.casual
+        : balanceType === "Comp-off Balance"
+          ? leaveBalances.compOff
+          : null;
+      var required = requiredLeaveDays();
+      var message = $("#leave_balance_message");
+
+      $("#selected_leave_balance").val(available === null ? "" : available);
+      message.removeClass("text-danger text-success").text("");
+      $("#add_leave").prop("disabled", false);
+
+      if (available !== null && required > 0) {
+        if (available < required) {
+          message.addClass("text-danger")
+            .text("Insufficient balance. Required: " + required + " day(s).");
+          $("#add_leave").prop("disabled", true);
+        } else {
+          message.addClass("text-success")
+            .text("Required: " + required + " day(s).");
+        }
+      }
+    }
+
     $(document).on("change", "#user_id", function(e) {
       var selectedDate = $('#punchin_date').val();
       var user_id = $(this).val();
@@ -713,21 +672,11 @@
         success: function(res) {
   if (res.status == 'success') {
 
-    // Enable / disable comp-off option
-    if (res.compb_off > 0) {
-      $('#bal_type option[value="Comp-off Balance"]').prop('disabled', false);
-    } else {
-      $('#bal_type option[value="Comp-off Balance"]').prop('disabled', true);
-    }
-
-    if (res.casual_leave_balance > 0) {
-      $('#bal_type option[value="Casual Leave"]').prop('disabled', false);
-    } else {
-      $('#bal_type option[value="Casual Leave"]').prop('disabled', true);
-    }
-
-    $("#casual_leave_balance_l").text(res.casual_leave_balance ?? 0);
-    $("#compb_off_l").text(res.compb_off ?? 0);
+    leaveBalances.casual = Number(res.casual_leave_balance || 0);
+    leaveBalances.compOff = Number(res.compb_off || 0);
+    $("#casual_leave_balance_l").text(leaveBalances.casual);
+    $("#compb_off_l").text(leaveBalances.compOff);
+    updateLeaveBalanceCheck();
   }
 }
 
@@ -750,29 +699,13 @@
       }
     });
 
-    $(document).on("change", "#user_id_c", function(e) {
-      var user_id = $(this).val();
-      $.ajax({
-        url: "{{ url('getLeaveBalance') }}",
-        dataType: "json",
-        type: "POST",
-        data: {
-          _token: "{{csrf_token()}}",
-          user_id: user_id
-        },
-        success: function(res) {
-          if (res.status == 'success') {
-            if (res.compb_off != '' && res.compb_off > 0) {
-              $('#bal_type option[value="Comp-off Balance"]').prop('disabled', false);
-            } else {
-              $('#bal_type option[value="Comp-off Balance"]').prop('disabled', true);
-            }
-            $("#leave_balance_c").val(res.leave_balance);
-            $("#compb_off_c").val(res.compb_off);
-            $("#casual_leave_balance_c").val(res.casual_leave_balance);
-          }
-        }
-      })
+    $(document).on("change dp.change", "#bal_type, #from_date, #to_date, #type", updateLeaveBalanceCheck);
+
+    $("#createleadstagesForm").on("submit", function(e) {
+      updateLeaveBalanceCheck();
+      if ($("#add_leave").prop("disabled")) {
+        e.preventDefault();
+      }
     });
 
     $("#working_type").on("change", function() {
@@ -832,22 +765,6 @@
     }
   </script>
   <script>
-    $(document).ready(function() {
-      $("#combo_off_date").datepicker({
-        dateFormat: "yy-mm-dd",
-        beforeShowDay: function(date) {
-          var day = date.getDay();
-          var today = new Date();
-
-          // Allow only past Sundays
-          if (day === 0 && date < today) {
-            return [true, ""]; // Enable the date
-          } else {
-            return [false, ""]; // Disable other dates
-          }
-        }
-      });
-    });
     $(document).ready(function() {
       // Initialize Select2 with the correct dropdown parent
       $('#user_id').select2({

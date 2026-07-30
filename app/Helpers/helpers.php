@@ -65,72 +65,27 @@ if (! function_exists('sendmessage')) {
 if (! function_exists('sendNotification')) {
     function sendNotification($userid, $data)
     {
-        $token = User::where('id', $userid)->pluck('notification_id')->first();
-        $url = "https://fcm.googleapis.com/fcm/send";
-        // $serverKey = 'AAAAjMeiBjY:APA91bGtua9m0x8v1pNNAX6JhNDjnCvm4HgVQnpUhaFID4WonakTivV72RzttdSs5Aux1ua0BUZQGM3RkzAYuGr8BnQcit2rMEF7-aMhzWnWtoLoMNxsbzRTpTy8k8x6sYPHoLbIh9vX';
-
-        $serverKey = 'AAAAVO4fLoE:APA91bHceRDC8GZgOFCIzfiBjqMx5vqgpC14s3Z-4dh-qOqvyTWg6zl8TTeIwZrepNs_cojgUcY6PbXwGPLx5VuGTiw-5vZUlj7jvasgatM4x22yEyj0gaYVCwpl9vJeJDmdo7E5vWEy';
-        if (!empty($token)) {
-            $notification = array('title' => $data['title'], 'message' => $data['body'], 'time' => date('Y-m-d'), 'image' => "https://source.unsplash.com/user/c_v_r/1900x800");
-            $arrayToSend = array('to' => $token, 'data' => $notification);
-            $json = json_encode($arrayToSend);
-            $headers = array(
-                'Content-Type:application/json',
-                'Authorization:key=' . $serverKey
-            );
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
-            //Send the request
-            $response = curl_exec($ch);
-            //Close request
-            if ($response === FALSE) {
-                die('FCM Send Error: ' . curl_error($ch));
-            }
-            dd($response);
-            curl_close($ch);
-            Notification::create([
-                'type' => isset($data['title']) ? $data['title'] : '',
-                'data' => isset($data['body']) ? $data['body'] : '',
-                'customer_id' => isset($data['customer_id']) ? $data['customer_id'] : null,
-                'user_id' => $userid
-            ]);
-        }
+        return SendPushNotification(
+            $userid,
+            $data['body'] ?? '',
+            $data['model'] ?? 'general',
+            $data['model_id'] ?? null,
+            $data['title'] ?? 'FieldKonnect',
+            $data['customer_id'] ?? null
+        );
     }
 }
 if (! function_exists('receiverNotification')) {
     function receiverNotification($data, $receiver_id)
     {
-        $url = 'https://fcm.googleapis.com/fcm/send';
-        // $server_key = 'AAAAz12287M:APA91bELeMYiEsqBNzFfKvKgcdPA645159iYFc9fMLxiPTDvWJwoS2xOP14m1ZfbyOkVT9m6qe4aviKIaXUdk3NeO12Ft3NQBJt5J9rnM6fCeMyK98Qsjp5eZdhpj79h07Em7nJ_482Y';
-        $serverKey = 'AAAAVO4fLoE:APA91bHceRDC8GZgOFCIzfiBjqMx5vqgpC14s3Z-4dh-qOqvyTWg6zl8TTeIwZrepNs_cojgUcY6PbXwGPLx5VuGTiw-5vZUlj7jvasgatM4x22yEyj0gaYVCwpl9vJeJDmdo7E5vWEy';
-        $notification_id = User::where('id', $receiver_id)->pluck('notification_id')->first();
-        $fields = array();
-        $fields['data'] = $data;
-        $fields['registration_ids'] = array($notification_id);
-        $headers = array(
-            'Content-Type:application/json',
-            'Authorization:key=' . $server_key
+        return SendPushNotification(
+            $receiver_id,
+            $data['body'] ?? $data['message'] ?? '',
+            $data['model'] ?? 'general',
+            $data['model_id'] ?? null,
+            $data['title'] ?? 'FieldKonnect',
+            $data['customer_id'] ?? null
         );
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
-        $result = curl_exec($ch);
-        if ($result === FALSE) {
-            die('FCM Send Error: ' . curl_error($ch));
-        }
-        curl_close($ch);
-        return $result;
     }
 }
 
@@ -1509,20 +1464,60 @@ if (!function_exists('isCustomerUser')) {
 }
 
 if (!function_exists('SendPushNotification')) {
-    function SendPushNotification($user_id, $message, $model = 'lead')
+    function SendPushNotification(
+        $user_id,
+        $message,
+        $model = 'general',
+        $model_id = null,
+        $title = 'FieldKonnect',
+        $customer_id = null
+    )
     {
+        $notification = null;
+
         try {
             $user = User::find($user_id);
 
-            if (!$user || empty($user->notification_id)) {
-                return false; // no user or no fcm token
+            if (!$user) {
+                \Log::warning('Push notification skipped because the user does not exist.', [
+                    'user_id' => $user_id,
+                    'model' => $model,
+                    'model_id' => $model_id,
+                ]);
+                return false;
+            }
+
+            $notification = Notification::create([
+                'type' => $title,
+                'data' => $message,
+                'read' => false,
+                'model' => $model ?: 'general',
+                'model_id' => $model_id,
+                'delivery_status' => 'pending',
+                'customer_id' => $customer_id,
+                'user_id' => $user->id,
+            ]);
+
+            if (empty($user->notification_id)) {
+                $notification->update([
+                    'delivery_status' => 'failed',
+                    'failure_reason' => 'User does not have an FCM token.',
+                ]);
+                return false;
             }
 
             $fcmToken = $user->notification_id;
-            $title = 'FieldKonnect';
-            $credentialsPath = storage_path('app/fieldkonnectsilver-firebase-adminsdk-q2cko-90f50017b3.json');
+            $deviceType = strtolower(trim((string) $user->device_type));
+            $isIosDevice = str_contains($deviceType, 'ios')
+                || str_contains($deviceType, 'iphone')
+                || str_contains($deviceType, 'ipad')
+                || str_contains($deviceType, 'apple');
+            $credentialsPath = env('FIREBASE_ADMIN_CREDENTIALS');
+            if (!$credentialsPath) {
+                throw new \RuntimeException('FIREBASE_ADMIN_CREDENTIALS is not configured.');
+            }
             $scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
-            $projectId = 'fieldkonnectsilver';
+            $projectId = env('FIREBASE_PROJECT_ID', 'fieldkonnect-duke');
             $deviceToken = $fcmToken;
 
             $client = new Client();
@@ -1530,16 +1525,48 @@ if (!function_exists('SendPushNotification')) {
             $credentials->fetchAuthToken();
             $token = $credentials->getLastReceivedToken()['access_token'];
 
-            $messagePayload = [
-                'message' => [
-                    'token' => $deviceToken,
-                    'data' => [
-                        'title' => $title,
-                        'body'  => $message,
-                        'image' => $model,
-                    ],
+            $firebaseMessage = [
+                'token' => $deviceToken,
+                'notification' => [
+                    'title' => $title,
+                    'body' => $message,
+                ],
+                'data' => [
+                    'title' => (string) $title,
+                    'body' => (string) $message,
+                    'model' => (string) ($model ?: 'general'),
+                    'model_id' => $model_id === null ? '' : (string) $model_id,
                 ],
             ];
+
+            $androidOptions = [
+                'priority' => 'HIGH',
+                'notification' => [
+                    'sound' => 'default',
+                    'notification_priority' => 'PRIORITY_HIGH',
+                ],
+            ];
+
+            $iosOptions = [
+                'headers' => [
+                    'apns-priority' => '10',
+                    'apns-push-type' => 'alert',
+                ],
+                'payload' => [
+                    'aps' => ['sound' => 'default'],
+                ],
+            ];
+
+            if (str_contains($deviceType, 'android')) {
+                $firebaseMessage['android'] = $androidOptions;
+            } elseif ($isIosDevice) {
+                $firebaseMessage['apns'] = $iosOptions;
+            } else {
+                $firebaseMessage['android'] = $androidOptions;
+                $firebaseMessage['apns'] = $iosOptions;
+            }
+
+            $messagePayload = ['message' => $firebaseMessage];
 
             $response = $client->post("https://fcm.googleapis.com/v1/projects/$projectId/messages:send", [
                 'headers' => [
@@ -1550,10 +1577,20 @@ if (!function_exists('SendPushNotification')) {
             ]);
 
             if ($response->getStatusCode() == 200) {
+                $notification->update([
+                    'delivery_status' => 'sent',
+                    'sent_at' => now(),
+                    'failure_reason' => null,
+                ]);
                 return true;
             }
         } catch (\Exception $e) {
-            // Instead of breaking, just log and bypass
+            if ($notification) {
+                $notification->update([
+                    'delivery_status' => 'failed',
+                    'failure_reason' => Str::limit($e->getMessage(), 2000),
+                ]);
+            }
             \Log::error("Push notification failed: " . $e->getMessage());
             return false;
         }
@@ -1573,6 +1610,13 @@ if (!function_exists('StoreLeadNotification')) {
             'user_id' => $user_id,
             'model' => $model
         ]);
+        Notification::where('user_id', $user_id)
+            ->where('data', $body)
+            ->where('model', $model)
+            ->whereNull('model_id')
+            ->latest('id')
+            ->limit(1)
+            ->update(['type' => $title, 'model_id' => $lead_id]);
         return true;
     }
 }

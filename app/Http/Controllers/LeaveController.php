@@ -195,7 +195,7 @@ class LeaveController extends Controller
             'from_date' => 'required|date|before_or_equal:to_date',
             'to_date'   => 'required|date|after_or_equal:from_date',
             'type'      => 'required|in:First Half Leave,Second Half Leave,Full Day Leave,Leave',
-            'bal_type'  => 'required|in:Casual Leave,Comp-off Balance',
+            'bal_type'  => 'required|in:Casual Balance,Comp-off Balance',
             'reason'    => 'nullable|string|max:500',
         ]);
 
@@ -234,34 +234,20 @@ class LeaveController extends Controller
         $balance_column = null;
 
         switch ($request->bal_type) {
-            case 'Casual Leave':
+            case 'Casual Balance':
                 $balance_column = 'casual_leave_balance';
                 $enough_balance = $user->casual_leave_balance >= $deduct_amount;
                 break;
 
             case 'Comp-off Balance':
-                // Your existing comp-off check logic
-                if ($request->type == 'First Half Leave' || $request->type == 'Second Half Leave') {
-                    $compOff = CompOffLeave::where('user_id', $request->user_id)
-                        ->where('is_used', false)
-                        ->whereDate('expiry_date', '>=', now())
-                        ->where('balance', '>=', 0.5)
-                        ->orderBy('expiry_date')
-                        ->lockForUpdate()
-                        ->first();
-
-                    $enough_balance = $compOff !== null;
-                } else {
-                    $compOffs = CompOffLeave::where('user_id', $request->user_id)
-                        ->where('is_used', false)
-                        ->whereDate('expiry_date', '>=', now())
-                        ->where('balance', '>', 0)
-                        ->lockForUpdate()
-                        ->get();
-
-                    $total_comp_off = $compOffs->sum('balance');
-                    $enough_balance = $total_comp_off >= $deduct_amount;
-                }
+                $total_comp_off = CompOffLeave::where('user_id', $request->user_id)
+                    ->where('is_used', false)
+                    ->whereDate('expiry_date', '>=', now())
+                    ->where('balance', '>', 0)
+                    ->lockForUpdate()
+                    ->get()
+                    ->sum('balance');
+                $enough_balance = $total_comp_off >= $deduct_amount;
                 break;
         }
        
@@ -294,6 +280,7 @@ class LeaveController extends Controller
                     'punchin_summary' => $request->reason ?: 'Leave',
                     'working_type'    => $request->type,
                     'punchin_from'    => 'App',
+                    'attendance_status' => 0,
                     'created_at'      => now(),
                     'updated_at'      => now(),
                 ]
@@ -320,39 +307,29 @@ class LeaveController extends Controller
         // Deduct balance
         // ────────────────────────────────────────────────
         if ($request->bal_type === 'Comp-off Balance') {
-            // ── Your existing Comp-off deduction logic ──
-            if ($request->type == 'First Half Leave' || $request->type == 'Second Half Leave') {
-                if ($compOff) {
-                    $compOff->balance -= 0.5;
-                    $compOff->leave_id = trim($compOff->leave_id . ',' . $leave->id, ',');
-                    $compOff->is_used = ($compOff->balance <= 0);
-                    $compOff->save();
-                }
-            } else {
-                $remaining = $deduct_amount;
-                $compOffs = CompOffLeave::where('user_id', $user->id)
-                    ->where('is_used', false)
-                    ->whereDate('expiry_date', '>=', now())
-                    ->where('balance', '>', 0)
-                    ->orderBy('expiry_date', 'asc')
-                    ->lockForUpdate()
-                    ->get();
+            $remaining = $deduct_amount;
+            $compOffs = CompOffLeave::where('user_id', $user->id)
+                ->where('is_used', false)
+                ->whereDate('expiry_date', '>=', now())
+                ->where('balance', '>', 0)
+                ->orderBy('expiry_date', 'asc')
+                ->lockForUpdate()
+                ->get();
 
-                foreach ($compOffs as $comp) {
-                    if ($remaining <= 0) break;
+            foreach ($compOffs as $comp) {
+                if ($remaining <= 0) break;
 
-                    $use = min($remaining, $comp->balance);
-                    $comp->balance -= $use;
-                    $remaining -= $use;
+                $use = min($remaining, $comp->balance);
+                $comp->balance -= $use;
+                $remaining -= $use;
 
-                    $comp->leave_id = trim($comp->leave_id . ',' . $leave->id, ',');
-                    $comp->is_used = ($comp->balance <= 0);
-                    $comp->save();
-                }
+                $comp->leave_id = trim($comp->leave_id . ',' . $leave->id, ',');
+                $comp->is_used = ($comp->balance <= 0);
+                $comp->save();
+            }
 
-                if ($remaining > 0.00001) {
-                    throw new \RuntimeException('Comp-off balance became insufficient during processing.');
-                }
+            if ($remaining > 0.00001) {
+                throw new \RuntimeException('Comp-off balance became insufficient during processing.');
             }
 
             $user->compb_off = CompOffLeave::where('user_id', $user->id)
@@ -373,6 +350,10 @@ class LeaveController extends Controller
         }
 
         DB::commit();
+
+        if (!empty($user->reportingid)) {
+            SendPushNotification($user->reportingid, $user->name . ' has applied for leave from ' . $leave->from_date . ' to ' . $leave->to_date . '.', 'leave', $leave->id, 'Leave request');
+        }
 
         return redirect()->route('leaves.index')
             ->with('message_success', 'Leave added successfully.');
@@ -535,6 +516,8 @@ class LeaveController extends Controller
     } else {
         // Refund normal leave
         $column_map = [
+            'Casual Balance' => 'casual_leave_balance',
+            // Keep compatibility with leave records created by the old web form.
             'Casual Leave' => 'casual_leave_balance',
         ];
 
@@ -557,10 +540,12 @@ class LeaveController extends Controller
     public function approveLeave(Request $request)
     {
         try {
-            if (Leave::where('id', '=', $request['id'])->update([
+            $leave = Leave::find($request['id']);
+            if ($leave && $leave->update([
                 'status' => 1,
                 'remark_status' => null
             ])) {
+                SendPushNotification($leave->user_id, 'Your leave request from ' . $leave->from_date . ' to ' . $leave->to_date . ' has been approved.', 'leave', $leave->id, 'Leave approved');
                 return redirect()->back()->with('message_success', 'Leave Approved Successfully');
             }
             return redirect()->back()->with('message_danger', 'Error in Leave Approved')->withInput();
@@ -574,10 +559,14 @@ class LeaveController extends Controller
     {
         $remark_status  = $request['remark_status'] ?? null;
         try {
-            if (Leave::where('id', '=', $request['leave_id'])->update([
+            $leave = Leave::find($request['leave_id']);
+            if ($leave && $leave->update([
                 'status' => 2,
                 'remark_status' => $remark_status ?? null,
             ])) {
+                $message = 'Your leave request from ' . $leave->from_date . ' to ' . $leave->to_date . ' has been rejected.';
+                if ($remark_status) $message .= ' Remark: ' . $remark_status;
+                SendPushNotification($leave->user_id, $message, 'leave', $leave->id, 'Leave rejected');
                 return Redirect::to('leaves')->with('message_success', 'Leave Rejected Successfully');
             }
             return redirect()->back()->with('message_danger', 'Error in Leave Rejected')->withInput();

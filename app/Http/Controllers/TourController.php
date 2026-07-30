@@ -501,6 +501,8 @@ public function edit($id)
         return response()->json(["status" => false]);
     }
 
+    $statusLabels = [0 => 'Pending', 1 => 'Approved', 2 => 'Rejected'];
+
     foreach ($tours as $tour) {
 
         $oldStatus = $tour->status;
@@ -527,6 +529,10 @@ public function edit($id)
             $request->status,
             "Status changed from $oldLabel to $newLabel"
         );
+        if (in_array((int) $request->status, [1, 2], true)) {
+            $statusLabel = (int) $request->status === 1 ? 'approved' : 'rejected';
+            SendPushNotification($tour->userid, 'Your tour plan for ' . $tour->date . ' has been ' . $statusLabel . '.', 'tour_plan', $tour->id, 'Tour plan ' . $statusLabel);
+        }
     }
 
     return response()->json(["status" => "success"]);

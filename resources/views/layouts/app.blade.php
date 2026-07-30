@@ -2252,6 +2252,15 @@
                         @endif
                         @endif
                         <li class="fk-menu-section"><span>Finance</span></li>
+                        @if(auth()->user()->can('user_access'))
+                        <li class="nav-link hide_icon {{ request()->is('notification-management*') ? 'active' : '' }}">
+                            <a class="hoveradd" href="{{ route('notification-management.index') }}">
+                                <i class="material-icons icon">notifications_active</i>
+                                <span>Notification Management</span>
+                                <div class="d-none mobile_hide">Notification Management</div>
+                            </a>
+                        </li>
+                        @endif
                         @if(auth()->user()->can(['account_access']))
                         <li
                             class="nav-link {{ request()->is('expenses*') || request()->is('tax_invoice*') || request()->is('expenses_type*') || request()->is('estimate*') ? 'active' : '' }}">
