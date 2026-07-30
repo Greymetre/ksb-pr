@@ -409,7 +409,7 @@ class UserController extends Controller
                 ->when($request->filled('read'), function ($query) use ($request) {
                     $query->where('read', $request->boolean('read'));
                 })
-                ->select('id', 'type', 'data', 'read', 'model', 'model_id', 'delivery_status', 'sent_at', 'customer_id', 'user_id', 'created_at')
+                ->select('id', 'type', 'data', 'image', 'read', 'model', 'model_id', 'delivery_status', 'sent_at', 'customer_id', 'user_id', 'created_at')
                 ->latest()
                 ->paginate($request->input('pageSize', 30));
             if ($data->count() > 0) {

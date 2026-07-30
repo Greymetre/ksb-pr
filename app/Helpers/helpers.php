@@ -1492,6 +1492,7 @@ if (!function_exists('SendPushNotification')) {
             $notification = Notification::create([
                 'type' => $title,
                 'data' => $message,
+                'image' => $image,
                 'read' => false,
                 'model' => $model ?: 'general',
                 'model_id' => $model_id,
