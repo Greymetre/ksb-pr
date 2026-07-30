@@ -71,7 +71,8 @@ if (! function_exists('sendNotification')) {
             $data['model'] ?? 'general',
             $data['model_id'] ?? null,
             $data['title'] ?? 'FieldKonnect',
-            $data['customer_id'] ?? null
+            $data['customer_id'] ?? null,
+            $data['image'] ?? $data['image_url'] ?? null
         );
     }
 }
@@ -1470,7 +1471,8 @@ if (!function_exists('SendPushNotification')) {
         $model = 'general',
         $model_id = null,
         $title = 'FieldKonnect',
-        $customer_id = null
+        $customer_id = null,
+        $image = null
     )
     {
         $notification = null;
@@ -1539,6 +1541,12 @@ if (!function_exists('SendPushNotification')) {
                 ],
             ];
 
+            if (!empty($image)) {
+                $image = (string) $image;
+                $firebaseMessage['notification']['image'] = $image;
+                $firebaseMessage['data']['image'] = $image;
+            }
+
             $androidOptions = [
                 'priority' => 'HIGH',
                 'notification' => [
@@ -1546,6 +1554,9 @@ if (!function_exists('SendPushNotification')) {
                     'notification_priority' => 'PRIORITY_HIGH',
                 ],
             ];
+            if (!empty($image)) {
+                $androidOptions['notification']['image'] = $image;
+            }
 
             $iosOptions = [
                 'headers' => [
@@ -1553,9 +1564,15 @@ if (!function_exists('SendPushNotification')) {
                     'apns-push-type' => 'alert',
                 ],
                 'payload' => [
-                    'aps' => ['sound' => 'default'],
+                    'aps' => [
+                        'sound' => 'default',
+                        'mutable-content' => 1,
+                    ],
                 ],
             ];
+            if (!empty($image)) {
+                $iosOptions['fcm_options'] = ['image' => $image];
+            }
 
             if (str_contains($deviceType, 'android')) {
                 $firebaseMessage['android'] = $androidOptions;

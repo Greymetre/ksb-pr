@@ -26,8 +26,6 @@ class NotificationManagementController extends Controller
             'districts' => District::where('active', 'Y')->orderBy('district_name')->get(['id', 'district_name']),
             'cities' => City::where('active', 'Y')->orderBy('city_name')->get(['id', 'city_name']),
             'users' => $this->usersQuery()->orderBy('name')->get(['id', 'name', 'mobile']),
-            'recipientCount' => $this->usersQuery()->whereNotNull('notification_id')
-                ->where('notification_id', '!=', '')->count(),
         ]);
     }
 
@@ -60,8 +58,6 @@ class NotificationManagementController extends Controller
             'districts' => $districts,
             'cities' => $cities,
             'users' => $users,
-            'recipient_count' => $this->usersQuery($filters)->whereNotNull('notification_id')
-                ->where('notification_id', '!=', '')->count(),
         ]);
     }
 
@@ -73,28 +69,50 @@ class NotificationManagementController extends Controller
             'district_id' => 'nullable|integer|exists:districts,id',
             'city_id' => 'nullable|integer|exists:cities,id',
             'user_id' => 'nullable|integer|exists:users,id',
+            'title' => 'required|string|max:150',
             'message' => 'required|string|max:1000',
+            'image' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
         ]);
 
-        $recipients = $this->usersQuery($data)->whereNotNull('notification_id')
-            ->where('notification_id', '!=', '')->get(['id']);
+        $imageUrl = $request->hasFile('image')
+            ? fileupload($request->file('image'), 'notifications', 'notification_')
+            : null;
+
+        $recipients = $this->usersQuery($data)->get(['id', 'notification_id']);
 
         $sent = 0;
         foreach ($recipients as $recipient) {
-            if (SendPushNotification($recipient->id, $data['message'], 'general_notification')) {
+            if (SendPushNotification(
+                $recipient->id,
+                $data['message'],
+                'general_notification',
+                null,
+                $data['title'],
+                null,
+                $imageUrl
+            )) {
                 $sent++;
             }
         }
 
-        $failed = $recipients->count() - $sent;
-        $message = "Notification sent successfully to {$sent} user(s).";
-        if ($failed > 0) {
-            $message .= " {$failed} delivery attempt(s) failed.";
+        $stored = $recipients->count();
+        $pushEligible = $recipients->filter(
+            fn ($recipient) => !empty(trim((string) $recipient->notification_id))
+        )->count();
+        $pushFailed = $pushEligible - $sent;
+        $withoutToken = $stored - $pushEligible;
+
+        $message = "News saved successfully for {$stored} user(s). Push notification sent to {$sent} user(s).";
+        if ($withoutToken > 0) {
+            $message .= " {$withoutToken} user(s) had no FCM token and can read it from the mobile notification screen.";
+        }
+        if ($pushFailed > 0) {
+            $message .= " {$pushFailed} push delivery attempt(s) failed; the news is still available in the mobile notification screen.";
         }
 
         return redirect()->route('notification-management.index')->with(
-            $sent > 0 ? 'success' : 'error',
-            $recipients->isEmpty() ? 'No selected user has a valid FCM token.' : $message
+            $stored > 0 ? 'success' : 'error',
+            $recipients->isEmpty() ? 'No active users matched the selected filters.' : $message
         );
     }
 
