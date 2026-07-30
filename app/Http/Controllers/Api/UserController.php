@@ -409,6 +409,19 @@ class UserController extends Controller
                 ->when($request->filled('read'), function ($query) use ($request) {
                     $query->where('read', $request->boolean('read'));
                 })
+                ->when($request->filled('model'), function ($query) use ($request) {
+                    $query->where('model', $request->string('model')->toString());
+                })
+                ->when($request->boolean('media'), function ($query) {
+                    $query->whereNotNull('image')->where('image', '!=', '');
+                })
+                ->when($request->filled('search'), function ($query) use ($request) {
+                    $search = trim($request->string('search')->toString());
+                    $query->where(function ($newsQuery) use ($search) {
+                        $newsQuery->where('type', 'like', "%{$search}%")
+                            ->orWhere('data', 'like', "%{$search}%");
+                    });
+                })
                 ->select('id', 'type', 'data', 'image', 'read', 'model', 'model_id', 'delivery_status', 'sent_at', 'customer_id', 'user_id', 'created_at')
                 ->latest()
                 ->paginate($request->input('pageSize', 30));
