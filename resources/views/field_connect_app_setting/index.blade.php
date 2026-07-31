@@ -178,10 +178,10 @@
             <div class="card-body">
                <div class="row">
 
-                  <div class="col-md-6">
+                  <div class="col-md-4">
                      <div class="input_section">
-                        <label class="col-form-label">App Version </label>
-                        <input type="number" name="app_version" placeholder="1.01" step="0.01" class="form-control" id="app_version" value="{{old('app_version', $field_konnect_app_setting['app_version'])}}" required>
+                        <label class="col-form-label">Android App Version </label>
+                        <input type="text" name="app_version" placeholder="1.8" inputmode="decimal" pattern="\d+(\.\d+)*" class="form-control" id="app_version" value="{{old('app_version', $field_konnect_app_setting['app_version'])}}" required>
                         @if ($errors->has('app_version'))
                         <div class="error col-lg-12">
                            <p class="text-danger">{{ $errors->first('app_version') }}</p>
@@ -189,7 +189,18 @@
                         @endif
                      </div>
                   </div>
-                  <div class="col-md-6">
+                  <div class="col-md-4">
+                     <div class="input_section">
+                        <label class="col-form-label">iOS App Version </label>
+                        <input type="text" name="app_ios_version" placeholder="1.0" inputmode="decimal" pattern="\d+(\.\d+)*" class="form-control" id="app_ios_version" value="{{old('app_ios_version', $field_konnect_app_setting['app_ios_version'] ?? '')}}" required>
+                        @if ($errors->has('app_ios_version'))
+                        <div class="error col-lg-12">
+                           <p class="text-danger">{{ $errors->first('app_ios_version') }}</p>
+                        </div>
+                        @endif
+                     </div>
+                  </div>
+                  <div class="col-md-4">
                      <div class="input_section">
                         <label class="col-form-label">Order Discount Limit </label>
                         <input type="number" name="order_discount_limit" placeholder="1" step="1" class="form-control" id="order_discount_limit" value="{{old('order_discount_limit', $field_konnect_app_setting['order_discount_limit'])}}" required>

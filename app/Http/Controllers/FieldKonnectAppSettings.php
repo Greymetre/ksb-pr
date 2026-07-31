@@ -55,7 +55,8 @@ class FieldKonnectAppSettings extends Controller
         abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->hasRole('Admin') && Gate::denies('field_konnect_app_setting_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $validator = Validator::make($request->all(), [
-            'app_version' => 'required',
+            'app_version' => ['required', 'string', 'max:50', 'regex:/^\d+(\.\d+)*$/'],
+            'app_ios_version' => ['required', 'string', 'max:50', 'regex:/^\d+(\.\d+)*$/'],
         ]);
     
         // Check if validation fails
