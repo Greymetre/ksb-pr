@@ -2324,7 +2324,6 @@ class AttendanceController extends Controller
             // Targets are stored in lakhs. YTD sums explicitly configured
             // calendar-year target rows and never multiplies one monthly target.
             $targetQuery = SalesTargetUsers::whereIn('user_id', $userIds)
-                ->where('type', 'secondary')
                 ->where('year', $now->year);
             if ($period === 'mtd') {
                 $targetQuery->where('month', $now->format('M'));
