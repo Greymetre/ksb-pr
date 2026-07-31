@@ -201,6 +201,7 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
     Route::any('getProfile', [LoginController::class, 'getProfile']);
     Route::post('updateProfile', [LoginController::class, 'updateProfile']);
     Route::any('logout', [LoginController::class, 'logout']);
+    Route::post('mobile/session/sync', [LoginController::class, 'syncMobileSession']);
     Route::any('getOrderDiscountLimit', [LoginController::class, 'getOrderDiscountLimit']);
 
     Route::get('secondary-customers', [SecondaryCustomerController::class, 'index']); // List with filters

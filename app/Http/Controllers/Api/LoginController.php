@@ -247,6 +247,7 @@ class LoginController extends Controller
                 'device_type'  => 'nullable|string',
                 'device_name'  => 'nullable|string',
                 'app_version'  => 'nullable|string',
+                'build_number' => 'nullable|string|max:50',
                 'fcm_token'    => 'nullable|string',       // for notifications
                 'login_at'     => 'nullable',
             ]);
@@ -330,10 +331,12 @@ class LoginController extends Controller
 
         $loginData = [
             'app_version'     => $request->app_version,
+            'build_number'    => $request->build_number,
             'device_name'     => $request->device_name,
             'device_type'     => $request->device_type,
             'unique_id'       => $request->unique_id,
             'last_login_date' => now(),
+            'last_seen_at'    => now(),
             'login_status'    => '1',
             'app'             => '2',
         ];
@@ -347,20 +350,6 @@ class LoginController extends Controller
             ['user_id' => $user->id],
             $loginData
         );
-        // Update login record
-        MobileUserLoginDetails::updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'app_version'     => $request->app_version,
-                'device_name'     => $request->device_name,
-                'device_type'     => $request->device_type,
-                'unique_id'       => $request->unique_id,
-                'last_login_date' => now(),
-                'login_status'    => '1',
-                'app'             => '2', // field app
-            ]
-        );
-
         // Revoke old tokens (your logic)
         //if (!$user->hasRole('superadmin')) {
         //    $user->tokens()->delete();
@@ -416,10 +405,12 @@ class LoginController extends Controller
             ['customer_id' => $customer->id],
             [
                 'app_version'     => $request->app_version,
+                'build_number'    => $request->build_number,
                 'device_type'     => $request->device_type,
                 'device_name'     => $request->device_name,
                 'unique_id'       => $request->unique_id,
                 'last_login_date' => now(),
+                'last_seen_at'    => now(),
                 'login_status'    => '1',
                 'app'             => '1', // customer app
             ]
@@ -614,6 +605,59 @@ class LoginController extends Controller
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], $this->internalError);
         }
+    }
+
+    public function syncMobileSession(Request $request)
+    {
+        $data = $request->validate([
+            'app_version' => 'required|string|max:250',
+            'build_number' => 'nullable|string|max:50',
+            'device_type' => 'required|string|max:250',
+            'device_name' => 'nullable|string|max:250',
+            'unique_id' => 'nullable|string|max:250',
+            'fcm_token' => 'nullable|string|max:1000',
+        ]);
+
+        $authenticatedUser = $request->user();
+        $isCustomer = $authenticatedUser instanceof Customers;
+        $identity = $isCustomer
+            ? ['customer_id' => $authenticatedUser->id]
+            : ['user_id' => $authenticatedUser->id];
+
+        MobileUserLoginDetails::updateOrCreate($identity, [
+            'app_version' => $data['app_version'],
+            'build_number' => $data['build_number'] ?? null,
+            'device_type' => $data['device_type'],
+            'device_name' => $data['device_name'] ?? null,
+            'unique_id' => $data['unique_id'] ?? null,
+            'last_seen_at' => now(),
+            'login_status' => '1',
+            'app' => $isCustomer ? '1' : '2',
+        ]);
+
+        if (!empty($data['fcm_token'])) {
+            if ($isCustomer) {
+                CustomerDetails::updateOrCreate(
+                    ['customer_id' => $authenticatedUser->id],
+                    ['fcm_token' => $data['fcm_token']]
+                );
+            } else {
+                $authenticatedUser->update([
+                    'notification_id' => $data['fcm_token'],
+                    'device_type' => $data['device_type'],
+                ]);
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Mobile session synchronized successfully.',
+            'data' => [
+                'app_version' => $data['app_version'],
+                'build_number' => $data['build_number'] ?? null,
+                'last_seen_at' => now()->toIso8601String(),
+            ],
+        ]);
     }
 
     public function customerLogin(Request $request)
