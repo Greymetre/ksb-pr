@@ -47,8 +47,8 @@ use App\Models\TransactionHistory;
 use App\Models\UserEducation;
 use App\Models\UserPmsRemark;
 use App\Models\WareHouse;
+use App\Support\UserSessionInvalidator;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
 
 class UsersController extends Controller
@@ -439,22 +439,21 @@ $user->save();
                 UserCityAssign::whereNotIn('city_id', $request['cities'])->where('userid', $id)->delete();
             }
         }
-        if ($request['password'] && !empty($request['password']) && !$user->roles()->where('id', '29')->exists()) {
-            $user->tokens()->delete();
-            $sessionFiles = File::files(storage_path('framework/sessions'));
-            foreach ($sessionFiles as $file) {
-                $sessionContent = File::get($file);
-                if (str_contains($sessionContent, 'user_idsss";i:' . $user->id . ';')) {
-                    echo $file->getFilename();
-                    echo "<br>";
-                    File::delete($file);
-                }
+        if ($request['password'] && !empty($request['password'])) {
+            UserSessionInvalidator::invalidate($user);
+
+            // When changing your own password, this request's in-memory session
+            // must also be invalidated so it is not written back at response time.
+            if ((int) Auth::id() === (int) $user->id) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')->with('status', 'Password updated successfully. Please log in with your new password.');
             }
-            Auth::logout();
-            return redirect()->route('login')->with('status', 'Password updated successfully. Please log in with your new password.');
-        } else {
-            return redirect()->route('users.index');
         }
+
+        return redirect()->route('users.index');
     }
 
     public function show($id)

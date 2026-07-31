@@ -25,6 +25,7 @@ use App\Models\UserDetails;
 use App\Models\Address;
 use App\Models\Pincode;
 use App\Models\UserEducation;
+use App\Support\UserSessionInvalidator;
 use Spatie\Permission\Models\Role;
 
 class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBatchInserts, WithChunkReading
@@ -152,6 +153,9 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                 $user = User::find($row['id']);
                 $user->roles()->sync(explode(',', $row['role_ids']));
 
+                if ($password !== '') {
+                    UserSessionInvalidator::invalidate($user);
+                }
 
                 UserDetails::where('user_id', '=', $row['id'])->update([
                     'date_of_joining' => (!empty($row['date_of_joining']) && $row['date_of_joining'] != null) ? date('Y-m-d', strtotime($row['date_of_joining'])) : null,

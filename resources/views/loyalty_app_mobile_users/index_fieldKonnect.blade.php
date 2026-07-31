@@ -212,6 +212,37 @@
         table.draw();
       });
 
+      $(document).on('click', '.user-login-status', function() {
+        var userId = $(this).data('id');
+
+        swal.fire({
+          title: "Are you sure?",
+          text: "This user will be logged out from all mobile and web sessions.",
+          type: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#DD6B55",
+          confirmButtonText: "Yes, logout user!"
+        }).then(function(result) {
+          if (result.value) {
+            $.ajax({
+              url: "{{ url('user_app_details/logout') }}",
+              type: "POST",
+              data: {
+                '_token': token,
+                'user_id': userId
+              },
+              success: function(data) {
+                table.draw(false);
+                swal.fire("Success!", data.message, "success");
+              },
+              error: function() {
+                swal.fire("Error!", "Unable to logout the user. Please try again.", "error");
+              }
+            });
+          }
+        });
+      });
+
       $(document).on('click', '.multi_login_class', function(e) {
         var userId = $(this).attr('data-id');
         var status = $(this).attr('data-multi');

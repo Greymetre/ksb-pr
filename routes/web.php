@@ -1151,6 +1151,7 @@ Route::post('ajax/user-cities-by-district', [TourController::class, 'ajaxUserCit
 
     Route::post('user_app_details/list', [MobileUserLoginDetailsController::class, 'user_app_details_list'])->name('user_app_details.list');
     Route::post('user_app_details/multi_login', [MobileUserLoginDetailsController::class, 'user_app_details_multi_login'])->name('user_app_details.multi_login');
+    Route::post('user_app_details/logout', [MobileUserLoginDetailsController::class, 'user_app_details_logout'])->name('user_app_details.logout');
 
     //Gift Category Route
     Route::resource('gift-categories', GiftCategoryController::class);

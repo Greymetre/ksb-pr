@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Division;
+use App\Support\UserSessionInvalidator;
 
 class MobileUserLoginDetailsController extends Controller
 {
@@ -164,7 +165,10 @@ class MobileUserLoginDetailsController extends Controller
                 if ($data['login_status'] == '0') {
                     return '<span class="badge badge-danger">Logout</span>';
                 } elseif ($data['login_status'] == '1') {
-                    return '<span class="badge badge-info">Login</span>';
+                    return '<span class="badge badge-info user-login-status"
+                        data-id="' . $data['user_id'] . '"
+                        style="cursor: pointer;"
+                        title="Click to logout this user">Login</span>';
                 }
             })
             ->addColumn('multi_login', function ($data) {
@@ -205,5 +209,36 @@ class MobileUserLoginDetailsController extends Controller
         $user->unique_id = NULL;
         $user->save();
         return response()->json(['status' => 'success', 'message' => 'Removed UUID Successfully.']);
+    }
+
+    public function user_app_details_logout(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        $user = User::findOrFail($validated['user_id']);
+
+        UserSessionInvalidator::invalidate($user);
+
+        MobileUserLoginDetails::where('user_id', $user->id)
+            ->where('app', '2')
+            ->update([
+                'login_status' => '0',
+                'unique_id' => null,
+            ]);
+
+        $user->update(['notification_id' => '']);
+
+        if ((int) Auth::id() === (int) $user->id) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User logged out from all mobile and web sessions successfully.',
+        ]);
     }
 }
