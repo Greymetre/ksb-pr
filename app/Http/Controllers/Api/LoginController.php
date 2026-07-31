@@ -562,21 +562,41 @@ class LoginController extends Controller
     {
         try {
             $user = $request->user();
-            $request['user_id'] = $user->id;
-            if ($request->file('image')) {
-                $image = $request->file('image');
-                $filename = 'user_' . $request['user_id'];
-                $request['profile_image'] = fileupload($image, $this->path, $filename);
+            if (! $user instanceof User) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'This profile endpoint is available for FieldKonnect users only.',
+                ], $this->unauthorized);
             }
-            $users =  $this->users->where('id', $request['user_id'])->first();
-            if ($request['profile_image']) {
-                $users->profile_image = $request['profile_image'];
+
+            $validator = Validator::make($request->all(), [
+                'image' => 'required|image|mimes:jpeg,jpg,png,webp|max:5120',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Please select a valid profile image.',
+                    'errors' => $validator->errors(),
+                ], 422);
             }
-            if ($users->save()) {
-                $response['profile_image'] = $this->users->where('id', $request['user_id'])->pluck('profile_image')->first();
-                return response()->json($response, $this->successStatus);
+
+            $filename = 'user_' . $user->id . '_';
+            $profileImage = fileupload($request->file('image'), $this->path, $filename);
+            $user->profile_image = $profileImage;
+
+            if ($user->save()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Profile photo updated successfully.',
+                    'profile_image' => $user->profile_image,
+                ], $this->successStatus);
             }
-            return response()->json($response, $this->badrequest);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unable to update profile photo.',
+            ], $this->badrequest);
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], $this->internalError);
         }
