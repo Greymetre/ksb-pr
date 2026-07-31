@@ -19,6 +19,7 @@ use App\Models\{State, District, City, Pincode, Country, Beat};
 use App\Models\UserCityAssign;
 use App\Models\UserActivity;
 use App\Models\Notification;
+use App\Models\Leave;
 
 class UserController extends Controller
 {
@@ -425,6 +426,27 @@ class UserController extends Controller
                 ->select('id', 'type', 'data', 'image', 'read', 'model', 'model_id', 'delivery_status', 'sent_at', 'customer_id', 'user_id', 'created_at')
                 ->latest()
                 ->paginate($request->input('pageSize', 30));
+
+            $leaveDates = Leave::whereIn(
+                'id',
+                $data->getCollection()
+                    ->filter(fn ($notification) => strtolower((string) $notification->model) === 'leave')
+                    ->pluck('model_id')
+                    ->filter()
+                    ->unique()
+            )->get(['id', 'from_date', 'to_date'])->keyBy('id');
+
+            $data->getCollection()->transform(function ($notification) use ($leaveDates) {
+                $leave = strtolower((string) $notification->model) === 'leave'
+                    ? $leaveDates->get($notification->model_id)
+                    : null;
+
+                $notification->from_date = $leave?->from_date;
+                $notification->to_date = $leave?->to_date;
+
+                return $notification;
+            });
+
             if ($data->count() > 0) {
                 return response()->json(['status' => 'success', 'message' => 'Data retrieved successfully.', 'data' => $data], $this->successStatus);
             }
