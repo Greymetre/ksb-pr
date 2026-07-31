@@ -114,7 +114,7 @@ class AttendanceController extends Controller
             ->all();
     }
 
-    private function tourObjectiveCounts(array $userIds, string $startDate, string $endDate): array
+    private function attendanceObjectiveCounts(array $userIds, string $startDate, string $endDate): array
     {
         $objectives = collect(config('constants.tour_objectives', []));
         $counts = $this->emptyTourObjectiveCounts();
@@ -127,11 +127,14 @@ class AttendanceController extends Controller
             fn ($objective) => [mb_strtolower(trim($objective)) => Str::snake($objective)]
         );
 
-        TourProgramme::whereIn('userid', $userIds)
-            ->whereBetween('date', [$startDate, $endDate])
+        Attendance::whereIn('user_id', $userIds)
+            ->whereBetween('punchin_date', [$startDate, $endDate])
+            ->where('active', 'Y')
             ->whereNull('deleted_at')
-            ->whereNotNull('objectives')
-            ->pluck('objectives')
+            ->whereNotNull('punchin_time')
+            ->whereNotNull('working_type')
+            ->where('working_type', '!=', '')
+            ->pluck('working_type')
             ->each(function ($storedObjectives) use (&$counts, $objectiveKeys) {
                 collect(explode(',', (string) $storedObjectives))
                     ->map(fn ($objective) => mb_strtolower(trim($objective)))
@@ -898,13 +901,13 @@ class AttendanceController extends Controller
                 ], $this->successStatus);
             }
 
-            $tourObjectivesToday = $this->tourObjectiveCounts($myTeamUserIds, $today, $today);
-            $tourObjectivesCurrentMonth = $this->tourObjectiveCounts(
+            $tourObjectivesToday = $this->attendanceObjectiveCounts($myTeamUserIds, $today, $today);
+            $tourObjectivesCurrentMonth = $this->attendanceObjectiveCounts(
                 $myTeamUserIds,
                 $currentMonthStart,
                 $currentMonthEnd
             );
-            $tourObjectivesCurrentYear = $this->tourObjectiveCounts(
+            $tourObjectivesCurrentYear = $this->attendanceObjectiveCounts(
                 $myTeamUserIds,
                 $currentYearStart,
                 $currentYearEnd
