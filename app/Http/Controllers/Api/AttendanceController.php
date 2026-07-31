@@ -2328,29 +2328,47 @@ class AttendanceController extends Controller
             if ($period === 'mtd') {
                 $targetQuery->where('month', $now->format('M'));
             }
-            $targets = $targetQuery
-                ->select('user_id', DB::raw('COALESCE(SUM(target), 0) as target_value'))
-                ->groupBy('user_id')
-                ->pluck('target_value', 'user_id');
+            $targetRows = $targetQuery
+                ->with('user:id,employee_codes,sales_type')
+                ->get();
+            $targets = $targetRows->groupBy('user_id')->map(
+                fn ($rows) => $rows->sum('target')
+            );
 
-            // Status 4 is cancelled; only dispatched/approved order states count.
-            $validOrderStatuses = [1, 2, 3];
-            $periodSales = DB::table('orders')
-                ->whereIn('created_by', $userIds)
-                ->whereIn('status_id', $validOrderStatuses)
-                ->whereNull('deleted_at')
-                ->whereBetween('order_date', [$from, $to])
-                ->select('created_by', DB::raw('COALESCE(SUM(grand_total), 0) as total_value'))
-                ->groupBy('created_by')
-                ->pluck('total_value', 'created_by');
-            $todaySales = DB::table('orders')
-                ->whereIn('created_by', $userIds)
-                ->whereIn('status_id', $validOrderStatuses)
-                ->whereNull('deleted_at')
-                ->whereDate('order_date', $to)
-                ->select('created_by', DB::raw('COALESCE(SUM(grand_total), 0) as total_value'))
-                ->groupBy('created_by')
-                ->pluck('total_value', 'created_by');
+            // Match the dashboard calculation: Primary users achieve through
+            // primary_sales, while all other users achieve through orders.
+            $salesByUserForRange = function ($startDate, $endDate) use ($targetRows) {
+                return $targetRows->groupBy('user_id')->map(function ($rows) use ($startDate, $endDate) {
+                    $targetRow = $rows->first();
+                    if ($targetRow->user?->sales_type === 'Primary') {
+                        $query = DB::table('primary_sales')
+                            ->where('emp_code', $targetRow->user->employee_codes)
+                            ->whereBetween('invoice_date', [$startDate, $endDate]);
+
+                        $hasUnscopedTarget = $rows->contains(fn ($row) => empty($row->branch_id));
+                        if (!$hasUnscopedTarget) {
+                            $branchIds = $rows->pluck('branch_id')->filter()->unique()->values();
+                            if ($branchIds->isNotEmpty()) {
+                                $query->whereIn('branch_id', $branchIds);
+                            }
+                        }
+
+                        return ((float) $query->sum('net_amount')) / 100000;
+                    }
+
+                    $ordersTotal = DB::table('orders')
+                        ->where('created_by', $targetRow->user_id)
+                        ->whereBetween('order_date', [$startDate, $endDate])
+                        ->sum('sub_total');
+
+                    return $ordersTotal > 1
+                        ? (($ordersTotal - ($ordersTotal / 100)) / 100000)
+                        : 0;
+                });
+            };
+
+            $periodSalesLacs = $salesByUserForRange($from, $to);
+            $todaySalesLacs = $salesByUserForRange($to, $to);
 
             $attendanceDays = DB::table('attendances')
                 ->whereIn('user_id', $userIds)
@@ -2426,9 +2444,9 @@ class AttendanceController extends Controller
                 $uid = (int) $row->id;
                 $zoneName = $row->division_name ?: 'Unassigned';
                 $targetLacs = round((float) ($targets[$uid] ?? 0), 2);
-                $achievementLacsRaw = ((float) ($periodSales[$uid] ?? 0)) / 100000;
+                $achievementLacsRaw = (float) ($periodSalesLacs[$uid] ?? 0);
                 $achievementLacs = round($achievementLacsRaw, 2);
-                $todaySalesLacs = round(((float) ($todaySales[$uid] ?? 0)) / 100000, 2);
+                $todaySalesValueLacs = round((float) ($todaySalesLacs[$uid] ?? 0), 2);
                 $visitData = $visits->get($uid);
 
                 $zones[$zoneName] ??= ['zone' => $zoneName, 'users' => []];
@@ -2447,7 +2465,7 @@ class AttendanceController extends Controller
                     'target_value_lacs' => $targetLacs,
                     'achievement_value_lacs' => $achievementLacs,
                     'achievement_percent' => $targetLacs > 0 ? round(($achievementLacsRaw / $targetLacs) * 100, 2) : 0,
-                    'today_sales_value_lacs' => $todaySalesLacs,
+                    'today_sales_value_lacs' => $todaySalesValueLacs,
                     'visits' => (int) ($visitData->visits ?? 0),
                     'unique_visits' => (int) ($visitData->unique_visits ?? 0),
                 ];
