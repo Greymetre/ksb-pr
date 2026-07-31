@@ -1327,7 +1327,7 @@
         }
 
         body.fk-dark-shell .fk-notification-menu {
-            width: min(390px, calc(100vw - 24px));
+            width: min(330px, calc(100vw - 24px));
             max-height: 520px;
             padding: 0;
             overflow: hidden;
@@ -1335,13 +1335,17 @@
             border-radius: 14px;
             background: #09152f;
             box-shadow: 0 18px 48px rgba(0, 0, 0, .42);
+            top: 44 !important;
+            right: 0px !important;
+            left: auto !important;
+            transform: none !important;
         }
 
         body.fk-dark-shell .fk-notification-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 15px 16px;
+            padding: 7px 10px;
             border-bottom: 1px solid rgba(90, 130, 220, .18);
         }
 
@@ -1366,7 +1370,7 @@
         body.fk-dark-shell .fk-notification-item {
             display: flex;
             gap: 11px;
-            padding: 13px 16px;
+            padding: 6px 8px;
             border-bottom: 1px solid rgba(90, 130, 220, .12);
             color: #a9bce6;
             text-decoration: none;
@@ -1400,6 +1404,7 @@
         body.fk-dark-shell .fk-notification-copy {
             min-width: 0;
             flex: 1;
+            line-height: 10px;
         }
 
         body.fk-dark-shell .fk-notification-title,
@@ -1434,6 +1439,22 @@
             padding: 34px 16px;
             color: #8798bf;
             text-align: center;
+        }
+
+        body.fk-dark-shell .fk-notification-footer {
+            display: block;
+            padding: 7px 16px;
+            border-top: 1px solid rgba(90, 130, 220, .18);
+            color: var(--fk-accent);
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        body.fk-dark-shell .fk-notification-footer:hover {
+            background: rgba(34, 211, 238, .07);
+            color: #fff;
         }
 
         body.fk-dark-shell .fk-user-menu {
@@ -3580,6 +3601,9 @@
                             <div class="fk-notification-list" id="fkNotificationList">
                                 <div class="fk-notification-empty">Loading notifications...</div>
                             </div>
+                            <a class="fk-notification-footer" href="{{ route('web-notifications.page') }}">
+                                View all notifications
+                            </a>
                         </div>
                     </div>
                     <div class="dropdown fk-user-menu">

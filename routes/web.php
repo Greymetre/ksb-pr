@@ -155,8 +155,12 @@ Route::get('/fieldkonnect-support', function () {
 })->name('fieldkonnect.support');
 
 Route::middleware('auth')->group(function () {
+    Route::get('web-notifications/all', [WebNotificationController::class, 'page'])
+        ->name('web-notifications.page');
     Route::get('web-notifications', [WebNotificationController::class, 'index'])
         ->name('web-notifications.index');
+    Route::get('web-notifications/{notification}/download', [WebNotificationController::class, 'download'])
+        ->name('web-notifications.download');
     Route::get('web-notifications/{notification}', [WebNotificationController::class, 'open'])
         ->name('web-notifications.open');
     Route::post('web-notifications/read-all', [WebNotificationController::class, 'readAll'])
