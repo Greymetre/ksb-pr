@@ -1322,6 +1322,120 @@
             box-shadow: 0 0 8px rgba(255, 93, 122, .7);
         }
 
+        body.fk-dark-shell .fk-bell-btn.no-unread:after {
+            display: none;
+        }
+
+        body.fk-dark-shell .fk-notification-menu {
+            width: min(390px, calc(100vw - 24px));
+            max-height: 520px;
+            padding: 0;
+            overflow: hidden;
+            border: 1px solid rgba(90, 130, 220, .28);
+            border-radius: 14px;
+            background: #09152f;
+            box-shadow: 0 18px 48px rgba(0, 0, 0, .42);
+        }
+
+        body.fk-dark-shell .fk-notification-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 16px;
+            border-bottom: 1px solid rgba(90, 130, 220, .18);
+        }
+
+        body.fk-dark-shell .fk-notification-head strong {
+            color: #fff;
+            font-family: 'Sora', 'Inter', sans-serif;
+        }
+
+        body.fk-dark-shell .fk-notification-read-all {
+            border: 0;
+            background: transparent;
+            color: var(--fk-accent);
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        body.fk-dark-shell .fk-notification-list {
+            max-height: 440px;
+            overflow-y: auto;
+        }
+
+        body.fk-dark-shell .fk-notification-item {
+            display: flex;
+            gap: 11px;
+            padding: 13px 16px;
+            border-bottom: 1px solid rgba(90, 130, 220, .12);
+            color: #a9bce6;
+            text-decoration: none;
+        }
+
+        body.fk-dark-shell .fk-notification-item:hover {
+            background: rgba(34, 211, 238, .07);
+            color: #fff;
+        }
+
+        body.fk-dark-shell .fk-notification-item.unread {
+            background: rgba(57, 82, 153, .2);
+        }
+
+        body.fk-dark-shell .fk-notification-thumb {
+            width: 44px;
+            height: 44px;
+            flex: 0 0 44px;
+            border-radius: 9px;
+            object-fit: cover;
+            background: rgba(90, 130, 220, .16);
+        }
+
+        body.fk-dark-shell .fk-notification-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--fk-accent);
+        }
+
+        body.fk-dark-shell .fk-notification-copy {
+            min-width: 0;
+            flex: 1;
+        }
+
+        body.fk-dark-shell .fk-notification-title,
+        body.fk-dark-shell .fk-notification-message,
+        body.fk-dark-shell .fk-notification-time {
+            display: block;
+        }
+
+        body.fk-dark-shell .fk-notification-title {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        body.fk-dark-shell .fk-notification-message {
+            margin-top: 3px;
+            overflow: hidden;
+            color: #a9bce6;
+            font-size: 12px;
+            line-height: 1.45;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        body.fk-dark-shell .fk-notification-time {
+            margin-top: 5px;
+            color: #7185b3;
+            font-size: 10px;
+        }
+
+        body.fk-dark-shell .fk-notification-empty {
+            padding: 34px 16px;
+            color: #8798bf;
+            text-align: center;
+        }
+
         body.fk-dark-shell .fk-user-menu {
             position: relative;
         }
@@ -3451,9 +3565,23 @@
                 </div>
                 <div class="fk-header-right">
                     <button class="fk-live-sync" type="button">Live Sync</button>
-                    <button class="fk-bell-btn" type="button" aria-label="Notifications">
-                        <span class="material-symbols-outlined">notifications</span>
-                    </button>
+                    <div class="dropdown fk-notification-dropdown">
+                        <button class="fk-bell-btn no-unread" id="fkNotificationBell" type="button"
+                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                            aria-label="Notifications">
+                            <span class="material-symbols-outlined">notifications</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right fk-notification-menu"
+                            aria-labelledby="fkNotificationBell">
+                            <div class="fk-notification-head">
+                                <strong>Notifications <span id="fkNotificationCount"></span></strong>
+                                <button class="fk-notification-read-all" id="fkNotificationReadAll" type="button">Mark all read</button>
+                            </div>
+                            <div class="fk-notification-list" id="fkNotificationList">
+                                <div class="fk-notification-empty">Loading notifications...</div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="dropdown fk-user-menu">
                         <a class="fk-user-trigger" href="javascript:;" id="navbarDropdownProfile" data-toggle="dropdown"
                             aria-haspopup="true" aria-expanded="false">
@@ -4747,6 +4875,119 @@
         //   }
         // });
     </script>
+    @auth
+    <script>
+        (function() {
+            const bell = document.getElementById('fkNotificationBell');
+            const list = document.getElementById('fkNotificationList');
+            const count = document.getElementById('fkNotificationCount');
+            const readAll = document.getElementById('fkNotificationReadAll');
+            if (!bell || !list || !count || !readAll) return;
+
+            const listUrl = @json(route('web-notifications.index'));
+            const readAllUrl = @json(route('web-notifications.read-all'));
+            const csrfToken = @json(csrf_token());
+
+            function setUnread(value) {
+                const unread = Number(value || 0);
+                count.textContent = unread > 0 ? '(' + unread + ')' : '';
+                bell.classList.toggle('no-unread', unread === 0);
+                readAll.style.display = unread > 0 ? '' : 'none';
+            }
+
+            function renderNotifications(payload) {
+                list.innerHTML = '';
+                setUnread(payload.unread_count);
+
+                if (!payload.notifications || payload.notifications.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'fk-notification-empty';
+                    empty.textContent = 'No notifications yet.';
+                    list.appendChild(empty);
+                    return;
+                }
+
+                payload.notifications.forEach(function(notification) {
+                    const item = document.createElement('a');
+                    item.className = 'fk-notification-item' + (notification.read ? '' : ' unread');
+                    item.href = notification.url;
+
+                    if (notification.image) {
+                        const image = document.createElement('img');
+                        image.className = 'fk-notification-thumb';
+                        image.src = notification.image;
+                        image.alt = '';
+                        item.appendChild(image);
+                    } else {
+                        const icon = document.createElement('span');
+                        icon.className = 'fk-notification-thumb fk-notification-icon material-symbols-outlined';
+                        icon.textContent = 'notifications';
+                        item.appendChild(icon);
+                    }
+
+                    const copy = document.createElement('span');
+                    copy.className = 'fk-notification-copy';
+
+                    const title = document.createElement('span');
+                    title.className = 'fk-notification-title';
+                    title.textContent = notification.title || 'FieldKonnect';
+                    copy.appendChild(title);
+
+                    const message = document.createElement('span');
+                    message.className = 'fk-notification-message';
+                    message.textContent = notification.message || '';
+                    copy.appendChild(message);
+
+                    const time = document.createElement('span');
+                    time.className = 'fk-notification-time';
+                    time.textContent = notification.created_at || '';
+                    copy.appendChild(time);
+
+                    item.appendChild(copy);
+                    list.appendChild(item);
+                });
+            }
+
+            function loadNotifications() {
+                fetch(listUrl, {
+                    headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                    credentials: 'same-origin'
+                })
+                    .then(function(response) {
+                        if (!response.ok) throw new Error('Unable to load notifications.');
+                        return response.json();
+                    })
+                    .then(renderNotifications)
+                    .catch(function() {
+                        list.innerHTML = '<div class="fk-notification-empty">Unable to load notifications.</div>';
+                    });
+            }
+
+            bell.addEventListener('click', loadNotifications);
+            readAll.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                fetch(readAllUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin',
+                    body: '{}'
+                }).then(function(response) {
+                    if (!response.ok) throw new Error('Unable to update notifications.');
+                    return response.json();
+                }).then(loadNotifications);
+            });
+
+            loadNotifications();
+            window.setInterval(loadNotifications, 60000);
+        })();
+    </script>
+    @endauth
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8D1DXGE6Z6"></script>
     <script>

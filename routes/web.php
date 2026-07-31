@@ -77,6 +77,7 @@ use App\Http\Controllers\RedemptionController;
 use App\Http\Controllers\WarrantyActivationController;
 use App\Http\Controllers\SalesTargetUsersController;
 use App\Http\Controllers\MobileUserLoginDetailsController;
+use App\Http\Controllers\WebNotificationController;
 use App\Http\Controllers\NewJoiningController;
 use App\Http\Controllers\NotificationManagementController;
 use App\Http\Controllers\ServiceBillController;
@@ -152,6 +153,15 @@ Route::get('/captcha-refresh', function () {
 Route::get('/fieldkonnect-support', function () {
     return view('public.fieldkonnect-support');
 })->name('fieldkonnect.support');
+
+Route::middleware('auth')->group(function () {
+    Route::get('web-notifications', [WebNotificationController::class, 'index'])
+        ->name('web-notifications.index');
+    Route::get('web-notifications/{notification}', [WebNotificationController::class, 'open'])
+        ->name('web-notifications.open');
+    Route::post('web-notifications/read-all', [WebNotificationController::class, 'readAll'])
+        ->name('web-notifications.read-all');
+});
 
 Route::options('{any}', function () {
     abort(405);
