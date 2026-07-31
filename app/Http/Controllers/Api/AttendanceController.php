@@ -2263,9 +2263,12 @@ class AttendanceController extends Controller
             $period = strtolower($request->period);
             $now = now();
             $toDate = $now->copy()->startOfDay();
+            $financialYearStart = $now->month >= 4
+                ? $now->copy()->startOfYear()->addMonths(3)->startOfDay()
+                : $now->copy()->subYear()->startOfYear()->addMonths(3)->startOfDay();
             $fromDate = $period === 'mtd'
                 ? $now->copy()->startOfMonth()->startOfDay()
-                : $now->copy()->startOfYear()->startOfDay();
+                : $financialYearStart;
             $from = $fromDate->toDateString();
             $to = $toDate->toDateString();
 
@@ -2321,12 +2324,32 @@ class AttendanceController extends Controller
                 ]);
             }
 
-            // Targets are stored in lakhs. YTD sums explicitly configured
-            // calendar-year target rows and never multiplies one monthly target.
-            $targetQuery = SalesTargetUsers::whereIn('user_id', $userIds)
-                ->where('year', $now->year);
+            // Targets are stored in lakhs. YTD follows the Indian financial
+            // year (April-March) and includes configured months through today.
+            $targetQuery = SalesTargetUsers::whereIn('user_id', $userIds);
             if ($period === 'mtd') {
-                $targetQuery->where('month', $now->format('M'));
+                $targetQuery->where('year', $now->year)
+                    ->where('month', $now->format('M'));
+            } else {
+                $financialMonths = collect();
+                $monthCursor = $financialYearStart->copy()->startOfMonth();
+                $currentMonth = $now->copy()->startOfMonth();
+                while ($monthCursor->lte($currentMonth)) {
+                    $financialMonths->push([
+                        'year' => $monthCursor->year,
+                        'month' => $monthCursor->format('M'),
+                    ]);
+                    $monthCursor->addMonth();
+                }
+
+                $targetQuery->where(function ($query) use ($financialMonths) {
+                    foreach ($financialMonths as $financialMonth) {
+                        $query->orWhere(function ($monthQuery) use ($financialMonth) {
+                            $monthQuery->where('year', $financialMonth['year'])
+                                ->where('month', $financialMonth['month']);
+                        });
+                    }
+                });
             }
             $targetRows = $targetQuery
                 ->with('user:id,employee_codes,sales_type')
