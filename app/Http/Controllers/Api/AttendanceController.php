@@ -2282,6 +2282,10 @@ class AttendanceController extends Controller
             'zone' => 'nullable|string|max:255',
             'designation' => 'nullable|string|max:255',
             'user_id' => 'nullable|integer|exists:users,id',
+            'months' => 'nullable|array|min:1',
+            'months.*' => 'string|in:Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec',
+            'year' => 'nullable|integer|min:2000|max:2100',
+            'financial_year' => ['nullable', 'string', 'regex:/^\\d{4}-\\d{4}$/'],
             'branch' => 'prohibited',
         ]);
 
@@ -2296,15 +2300,46 @@ class AttendanceController extends Controller
             $authUser = $request->user();
             $period = strtolower($request->period);
             $now = now();
-            $toDate = $now->copy()->startOfDay();
-            $financialYearStart = $now->month >= 4
-                ? $now->copy()->startOfYear()->addMonths(3)->startOfDay()
-                : $now->copy()->subYear()->startOfYear()->addMonths(3)->startOfDay();
-            $fromDate = $period === 'mtd'
-                ? $now->copy()->startOfMonth()->startOfDay()
-                : $financialYearStart;
+            $currentFinancialYearStart = $now->month >= 4 ? $now->year : $now->year - 1;
+            $selectedYear = $request->filled('year') ? (int) $request->year : $now->year;
+            $selectedMonths = collect($request->input('months', [$now->format('M')]))
+                ->unique()
+                ->values();
+            $selectedFinancialYear = $request->input(
+                'financial_year',
+                $currentFinancialYearStart . '-' . ($currentFinancialYearStart + 1)
+            );
+
+            if ($period === 'ytd') {
+                [$financialStartYear, $financialEndYear] = array_map('intval', explode('-', $selectedFinancialYear));
+                if ($financialEndYear !== $financialStartYear + 1) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'The financial year must contain consecutive years.',
+                    ], 422);
+                }
+                $fromDate = Carbon::create($financialStartYear, 4, 1)->startOfDay();
+                $financialYearEnd = Carbon::create($financialEndYear, 3, 31)->startOfDay();
+                $toDate = $financialYearEnd->isFuture() ? $now->copy()->startOfDay() : $financialYearEnd;
+                $dateRanges = [[$fromDate->toDateString(), $toDate->toDateString()]];
+            } else {
+                $dateRanges = $selectedMonths->map(function ($month) use ($selectedYear) {
+                    $date = Carbon::createFromFormat('Y-M-d', $selectedYear . '-' . $month . '-01');
+                    return [$date->copy()->startOfMonth()->toDateString(), $date->copy()->endOfMonth()->toDateString()];
+                })->sortBy(fn ($range) => $range[0])->values()->all();
+                $fromDate = Carbon::parse($dateRanges[0][0])->startOfDay();
+                $toDate = Carbon::parse($dateRanges[count($dateRanges) - 1][1])->startOfDay();
+            }
             $from = $fromDate->toDateString();
             $to = $toDate->toDateString();
+
+            $applyDateRanges = function ($query, string $column) use ($dateRanges) {
+                return $query->where(function ($dateQuery) use ($dateRanges, $column) {
+                    foreach ($dateRanges as [$rangeStart, $rangeEnd]) {
+                        $dateQuery->orWhereBetween($column, [$rangeStart, $rangeEnd]);
+                    }
+                });
+            };
 
             // Authorization scope is resolved before any client-supplied filter.
             $visibleUserIds = $this->attendanceVisibleUserIds($authUser);
@@ -2362,13 +2397,13 @@ class AttendanceController extends Controller
             // year (April-March) and includes configured months through today.
             $targetQuery = SalesTargetUsers::whereIn('user_id', $userIds);
             if ($period === 'mtd') {
-                $targetQuery->where('year', $now->year)
-                    ->where('month', $now->format('M'));
+                $targetQuery->where('year', $selectedYear)
+                    ->whereIn('month', $selectedMonths->all());
             } else {
                 $financialMonths = collect();
-                $monthCursor = $financialYearStart->copy()->startOfMonth();
-                $currentMonth = $now->copy()->startOfMonth();
-                while ($monthCursor->lte($currentMonth)) {
+                $monthCursor = $fromDate->copy()->startOfMonth();
+                $lastMonth = $toDate->copy()->startOfMonth();
+                while ($monthCursor->lte($lastMonth)) {
                     $financialMonths->push([
                         'year' => $monthCursor->year,
                         'month' => $monthCursor->format('M'),
@@ -2394,13 +2429,17 @@ class AttendanceController extends Controller
 
             // Match the dashboard calculation: Primary users achieve through
             // primary_sales, while all other users achieve through orders.
-            $salesByUserForRange = function ($startDate, $endDate) use ($targetRows) {
-                return $targetRows->groupBy('user_id')->map(function ($rows) use ($startDate, $endDate) {
+            $salesByUserForRanges = function ($ranges) use ($targetRows) {
+                return $targetRows->groupBy('user_id')->map(function ($rows) use ($ranges) {
                     $targetRow = $rows->first();
                     if ($targetRow->user?->sales_type === 'Primary') {
                         $query = DB::table('primary_sales')
                             ->where('emp_code', $targetRow->user->employee_codes)
-                            ->whereBetween('invoice_date', [$startDate, $endDate]);
+                            ->where(function ($dateQuery) use ($ranges) {
+                                foreach ($ranges as [$rangeStart, $rangeEnd]) {
+                                    $dateQuery->orWhereBetween('invoice_date', [$rangeStart, $rangeEnd]);
+                                }
+                            });
 
                         $hasUnscopedTarget = $rows->contains(fn ($row) => empty($row->branch_id));
                         if (!$hasUnscopedTarget) {
@@ -2415,7 +2454,11 @@ class AttendanceController extends Controller
 
                     $ordersTotal = DB::table('orders')
                         ->where('created_by', $targetRow->user_id)
-                        ->whereBetween('order_date', [$startDate, $endDate])
+                        ->where(function ($dateQuery) use ($ranges) {
+                            foreach ($ranges as [$rangeStart, $rangeEnd]) {
+                                $dateQuery->orWhereBetween('order_date', [$rangeStart, $rangeEnd]);
+                            }
+                        })
                         ->sum('sub_total');
 
                     return $ordersTotal > 1
@@ -2424,26 +2467,25 @@ class AttendanceController extends Controller
                 });
             };
 
-            $periodSalesLacs = $salesByUserForRange($from, $to);
-            $todaySalesLacs = $salesByUserForRange($to, $to);
+            $periodSalesLacs = $salesByUserForRanges($dateRanges);
+            $todaySalesLacs = $salesByUserForRanges([[$now->toDateString(), $now->toDateString()]]);
 
-            $attendanceDays = DB::table('attendances')
+            $attendanceQuery = DB::table('attendances')
                 ->whereIn('user_id', $userIds)
                 ->where('active', 'Y')
                 ->whereNull('deleted_at')
                 ->whereNotNull('punchin_time')
-                ->whereBetween('punchin_date', [$from, $to])
                 ->where(function ($query) {
                     $query->whereNull('working_type')
                         ->orWhereNotIn('working_type', ['Full Day Leave', 'Leave', 'Holiday']);
-                })
+                });
+            $attendanceDays = $applyDateRanges($attendanceQuery, 'punchin_date')
                 ->select('user_id', DB::raw('COUNT(DISTINCT punchin_date) as working_days'))
                 ->groupBy('user_id')
                 ->pluck('working_days', 'user_id');
 
-            $visits = DB::table('check_in')
+            $visitQuery = DB::table('check_in')
                 ->whereIn('user_id', $userIds)
-                ->whereBetween('checkin_date', [$from, $to])
                 ->whereNotNull('checkout_date')
                 ->whereNotNull('checkout_time')
                 ->where(function ($query) {
@@ -2452,7 +2494,8 @@ class AttendanceController extends Controller
                             $entityQuery->where('entity_type', 'customer')
                                 ->whereNotNull('entity_id');
                         });
-                })
+                });
+            $visits = $applyDateRanges($visitQuery, 'checkin_date')
                 ->select(
                     'user_id',
                     DB::raw('COUNT(*) as visits'),
@@ -2495,7 +2538,17 @@ class AttendanceController extends Controller
                 ->select('user_id', DB::raw('COUNT(DISTINCT customer_id) as total_customers'))
                 ->groupBy('user_id')->pluck('total_customers', 'user_id');
 
-            $totalWorkingDays = $this->salesSummaryWorkingDays($users, $fromDate, $toDate);
+            $totalWorkingDays = [];
+            foreach ($dateRanges as [$rangeStart, $rangeEnd]) {
+                $rangeWorkingDays = $this->salesSummaryWorkingDays(
+                    $users,
+                    Carbon::parse($rangeStart),
+                    Carbon::parse($rangeEnd)
+                );
+                foreach ($rangeWorkingDays as $workingUserId => $workingDayCount) {
+                    $totalWorkingDays[$workingUserId] = ($totalWorkingDays[$workingUserId] ?? 0) + $workingDayCount;
+                }
+            }
             $zones = [];
             foreach ($users as $row) {
                 $uid = (int) $row->id;
@@ -2540,6 +2593,9 @@ class AttendanceController extends Controller
                     'period' => $period,
                     'from_date' => $from,
                     'to_date' => $to,
+                    'months' => $period === 'mtd' ? $selectedMonths->all() : [],
+                    'year' => $period === 'mtd' ? $selectedYear : null,
+                    'financial_year' => $period === 'ytd' ? $selectedFinancialYear : null,
                     'zones' => array_values($zones),
                 ],
             ]);
