@@ -871,6 +871,7 @@ class AttendanceController extends Controller
                         'total_not_punch_in' => 0,
                         'total_leave_today' => 0,
                         'total_holiday_today' => 0,
+                        'zone_performance_mtd' => [],
                         'total_target' => ['target' => 0, 'achievement' => 0, 'achievement_percent' => 0, 'target_qty' => 0],
                         'today_orders' => ['quantity' => 0, 'value' => 0],
                         'current_month_orders' => ['quantity' => 0, 'value' => 0],
@@ -1006,6 +1007,62 @@ class AttendanceController extends Controller
                 ->where('month', $currentMonthName) // ✅ FIXED
                 ->where('year', $currentYear)
                 ->get();
+
+            // Zone performance is primary-sales only and follows the same MTD
+            // target/achievement calculation used by Target vs Achievement.
+            $primaryTargetRows = $targetRows->filter(
+                fn ($targetRow) => $targetRow->user?->sales_type === 'Primary'
+            );
+            $primaryUserIds = $primaryTargetRows->pluck('user_id')->map(fn ($id) => (int) $id)->unique();
+            $primaryZoneByUser = DB::table('users')
+                ->leftJoin('divisions', 'users.division_id', '=', 'divisions.id')
+                ->whereIn('users.id', $primaryUserIds->all())
+                ->pluck('divisions.division_name', 'users.id');
+            $zonePerformanceMtd = [];
+
+            foreach ($primaryTargetRows->groupBy('user_id') as $primaryUserId => $rows) {
+                $zoneName = trim((string) ($primaryZoneByUser[$primaryUserId] ?? 'Unassigned'));
+                $normalizedZoneName = strtolower(preg_replace('/\\s+/', ' ', $zoneName));
+                if (in_array($normalizedZoneName, ['ho', 'head office'], true)) {
+                    continue;
+                }
+
+                $targetLacs = (float) $rows->sum('target');
+                $targetRow = $rows->first();
+                $achievementQuery = DB::table('primary_sales')
+                    ->where('emp_code', $targetRow->user->employee_codes)
+                    ->whereBetween('invoice_date', [$currentMonthStart, $currentMonthEnd]);
+
+                $hasUnscopedTarget = $rows->contains(fn ($row) => empty($row->branch_id));
+                if (!$hasUnscopedTarget) {
+                    $targetBranchIds = $rows->pluck('branch_id')->filter()->unique()->values();
+                    if ($targetBranchIds->isNotEmpty()) {
+                        $achievementQuery->whereIn('branch_id', $targetBranchIds);
+                    }
+                }
+
+                $achievementLacs = ((float) $achievementQuery->sum('net_amount')) / 100000;
+                $zonePerformanceMtd[$zoneName] ??= [
+                    'zone' => $zoneName,
+                    'target' => 0,
+                    'achievement' => 0,
+                ];
+                $zonePerformanceMtd[$zoneName]['target'] += $targetLacs;
+                $zonePerformanceMtd[$zoneName]['achievement'] += $achievementLacs;
+            }
+
+            $zonePerformanceMtd = collect($zonePerformanceMtd)
+                ->map(function ($zone) {
+                    $zone['target'] = round($zone['target'], 2);
+                    $zone['achievement'] = round($zone['achievement'], 2);
+                    $zone['achievement_percentage'] = $zone['target'] > 0
+                        ? round(($zone['achievement'] / $zone['target']) * 100, 2)
+                        : 0;
+                    return $zone;
+                })
+                ->sortByDesc('achievement_percentage')
+                ->values()
+                ->all();
 
             $totalAchievement = $targetRows->sum(function ($targetRow) use ($currentMonthStart, $currentMonthEnd) {
                 if ($targetRow->user?->sales_type === 'Primary') {
@@ -1833,6 +1890,7 @@ class AttendanceController extends Controller
                     'achievement_percent' => $asrAchievementPercent,
                     'target_qty' => round((float) ($asrQtyTargetData->total_qty_target ?? 0), 2),
                 ],
+                'zone_performance_mtd' => $zonePerformanceMtd,
                 'unique_buyers' => $uniqueBuyersFromAsr,
                 'total_unique_buyers_current_year' => $totalUniqueBuyersCurrentYear,
                 'punchout_remaining_today' => $punchoutRemainingAsr,
