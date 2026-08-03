@@ -870,6 +870,7 @@ class AttendanceController extends Controller
                         'total_punch_in' => 0,
                         'total_not_punch_in' => 0,
                         'total_leave_today' => 0,
+                        'total_holiday_today' => 0,
                         'total_target' => ['target' => 0, 'achievement' => 0, 'achievement_percent' => 0, 'target_qty' => 0],
                         'today_orders' => ['quantity' => 0, 'value' => 0],
                         'current_month_orders' => ['quantity' => 0, 'value' => 0],
@@ -922,16 +923,38 @@ class AttendanceController extends Controller
 
             $totalUsers = count($attendanceUserIds);
 
+            // A holiday is branch-specific. Resolve today's holiday users before
+            // calculating attendance so every user belongs to only one card.
+            $attendanceUsers = User::whereIn('id', $attendanceUserIds)
+                ->get(['id', 'branch_id']);
+            $attendanceBranchIds = $attendanceUsers
+                ->flatMap(fn ($employee) => explode(',', (string) $employee->branch_id))
+                ->map(fn ($branchId) => trim($branchId))
+                ->filter(fn ($branchId) => $branchId !== '' && ctype_digit($branchId))
+                ->map(fn ($branchId) => (int) $branchId)
+                ->unique()
+                ->values();
+            $holidayData = getHolidayData($attendanceBranchIds->all());
+            $holidayUserIds = $attendanceUsers
+                ->filter(function ($employee) use ($today, $holidayData) {
+                    return collect(explode(',', (string) $employee->branch_id))
+                        ->map(fn ($branchId) => trim($branchId))
+                        ->filter(fn ($branchId) => $branchId !== '' && ctype_digit($branchId))
+                        ->contains(fn ($branchId) => isHoliday($today, (int) $branchId, $holidayData));
+                })
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+            $totalHolidayToday = count($holidayUserIds);
+            $workingAttendanceUserIds = array_values(array_diff($attendanceUserIds, $holidayUserIds));
+
             // ===================== Attendance Summary =====================
-            $totalPunchInToday = Attendance::whereIn('user_id', $attendanceUserIds)
+            $rawPunchInToday = Attendance::whereIn('user_id', $workingAttendanceUserIds)
                 ->whereDate('punchin_date', $today)
                 ->whereNotNull('punchin_time')
                 ->distinct('user_id')
                 ->count('user_id');
-
-
-
-            $totalNotPunchInToday = $totalUsers - $totalPunchInToday;
 
             // Business metrics use the full hierarchy; attendance metrics use
             // only employees enabled for attendance reporting.
@@ -944,7 +967,7 @@ class AttendanceController extends Controller
             $currentYear = Carbon::now()->year;
             // ===================== LEAVE COUNT (ASR) =====================
 
-            $leaveAsrToday = Attendance::whereIn('user_id', $attendanceUserIds)
+            $leaveAsrToday = Attendance::whereIn('user_id', $workingAttendanceUserIds)
                 ->whereDate('punchin_date', $today)
                 ->whereNotNull('working_type')
                 ->select(
@@ -958,7 +981,7 @@ class AttendanceController extends Controller
                         ) as total_leave
                     ")
                 )->first();
-            $leaveDsrToday = Attendance::whereIn('user_id', $attendanceUserIds)
+            $leaveDsrToday = Attendance::whereIn('user_id', $workingAttendanceUserIds)
                 ->whereDate('punchin_date', $today)
                 ->select(DB::raw("
                     SUM(
@@ -969,6 +992,13 @@ class AttendanceController extends Controller
                         END
                     ) as total_leave
                 "))->first();
+
+            $totalLeaveToday = (float) ($leaveAsrToday->total_leave ?? 0);
+            $totalPunchInToday = max(0, $rawPunchInToday - $totalLeaveToday);
+            $totalNotPunchInToday = max(
+                0,
+                $totalUsers - $totalPunchInToday - $totalLeaveToday - $totalHolidayToday
+            );
             // ===================== TARGET SUMMARY =====================
 
             $targetRows = SalesTargetUsers::with('user:id,employee_codes,sales_type')
@@ -1785,7 +1815,8 @@ class AttendanceController extends Controller
                 'total_users'        => $totalUsers,
                 'total_punch_in'     => $totalPunchInToday,
                 'total_not_punch_in' => $totalNotPunchInToday,
-                'total_leave_today' => (float) ($leaveAsrToday->total_leave ?? 0),
+                'total_leave_today' => $totalLeaveToday,
+                'total_holiday_today' => $totalHolidayToday,
 
                 'today_orders' => [
                     'quantity' => (int) ($todayOrders->today_quantity ?? 0),
