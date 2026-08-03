@@ -55,7 +55,19 @@ class DivisionDataTable extends DataTable
                   </div>';
               }
             })
-            ->rawColumns(['action','active','image']);
+            ->addColumn('show_in_mobile', function ($query) {
+              if(auth()->user()->can(['brand_active']))
+              {
+                $showInMobile = ($query->show_in_mobile == 'Y') ? 'checked="" value="'.$query->show_in_mobile.'"' : 'value="'.$query->show_in_mobile.'"';
+                return '<div class="togglebutton">
+                    <label>
+                      <input type="checkbox"'.$showInMobile.' data-id="'.$query->id.'" class="divisionShowInMobile">
+                      <span class="toggle"></span>
+                    </label>
+                  </div>';
+              }
+            })
+            ->rawColumns(['action','active','show_in_mobile','image']);
     }
 
     /**

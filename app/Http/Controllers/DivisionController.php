@@ -122,6 +122,25 @@ class DivisionController extends Controller
 	    $divsion->update(['active' => $divsion->active === 'Y' ? 'N' : 'Y']);
 	    return response()->json(['status' => 'success', 'message' => 'Divsion status changed successfully']);
 	}
+
+    public function toggleMobileVisibility($id)
+    {
+        $division = Division::find($id);
+
+        if (!$division) {
+            return response()->json(['status' => 'error', 'message' => 'Zone not found'], 404);
+        }
+
+        $division->update([
+            'show_in_mobile' => $division->show_in_mobile === 'Y' ? 'N' : 'Y',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Mobile visibility changed successfully',
+            'show_in_mobile' => $division->show_in_mobile,
+        ]);
+    }
     /**
      * Remove the specified resource from storage.
      *
@@ -152,7 +171,10 @@ class DivisionController extends Controller
  public function getDivisions()
 {
     return response()->json(
-        Division::where('active', 'Y')->select('id', 'division_name')->get()
+        Division::where('active', 'Y')
+            ->where('show_in_mobile', 'Y')
+            ->select('id', 'division_name')
+            ->get()
     );
 }
 }

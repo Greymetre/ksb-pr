@@ -442,6 +442,8 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     Route::get('getBranches', [BranchController::class, 'getBranches']);
     Route::any('branch_report/download', [BranchController::class, 'branch_report_download'])->name('branch_report.download');
     //Division
+    Route::patch('division/{division}/mobile-visibility', [DivisionController::class, 'toggleMobileVisibility'])
+        ->name('division.mobile-visibility');
     Route::resource('division', DivisionController::class);
     Route::get('getDivisions', [DivisionController::class, 'getDivisions']);
     Route::any('division_report/download', [DivisionController::class, 'division_report_download'])->name('division_report.download');

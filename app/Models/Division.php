@@ -11,7 +11,7 @@ class Division extends Model
 
     protected $table = 'divisions';
 
-    protected $fillable = [ 'active', 'division_name','created_by', 'updated_by', 'deleted_at', 'created_at', 'updated_at'];
+    protected $fillable = [ 'active', 'show_in_mobile', 'division_name','created_by', 'updated_by', 'deleted_at', 'created_at', 'updated_at'];
 
     public function getuser()
     {

@@ -1015,13 +1015,19 @@ class AttendanceController extends Controller
             );
             $primaryUserIds = $primaryTargetRows->pluck('user_id')->map(fn ($id) => (int) $id)->unique();
             $primaryZoneByUser = DB::table('users')
-                ->leftJoin('divisions', 'users.division_id', '=', 'divisions.id')
+                ->join('divisions', 'users.division_id', '=', 'divisions.id')
                 ->whereIn('users.id', $primaryUserIds->all())
+                ->where('divisions.active', 'Y')
+                ->where('divisions.show_in_mobile', 'Y')
                 ->pluck('divisions.division_name', 'users.id');
             $zonePerformanceMtd = [];
 
             foreach ($primaryTargetRows->groupBy('user_id') as $primaryUserId => $rows) {
-                $zoneName = trim((string) ($primaryZoneByUser[$primaryUserId] ?? 'Unassigned'));
+                if (!isset($primaryZoneByUser[$primaryUserId])) {
+                    continue;
+                }
+
+                $zoneName = trim((string) $primaryZoneByUser[$primaryUserId]);
                 $normalizedZoneName = strtolower(preg_replace('/\\s+/', ' ', $zoneName));
                 if (in_array($normalizedZoneName, ['ho', 'head office'], true)) {
                     continue;
@@ -2243,6 +2249,8 @@ class AttendanceController extends Controller
                     'users.branch_id',
                     'divisions.id as zone_id',
                     'divisions.division_name',
+                    'divisions.active as zone_active',
+                    'divisions.show_in_mobile',
                     'branches.id as branch_master_id',
                     'branches.branch_name'
                 )
@@ -2268,7 +2276,8 @@ class AttendanceController extends Controller
                 ];
 
                 // ✅ Unique zones
-                if ($row->zone_id && !in_array($row->zone_id, $seenZones)) {
+                $zoneIsVisible = $row->zone_active === 'Y' && $row->show_in_mobile === 'Y';
+                if ($zoneIsVisible && $row->zone_id && !in_array($row->zone_id, $seenZones)) {
                     $seenZones[] = $row->zone_id;
                     $zones[] = [
                         'id' => $row->zone_id,
@@ -2280,7 +2289,7 @@ class AttendanceController extends Controller
                     $userBranchId = trim($userBranchId);
                     if ($userBranchId !== '') {
                         $allBranchIds[] = $userBranchId;
-                        $branchZonePairs[$userBranchId] = $row->zone_id;
+                        $branchZonePairs[$userBranchId] = $zoneIsVisible ? $row->zone_id : null;
                     }
                 }
             }

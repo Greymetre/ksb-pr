@@ -50,6 +50,7 @@
               <th>{!! trans('panel.global.no') !!}</th>
               <th>{!! trans('panel.global.action') !!}</th>
                <th>{!! trans('panel.global.active') !!}</th>
+              <th>Show in Mobile</th>
 
               <th>{!! trans('panel.division.fields.division_name') !!}</th>
             </thead>
@@ -122,9 +123,37 @@ $(document).ready(function() {
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
             {data: 'action', name: 'action',"defaultContent": '', orderable: false, searchable: false},
             {data: 'active', name: 'active',"defaultContent": '', orderable: false, searchable: false},
+            {data: 'show_in_mobile', name: 'show_in_mobile',"defaultContent": '', orderable: false, searchable: false},
 
             {data: 'division_name', name: 'division_name',"defaultContent": ''},
         ]
+    });
+
+    $('body').on('click', '.divisionShowInMobile', function () {
+        var id = $(this).data('id');
+        var checkbox = $(this);
+        var token = $("meta[name='csrf-token']").attr("content");
+
+        if (!confirm('Are you sure you want to change mobile visibility?')) {
+          checkbox.prop('checked', !checkbox.prop('checked'));
+          return false;
+        }
+
+        $.ajax({
+            url: "{{ url('division') }}/" + id + '/mobile-visibility',
+            type: 'PATCH',
+            data: {_token: token},
+            success: function (data) {
+              $('.message').empty();
+              $('.alert').removeClass('alert-success alert-danger').show();
+              $('.alert').addClass(data.status === 'success' ? 'alert-success' : 'alert-danger');
+              $('.message').append(data.message);
+              table.draw(false);
+            },
+            error: function () {
+              checkbox.prop('checked', !checkbox.prop('checked'));
+            }
+        });
     });
          
     
