@@ -1193,7 +1193,9 @@ class AttendanceController extends Controller
             $totalCustomers = (clone $customerRegistrationQuery)->count();
 
             $inactiveCustomerCutoff = Carbon::today()->subDays(29)->toDateString();
-            $customerMasterQuery = Customers::whereNull('deleted_at');
+            $customerMasterQuery = DB::table('customers')
+                ->leftJoin('customer_types', 'customers.customertype', '=', 'customer_types.id')
+                ->whereNull('customers.deleted_at');
             $totalCustomerMaster = (clone $customerMasterQuery)->count();
             $customersWithOrders30Days = DB::table('orders')
                 ->join('customers', 'orders.buyer_id', '=', 'customers.id')
@@ -1202,7 +1204,7 @@ class AttendanceController extends Controller
                 ->whereNull('orders.deleted_at')
                 ->distinct('orders.buyer_id')
                 ->count('orders.buyer_id');
-            $inactiveCustomers30Days = (clone $customerMasterQuery)
+            $inactiveCustomerQuery = (clone $customerMasterQuery)
                 ->whereNotExists(function ($query) use ($inactiveCustomerCutoff) {
                     $query->select(DB::raw(1))
                         ->from('orders')
@@ -1210,24 +1212,21 @@ class AttendanceController extends Controller
                         ->whereDate('orders.order_date', '>=', $inactiveCustomerCutoff)
                         ->whereNull('orders.deleted_at');
                 })
-                ->orderBy('name')
-                ->get(['id', 'name', 'mobile', 'contact_number']);
-
-            $secondaryCustomerMasterQuery = DB::table('secondary_customers');
-            $totalSecondaryCustomerMaster = (clone $secondaryCustomerMasterQuery)->count();
-            $secondaryCustomersWithOrders30Days = DB::table('new_invoices')
-                ->whereDate('invoice_date', '>=', $inactiveCustomerCutoff)
-                ->distinct('secondary_customer_id')
-                ->count('secondary_customer_id');
-            $inactiveSecondaryCustomers30Days = (clone $secondaryCustomerMasterQuery)
-                ->whereNotExists(function ($query) use ($inactiveCustomerCutoff) {
-                    $query->select(DB::raw(1))
-                        ->from('new_invoices')
-                        ->whereColumn('new_invoices.secondary_customer_id', 'secondary_customers.id')
-                        ->whereDate('new_invoices.invoice_date', '>=', $inactiveCustomerCutoff);
-                })
-                ->orderBy('shop_name')
-                ->get(['id', 'shop_name', 'owner_name', 'mobile_number']);
+                ->select([
+                    'customers.id',
+                    'customers.name',
+                    'customers.mobile',
+                    'customers.contact_number',
+                    'customer_types.type_name as customer_type',
+                ]);
+            $inactivePrimaryCustomers30Days = (clone $inactiveCustomerQuery)
+                ->whereRaw("LOWER(TRIM(COALESCE(customer_types.type_name, ''))) IN ('dealer', 'distributor')")
+                ->orderBy('customers.name')
+                ->get();
+            $inactiveSecondaryCustomers30Days = (clone $inactiveCustomerQuery)
+                ->whereRaw("LOWER(TRIM(COALESCE(customer_types.type_name, ''))) NOT IN ('dealer', 'distributor')")
+                ->orderBy('customers.name')
+                ->get();
 
             $secondaryWithOrderCurrentMonth = DB::table('orders')
                 ->whereIn('created_by', $visibleUserIds)
@@ -1982,13 +1981,13 @@ class AttendanceController extends Controller
                 'secondary_customers_with_order_current_month' => $secondaryWithOrderCurrentMonth,
                 'secondary_customers_with_order_current_year' => $secondaryWithOrderCurrentYear,
                 'inactive_customers_30_days' => [
-                    'count' => $inactiveCustomers30Days->count() + $inactiveSecondaryCustomers30Days->count(),
+                    'count' => $inactivePrimaryCustomers30Days->count() + $inactiveSecondaryCustomers30Days->count(),
                     'period_days' => 30,
                     'primary' => [
-                        'count' => $inactiveCustomers30Days->count(),
+                        'count' => $inactivePrimaryCustomers30Days->count(),
                         'total_customers' => $totalCustomerMaster,
                         'customers_with_orders' => $customersWithOrders30Days,
-                        'customers' => $inactiveCustomers30Days->map(fn ($customer) => [
+                        'customers' => $inactivePrimaryCustomers30Days->map(fn ($customer) => [
                             'id' => (int) $customer->id,
                             'name' => (string) $customer->name,
                             'mobile' => (string) ($customer->mobile ?: $customer->contact_number ?: ''),
@@ -1996,12 +1995,10 @@ class AttendanceController extends Controller
                     ],
                     'secondary' => [
                         'count' => $inactiveSecondaryCustomers30Days->count(),
-                        'total_customers' => $totalSecondaryCustomerMaster,
-                        'customers_with_orders' => $secondaryCustomersWithOrders30Days,
                         'customers' => $inactiveSecondaryCustomers30Days->map(fn ($customer) => [
                             'id' => (int) $customer->id,
-                            'name' => (string) ($customer->shop_name ?: $customer->owner_name ?: ''),
-                            'mobile' => (string) ($customer->mobile_number ?: ''),
+                            'name' => (string) $customer->name,
+                            'mobile' => (string) ($customer->mobile ?: $customer->contact_number ?: ''),
                         ])->values()->all(),
                     ],
                 ],
