@@ -873,6 +873,7 @@ class AttendanceController extends Controller
                         'total_holiday_today' => 0,
                         'mispunch_alert' => null,
                         'zone_performance_mtd' => [],
+                        'state_performance_mtd' => [],
                         'total_target' => ['target' => 0, 'achievement' => 0, 'achievement_percent' => 0, 'target_qty' => 0],
                         'today_orders' => ['quantity' => 0, 'value' => 0],
                         'current_month_orders' => ['quantity' => 0, 'value' => 0],
@@ -1104,6 +1105,40 @@ class AttendanceController extends Controller
                     return $zone;
                 })
                 ->sortByDesc('achievement_percentage')
+                ->values()
+                ->all();
+
+            // Top 10 states by MTD Primary Sales, using the same state field
+            // exposed by CRM > Reports > Primary Sales.
+            $primaryEmployeeCodes = User::whereIn('id', $myTeamUserIds)
+                ->where('sales_type', 'Primary')
+                ->whereNotNull('employee_codes')
+                ->pluck('employee_codes')
+                ->filter(fn ($code) => trim((string) $code) !== '')
+                ->unique()
+                ->values();
+            $statePrimarySalesMtd = $primaryEmployeeCodes->isEmpty()
+                ? collect()
+                : DB::table('primary_sales')
+                    ->whereIn('emp_code', $primaryEmployeeCodes->all())
+                    ->whereBetween('invoice_date', [$currentMonthStart, $today])
+                    ->whereNotNull('state')
+                    ->whereRaw("TRIM(state) != ''")
+                    ->selectRaw('TRIM(state) as state, SUM(net_amount) as sales_value')
+                    ->groupByRaw('TRIM(state)')
+                    ->orderByDesc('sales_value')
+                    ->get();
+            $totalStatePrimarySalesMtd = (float) $statePrimarySalesMtd->sum('sales_value');
+            $statePerformanceMtd = $statePrimarySalesMtd
+                ->take(10)
+                ->map(fn ($state) => [
+                    'state' => (string) $state->state,
+                    'sales_value' => round((float) $state->sales_value, 2),
+                    'sales_value_lacs' => round(((float) $state->sales_value) / 100000, 2),
+                    'percentage' => $totalStatePrimarySalesMtd > 0
+                        ? round((((float) $state->sales_value) / $totalStatePrimarySalesMtd) * 100, 2)
+                        : 0,
+                ])
                 ->values()
                 ->all();
 
@@ -2034,6 +2069,7 @@ class AttendanceController extends Controller
                     'target_qty' => round((float) ($asrQtyTargetData->total_qty_target ?? 0), 2),
                 ],
                 'zone_performance_mtd' => $zonePerformanceMtd,
+                'state_performance_mtd' => $statePerformanceMtd,
                 'unique_buyers' => $uniqueBuyersFromAsr,
                 'total_unique_buyers_current_year' => $totalUniqueBuyersCurrentYear,
                 'punchout_remaining_today' => $punchoutRemainingAsr,
