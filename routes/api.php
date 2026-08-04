@@ -241,6 +241,7 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
     Route::get('/order/distributors', [CustomerApiController::class, 'distributors']);
     Route::get('/attendance/today-summary', [AttendanceController::class, 'getTodayMyTeamAttendanceSummary']);
     Route::get('/sales/sales-summary', [AttendanceController::class, 'getTodayTeamSalesList']);
+    Route::get('/sales/dealer-distributor-performance', [AttendanceController::class, 'getDealerDistributorSalesPerformance']);
     Route::get('/sales/retailer-sales-summary', [AttendanceController::class, 'getRetailerSalesSummary']);
     Route::get('/today-attendance-zone', [AttendanceController::class, 'getTodayTeamAttendanceList']);
     Route::get('/user-attendance-zone-branch', [AttendanceController::class, 'getAssignedUsersBasicList']);

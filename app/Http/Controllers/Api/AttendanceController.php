@@ -2934,6 +2934,144 @@ class AttendanceController extends Controller
         }
     }
 
+    public function getDealerDistributorSalesPerformance(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'period' => 'required|in:mtd,ytd',
+            'state' => 'nullable|string|max:255',
+            'user_id' => 'nullable|integer|exists:users,id',
+            'months' => 'nullable|array|min:1',
+            'months.*' => 'string|in:Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec',
+            'year' => 'nullable|integer|min:2000|max:2100',
+            'financial_year' => ['nullable', 'string', 'regex:/^\d{4}-\d{4}$/'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()], 422);
+        }
+
+        try {
+            $authUser = $request->user();
+            $visibleUserIds = $this->attendanceVisibleUserIds($authUser);
+            $requestedUserId = $request->filled('user_id') ? (int) $request->user_id : null;
+
+            if ($requestedUserId && !in_array($requestedUserId, $visibleUserIds, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to view this user.',
+                ], 403);
+            }
+
+            $visibleUsers = User::whereIn('id', $visibleUserIds)
+                ->where('active', 'Y')
+                ->whereNull('deleted_at')
+                ->whereNotNull('employee_codes')
+                ->where('employee_codes', '!=', '')
+                ->get(['id', 'name', 'employee_codes']);
+
+            $employeeCodes = $requestedUserId
+                ? $visibleUsers->where('id', $requestedUserId)->pluck('employee_codes')->all()
+                : $visibleUsers->pluck('employee_codes')->unique()->values()->all();
+
+            $now = now();
+            $period = strtolower($request->period);
+            $selectedYear = $request->filled('year') ? (int) $request->year : $now->year;
+            $selectedMonths = collect($request->input('months', [$now->format('M')]))->unique()->values();
+            $currentFinancialYearStart = $now->month >= 4 ? $now->year : $now->year - 1;
+            $selectedFinancialYear = $request->input(
+                'financial_year',
+                $currentFinancialYearStart . '-' . ($currentFinancialYearStart + 1)
+            );
+
+            if ($period === 'ytd') {
+                [$financialStartYear, $financialEndYear] = array_map('intval', explode('-', $selectedFinancialYear));
+                if ($financialEndYear !== $financialStartYear + 1) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'The financial year must contain consecutive years.',
+                    ], 422);
+                }
+                $fromDate = Carbon::create($financialStartYear, 4, 1)->startOfDay();
+                $financialYearEnd = Carbon::create($financialEndYear, 3, 31)->startOfDay();
+                $toDate = $financialYearEnd->isFuture() ? $now->copy()->startOfDay() : $financialYearEnd;
+                $dateRanges = [[$fromDate->toDateString(), $toDate->toDateString()]];
+            } else {
+                $dateRanges = $selectedMonths->map(function ($month) use ($selectedYear) {
+                    $date = Carbon::createFromFormat('Y-M-d', $selectedYear . '-' . $month . '-01');
+                    return [$date->copy()->startOfMonth()->toDateString(), $date->copy()->endOfMonth()->toDateString()];
+                })->sortBy(fn ($range) => $range[0])->values()->all();
+                $fromDate = Carbon::parse($dateRanges[0][0]);
+                $toDate = Carbon::parse($dateRanges[count($dateRanges) - 1][1]);
+            }
+
+            $baseQuery = DB::table('primary_sales')
+                ->whereIn('emp_code', $employeeCodes)
+                ->whereNotNull('dealer')
+                ->whereRaw("TRIM(dealer) != ''");
+
+            $states = (clone $baseQuery)
+                ->whereNotNull('state')
+                ->whereRaw("TRIM(state) != ''")
+                ->selectRaw('TRIM(state) as name')
+                ->distinct()
+                ->orderBy('name')
+                ->get();
+
+            $salesQuery = (clone $baseQuery)->where(function ($dateQuery) use ($dateRanges) {
+                foreach ($dateRanges as [$rangeStart, $rangeEnd]) {
+                    $dateQuery->orWhereBetween('invoice_date', [$rangeStart, $rangeEnd]);
+                }
+            });
+
+            if ($request->filled('state')) {
+                $salesQuery->whereRaw('LOWER(TRIM(state)) = ?', [strtolower(trim($request->state))]);
+            }
+
+            $rows = $salesQuery
+                ->selectRaw("TRIM(dealer) as dealer, TRIM(COALESCE(city, '')) as city, TRIM(COALESCE(state, '')) as state, COALESCE(SUM(net_amount), 0) as sales_value")
+                ->groupByRaw("TRIM(dealer), TRIM(COALESCE(city, '')), TRIM(COALESCE(state, ''))")
+                ->orderByDesc('sales_value')
+                ->get();
+
+            $stateSections = $rows->groupBy(fn ($row) => $row->state ?: 'Unassigned')
+                ->map(function ($stateRows, $stateName) {
+                    return [
+                        'state' => $stateName,
+                        'dealers' => $stateRows->map(fn ($row) => [
+                            'dealer' => (string) $row->dealer,
+                            'city' => (string) $row->city,
+                            'state' => (string) $row->state,
+                            'sales_value' => round((float) $row->sales_value, 2),
+                        ])->values()->all(),
+                        'total_sales_value' => round((float) $stateRows->sum('sales_value'), 2),
+                    ];
+                })->sortByDesc('total_sales_value')->values()->all();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'period' => $period,
+                    'from_date' => $fromDate->toDateString(),
+                    'to_date' => $toDate->toDateString(),
+                    'states' => $stateSections,
+                    'filters' => [
+                        'states' => $states,
+                        'users' => $visibleUsers->map(fn ($user) => [
+                            'id' => (int) $user->id,
+                            'name' => (string) $user->name,
+                        ])->sortBy('name')->values()->all(),
+                    ],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => [],
+            ], $this->internalError);
+        }
+    }
+
     private function salesSummaryWorkingDays($users, Carbon $fromDate, Carbon $toDate): array
     {
         $branchIds = $users->flatMap(fn ($user) => explode(',', (string) $user->branch_id))
