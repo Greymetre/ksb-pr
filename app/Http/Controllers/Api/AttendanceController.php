@@ -2368,6 +2368,35 @@ class AttendanceController extends Controller
             $myTeamUserIds = getUsersReportingToAuth($user_id);
             $myTeamUserIds = array_unique(array_merge([$user_id], $myTeamUserIds ?? []));
 
+            $teamUsersForHoliday = User::whereIn('id', $myTeamUserIds)->get(['id', 'branch_id']);
+            $teamBranchIds = $teamUsersForHoliday
+                ->flatMap(fn ($employee) => explode(',', (string) $employee->branch_id))
+                ->map(fn ($id) => trim($id))
+                ->filter(fn ($id) => $id !== '' && ctype_digit($id))
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values();
+            $todayHolidays = Holiday::with('branches:id')
+                ->where('active', 'Y')
+                ->forBranches($teamBranchIds->all())
+                ->get(['id', 'branch', 'holiday_date'])
+                ->filter(fn ($holiday) => collect(explode(',', (string) $holiday->holiday_date))
+                    ->map(fn ($date) => trim($date))
+                    ->contains($today));
+            $holidayUserIds = $teamUsersForHoliday->filter(function ($employee) use ($todayHolidays) {
+                $employeeBranchIds = collect(explode(',', (string) $employee->branch_id))
+                    ->map(fn ($id) => trim($id))
+                    ->filter(fn ($id) => $id !== '' && ctype_digit($id))
+                    ->map(fn ($id) => (int) $id);
+                return $todayHolidays->contains(function ($holiday) use ($employeeBranchIds) {
+                    $holidayBranchIds = $holiday->branches->pluck('id')
+                        ->push($holiday->branch)
+                        ->filter()
+                        ->map(fn ($id) => (int) $id);
+                    return $employeeBranchIds->intersect($holidayBranchIds)->isNotEmpty();
+                });
+            })->pluck('id')->map(fn ($id) => (int) $id)->all();
+
             // ✅ Params
             $designation = strtolower($request->get('designation'));
             $branch = $request->get('branch');
@@ -2436,7 +2465,11 @@ class AttendanceController extends Controller
             if ($status == 'punch_in') {
                 $data = $data->where('punchin', 1)->values();
             } elseif ($status == 'not_punch_in') {
-                $data = $data->where('punchin', 0)->values();
+                $data = $data->where('punchin', 0)
+                    ->whereNotIn('id', $holidayUserIds)
+                    ->values();
+            } elseif ($status == 'holiday') {
+                $data = $data->whereIn('id', $holidayUserIds)->values();
             }
 
             // =========================
@@ -2470,6 +2503,7 @@ class AttendanceController extends Controller
                     }
                 }
                 $isWorking = $isPunchIn && !$isLeave;
+                $isHoliday = in_array((int) $row->id, $holidayUserIds, true);
                 if ($status == 'leave' && !$isLeave) {
                     continue;
                 }
@@ -2483,11 +2517,12 @@ class AttendanceController extends Controller
                         'mobile' => $row->reporting_mobile,
                     ],
                     'punchin' => $isPunchIn,
-                    'not_punchin' => !$isPunchIn,
+                    'not_punchin' => !$isPunchIn && !$isLeave && !$isHoliday,
 
                     // ✅ NEW TAGS
                     'on_leave' => $isLeave,
                     'working' => $isWorking,
+                    'on_holiday' => $isHoliday,
                 ];
                 // $result[$zoneName]['users'][] = [
                 //     'id' => $row->id,
