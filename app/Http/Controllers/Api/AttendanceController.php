@@ -643,6 +643,95 @@ class AttendanceController extends Controller
                 $hierarchyLevels[$uid] = getHierarchyLevel($uid, $user_id);
             }
 
+            // Holidays are branch-calendar entries, not attendance rows. Build
+            // report rows for every visible user assigned to the holiday branch.
+            if ($filterType === 'holiday') {
+                $holidayUsers = User::whereIn('id', $all_reporting_user_ids)
+                    ->whereDoesntHave('roles', function ($q) {
+                        $q->whereIn('id', config('constants.customer_roles'));
+                    })
+                    ->get(['id', 'name', 'branch_id']);
+                $visibleBranchIds = $holidayUsers
+                    ->flatMap(fn ($employee) => explode(',', (string) $employee->branch_id))
+                    ->map(fn ($id) => trim($id))
+                    ->filter(fn ($id) => $id !== '' && ctype_digit($id))
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->values();
+                $holidays = Holiday::with('branches:id')
+                    ->where('active', 'Y')
+                    ->forBranches($visibleBranchIds->all())
+                    ->get(['id', 'name', 'branch', 'holiday_date']);
+                $holidayRows = collect();
+
+                foreach ($holidayUsers as $employee) {
+                    $employeeBranchIds = collect(explode(',', (string) $employee->branch_id))
+                        ->map(fn ($id) => trim($id))
+                        ->filter(fn ($id) => $id !== '' && ctype_digit($id))
+                        ->map(fn ($id) => (int) $id)
+                        ->unique();
+
+                    foreach ($holidays as $holiday) {
+                        $holidayBranchIds = $holiday->branches->pluck('id')
+                            ->push($holiday->branch)
+                            ->filter()
+                            ->map(fn ($id) => (int) $id)
+                            ->unique();
+                        if ($employeeBranchIds->intersect($holidayBranchIds)->isEmpty()) {
+                            continue;
+                        }
+
+                        $holidayDates = array_map('trim', explode(',', (string) $holiday->holiday_date));
+                        $holidayNames = array_map('trim', explode(',', (string) $holiday->name));
+                        foreach ($holidayDates as $index => $holidayDate) {
+                            try {
+                                $date = Carbon::parse($holidayDate)->toDateString();
+                            } catch (\Throwable $e) {
+                                continue;
+                            }
+                            if ($start_date && ($date < date('Y-m-d', strtotime($start_date)) || $date > date('Y-m-d', strtotime($end_date)))) {
+                                continue;
+                            }
+                            $holidayName = $holidayNames[$index] ?? $holidayNames[0] ?? 'Holiday';
+                            $holidayRows->push([
+                                'attendance_id' => 'holiday-' . $holiday->id . '-' . $employee->id . '-' . $date,
+                                'name' => $employee->name ?: 'N/A',
+                                'date' => Carbon::parse($date)->format('d/m/Y'),
+                                'punch_in' => '',
+                                'punch_out' => '',
+                                'working_type' => $holidayName ?: 'Holiday',
+                                'status' => 'Holiday',
+                                'self' => ((int) $employee->id === (int) $user_id),
+                                'hierarchy_level' => $hierarchyLevels[$employee->id] ?? -1,
+                                'hierarchy_label' => 'Holiday',
+                                'is_holiday' => true,
+                            ]);
+                        }
+                    }
+                }
+
+                $holidayRows = $holidayRows->sortByDesc(function ($row) {
+                    return Carbon::createFromFormat('d/m/Y', $row['date'])->format('Y-m-d');
+                })->values();
+                $holidayPageSize = max(1, (int) ($pageSize ?: 100));
+                $holidayPage = max(1, (int) $request->input('page', 1));
+                $holidayPageCount = max(1, (int) ceil($holidayRows->count() / $holidayPageSize));
+                $holidayPageRows = $holidayRows->slice(($holidayPage - 1) * $holidayPageSize, $holidayPageSize)->values();
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => $holidayPageRows->isNotEmpty() ? 'Data retrieved successfully.' : 'No Record Found.',
+                    'users' => $holidayUsers->map(fn ($employee) => [
+                        'id' => (int) $employee->id,
+                        'name' => (string) $employee->name,
+                    ])->sortBy('name')->values()->all(),
+                    'branches' => $branches,
+                    'page_count' => $holidayPageCount,
+                    'all_status' => [],
+                    'data' => $holidayPageRows->all(),
+                ], $this->successStatus);
+            }
+
             // Main Query
             $all_punch_in_out = Attendance::with('users')
                 ->whereIn('user_id', $all_reporting_user_ids);
@@ -3003,6 +3092,10 @@ class AttendanceController extends Controller
                 $fromDate = Carbon::parse($dateRanges[0][0]);
                 $toDate = Carbon::parse($dateRanges[count($dateRanges) - 1][1]);
             }
+            $lastYearDateRanges = collect($dateRanges)->map(fn ($range) => [
+                Carbon::parse($range[0])->subYear()->toDateString(),
+                Carbon::parse($range[1])->subYear()->toDateString(),
+            ])->all();
 
             $baseQuery = DB::table('primary_sales')
                 ->whereIn('emp_code', $employeeCodes)
@@ -3033,8 +3126,35 @@ class AttendanceController extends Controller
                 ->orderByDesc('sales_value')
                 ->get();
 
+            $lastYearQuery = (clone $baseQuery)->where(function ($dateQuery) use ($lastYearDateRanges) {
+                foreach ($lastYearDateRanges as [$rangeStart, $rangeEnd]) {
+                    $dateQuery->orWhereBetween('invoice_date', [$rangeStart, $rangeEnd]);
+                }
+            });
+            if ($request->filled('state')) {
+                $lastYearQuery->whereRaw('LOWER(TRIM(state)) = ?', [strtolower(trim($request->state))]);
+            }
+            $lastYearRows = $lastYearQuery
+                ->selectRaw("TRIM(dealer) as dealer, TRIM(COALESCE(city, '')) as city, TRIM(COALESCE(state, '')) as state, COALESCE(SUM(net_amount), 0) as sales_value")
+                ->groupByRaw("TRIM(dealer), TRIM(COALESCE(city, '')), TRIM(COALESCE(state, ''))")
+                ->get()
+                ->keyBy(fn ($row) => strtolower($row->dealer . '|' . $row->city . '|' . $row->state));
+
+            $rows = $rows->map(function ($row) use ($lastYearRows) {
+                $key = strtolower($row->dealer . '|' . $row->city . '|' . $row->state);
+                $currentSales = (float) $row->sales_value;
+                $lastYearSales = (float) optional($lastYearRows->get($key))->sales_value;
+                $row->last_year_sales_value = $lastYearSales;
+                $row->growth_percentage = $lastYearSales > 0
+                    ? (($currentSales - $lastYearSales) / $lastYearSales) * 100
+                    : ($currentSales > 0 ? 100 : 0);
+                return $row;
+            });
+
             $stateSections = $rows->groupBy(fn ($row) => $row->state ?: 'Unassigned')
                 ->map(function ($stateRows, $stateName) {
+                    $currentTotal = (float) $stateRows->sum('sales_value');
+                    $lastYearTotal = (float) $stateRows->sum('last_year_sales_value');
                     return [
                         'state' => $stateName,
                         'dealers' => $stateRows->map(fn ($row) => [
@@ -3042,8 +3162,17 @@ class AttendanceController extends Controller
                             'city' => (string) $row->city,
                             'state' => (string) $row->state,
                             'sales_value' => round((float) $row->sales_value, 2),
+                            'last_year_sales_value' => round((float) $row->last_year_sales_value, 2),
+                            'growth_percentage' => round((float) $row->growth_percentage, 2),
                         ])->values()->all(),
-                        'total_sales_value' => round((float) $stateRows->sum('sales_value'), 2),
+                        'total_sales_value' => round($currentTotal, 2),
+                        'total_last_year_sales_value' => round($lastYearTotal, 2),
+                        'growth_percentage' => round(
+                            $lastYearTotal > 0
+                                ? (($currentTotal - $lastYearTotal) / $lastYearTotal) * 100
+                                : ($currentTotal > 0 ? 100 : 0),
+                            2
+                        ),
                     ];
                 })->sortByDesc('total_sales_value')->values()->all();
 
