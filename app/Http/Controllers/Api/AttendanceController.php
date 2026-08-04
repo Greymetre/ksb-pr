@@ -871,6 +871,7 @@ class AttendanceController extends Controller
                         'total_not_punch_in' => 0,
                         'total_leave_today' => 0,
                         'total_holiday_today' => 0,
+                        'mispunch_alert' => null,
                         'zone_performance_mtd' => [],
                         'total_target' => ['target' => 0, 'achievement' => 0, 'achievement_percent' => 0, 'target_qty' => 0],
                         'today_orders' => ['quantity' => 0, 'value' => 0],
@@ -884,6 +885,13 @@ class AttendanceController extends Controller
                         'total_customers' => 0,
                         'secondary_customers_with_order_current_month' => 0,
                         'secondary_customers_with_order_current_year' => 0,
+                        'inactive_customers_30_days' => [
+                            'count' => 0,
+                            'period_days' => 30,
+                            'total_customers' => 0,
+                            'customers_with_orders' => 0,
+                            'customers' => [],
+                        ],
                         'total_orders_current_month' => 0,
                         'total_order_quantity_current_month' => 0,
                         'total_order_value_current_month' => 0,
@@ -1000,6 +1008,35 @@ class AttendanceController extends Controller
                 0,
                 $totalUsers - $totalPunchInToday - $totalLeaveToday - $totalHolidayToday
             );
+
+            // Highest missed-punch zone for the dashboard alert. Use the same
+            // attendance-record rule as the detailed attendance report and
+            // exclude employees whose branch has a holiday today.
+            $todayAttendanceUserIds = Attendance::whereIn('user_id', $workingAttendanceUserIds)
+                ->whereDate('punchin_date', $today)
+                ->distinct()
+                ->pluck('user_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+            $missPunchUserIds = array_values(array_diff($workingAttendanceUserIds, $todayAttendanceUserIds));
+            $highestMissPunchZone = empty($missPunchUserIds)
+                ? null
+                : DB::table('users')
+                    ->leftJoin('divisions', 'users.division_id', '=', 'divisions.id')
+                    ->whereIn('users.id', $missPunchUserIds)
+                    ->selectRaw("COALESCE(divisions.division_name, 'Unassigned') as zone, COUNT(DISTINCT users.id) as count")
+                    ->groupBy('divisions.division_name')
+                    ->orderByDesc('count')
+                    ->orderBy('zone')
+                    ->first();
+            $misPunchAlert = $highestMissPunchZone
+                ? [
+                    'zone' => (string) $highestMissPunchZone->zone,
+                    'count' => (int) $highestMissPunchZone->count,
+                    'period' => 'today',
+                    'status' => 'not_punch_in',
+                ]
+                : null;
             // ===================== TARGET SUMMARY =====================
 
             $targetRows = SalesTargetUsers::with('user:id,employee_codes,sales_type')
@@ -1155,6 +1192,27 @@ class AttendanceController extends Controller
                 ->whereYear('created_at', $currentYear)
                 ->count();
             $totalCustomers = (clone $customerRegistrationQuery)->count();
+
+            $inactiveCustomerCutoff = Carbon::today()->subDays(29)->toDateString();
+            $customerMasterQuery = Customers::whereNull('deleted_at');
+            $totalCustomerMaster = (clone $customerMasterQuery)->count();
+            $customersWithOrders30Days = DB::table('orders')
+                ->join('customers', 'orders.buyer_id', '=', 'customers.id')
+                ->whereNull('customers.deleted_at')
+                ->whereDate('orders.order_date', '>=', $inactiveCustomerCutoff)
+                ->whereNull('orders.deleted_at')
+                ->distinct('orders.buyer_id')
+                ->count('orders.buyer_id');
+            $inactiveCustomers30Days = (clone $customerMasterQuery)
+                ->whereNotExists(function ($query) use ($inactiveCustomerCutoff) {
+                    $query->select(DB::raw(1))
+                        ->from('orders')
+                        ->whereColumn('orders.buyer_id', 'customers.id')
+                        ->whereDate('orders.order_date', '>=', $inactiveCustomerCutoff)
+                        ->whereNull('orders.deleted_at');
+                })
+                ->orderBy('name')
+                ->get(['id', 'name', 'mobile', 'contact_number']);
 
             $secondaryWithOrderCurrentMonth = DB::table('orders')
                 ->whereIn('created_by', $visibleUserIds)
@@ -1880,6 +1938,7 @@ class AttendanceController extends Controller
                 'total_not_punch_in' => $totalNotPunchInToday,
                 'total_leave_today' => $totalLeaveToday,
                 'total_holiday_today' => $totalHolidayToday,
+                'mispunch_alert' => $misPunchAlert,
 
                 'today_orders' => [
                     'quantity' => (int) ($todayOrders->today_quantity ?? 0),
@@ -1907,6 +1966,17 @@ class AttendanceController extends Controller
                 'total_customers' => $totalCustomers,
                 'secondary_customers_with_order_current_month' => $secondaryWithOrderCurrentMonth,
                 'secondary_customers_with_order_current_year' => $secondaryWithOrderCurrentYear,
+                'inactive_customers_30_days' => [
+                    'count' => $inactiveCustomers30Days->count(),
+                    'period_days' => 30,
+                    'total_customers' => $totalCustomerMaster,
+                    'customers_with_orders' => $customersWithOrders30Days,
+                    'customers' => $inactiveCustomers30Days->map(fn ($customer) => [
+                        'id' => (int) $customer->id,
+                        'name' => (string) $customer->name,
+                        'mobile' => (string) ($customer->mobile ?: $customer->contact_number ?: ''),
+                    ])->values()->all(),
+                ],
                 'total_orders_current_month' => (int) ($orderStatsCurrentMonth->total_orders ?? 0),
                 'total_order_quantity_current_month' => (int) ($orderStatsCurrentMonth->total_quantity ?? 0),
                 'total_order_value_current_month' => round($orderStatsCurrentMonth->total_value ?? 0, 2),
