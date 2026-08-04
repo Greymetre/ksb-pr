@@ -891,6 +891,7 @@ class AttendanceController extends Controller
                             'primary' => ['count' => 0, 'customers' => []],
                             'secondary' => ['count' => 0, 'customers' => []],
                         ],
+                        'lowest_visit_compliance_mtd' => null,
                         'total_orders_current_month' => 0,
                         'total_order_quantity_current_month' => 0,
                         'total_order_value_current_month' => 0,
@@ -1227,6 +1228,69 @@ class AttendanceController extends Controller
                 ->whereRaw("LOWER(TRIM(COALESCE(customer_types.type_name, ''))) NOT IN ('dealer', 'distributor')")
                 ->orderBy('customers.name')
                 ->get();
+
+            // MTD visit compliance by zone: 10 planned customer visits per
+            // attendance-visible user per working day through today.
+            $dailyVisitTarget = 10;
+            $visitComplianceUsers = DB::table('users')
+                ->leftJoin('divisions', 'users.division_id', '=', 'divisions.id')
+                ->whereIn('users.id', $attendanceUserIds)
+                ->where('users.active', 'Y')
+                ->where('users.show_attandance_report', 1)
+                ->get([
+                    'users.id',
+                    'users.branch_id',
+                    DB::raw("COALESCE(divisions.division_name, 'Unassigned') as zone"),
+                ]);
+            $workingDaysByUser = $this->salesSummaryWorkingDays(
+                $visitComplianceUsers,
+                Carbon::parse($currentMonthStart),
+                Carbon::today()
+            );
+            $completedVisitsByUser = DB::table('check_in')
+                ->whereIn('user_id', $visitComplianceUsers->pluck('id')->all())
+                ->whereBetween('checkin_date', [$currentMonthStart, $today])
+                ->whereNotNull('checkout_date')
+                ->where(function ($query) {
+                    $query->whereNotNull('customer_id')
+                        ->orWhere(function ($entityQuery) {
+                            $entityQuery->whereIn('entity_type', ['customer', 'distributor', 'secondary_customer'])
+                                ->whereNotNull('entity_id');
+                        });
+                })
+                ->select('user_id', DB::raw('COUNT(*) as completed_visits'))
+                ->groupBy('user_id')
+                ->pluck('completed_visits', 'user_id');
+            $zoneVisitCompliance = [];
+            foreach ($visitComplianceUsers as $visitUser) {
+                $zoneName = trim((string) $visitUser->zone) ?: 'Unassigned';
+                $normalizedZone = strtolower(preg_replace('/\s+/', ' ', $zoneName));
+                if (in_array($normalizedZone, ['ho', 'head office'], true)) {
+                    continue;
+                }
+                $zoneVisitCompliance[$zoneName] ??= [
+                    'zone' => $zoneName,
+                    'users' => 0,
+                    'planned_visits' => 0,
+                    'completed_visits' => 0,
+                ];
+                $zoneVisitCompliance[$zoneName]['users']++;
+                $zoneVisitCompliance[$zoneName]['planned_visits'] +=
+                    ((int) ($workingDaysByUser[(int) $visitUser->id] ?? 0)) * $dailyVisitTarget;
+                $zoneVisitCompliance[$zoneName]['completed_visits'] +=
+                    (int) ($completedVisitsByUser[(int) $visitUser->id] ?? 0);
+            }
+            $lowestVisitComplianceMtd = collect($zoneVisitCompliance)
+                ->filter(fn ($zone) => $zone['planned_visits'] > 0)
+                ->map(function ($zone) {
+                    $zone['percentage'] = round(
+                        ($zone['completed_visits'] / $zone['planned_visits']) * 100,
+                        2
+                    );
+                    return $zone;
+                })
+                ->sortBy('percentage')
+                ->first();
 
             $secondaryWithOrderCurrentMonth = DB::table('orders')
                 ->whereIn('created_by', $visibleUserIds)
@@ -2002,6 +2066,7 @@ class AttendanceController extends Controller
                         ])->values()->all(),
                     ],
                 ],
+                'lowest_visit_compliance_mtd' => $lowestVisitComplianceMtd,
                 'total_orders_current_month' => (int) ($orderStatsCurrentMonth->total_orders ?? 0),
                 'total_order_quantity_current_month' => (int) ($orderStatsCurrentMonth->total_quantity ?? 0),
                 'total_order_value_current_month' => round($orderStatsCurrentMonth->total_value ?? 0, 2),
