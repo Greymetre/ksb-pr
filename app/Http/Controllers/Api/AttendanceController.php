@@ -3058,6 +3058,147 @@ class AttendanceController extends Controller
         }
     }
 
+    public function getPromotionalActivitiesReport(Request $request)
+    {
+        $activityLabels = [
+            'mechanic_meet' => 'Mechanic Meet',
+            'borer_meet' => 'Borer Meet',
+            'retailer_meet' => 'Retailer Meet',
+            'tractor_show' => 'Tractor show',
+            'promotional_item_distribution' => 'Promotional Item Distribution',
+            'dealer_board' => 'Dealer Board',
+            'wall_painting' => 'Wall Painting',
+            'dealer_factory_visit' => 'Dealer Factory Visit',
+        ];
+        $validator = Validator::make($request->all(), [
+            'period' => 'required|in:today,mtd,ytd',
+            'zone' => 'nullable|string|max:255',
+            'user_id' => 'nullable|integer|exists:users,id',
+            'type' => 'nullable|string|in:' . implode(',', array_keys($activityLabels)),
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()], 422);
+        }
+
+        try {
+            $authUser = $request->user();
+            $visibleUserIds = $this->attendanceVisibleUserIds($authUser);
+            $requestedUserId = $request->filled('user_id') ? (int) $request->user_id : null;
+            if ($requestedUserId && !in_array($requestedUserId, $visibleUserIds, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to view this user.',
+                ], 403);
+            }
+
+            $allVisibleUsers = DB::table('users')
+                ->leftJoin('divisions', 'users.division_id', '=', 'divisions.id')
+                ->whereIn('users.id', $visibleUserIds)
+                ->where('users.active', 'Y')
+                ->whereNull('users.deleted_at')
+                ->select('users.id', 'users.name', DB::raw("COALESCE(divisions.division_name, 'Unassigned') as zone"))
+                ->orderBy('users.name')
+                ->get();
+
+            $users = $allVisibleUsers;
+            if ($request->filled('zone')) {
+                $zone = strtolower(trim($request->zone));
+                $users = $users->filter(fn ($user) => strtolower(trim($user->zone)) === $zone)->values();
+            }
+            if ($requestedUserId) {
+                $users = $users->where('id', $requestedUserId)->values();
+            }
+
+            $now = now();
+            if ($request->period === 'today') {
+                $fromDate = $now->copy()->startOfDay()->toDateString();
+            } elseif ($request->period === 'mtd') {
+                $fromDate = $now->copy()->startOfMonth()->toDateString();
+            } else {
+                $fromDate = $now->copy()->startOfYear()->toDateString();
+            }
+            $toDate = $now->toDateString();
+            $selectedType = $request->input('type');
+            $normalizedLabels = collect($activityLabels)->mapWithKeys(
+                fn ($label, $key) => [mb_strtolower(trim($label)) => $key]
+            );
+            $countsByUser = [];
+
+            if ($users->isNotEmpty()) {
+                Attendance::whereIn('user_id', $users->pluck('id')->all())
+                    ->whereBetween('punchin_date', [$fromDate, $toDate])
+                    ->where('active', 'Y')
+                    ->whereNull('deleted_at')
+                    ->whereNotNull('punchin_time')
+                    ->whereNotNull('working_type')
+                    ->get(['user_id', 'working_type'])
+                    ->each(function ($attendance) use (&$countsByUser, $normalizedLabels, $selectedType) {
+                        $activities = collect(explode(',', (string) $attendance->working_type))
+                            ->map(fn ($activity) => mb_strtolower(trim($activity)))
+                            ->filter()
+                            ->map(fn ($activity) => $normalizedLabels->get($activity))
+                            ->filter()
+                            ->unique();
+                        if ($selectedType && !$activities->contains($selectedType)) {
+                            return;
+                        }
+                        foreach ($activities as $activityKey) {
+                            $countsByUser[(int) $attendance->user_id][$activityKey] =
+                                ($countsByUser[(int) $attendance->user_id][$activityKey] ?? 0) + 1;
+                        }
+                    });
+            }
+
+            $zones = $users->map(function ($user) use ($countsByUser, $activityLabels) {
+                $counts = collect($activityLabels)->mapWithKeys(
+                    fn ($label, $key) => [$key => (int) ($countsByUser[(int) $user->id][$key] ?? 0)]
+                )->all();
+                return [
+                    'id' => (int) $user->id,
+                    'name' => (string) $user->name,
+                    'zone' => (string) $user->zone,
+                    'activities' => $counts,
+                    'total' => array_sum($counts),
+                ];
+            })->filter(fn ($user) => !$selectedType || $user['activities'][$selectedType] > 0)
+                ->groupBy('zone')
+                ->map(fn ($zoneUsers, $zone) => [
+                    'zone' => $zone,
+                    'users' => $zoneUsers->sortBy('name')->values()->all(),
+                ])
+                ->sortKeys()
+                ->values()
+                ->all();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'period' => $request->period,
+                    'from_date' => $fromDate,
+                    'to_date' => $toDate,
+                    'zones' => $zones,
+                    'filters' => [
+                        'zones' => $allVisibleUsers->pluck('zone')->filter()->unique()->sort()->values()->all(),
+                        'users' => $allVisibleUsers->map(fn ($user) => [
+                            'id' => (int) $user->id,
+                            'name' => (string) $user->name,
+                        ])->values()->all(),
+                        'types' => collect($activityLabels)->map(fn ($label, $key) => [
+                            'id' => $key,
+                            'name' => $label,
+                        ])->values()->all(),
+                    ],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => [],
+            ], $this->internalError);
+        }
+    }
+
     public function getDealerDistributorSalesPerformance(Request $request)
     {
         $validator = Validator::make($request->all(), [
