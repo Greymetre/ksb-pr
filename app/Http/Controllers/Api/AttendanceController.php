@@ -1010,31 +1010,49 @@ class AttendanceController extends Controller
                 $totalUsers - $totalPunchInToday - $totalLeaveToday - $totalHolidayToday
             );
 
-            // Highest missed-punch zone for the dashboard alert. Use the same
-            // attendance-record rule as the detailed attendance report and
-            // exclude employees whose branch has a holiday today.
-            $todayAttendanceUserIds = Attendance::whereIn('user_id', $workingAttendanceUserIds)
-                ->whereDate('punchin_date', $today)
-                ->distinct()
-                ->pluck('user_id')
-                ->map(fn ($id) => (int) $id)
-                ->all();
-            $missPunchUserIds = array_values(array_diff($workingAttendanceUserIds, $todayAttendanceUserIds));
-            $highestMissPunchZone = empty($missPunchUserIds)
-                ? null
-                : DB::table('users')
-                    ->leftJoin('divisions', 'users.division_id', '=', 'divisions.id')
-                    ->whereIn('users.id', $missPunchUserIds)
-                    ->selectRaw("COALESCE(divisions.division_name, 'Unassigned') as zone, COUNT(DISTINCT users.id) as count")
-                    ->groupBy('divisions.division_name')
-                    ->orderByDesc('count')
-                    ->orderBy('zone')
-                    ->first();
+            // Highest MTD missed-punch zone. Each missing attendance record on
+            // an expected working day counts as one missed punch. Sundays and
+            // branch holidays are excluded by salesSummaryWorkingDays().
+            $mtdAttendanceUsers = DB::table('users')
+                ->leftJoin('divisions', 'users.division_id', '=', 'divisions.id')
+                ->whereIn('users.id', $attendanceUserIds)
+                ->get([
+                    'users.id',
+                    'users.branch_id',
+                    DB::raw("COALESCE(divisions.division_name, 'Unassigned') as zone"),
+                ]);
+            $mtdWorkingDaysByUser = $this->salesSummaryWorkingDays(
+                $mtdAttendanceUsers,
+                Carbon::parse($currentMonthStart),
+                Carbon::today()
+            );
+            $mtdAttendanceDaysByUser = Attendance::whereIn('user_id', $attendanceUserIds)
+                ->whereBetween('punchin_date', [$currentMonthStart, $today])
+                ->select('user_id', DB::raw('COUNT(DISTINCT punchin_date) as attendance_days'))
+                ->groupBy('user_id')
+                ->pluck('attendance_days', 'user_id');
+            $mtdMissPunchesByZone = [];
+            foreach ($mtdAttendanceUsers as $attendanceUser) {
+                $zoneName = trim((string) $attendanceUser->zone) ?: 'Unassigned';
+                $normalizedZone = strtolower(preg_replace('/\s+/', ' ', $zoneName));
+                if (in_array($normalizedZone, ['ho', 'head office'], true)) {
+                    continue;
+                }
+                $expectedDays = (int) ($mtdWorkingDaysByUser[(int) $attendanceUser->id] ?? 0);
+                $attendanceDays = (int) ($mtdAttendanceDaysByUser[(int) $attendanceUser->id] ?? 0);
+                $mtdMissPunchesByZone[$zoneName] = ($mtdMissPunchesByZone[$zoneName] ?? 0)
+                    + max(0, $expectedDays - $attendanceDays);
+            }
+            arsort($mtdMissPunchesByZone);
+            $highestMissPunchZone = array_key_first($mtdMissPunchesByZone);
+            $highestMissPunchCount = $highestMissPunchZone !== null
+                ? (int) $mtdMissPunchesByZone[$highestMissPunchZone]
+                : 0;
             $misPunchAlert = $highestMissPunchZone
                 ? [
-                    'zone' => (string) $highestMissPunchZone->zone,
-                    'count' => (int) $highestMissPunchZone->count,
-                    'period' => 'today',
+                    'zone' => (string) $highestMissPunchZone,
+                    'count' => $highestMissPunchCount,
+                    'period' => 'mtd',
                     'status' => 'not_punch_in',
                 ]
                 : null;
