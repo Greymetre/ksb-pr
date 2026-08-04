@@ -888,9 +888,8 @@ class AttendanceController extends Controller
                         'inactive_customers_30_days' => [
                             'count' => 0,
                             'period_days' => 30,
-                            'total_customers' => 0,
-                            'customers_with_orders' => 0,
-                            'customers' => [],
+                            'primary' => ['count' => 0, 'customers' => []],
+                            'secondary' => ['count' => 0, 'customers' => []],
                         ],
                         'total_orders_current_month' => 0,
                         'total_order_quantity_current_month' => 0,
@@ -1213,6 +1212,22 @@ class AttendanceController extends Controller
                 })
                 ->orderBy('name')
                 ->get(['id', 'name', 'mobile', 'contact_number']);
+
+            $secondaryCustomerMasterQuery = DB::table('secondary_customers');
+            $totalSecondaryCustomerMaster = (clone $secondaryCustomerMasterQuery)->count();
+            $secondaryCustomersWithOrders30Days = DB::table('new_invoices')
+                ->whereDate('invoice_date', '>=', $inactiveCustomerCutoff)
+                ->distinct('secondary_customer_id')
+                ->count('secondary_customer_id');
+            $inactiveSecondaryCustomers30Days = (clone $secondaryCustomerMasterQuery)
+                ->whereNotExists(function ($query) use ($inactiveCustomerCutoff) {
+                    $query->select(DB::raw(1))
+                        ->from('new_invoices')
+                        ->whereColumn('new_invoices.secondary_customer_id', 'secondary_customers.id')
+                        ->whereDate('new_invoices.invoice_date', '>=', $inactiveCustomerCutoff);
+                })
+                ->orderBy('shop_name')
+                ->get(['id', 'shop_name', 'owner_name', 'mobile_number']);
 
             $secondaryWithOrderCurrentMonth = DB::table('orders')
                 ->whereIn('created_by', $visibleUserIds)
@@ -1967,15 +1982,28 @@ class AttendanceController extends Controller
                 'secondary_customers_with_order_current_month' => $secondaryWithOrderCurrentMonth,
                 'secondary_customers_with_order_current_year' => $secondaryWithOrderCurrentYear,
                 'inactive_customers_30_days' => [
-                    'count' => $inactiveCustomers30Days->count(),
+                    'count' => $inactiveCustomers30Days->count() + $inactiveSecondaryCustomers30Days->count(),
                     'period_days' => 30,
-                    'total_customers' => $totalCustomerMaster,
-                    'customers_with_orders' => $customersWithOrders30Days,
-                    'customers' => $inactiveCustomers30Days->map(fn ($customer) => [
-                        'id' => (int) $customer->id,
-                        'name' => (string) $customer->name,
-                        'mobile' => (string) ($customer->mobile ?: $customer->contact_number ?: ''),
-                    ])->values()->all(),
+                    'primary' => [
+                        'count' => $inactiveCustomers30Days->count(),
+                        'total_customers' => $totalCustomerMaster,
+                        'customers_with_orders' => $customersWithOrders30Days,
+                        'customers' => $inactiveCustomers30Days->map(fn ($customer) => [
+                            'id' => (int) $customer->id,
+                            'name' => (string) $customer->name,
+                            'mobile' => (string) ($customer->mobile ?: $customer->contact_number ?: ''),
+                        ])->values()->all(),
+                    ],
+                    'secondary' => [
+                        'count' => $inactiveSecondaryCustomers30Days->count(),
+                        'total_customers' => $totalSecondaryCustomerMaster,
+                        'customers_with_orders' => $secondaryCustomersWithOrders30Days,
+                        'customers' => $inactiveSecondaryCustomers30Days->map(fn ($customer) => [
+                            'id' => (int) $customer->id,
+                            'name' => (string) ($customer->shop_name ?: $customer->owner_name ?: ''),
+                            'mobile' => (string) ($customer->mobile_number ?: ''),
+                        ])->values()->all(),
+                    ],
                 ],
                 'total_orders_current_month' => (int) ($orderStatsCurrentMonth->total_orders ?? 0),
                 'total_order_quantity_current_month' => (int) ($orderStatsCurrentMonth->total_quantity ?? 0),
