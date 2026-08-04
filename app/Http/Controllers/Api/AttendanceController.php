@@ -903,6 +903,8 @@ class AttendanceController extends Controller
                         'top_5_products_total' => ['quantity' => 0, 'value' => 0],
                         'top_5_products_current_month' => [],
                         'top_5_products_current_year' => [],
+                        'top_5_dealer_distributor_current_month' => [],
+                        'top_5_dealer_distributor_current_year' => [],
                         'top_5_products_total_current_month' => ['quantity' => 0, 'value' => 0],
                         'top_5_products_total_current_year' => ['quantity' => 0, 'value' => 0],
                         'working_type_today' => $emptyTourObjectiveCounts,
@@ -2053,6 +2055,45 @@ class AttendanceController extends Controller
             $top5YearTotalQty = $top5Year->sum('total_quantity');
             $top5YearTotalValue = $top5Year->sum('total_value');
 
+            // Top dealer/distributor performers from CRM > Reports > Primary Sales.
+            // Restrict the result to the authenticated user's visible hierarchy,
+            // matching the scope used by the Primary Sales API report.
+            $visibleEmployeeCodes = User::whereIn('id', $myTeamUserIds)
+                ->whereNotNull('employee_codes')
+                ->where('employee_codes', '!=', '')
+                ->pluck('employee_codes')
+                ->unique()
+                ->values()
+                ->all();
+
+            $dealerPerformanceQuery = DB::table('primary_sales')
+                ->whereIn('emp_code', $visibleEmployeeCodes)
+                ->whereNotNull('dealer')
+                ->whereRaw("TRIM(dealer) != ''");
+
+            $dealerPerformanceColumns = [
+                DB::raw('TRIM(dealer) as dealer'),
+                DB::raw("TRIM(COALESCE(city, '')) as city"),
+                DB::raw("TRIM(COALESCE(state, '')) as state"),
+                DB::raw('COALESCE(SUM(net_amount), 0) as sales_value'),
+            ];
+
+            $top5DealerDistributorMonth = (clone $dealerPerformanceQuery)
+                ->whereBetween('invoice_date', [$currentMonthStart, $today])
+                ->select($dealerPerformanceColumns)
+                ->groupByRaw("TRIM(dealer), TRIM(COALESCE(city, '')), TRIM(COALESCE(state, ''))")
+                ->orderByDesc('sales_value')
+                ->limit(5)
+                ->get();
+
+            $top5DealerDistributorYear = (clone $dealerPerformanceQuery)
+                ->whereBetween('invoice_date', [$currentYearStart, $today])
+                ->select($dealerPerformanceColumns)
+                ->groupByRaw("TRIM(dealer), TRIM(COALESCE(city, '')), TRIM(COALESCE(state, ''))")
+                ->orderByDesc('sales_value')
+                ->limit(5)
+                ->get();
+
             $summary = [
                 'total_users'        => $totalUsers,
                 'total_punch_in'     => $totalPunchInToday,
@@ -2129,6 +2170,20 @@ class AttendanceController extends Controller
                     'quantity'     => (int) $item->total_quantity,
                     'value'        => round($item->total_value, 2),
                 ])->toArray(),
+
+                'top_5_dealer_distributor_current_month' => $top5DealerDistributorMonth->map(fn ($item) => [
+                    'dealer' => (string) ($item->dealer ?? 'N/A'),
+                    'city' => (string) ($item->city ?? ''),
+                    'state' => (string) ($item->state ?? ''),
+                    'sales_value' => round((float) ($item->sales_value ?? 0), 2),
+                ])->values()->all(),
+
+                'top_5_dealer_distributor_current_year' => $top5DealerDistributorYear->map(fn ($item) => [
+                    'dealer' => (string) ($item->dealer ?? 'N/A'),
+                    'city' => (string) ($item->city ?? ''),
+                    'state' => (string) ($item->state ?? ''),
+                    'sales_value' => round((float) ($item->sales_value ?? 0), 2),
+                ])->values()->all(),
 
                 'top_5_products_total_current_month' => [
                     'quantity' => (int) $top5MonthTotalQty,
