@@ -874,7 +874,6 @@ class AttendanceController extends Controller
                         'mispunch_alert' => null,
                         'zone_performance_mtd' => [],
                         'state_performance_mtd' => [],
-                        'state_performance_period' => null,
                         'total_target' => ['target' => 0, 'achievement' => 0, 'achievement_percent' => 0, 'target_qty' => 0],
                         'today_orders' => ['quantity' => 0, 'value' => 0],
                         'current_month_orders' => ['quantity' => 0, 'value' => 0],
@@ -1109,12 +1108,10 @@ class AttendanceController extends Controller
                 ->values()
                 ->all();
 
-            // TEMPORARY TESTING: top 10 states from the complete previous
-            // calendar month because the current month has no Primary Sales.
-            $statePerformanceStart = Carbon::now()->subMonthNoOverflow()->startOfMonth()->toDateString();
-            $statePerformanceEnd = Carbon::now()->subMonthNoOverflow()->endOfMonth()->toDateString();
+            // Top 10 states by MTD Primary Sales, using the same state field
+            // exposed by CRM > Reports > Primary Sales.
             $statePrimarySalesMtd = DB::table('primary_sales')
-                ->whereBetween('invoice_date', [$statePerformanceStart, $statePerformanceEnd])
+                ->whereBetween('invoice_date', [$currentMonthStart, $today])
                 ->whereNotNull('state')
                 ->whereRaw("TRIM(state) != ''")
                 ->selectRaw('TRIM(state) as state, SUM(net_amount) as sales_value')
@@ -2063,12 +2060,6 @@ class AttendanceController extends Controller
                 ],
                 'zone_performance_mtd' => $zonePerformanceMtd,
                 'state_performance_mtd' => $statePerformanceMtd,
-                'state_performance_period' => [
-                    'type' => 'last_month',
-                    'label' => Carbon::parse($statePerformanceStart)->format('F Y'),
-                    'from_date' => $statePerformanceStart,
-                    'to_date' => $statePerformanceEnd,
-                ],
                 'unique_buyers' => $uniqueBuyersFromAsr,
                 'total_unique_buyers_current_year' => $totalUniqueBuyersCurrentYear,
                 'punchout_remaining_today' => $punchoutRemainingAsr,
