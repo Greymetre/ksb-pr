@@ -1110,24 +1110,14 @@ class AttendanceController extends Controller
 
             // Top 10 states by MTD Primary Sales, using the same state field
             // exposed by CRM > Reports > Primary Sales.
-            $primaryEmployeeCodes = User::whereIn('id', $myTeamUserIds)
-                ->where('sales_type', 'Primary')
-                ->whereNotNull('employee_codes')
-                ->pluck('employee_codes')
-                ->filter(fn ($code) => trim((string) $code) !== '')
-                ->unique()
-                ->values();
-            $statePrimarySalesMtd = $primaryEmployeeCodes->isEmpty()
-                ? collect()
-                : DB::table('primary_sales')
-                    ->whereIn('emp_code', $primaryEmployeeCodes->all())
-                    ->whereBetween('invoice_date', [$currentMonthStart, $today])
-                    ->whereNotNull('state')
-                    ->whereRaw("TRIM(state) != ''")
-                    ->selectRaw('TRIM(state) as state, SUM(net_amount) as sales_value')
-                    ->groupByRaw('TRIM(state)')
-                    ->orderByDesc('sales_value')
-                    ->get();
+            $statePrimarySalesMtd = DB::table('primary_sales')
+                ->whereBetween('invoice_date', [$currentMonthStart, $today])
+                ->whereNotNull('state')
+                ->whereRaw("TRIM(state) != ''")
+                ->selectRaw('TRIM(state) as state, SUM(net_amount) as sales_value')
+                ->groupByRaw('TRIM(state)')
+                ->orderByDesc('sales_value')
+                ->get();
             $totalStatePrimarySalesMtd = (float) $statePrimarySalesMtd->sum('sales_value');
             $statePerformanceMtd = $statePrimarySalesMtd
                 ->take(10)
