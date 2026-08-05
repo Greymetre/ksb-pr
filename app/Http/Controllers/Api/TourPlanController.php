@@ -261,6 +261,16 @@ class TourPlanController extends Controller
             $query->where('name', 'like', "%{$search_name}%");
         }
 
+        // Status totals for tour plans belonging to all users matched by the
+        // active zone, designation and user filters (before user pagination).
+        $matchingUserIds = (clone $query)->pluck('id');
+        $tourStatusQuery = TourProgramme::whereIn('userid', $matchingUserIds);
+        $statusCounts = [
+            'approved' => (clone $tourStatusQuery)->where('status', 1)->count(),
+            'pending' => (clone $tourStatusQuery)->where('status', 0)->count(),
+            'rejected' => (clone $tourStatusQuery)->whereNotIn('status', [0, 1])->count(),
+        ];
+
         // Get paginated users
         $paginatedUsers = $query->orderBy('name')->paginate($pageSize);
 
@@ -288,6 +298,7 @@ class TourPlanController extends Controller
             'page_count' => $paginatedUsers->lastPage(),
             'total'      => $paginatedUsers->total(),
             'current_page' => $paginatedUsers->currentPage(),
+            'status_counts' => $statusCounts,
         ], 200);
     }
 
