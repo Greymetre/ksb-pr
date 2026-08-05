@@ -489,7 +489,8 @@ class ExpensesTypeController extends Controller
             $validator = Validator::make(
                 $request->all(),
                 [
-                    'expense_id'  => "required",
+                    'expense_id'  => 'required|exists:expenses,id',
+                    'date' => 'nullable|date_format:Y-m-d|before_or_equal:today',
                     'expense_file.*' => 'mimes:jpeg,jpg,png,pdf,doc,webp',
                 ]
             );
@@ -506,7 +507,7 @@ class ExpensesTypeController extends Controller
                 'user_id' => $userid,
                 'expenses_type' => $expenseTypeId,
                 'rate' => $rate,
-                //'date' => isset($request['date'])? $request['date']:$expense_detail->date,
+                'date' => $request->filled('date') ? $request->input('date') : $expense_detail->date,
                 'note' => isset($request['note']) ? $request['note'] : $expense_detail->note,
                 'start_km' => isset($request['start_km']) ? $request['start_km'] : $expense_detail->start_km,
                 'stop_km' => isset($request['stop_km']) ? $request['stop_km'] : $expense_detail->stop_km,
