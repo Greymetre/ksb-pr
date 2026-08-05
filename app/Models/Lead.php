@@ -37,11 +37,12 @@ class Lead extends Model implements HasMedia
         return $this->hasMany(LeadNote::class);
     }
 
-        public function registerMediaCollections(): void {
+    public function registerMediaCollections(): void
+    {
         $this->addMediaCollection('lead_file')
-             ->useFallbackUrl(asset(config('constants.NO_IMAGE_URL')))
-             ->useFallbackPath(public_path(config('constants.NO_IMAGE_URL')));
-            //  ->singleFile();
+            ->useDisk('public')
+            ->useFallbackUrl(asset(config('constants.NO_IMAGE_URL')))
+            ->useFallbackPath(public_path(config('constants.NO_IMAGE_URL')));
     }
 
     public function assign_user(){

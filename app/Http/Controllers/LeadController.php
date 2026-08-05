@@ -443,7 +443,7 @@ class LeadController extends Controller
                 $customname = time() . '.' . $file->getClientOriginalExtension();
                 $lead->addMedia($file)
                     ->usingFileName($customname)
-                    ->toMediaCollection('lead_file');
+                    ->toMediaCollection('lead_file', 'public');
             }
 
             $request->session()->flash('message_success', __('Lead file upload successfully.'));
