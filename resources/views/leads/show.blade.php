@@ -666,6 +666,286 @@
             }
         }
 
+        /* Lead detail page: use the shared CRM colour tokens in both themes. */
+        .lead-detail-page {
+            color: var(--fk-list-text);
+        }
+
+        .lead-detail-page > .col-md-12 > .card {
+            border: 1px solid var(--fk-list-border) !important;
+            border-radius: 16px !important;
+            background: var(--fk-list-bg) !important;
+            box-shadow: none !important;
+            overflow: hidden;
+        }
+
+        .lead-detail-page .card-header-warning {
+            min-height: 58px;
+            padding: 0 18px !important;
+            border-bottom: 1px solid var(--fk-list-border) !important;
+            background: var(--fk-list-panel) !important;
+            box-shadow: none !important;
+        }
+
+        .lead-detail-page .card-header-warning .new_id {
+            min-height: 58px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .lead-detail-page .card-header-warning .card-title {
+            margin: 0 !important;
+            color: var(--fk-list-heading) !important;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .lead-detail-page .card-header-warning a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--fk-list-border-strong);
+            border-radius: 10px;
+            color: var(--fk-list-soft);
+            background: var(--fk-list-control);
+        }
+
+        .lead-detail-page .card-body.shdnone {
+            padding: 20px !important;
+            background: transparent !important;
+        }
+
+        .lead-detail-page .mpadding {
+            padding: 0 !important;
+        }
+
+        .lead-detail-page .mpadding > .card,
+        .lead-detail-page .new-task,
+        .lead-detail-page .new-task > .card,
+        .lead-detail-page .tabsection > .card,
+        .lead-detail-page .tab-pane .card {
+            border: 1px solid var(--fk-list-border) !important;
+            border-radius: 14px !important;
+            background: var(--fk-list-panel) !important;
+            color: var(--fk-list-text) !important;
+            box-shadow: none !important;
+        }
+
+        .lead-detail-page .mpadding > .card {
+            margin-bottom: 20px;
+            padding: 22px !important;
+        }
+
+        .lead-detail-page .infomation-data h3,
+        .lead-detail-page .new-task .card-header strong,
+        .lead-detail-page .listdata h5,
+        .lead-detail-page ul.list-task li h5,
+        .lead-detail-page ul.list-task li p,
+        .lead-detail-page .contact-person h5 {
+            color: var(--fk-list-heading) !important;
+        }
+
+        .lead-detail-page .infomation-data p,
+        .lead-detail-page .infomation-data ul li span,
+        .lead-detail-page .contact-person p,
+        .lead-detail-page .listdata p,
+        .lead-detail-page .imagedata p,
+        .lead-detail-page ul.list-task li p span.date {
+            color: var(--fk-list-muted) !important;
+        }
+
+        .lead-detail-page .infomation-data > a,
+        .lead-detail-page .infomation-data h3 a,
+        .lead-detail-page .new-task .card-header a {
+            color: var(--fk-list-accent) !important;
+        }
+
+        .lead-detail-page .infomation-data {
+            min-width: 0;
+        }
+
+        .lead-detail-page .infomation-data ul {
+            gap: 18px;
+            padding: 0;
+        }
+
+        .lead-detail-page .infomation-data ul li {
+            width: auto;
+            margin-right: 0;
+        }
+
+        .lead-detail-page .image-profile {
+            flex: 0 0 80px;
+            border-color: var(--fk-list-accent);
+            background: linear-gradient(135deg, var(--fk-list-accent-2), var(--fk-list-accent));
+            text-shadow: none;
+        }
+
+        .lead-detail-page .infomation-data .bootstrap-select,
+        .lead-detail-page .infomation-data .dropdown.bootstrap-select.form-control {
+            width: 220px !important;
+            margin-left: 12px;
+        }
+
+        .lead-detail-page .bootstrap-select > .dropdown-toggle,
+        .lead-detail-page .form-control,
+        .lead-detail-page .select2-container .select2-selection {
+            border-color: var(--fk-form-border) !important;
+            background: var(--fk-list-control) !important;
+            color: var(--fk-list-text) !important;
+        }
+
+        .lead-detail-page .button-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: none;
+        }
+
+        .lead-detail-page .button-box .btn {
+            min-width: 132px;
+            height: 44px;
+            margin: 0 !important;
+            border: 1px solid var(--fk-list-border-strong) !important;
+            border-radius: 12px !important;
+            background: var(--fk-list-control) !important;
+            color: var(--fk-list-text) !important;
+            box-shadow: none !important;
+        }
+
+        .lead-detail-page .button-box .btn-primary {
+            border-color: transparent !important;
+            background: linear-gradient(135deg, var(--fk-list-accent), var(--fk-list-accent-2)) !important;
+            color: var(--fk-list-primary-text) !important;
+        }
+
+        .lead-detail-page .new-task {
+            margin-top: 0 !important;
+            overflow: hidden;
+        }
+
+        .lead-detail-page .new-task > .card {
+            margin: 0 !important;
+            border-width: 0 0 1px !important;
+            border-radius: 0 !important;
+        }
+
+        .lead-detail-page .new-task > .card:last-child {
+            border-bottom: 0 !important;
+        }
+
+        .lead-detail-page .new-task .card-header,
+        .lead-detail-page .tabsection .card-header {
+            min-height: 54px;
+            padding: 15px 18px !important;
+            border-color: var(--fk-list-border) !important;
+            background: var(--fk-list-head-bg) !important;
+        }
+
+        .lead-detail-page .new-task .card-body,
+        .lead-detail-page .tabsection .card-body {
+            background: transparent !important;
+        }
+
+        .lead-detail-page .tabsection > .card:first-child {
+            margin-bottom: 14px;
+            overflow: hidden;
+        }
+
+        .lead-detail-page .tabsection .nav-tabs {
+            display: flex;
+            flex-wrap: nowrap;
+            padding: 0 8px;
+            border: 0 !important;
+            background: transparent !important;
+        }
+
+        .lead-detail-page .tabsection .nav-tabs .nav-item {
+            flex: 1;
+            padding: 0;
+            text-align: center;
+        }
+
+        .lead-detail-page .tabsection .nav-tabs .nav-link {
+            padding: 17px 10px !important;
+            color: var(--fk-list-muted) !important;
+        }
+
+        .lead-detail-page .tabsection .nav-tabs .nav-link.active {
+            border-bottom-color: var(--fk-list-accent) !important;
+            background: var(--fk-list-count-bg) !important;
+            color: var(--fk-list-accent) !important;
+        }
+
+        .lead-detail-page .tab-content {
+            min-height: 360px;
+            background: transparent !important;
+        }
+
+        .lead-detail-page .tab-pane .card.mb-2 {
+            background: var(--fk-list-row) !important;
+        }
+
+        .lead-detail-page .tabsection h6.date_listing {
+            color: var(--fk-list-accent) !important;
+            background: var(--fk-list-count-bg) !important;
+        }
+
+        @media (max-width: 991px) {
+            .lead-detail-page .mbcss {
+                align-items: flex-start !important;
+                gap: 18px;
+            }
+
+            .lead-detail-page .button-box {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .lead-detail-page .card-body.shdnone {
+                padding: 12px !important;
+            }
+
+            .lead-detail-page .inermain,
+            .lead-detail-page .mbcss {
+                width: 100%;
+            }
+
+            .lead-detail-page .infomation-data {
+                width: 100%;
+                margin-top: 14px;
+            }
+
+            .lead-detail-page .infomation-data > span {
+                align-items: flex-start !important;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .lead-detail-page .infomation-data .bootstrap-select,
+            .lead-detail-page .infomation-data .dropdown.bootstrap-select.form-control {
+                width: 100% !important;
+                margin-left: 0;
+            }
+
+            .lead-detail-page .button-box .btn {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .lead-detail-page .tabsection .nav-tabs {
+                overflow-x: auto;
+            }
+
+            .lead-detail-page .tabsection .nav-tabs .nav-item {
+                flex: 0 0 auto;
+            }
+        }
+
         .shdnone {
             box-shadow: unset !important;
             background: #e3e9f6;
@@ -711,7 +991,7 @@
     }
 
     </style>
-    <div class="row">
+    <div class="row lead-detail-page">
         <div class="col-md-12">
             <div class="card shdnone mt-0 p-0">
                 <div class="card-header m-0 card-header-tabs card-header-warning">
