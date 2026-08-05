@@ -160,7 +160,20 @@ class LeadController extends Controller
 
     public function leadStatusSource(Request $request)
     {
+        $user = $request->user();
         $status = Status::where('module', 'LeadStatus')->select('id', 'display_name')->get();
+        $reportingUserIds = collect(getUsersReportingToAuth($user->id))
+            ->push($user->id)
+            ->filter()
+            ->unique()
+            ->values();
+        $users = User::whereIn('id', $reportingUserIds)
+            ->whereDoesntHave('roles', function ($query) {
+                $query->whereIn('id', config('constants.customer_roles'));
+            })
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
         $source = [
             [
                 'key' => 'Google',
@@ -190,6 +203,7 @@ class LeadController extends Controller
         $data = [
             'status' => $status,
             'source' => $source,
+            'users' => $users,
         ];
         return response()->json(['status' => 'success', 'message' => 'Data retrieved successfully.', 'data' => $data], 200);
     }
