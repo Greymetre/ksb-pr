@@ -419,6 +419,15 @@ class LeadController extends Controller
                 ),
                 'conversion_date' => $lead->conversion_date ? date('d M Y', strtotime($lead->conversion_date)) : null,
                 'updated_at' => $lead->updated_at->format('d M Y'),
+                'active_checkin_id' => LeadCheckIn::where('lead_id', $lead->id)
+                    ->where('user_id', $request->user()->id)
+                    ->where(function ($query) {
+                        $query->whereNull('checkout_date')
+                            ->orWhere('checkout_date', '')
+                            ->orWhere('checkout_date', '0000-00-00');
+                    })
+                    ->latest('id')
+                    ->value('id'),
             ];
             $lead_notes = LeadNote::with('createdby:id,name')->where(['lead_id' => $lead->id])->get();
             $lead_tasks = LeadTask::with('assignUser:id,name', 'createdby:id,name')->where(['lead_id' => $lead->id])->get();
@@ -525,13 +534,17 @@ class LeadController extends Controller
             ]
         ];
         $user_ids = getUsersReportingToAuth($request->user()->id);
-        $users = User::select('id', 'name');
-        if ($request->user()->hasRole('superadmin')) {
+        $users = User::where('active', 'Y')
+            ->whereDoesntHave('roles', function ($query) {
+                $query->whereIn('id', config('constants.customer_roles'));
+            })
+            ->select('id', 'name');
+        if (!$request->user()->hasRole('superadmin') && !$request->user()->hasRole('Admin')) {
             $users->where(function ($query) use ($user_ids) {
                 $query->whereIn('id', $user_ids);
             });
         }
-        $users = $users->get();
+        $users = $users->orderBy('name')->get();
         $data = [
             'users' => $users,
             'priorities' => $priorities,
@@ -544,11 +557,12 @@ class LeadController extends Controller
     public function addleadTask(Request $request)
     {
         $validate = validator($request->all(), [
-            'lead_id' => 'required',
-            'assigned_to' => 'required',
-            'description' => 'required',
-            'date' => 'required',
-            'priority' => 'required',
+            'lead_id' => 'required|exists:leads,id',
+            'assigned_to' => 'required|exists:users,id',
+            'description' => 'required|string|max:1000',
+            'date' => 'required|date_format:Y-m-d',
+            'time' => 'nullable|date_format:H:i',
+            'priority' => 'required|in:low,medium,high',
         ]);
 
         if ($validate->fails()) {
@@ -812,6 +826,22 @@ class LeadController extends Controller
             if ($validator->fails()) {
                 return response()->json(['status' => 'error', 'message' =>  $validator->errors()], $this->badrequest);
             }
+            $activeCheckin = LeadCheckIn::where('lead_id', $request->lead_id)
+                ->where('user_id', $user->id)
+                ->where(function ($query) {
+                    $query->whereNull('checkout_date')
+                        ->orWhere('checkout_date', '')
+                        ->orWhere('checkout_date', '0000-00-00');
+                })
+                ->latest('id')
+                ->first();
+            if ($activeCheckin) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'You are already checked in for this lead.',
+                    'checkin_id' => $activeCheckin->id,
+                ], 409);
+            }
             $distance = '';
 
             // if (!empty($request['checkin_latitude']) && !empty($request['checkin_longitude'])) {
@@ -860,8 +890,22 @@ class LeadController extends Controller
             }
 
             $request['checkout_address'] = getLatLongToAddress($request['checkout_latitude'], $request['checkout_longitude']);
-            $check_in = LeadCheckIn::where('id', $request['checkin_id'])->first();
-            if ($this->checkin->where('id', '=', $request['checkin_id'])->update([
+            $check_in = LeadCheckIn::where('id', $request['checkin_id'])
+                ->where('lead_id', $request['lead_id'])
+                ->where('user_id', $user->id)
+                ->where(function ($query) {
+                    $query->whereNull('checkout_date')
+                        ->orWhere('checkout_date', '')
+                        ->orWhere('checkout_date', '0000-00-00');
+                })
+                ->first();
+            if (!$check_in) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No active check-in was found for this lead.',
+                ], 409);
+            }
+            if ($this->checkin->where('id', '=', $check_in->id)->update([
                 'checkout_date' => getcurentDate(),
                 'checkout_time' => getcurentTime(),
                 'checkout_latitude' => !empty($request['checkout_latitude']) ? $request['checkout_latitude'] : '',
@@ -907,7 +951,7 @@ class LeadController extends Controller
 
                 if ($request->input('search') != "") {
                     $search = $request->input('search');
-                    $lead_ids = Lead::where(function ($query) use ($search) {
+                    $lead_ids->where(function ($query) use ($search) {
                         $query->where('company_name', 'like', "%{$search}%")
                             ->orWhereHas('contacts', function ($subQuery) use ($search) {
                                 $subQuery->where('name', 'like', "%{$search}%")
@@ -996,7 +1040,8 @@ class LeadController extends Controller
             if ($request->input('search') != "") {
                 $search = $request->input('search');
                 $other_tasks = $other_tasks->where(function ($query) use ($search) {
-                    $query->where('task_type', 'like', "%{$search}%")
+                    $query->where('title', 'like', "%{$search}%")
+                        ->orWhere('task_type', 'like', "%{$search}%")
                         ->orWhere('descriptions', 'like', "%{$search}%");
                 });
             }
@@ -1012,7 +1057,8 @@ class LeadController extends Controller
                 $other_tasks->whereBetween(DB::raw('DATE(created_at)'), [$request->start_date, $request->end_date]);
             }
             if ($request->status_id && !empty($request->status_id)) {
-                $other_tasks->where('status', $request->status_id);
+                $normalizedStatus = strtolower(str_replace(' ', '_', $request->status_id));
+                $other_tasks->whereRaw("LOWER(REPLACE(task_status, ' ', '_')) = ?", [$normalizedStatus]);
             }
             $other_tasks = $other_tasks->latest()->paginate($request->pageSize ?? 30);
 
