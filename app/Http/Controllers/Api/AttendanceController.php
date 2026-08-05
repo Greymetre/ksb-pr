@@ -754,6 +754,24 @@ class AttendanceController extends Controller
                 });
             }
 
+            // Calculate status totals before applying the selected status and
+            // pagination. These counts still respect all report filters above.
+            $statusCountsQuery = clone $all_punch_in_out;
+            $status_counts = [
+                'approved' => (clone $statusCountsQuery)
+                    ->where('attendance_status', 1)
+                    ->count(),
+                'pending' => (clone $statusCountsQuery)
+                    ->where(function ($query) {
+                        $query->whereNotIn('attendance_status', [1, 2])
+                            ->orWhereNull('attendance_status');
+                    })
+                    ->count(),
+                'rejected' => (clone $statusCountsQuery)
+                    ->where('attendance_status', 2)
+                    ->count(),
+            ];
+
             $all_punch_in_out->orderBy('punchin_date', 'desc');
 
             if ($request->status != null) {
@@ -813,9 +831,9 @@ class AttendanceController extends Controller
             }
 
             $all_status = [
-                ['id' => '0', 'name' => 'Pending'],
-                ['id' => '1', 'name' => 'Approved'],
-                ['id' => '2', 'name' => 'Rejected']
+                ['id' => '0', 'name' => 'Pending', 'count' => $status_counts['pending']],
+                ['id' => '1', 'name' => 'Approved', 'count' => $status_counts['approved']],
+                ['id' => '2', 'name' => 'Rejected', 'count' => $status_counts['rejected']]
             ];
 
             return response()->json([
@@ -824,6 +842,7 @@ class AttendanceController extends Controller
                 'users'       => $all_users,
                 'branches'    => $branches,
                 'page_count'  => $all_punch_in_out->lastPage(),
+                'status_counts' => $status_counts,
                 'all_status'  => $all_status,
                 'data'        => $data
             ], count($data) > 0 ? $this->successStatus : $this->badrequest);
