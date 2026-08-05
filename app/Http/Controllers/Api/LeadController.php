@@ -218,7 +218,15 @@ class LeadController extends Controller
             'phone_numbers.*' => 'required|digits:10|distinct',
             'status' => [
                 'required',
-                Rule::exists('statuses', 'id')->where('module', 'LeadStatus'),
+                function ($attribute, $value, $fail) {
+                    if ((int) $value === 0) {
+                        return;
+                    }
+                    $exists = Status::where('module', 'LeadStatus')->where('id', $value)->exists();
+                    if (!$exists) {
+                        $fail('The selected lead status is invalid.');
+                    }
+                },
             ],
             'lead_source' => 'required|in:Google,Indiamart,Justdial,Instagram,Facebook,Self',
         ]);
