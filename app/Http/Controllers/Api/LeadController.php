@@ -200,6 +200,8 @@ class LeadController extends Controller
             'company_name' => 'required',
             'contact_name' => 'required',
             'phone_number' => 'required',
+            'phone_numbers' => 'nullable|array',
+            'phone_numbers.*' => 'required|digits:10|distinct',
             'status' => [
                 'required',
                 Rule::exists('statuses', 'id')->where('module', 'LeadStatus'),
@@ -278,8 +280,17 @@ class LeadController extends Controller
                 ]);
             }
             if(isset($request->on_location) && $request->on_location == 1){
-                $location_address = getLatLongToAddress($request->latitude, $request->longitude);
-                $lead->update(['on_location' => 1, 'latitude' => $request->latitude, 'longitude' => $request->longitude, 'location_address' => $location_address]);
+                if ($request->filled('latitude') && $request->filled('longitude')) {
+                    $location_address = getLatLongToAddress($request->latitude, $request->longitude);
+                    $lead->update([
+                        'on_location' => 1,
+                        'latitude' => $request->latitude,
+                        'longitude' => $request->longitude,
+                        'location_address' => $location_address,
+                    ]);
+                } elseif ($request->filled('address')) {
+                    $lead->update(['on_location' => 0, 'location_address' => $request->address]);
+                }
             }
             return response()->json(['status' => 'success', 'message' => 'Lead updated successfully.']);
         } else {
@@ -305,14 +316,21 @@ class LeadController extends Controller
                     'district_id' => $request->district_id ?? null,
                     'created_by' => $user->id,
                 ]);
-                LeadContact::create([
-                    'name' => $request->contact_name,
-                    'phone_number' => $request->phone_number,
-                    'email' => $request->email,
-                    'lead_source' => $request->lead_source,
-                    'lead_id' => $lead->id,
-                    'created_by' => $user->id
-                ]);
+                $phoneNumbers = collect($request->input('phone_numbers', [$request->phone_number]))
+                    ->prepend($request->phone_number)
+                    ->filter()
+                    ->unique()
+                    ->values();
+                foreach ($phoneNumbers as $index => $phoneNumber) {
+                    LeadContact::create([
+                        'name' => $request->contact_name,
+                        'phone_number' => $phoneNumber,
+                        'email' => $index === 0 ? $request->email : null,
+                        'lead_source' => $request->lead_source,
+                        'lead_id' => $lead->id,
+                        'created_by' => $user->id
+                    ]);
+                }
                 if (isset($request->note) && !empty($request->note)) {
                     $note = LeadNote::create([
                         'note' => $request->note,
@@ -320,8 +338,17 @@ class LeadController extends Controller
                         'created_by' => $user->id
                     ]);
                 }
-                $location_address = getLatLongToAddress($request->latitude, $request->longitude);
-                $lead->update(['on_location' => 1, 'latitude' => $request->latitude, 'longitude' => $request->longitude, 'location_address' => $location_address]);
+                if ($request->filled('latitude') && $request->filled('longitude')) {
+                    $location_address = getLatLongToAddress($request->latitude, $request->longitude);
+                    $lead->update([
+                        'on_location' => 1,
+                        'latitude' => $request->latitude,
+                        'longitude' => $request->longitude,
+                        'location_address' => $location_address,
+                    ]);
+                } elseif ($request->filled('address')) {
+                    $lead->update(['on_location' => 0, 'location_address' => $request->address]);
+                }
                 return response()->json(['status' => 'success', 'message' => 'Lead created successfully.', 'data' => $lead], 200);
             } else {
                 return response()->json(['status' => 'error', 'message' => 'Something went wrong.']);
