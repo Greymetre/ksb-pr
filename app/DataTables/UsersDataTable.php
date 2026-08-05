@@ -134,11 +134,20 @@ class UsersDataTable extends DataTable
                     $query->where('department_id', $request->department_id);
                 }
             })
-            ->whereHas('roles', function ($query) use ($request) {
+            ->where(function ($query) use ($request) {
                 if ($request->user_type == 'customer') {
-                    $query->whereIn('id', config('constants.customer_roles'));
+                    $query->whereHas('roles', function ($roleQuery) {
+                        $roleQuery->whereIn('id', config('constants.customer_roles'));
+                    });
                 } else {
-                    $query->whereNotIn('id', config('constants.customer_roles'));
+                    // Accounts created through the mobile signup endpoint do not
+                    // have a role until an administrator reviews them. Keep those
+                    // pending accounts visible in the employee user tab so the
+                    // administrator can edit, assign a role and activate them.
+                    $query->whereDoesntHave('roles')
+                        ->orWhereHas('roles', function ($roleQuery) {
+                            $roleQuery->whereNotIn('id', config('constants.customer_roles'));
+                        });
                 }
             })
             ->latest()
