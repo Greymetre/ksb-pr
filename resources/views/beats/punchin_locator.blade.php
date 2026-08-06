@@ -81,6 +81,30 @@
         var punchIns = @json($punchIns);
         var punchMap;
         var punchInfoWindow;
+        var crmMidnightMapStyle = [
+            { elementType:'geometry', stylers:[{color:'#0b1b35'}] },
+            { elementType:'labels.text.fill', stylers:[{color:'#9aabd0'}] },
+            { elementType:'labels.text.stroke', stylers:[{color:'#071329'},{weight:3}] },
+            { featureType:'administrative', elementType:'geometry.stroke', stylers:[{color:'#334b72'}] },
+            { featureType:'administrative.country', elementType:'labels.text.fill', stylers:[{color:'#d7e2f8'}] },
+            { featureType:'administrative.province', elementType:'labels.text.fill', stylers:[{color:'#8fa4ca'}] },
+            { featureType:'landscape', elementType:'geometry', stylers:[{color:'#0b1b35'}] },
+            { featureType:'landscape.natural.terrain', elementType:'geometry', stylers:[{color:'#102746'}] },
+            { featureType:'poi', elementType:'geometry', stylers:[{color:'#10233e'}] },
+            { featureType:'poi', elementType:'labels.text.fill', stylers:[{color:'#7087ad'}] },
+            { featureType:'poi.park', elementType:'geometry', stylers:[{color:'#12352f'}] },
+            { featureType:'poi.park', elementType:'labels.text.fill', stylers:[{color:'#7ca99a'}] },
+            { featureType:'road', elementType:'geometry', stylers:[{color:'#1b3352'}] },
+            { featureType:'road', elementType:'geometry.stroke', stylers:[{color:'#09172d'}] },
+            { featureType:'road', elementType:'labels.text.fill', stylers:[{color:'#8297ba'}] },
+            { featureType:'road.highway', elementType:'geometry', stylers:[{color:'#294b70'}] },
+            { featureType:'road.highway', elementType:'geometry.stroke', stylers:[{color:'#10233f'}] },
+            { featureType:'transit', elementType:'geometry', stylers:[{color:'#132b49'}] },
+            { featureType:'transit', elementType:'labels.text.fill', stylers:[{color:'#7890b5'}] },
+            { featureType:'water', elementType:'geometry', stylers:[{color:'#062945'}] },
+            { featureType:'water', elementType:'labels.text.fill', stylers:[{color:'#5f87a8'}] },
+            { featureType:'water', elementType:'labels.text.stroke', stylers:[{color:'#062945'}] }
+        ];
 
         $(document).ready(function () {
             populatePunchZones();
@@ -103,7 +127,16 @@
         }
 
         function initialisePunchMap() {
-            punchMap = new google.maps.Map(document.getElementById('punchInMap'), {zoom:6,center:{lat:20.5937,lng:78.9629},mapTypeId:google.maps.MapTypeId.ROADMAP,mapTypeControl:false,streetViewControl:false});
+            punchMap = new google.maps.Map(document.getElementById('punchInMap'), {
+                zoom:6,
+                center:{lat:20.5937,lng:78.9629},
+                mapTypeId:google.maps.MapTypeId.ROADMAP,
+                styles:crmMidnightMapStyle,
+                mapTypeControl:false,
+                streetViewControl:false,
+                fullscreenControl:true,
+                backgroundColor:'#071329'
+            });
             punchInfoWindow = new google.maps.InfoWindow();
             var bounds = new google.maps.LatLngBounds();
             punchIns.forEach(function(item){
