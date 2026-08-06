@@ -20,12 +20,12 @@
 
 
                 <div class="both_btn">
-                  <button type="button" data-toggle="modal" data-target="#addLeadModel" class="btn btn-primary btn-sm btn-icon-split float-right" id="add_lead">
+                  <a href="#addLeadModel" role="button" data-toggle="modal" data-target="#addLeadModel" aria-controls="addLeadModel" class="btn btn-primary btn-sm btn-icon-split float-right" id="add_lead">
                     <span class="icon text-white-50">
                       <i class="material-icons">add_circle</i>
                     </span>
                     <span class="text">Add New Status</span>
-                  </button>
+                  </a>
 
                 </div>
               </div>
