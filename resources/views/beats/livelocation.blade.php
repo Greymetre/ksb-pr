@@ -10,7 +10,19 @@
             box-shadow: none !important;
         }
         .live-location-page .live-location-card > .card-body { padding: 20px !important; }
-        .live-location-page .location-filter-form > .row { align-items: flex-end; gap: 12px 0; }
+        .live-location-page .location-filter-grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            align-items: end;
+            gap: 14px;
+            margin: 0;
+        }
+        .live-location-page .location-filter-field,
+        .live-location-page .location-date-field,
+        .live-location-page .location-action-field { width: auto; max-width: none; padding: 0; }
+        .live-location-page .location-filter-field { grid-column: span 3; }
+        .live-location-page .location-date-field { grid-column: span 2; }
+        .live-location-page .location-action-field { grid-column: span 8; }
         .live-location-page .location-filter-form .form-control,
         .live-location-page .location-filter-form .bootstrap-select > .dropdown-toggle,
         .live-location-page .location-filter-form .select2-selection--single {
@@ -34,14 +46,17 @@
             gap: 10px;
             flex-wrap: wrap;
             width: 100%;
-            padding: 2px 15px 0;
+            padding: 0;
         }
-        .live-location-page .location-actions .btn { padding: 9px 15px !important; white-space: nowrap; }
-        .live-location-page .all-users-location-btn {
+        .live-location-page .location-actions .btn { padding: 9px 13px !important; font-size: 11px !important; white-space: nowrap; }
+        .live-location-page .location-actions .all-users-location-btn {
             border: 1px solid rgba(34, 211, 238, .38) !important;
             background: rgba(34, 211, 238, .12) !important;
             color: var(--fk-list-accent, #22d3ee) !important;
+            font-size: 9px !important;
+            letter-spacing: .1px;
         }
+        .live-location-page .location-actions .all-users-location-btn .material-icons { font-size: 14px !important; }
         .live-location-page .location-workspace {
             display: none;
             margin: 20px 0 0 !important;
@@ -87,9 +102,17 @@
         .live-location-page .activity-location-btn .material-icons { font-size: 14px; }
         .live-location-page .activity-state { padding: 36px 12px; color: var(--fk-list-dim, #8291ad); text-align: center; font-size: 12px; }
         @media (max-width: 991px) {
+            .live-location-page .location-filter-field,
+            .live-location-page .location-date-field { grid-column: span 6; }
+            .live-location-page .location-action-field { grid-column: span 12; }
             .live-location-page .map-column { border-right: 0; border-bottom: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)); }
             .live-location-page #map, .live-location-page .activity-column { height: 430px !important; }
             .live-location-page .location-actions { justify-content: flex-start; }
+        }
+        @media (max-width: 575px) {
+            .live-location-page .location-filter-field,
+            .live-location-page .location-date-field { grid-column: span 12; }
+            .live-location-page .location-actions .btn { width: 100%; }
         }
     </style>
     <div class="row mt-4 live-location-page">
@@ -124,10 +147,10 @@
                         </span>
                     </div>
                     @endif
-                    <form target="_blank" method="post" action="{{url('map-all')}}" class="location-filter-form">
+                    <form target="_blank" method="post" action="{{url('map-all')}}" class="location-filter-form" novalidate onsubmit="return validateLocationSubmit(event)">
                         @csrf
-                        <div class="row">
-                            <div class="col-md-3">
+                        <div class="location-filter-grid">
+                            <div class="location-filter-field">
                                 <div class="dropdown bootstrap-select show-tick">
                                     <select class="selectpicker" multiple id="branch_id" name="branch_id" data-style="select-with-transition" title="Choose Branch" data-size="10" tabindex="-98">
                                         <option disabled=""> Select Branch</option>
@@ -139,7 +162,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="location-filter-field">
                                 <div class="dropdown bootstrap-select show-tick">
                                     <select class="selectpicker" multiple id="division_id" name="division_id" data-style="select-with-transition" title="Choose Zone" data-size="10" tabindex="-98">
                                         <option disabled=""> Select Zone</option>
@@ -151,7 +174,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="location-filter-field">
                                 <div class="dropdown bootstrap-select show-tick">
                                     <select class="selectpicker" multiple id="department_id" name="department_id" data-style="select-with-transition" title="Choose Department" data-size="10" tabindex="-98">
                                         <option disabled=""> Select Department</option>
@@ -163,7 +186,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="location-filter-field">
                                 <div class="dropdown bootstrap-select show-tick">
                                     <select class="select2" id="user_id" name="user_id" data-style="select-with-transition" title="Choose User" data-size="10" tabindex="-98" required>
                                         <option disabled="" selected> Select Users</option>
@@ -175,22 +198,22 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="location-date-field">
                                 <div class="form-group has-default bmd-form-group">
                                     <input type="text" class="form-control datepicker" id="date" required name="date" value="{{ old('date', !empty($date) ? $date : \Carbon\Carbon::today()->format('Y-m-d')) }}" placeholder="Date From" autocomplete="off" readonly>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="location-date-field">
                                 <div class="form-group has-default bmd-form-group">
                                     <input type="text" class="form-control datepicker" id="to_date" required name="to_date"
                                         value="{{ old('to_date', \Carbon\Carbon::today()->format('Y-m-d')) }}" placeholder="Date To"
                                         autocomplete="off" readonly>
                                 </div>
                             </div>
-                            <div class="col-12">
+                            <div class="location-action-field">
                               <div class="location-actions">
                                 <button type="button" class="btn btn-sm all-users-location-btn" onclick="getAllUsersLiveLocations()">
-                                    <i class="material-icons mr-1" style="font-size:16px">groups</i> All Users Live Location
+                                    <i class="material-icons mr-1">groups</i> All Users Live Location
                                 </button>
                                 <button type="button" class="btn btn-info btn-sm" onclick="getActivityData()">Activity Detailed</button>
                                 <input type="submit" name="submit" class="btn btn-primary btn-sm" value="Complete Map Activity">
@@ -227,6 +250,54 @@
             $('#mapColumn')
                 .toggleClass('col-lg-7', showActivityDetails)
                 .toggleClass('col-lg-12', !showActivityDetails);
+        }
+
+        function showLocationAlert(message) {
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                window.Swal.fire({
+                    icon: 'warning',
+                    title: 'Selection required',
+                    text: message,
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                window.alert(message);
+            }
+        }
+
+        function validateLocationFilters(requireDates) {
+            var userId = $('#user_id').val();
+            var fromDate = $('#date').val();
+            var toDate = $('#to_date').val();
+
+            if (!userId) {
+                showLocationAlert('Please select a user before continuing.');
+                return false;
+            }
+            if (requireDates && (!fromDate || !toDate)) {
+                showLocationAlert('Please select both From Date and To Date.');
+                return false;
+            }
+            if (requireDates && new Date(fromDate) > new Date(toDate)) {
+                showLocationAlert('From Date cannot be later than To Date.');
+                return false;
+            }
+            return true;
+        }
+
+        function validateLocationSubmit(event) {
+            var submitter = event.submitter || document.activeElement;
+            var action = submitter ? submitter.value : '';
+
+            if (action === 'Track Activity') {
+                return validateLocationFilters(false);
+            }
+            if (action === 'Complete Map Activity') {
+                return validateLocationFilters(true);
+            }
+
+            showLocationAlert('Please choose a location action.');
+            return false;
         }
 
         function getAllUsersLiveLocations() {
@@ -363,6 +434,7 @@
         }
 
         function getActivityData() {
+            if (!validateLocationFilters(true)) return;
             showLocationWorkspace(true);
             $("#todayActivity").empty();
             $("#todayActivity").append('<li class="activity-state">Loading activity…</li>');
