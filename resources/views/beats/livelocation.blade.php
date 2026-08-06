@@ -608,7 +608,7 @@
             liveUsersMap = new google.maps.Map(document.getElementById('map'), {
                 zoom: 6,
                 center: { lat: 20.5937, lng: 78.9629 },
-                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                mapTypeId: google.maps.MapTypeId.HYBRID,
                 mapTypeControl: false,
                 streetViewControl: false
             });
@@ -796,7 +796,7 @@
                 var map = new google.maps.Map(document.getElementById('map'), {
                     zoom: 12,
                     center: new google.maps.LatLng(lat, lang),
-                    mapTypeId: google.maps.MapTypeId.ROADMAP
+                    mapTypeId: google.maps.MapTypeId.HYBRID
                 });
                 var infowindow = new google.maps.InfoWindow();
                 var marker;
@@ -833,7 +833,7 @@
                     lat: parseFloat(validActivities[0].latitude),
                     lng: parseFloat(validActivities[0].longitude)
                 },
-                mapTypeId: google.maps.MapTypeId.ROADMAP
+                mapTypeId: google.maps.MapTypeId.HYBRID
             });
             var bounds = new google.maps.LatLngBounds();
             var infoWindow = new google.maps.InfoWindow();
