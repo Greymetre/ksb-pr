@@ -214,9 +214,172 @@
                 contain: content;
             }
         }
+
+        /* Opportunity board — CRM theme */
+        .opportunity-board-page {
+            padding: 0 !important;
+            margin-top: 0 !important;
+        }
+
+        .opportunity-board-page .opportunity-page-subtitle {
+            margin: 7px 0 0;
+            color: var(--fk-list-dim, #8291ad);
+            font-size: 12px;
+        }
+
+        .opportunity-board-page .opportunity-shell-card {
+            overflow: hidden;
+            border: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)) !important;
+            border-radius: 14px !important;
+            background: var(--fk-list-panel, #0b1730) !important;
+            box-shadow: none !important;
+        }
+
+        .opportunity-board-page .opportunity-toolbar {
+            gap: 18px;
+            padding: 16px 20px !important;
+            border: 0 !important;
+            border-bottom: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)) !important;
+            background: rgba(8, 19, 42, .72) !important;
+        }
+
+        .opportunity-board-page .opportunity-toolbar .well {
+            width: auto;
+            flex: 1 1 280px;
+            margin: 0;
+            padding: 0;
+            background: transparent;
+        }
+
+        .opportunity-board-page .opportunity-filter-label {
+            display: block;
+            margin: 0 0 7px;
+            color: var(--fk-list-dim, #8291ad);
+            font-family: 'Sora', 'Inter', sans-serif;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+        }
+
+        .opportunity-board-page #frmFilter,
+        .opportunity-board-page #frmFilter .form-group {
+            width: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .opportunity-board-page #frmFilter .select2-container {
+            width: min(100%, 330px) !important;
+        }
+
+        .opportunity-board-page .bell {
+            width: auto;
+            min-width: 250px;
+        }
+
+        .opportunity-board-page .bell p {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            min-height: 48px;
+            margin: 0 !important;
+            padding: 8px 10px 8px 16px;
+            border: 1px solid rgba(34, 211, 238, .28) !important;
+            border-radius: 12px;
+            background: rgba(34, 211, 238, .08);
+            color: var(--fk-list-soft, #c8d5ea);
+            font-size: 12px;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        .opportunity-board-page #total_annualised_value {
+            padding: 8px 12px;
+            border-radius: 9px;
+            background: rgba(34, 211, 238, .14);
+            color: var(--fk-list-accent, #22d3ee);
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .opportunity-board-page .opportunity-shell-card > .card-body {
+            padding: 0 !important;
+            background: transparent !important;
+        }
+
+        .opportunity-board-page #load_card_data:empty {
+            min-height: 360px;
+            background: linear-gradient(90deg, transparent, rgba(34, 211, 238, .035), transparent);
+        }
+
+        html body .opportunity-modal .modal-content {
+            overflow: hidden;
+            border: 1px solid var(--fk-list-border, rgba(90, 130, 220, .25));
+            border-radius: 14px;
+            background: var(--fk-list-panel, #0b1730);
+            color: var(--fk-list-soft, #c8d5ea);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, .38);
+        }
+
+        html body .opportunity-modal .modal-header,
+        html body .opportunity-modal .modal-footer {
+            border-color: var(--fk-list-border, rgba(90, 130, 220, .22));
+            background: rgba(8, 19, 42, .72);
+        }
+
+        html body .opportunity-modal .modal-title,
+        html body .opportunity-modal label,
+        html body .opportunity-modal #confidenceValue {
+            color: var(--fk-list-heading, #f1f5ff) !important;
+        }
+
+        html body .opportunity-modal .close {
+            color: var(--fk-list-heading, #f1f5ff);
+            text-shadow: none;
+        }
+
+        html body .opportunity-modal .form-control,
+        html body .opportunity-modal .select2-selection--single {
+            border: 1px solid var(--fk-list-border-strong, rgba(90, 130, 220, .34)) !important;
+            border-radius: 10px !important;
+            background: rgba(5, 14, 36, .72) !important;
+            color: var(--fk-list-heading, #f1f5ff) !important;
+        }
+
+        html body .opportunity-modal .select2-selection__rendered,
+        html body .opportunity-modal .form-control::placeholder {
+            color: var(--fk-list-dim, #8291ad) !important;
+        }
+
+        @media (max-width: 767px) {
+            .opportunity-board-page .fk-list-page-head,
+            .opportunity-board-page .opportunity-toolbar {
+                align-items: stretch !important;
+                flex-direction: column !important;
+            }
+
+            .opportunity-board-page .bell,
+            .opportunity-board-page #frmFilter .select2-container {
+                width: 100% !important;
+                min-width: 0;
+            }
+        }
     </style>
 
-<div class="container-fluid mt-4">
+<div class="container-fluid mt-4 opportunity-board-page">
+  <div class="fk-list-page-head">
+    <div class="fk-list-heading-block">
+      <div class="fk-list-breadcrumb">
+        <span>CRM</span><span>&rsaquo;</span><span>LEAD MANAGEMENT</span><span>&rsaquo;</span><span class="fk-current">OPPORTUNITIES</span>
+      </div>
+      <div class="fk-list-title-row">
+        <h1 class="fk-list-title">Opportunity Listing</h1>
+      </div>
+      <p class="opportunity-page-subtitle">Track pipeline value and move opportunities through each stage.</p>
+    </div>
+  </div>
   @if(count($errors) > 0)
    <div class="alert alert-danger">
       <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -249,14 +412,15 @@
           </span>
        </div>
        @endif
-  <div class="card bg-white p-0">
-    <div class="card-header border-bn d-flex flex-row justify-content-between align-items-center">
+  <div class="card p-0 opportunity-shell-card">
+    <div class="card-header d-flex flex-row justify-content-between align-items-center opportunity-toolbar">
           <div class="well">
+          <label class="opportunity-filter-label" for="assigned_to">Filter by owner</label>
           {!! Form::open(['method' => 'POST', 'class' => 'form-inline', 'id' => 'frmFilter']) !!}
          
           <div class="form-group mr-sm-2 col-md-3 pb-0">    
-              <select class="select2" name="assigned_to" id="assigned_to" data-style="select-with-transition" title="Select User">
-                 <option value="">Select User</option>
+              <select class="select2" name="assigned_to" id="assigned_to" data-style="select-with-transition" title="All owners">
+                 <option value="">All owners</option>
                 @if(@isset($users))
                 @foreach($users as $user)
                  <option value="{!! $user->id !!}">{!! $user->name !!}</option>
@@ -269,7 +433,7 @@
           {!! Form::close() !!}
       </div>
       <div class="bell">
-        <p>Total Annualised Value ₹<span id="total_annualised_value">0</span></p>
+        <p><span>Total annualised value</span><span id="total_annualised_value">₹ 0</span></p>
       </div>
     </div>
     <div class="card-body">
@@ -280,7 +444,7 @@
 </div>
 
 <!--  -->
-  <div class="modal fade" id="addOpportunityModel" role="dialog">
+  <div class="modal fade opportunity-modal" id="addOpportunityModel" role="dialog">
     <div class="modal-dialog">
 
       
@@ -479,7 +643,10 @@
       var assigned_to = jQuery('#frmFilter [name=assigned_to]').val();
       $.post("{{ route('lead-opportunities.getCardData') }}", {assigned_to: assigned_to }, function(response){
          $('#load_card_data').html(response.view);
-         $('#total_annualised_value').html(response.total_annualised_value);
+         const totalValue = Number(response.total_annualised_value || 0).toLocaleString('en-IN', {
+           maximumFractionDigits: 2
+         });
+         $('#total_annualised_value').text('₹ ' + totalValue);
       }); 
 
     }
@@ -489,7 +656,7 @@
         if(response.status){
           
           $('#opportunity_id').val(response.data.id);
-          $('#lead_id').val(response.data.id);
+          $('#lead_id').val(response.data.lead_id);
 
           $('#frmLeadOpportunitiesCreate #o_assigned_to').val(response.data.assigned_to);
           $('#frmLeadOpportunitiesCreate #lead_contact_id').val(response.data.lead_contact_id);

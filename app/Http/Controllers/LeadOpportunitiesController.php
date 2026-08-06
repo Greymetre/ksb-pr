@@ -49,8 +49,7 @@ class LeadOpportunitiesController extends Controller
         }
         if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
             $user_ids = getUsersReportingToAuth();
-            $lead_ids = Lead::where('assign_to', $user_ids)->pluck('id');
-            $all_opportunities->where('assigned_to', $user_ids);
+            $all_opportunities->whereIn('assigned_to', $user_ids);
         }
         $all_opportunities = $all_opportunities->get();
 

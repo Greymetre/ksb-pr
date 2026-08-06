@@ -209,6 +209,192 @@ p.dam {
     min-height: auto;
  }
 }
+
+/* Scoped Kanban styling for the current CRM shell. */
+.opportunity-board-page .skolling {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 18px;
+    scrollbar-color: rgba(34, 211, 238, .42) rgba(8, 19, 42, .8);
+    scrollbar-width: thin;
+}
+
+.opportunity-board-page .board {
+    width: max-content !important;
+    min-width: 100%;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 0;
+    background: transparent;
+}
+
+.opportunity-board-page .column {
+    flex: 0 0 304px;
+    width: 304px;
+    min-width: 304px;
+    overflow: hidden;
+    border: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)) !important;
+    border-radius: 13px !important;
+    background: rgba(8, 19, 42, .68) !important;
+    box-shadow: none !important;
+}
+
+.opportunity-board-page .column > .card {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.opportunity-board-page .drag-header {
+    min-height: 142px;
+    padding: 16px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)) !important;
+    background: rgba(10, 25, 52, .94) !important;
+}
+
+.opportunity-board-page .drag-header h3 {
+    min-height: 27px;
+    margin: 0 0 14px;
+    padding: 7px 11px;
+    border: 1px solid rgba(34, 211, 238, .28);
+    border-radius: 8px;
+    background: rgba(34, 211, 238, .10);
+    color: var(--fk-list-accent, #22d3ee);
+    font-family: 'Sora', 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 1.2px;
+}
+
+.opportunity-board-page .apprtunity-price {
+    margin: 0 0 15px;
+    color: var(--fk-list-dim, #8291ad);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.1px;
+}
+
+.opportunity-board-page p.same {
+    width: auto;
+    margin: 0;
+    color: var(--fk-list-soft, #c8d5ea);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.opportunity-board-page p.dam {
+    min-width: 82px;
+    height: auto;
+    margin: 0;
+    padding: 7px 10px;
+    border: 1px solid rgba(52, 211, 153, .24);
+    border-radius: 8px;
+    background: rgba(52, 211, 153, .09);
+    color: #6ee7b7;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+}
+
+.opportunity-board-page .column_drag {
+    min-height: 390px;
+    padding: 12px !important;
+    background: rgba(3, 11, 28, .52) !important;
+}
+
+.opportunity-board-page .column_drag:empty::after {
+    content: 'Drop opportunity here';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 92px;
+    border: 1px dashed rgba(90, 130, 220, .28);
+    border-radius: 10px;
+    color: var(--fk-list-dim, #8291ad);
+    font-size: 11px;
+}
+
+.opportunity-board-page .card_drag {
+    margin: 0 0 10px;
+    overflow: hidden;
+    border: 1px solid rgba(90, 130, 220, .20) !important;
+    border-radius: 11px !important;
+    background: rgba(12, 28, 57, .92) !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .14) !important;
+    transition: transform .18s ease, border-color .18s ease, background .18s ease;
+}
+
+.opportunity-board-page .card_drag:hover {
+    transform: translateY(-2px);
+    border-color: rgba(34, 211, 238, .42) !important;
+    background: rgba(15, 35, 70, .98) !important;
+}
+
+.opportunity-board-page .card_drag .card-header {
+    min-height: 58px;
+    padding: 11px 70px 11px 11px !important;
+    border-bottom: 1px solid rgba(90, 130, 220, .16) !important;
+    background: transparent !important;
+}
+
+.opportunity-board-page .card_drag .card-header .text {
+    min-width: 0;
+}
+
+.opportunity-board-page .card_drag .card-header h5,
+.opportunity-board-page .card_drag .data-ss h5 {
+    color: var(--fk-list-heading, #f1f5ff);
+}
+
+.opportunity-board-page .card_drag .card-header p,
+.opportunity-board-page .card_drag .data-ss p {
+    overflow: hidden;
+    color: var(--fk-list-dim, #8291ad);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.opportunity-board-page .card_drag .card-body {
+    padding: 12px !important;
+    background: transparent !important;
+}
+
+.opportunity-board-page .card_drag .header_image img,
+.opportunity-board-page .card_drag .img_dd img {
+    width: 28px;
+    height: 28px;
+    padding: 5px;
+    border: 1px solid rgba(34, 211, 238, .20);
+    border-radius: 8px;
+    background: rgba(34, 211, 238, .08);
+}
+
+.opportunity-board-page button.hoverbtn,
+.opportunity-board-page button.hoverbtn2 {
+    top: 10px;
+    width: 28px;
+    height: 28px;
+    padding: 4px !important;
+    border: 1px solid rgba(90, 130, 220, .24) !important;
+    border-radius: 7px !important;
+    background: rgba(7, 17, 37, .85) !important;
+    opacity: .72;
+}
+
+.opportunity-board-page button.hoverbtn { right: 10px; }
+.opportunity-board-page button.hoverbtn2 { right: 43px; }
+.opportunity-board-page button.hoverbtn:hover,
+.opportunity-board-page button.hoverbtn2:hover { opacity: 1; border-color: rgba(34, 211, 238, .5) !important; }
+.opportunity-board-page button.hoverbtn2 i { color: var(--fk-list-accent, #22d3ee) !important; font-size: 17px; }
+
+@media (max-width: 767px) {
+    .opportunity-board-page .skolling { padding: 12px; }
+    .opportunity-board-page .board { width: 100% !important; }
+    .opportunity-board-page .column { flex-basis: 100%; width: 100%; min-width: 0 !important; }
+    .opportunity-board-page .column_drag { min-height: 120px; }
+}
 </style>
 <div>
     <div class="row text-end mb-3">
@@ -222,11 +408,11 @@ p.dam {
                  <div class="card p-0 m-0">
                      <div class="card-header bg-white drag-header">
                         <h3>{{$status->status_name}}</h3>
-                        <div class="apprtunity-price"> {{$all_opportunities->where('status', $status->id)->count()}} OPPORTUNITY</div>
+                        <div class="apprtunity-price">{{$all_opportunities->where('status', $status->id)->count()}} {{\Illuminate\Support\Str::plural('opportunity', $all_opportunities->where('status', $status->id)->count())}}</div>
                         <div class="flex anulprice">
                          <p class="same"> Annualized Value</p>
                          <!-- <p class="dam">₹ {{$all_opportunities->where('status', $status->id)->sum('amount')}}</p> -->
-                         <p class="dam">₹ {{$all_opportunities->where('status', $status->id)->sum('amount')}}</p>
+                         <p class="dam">₹ {{number_format($all_opportunities->where('status', $status->id)->sum('amount'), 0, '.', ',')}}</p>
                        </div>
                      </div>
                      <div class="card-body bgrid column_drag" data-status="{{$status->id}}">
@@ -239,7 +425,7 @@ p.dam {
                                         <img src="{{ url('/').'/'.asset('assets/img')}}/circaldrag.svg">
                                      </div>
                                      <div class="text">
-                                        <h5 class="mb-0">{{$all_opportunity->lead->company_name}}</h5>
+                                        <h5 class="mb-0">{{optional($all_opportunity->lead)->company_name ?? 'Unknown lead'}}</h5>
                                         <p>({{$all_opportunity->note}})</p>
                                      </div>
                                 </div>
@@ -252,9 +438,9 @@ p.dam {
                                          <img src="{{ url('/').'/'.asset('assets/img')}}/circaldrag.svg">
                                      </div>
                                      <div class="data-ss">
-                                         <h5>₹{{$all_opportunity->amount}}</h5>
-                                         <p>{{$all_opportunity->confidence}}% on {{date("d/m/Y",strtotime($all_opportunity->estimated_close_date))}}</p>
-                                         <p class="mt-1">Assigned to: <b>{{$all_opportunity->assignUser->name}}</b></p>
+                                         <h5>₹{{number_format($all_opportunity->amount, 0, '.', ',')}}</h5>
+                                         <p>{{$all_opportunity->confidence}}% confidence · {{date("d M Y",strtotime($all_opportunity->estimated_close_date))}}</p>
+                                         <p class="mt-1">Owner: <b>{{optional($all_opportunity->assignUser)->name ?? 'Unassigned'}}</b></p>
                                          
                                      </div>
 
@@ -534,11 +720,9 @@ p.dam {
         const elements = document.getElementsByClassName(className);
 
         Array.from(elements).forEach((el) => {
-            const fullText = el.textContent.trim(); // e.g., "42 OPPORTUNITY"
-            const match = fullText.replace('₹ ', '').match(/(\d+)/);
-            if (!match) return;
-
-            const endValue = parseInt(match[1]);
+            const fullText = el.textContent.trim();
+            const endValue = parseInt(fullText.replace(/[^\d]/g, ''), 10);
+            if (Number.isNaN(endValue)) return;
             const startValue = 0;
             const startTime = performance.now();
 
@@ -546,7 +730,7 @@ p.dam {
                 const elapsed = currentTime - startTime;
                 const progress = Math.min(elapsed / duration, 1);
                 const value = Math.floor(startValue + progress * (endValue - startValue));
-                el.textContent = `₹ ${value}`;
+                el.textContent = `₹ ${value.toLocaleString('en-IN')}`;
 
                 if (progress < 1) {
                     requestAnimationFrame(update);
