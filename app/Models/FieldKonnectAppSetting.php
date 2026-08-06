@@ -18,6 +18,7 @@ class FieldKonnectAppSetting extends Model implements HasMedia
     public function registerMediaCollections(): void {
 
         $this->addMediaCollection('product_catalogue')
+             ->useDisk('product_catalogues')
              ->useFallbackUrl(asset(config('constants.NO_IMAGE_URL')))
              ->useFallbackPath(public_path(config('constants.NO_IMAGE_URL')));
 

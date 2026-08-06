@@ -49,6 +49,14 @@ return [
             'root'   => public_path() . '/uploads',
         ],
 
+        'product_catalogues' => [
+            'driver' => 'local',
+            'root' => public_path('uploads/product-catalogues'),
+            'url' => env('APP_URL') . '/uploads/product-catalogues',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

@@ -223,7 +223,7 @@
                         @endif
                      </div>
                   </div>
-                  @if(isset($field_konnect_app_setting) && $field_konnect_app_setting->getMedia('product_catalogue')->count() > 0 && Storage::disk('s3')->exists($field_konnect_app_setting->getMedia('product_catalogue')[0]->getPath()))
+                  @if(isset($field_konnect_app_setting) && $field_konnect_app_setting->getMedia('product_catalogue')->count() > 0)
 
                   <div class="col-md-12">
                      <div class="row mt-3">

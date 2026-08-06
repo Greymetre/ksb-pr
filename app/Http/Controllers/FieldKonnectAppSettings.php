@@ -57,6 +57,7 @@ class FieldKonnectAppSettings extends Controller
         $validator = Validator::make($request->all(), [
             'app_version' => ['required', 'string', 'max:50', 'regex:/^\d+(\.\d+)*$/'],
             'app_ios_version' => ['required', 'string', 'max:50', 'regex:/^\d+(\.\d+)*$/'],
+            'product_catalogue' => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
         ]);
     
         // Check if validation fails
@@ -74,7 +75,7 @@ class FieldKonnectAppSettings extends Controller
                 $customname = time() . '.' . $file->getClientOriginalExtension();
                 $field_konnect_app_setting->addMedia($file)
                     ->usingFileName($customname)
-                    ->toMediaCollection('product_catalogue');
+                    ->toMediaCollection('product_catalogue', 'product_catalogues');
             }
             $field_konnect_app_setting->update($data);
             return redirect('field-konnect-app-setting')->with('success', 'Field Konnect App setting save successfully !!');
