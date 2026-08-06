@@ -1412,11 +1412,28 @@ break;
         ->whereNotNull('punchin_longitude')
         ->orderBy('punchin_time')
         ->get()
-        ->filter(function ($attendance) {
-          return is_numeric($attendance->punchin_latitude) && is_numeric($attendance->punchin_longitude);
-        })
         ->map(function ($attendance) {
           $user = $attendance->users;
+          if (!is_numeric($attendance->punchin_latitude) || !is_numeric($attendance->punchin_longitude)) {
+            return null;
+          }
+
+          $latitude = (float) $attendance->punchin_latitude;
+          $longitude = (float) $attendance->punchin_longitude;
+          $directIsIndia = $latitude >= 6 && $latitude <= 38 && $longitude >= 68 && $longitude <= 98;
+          $swappedIsIndia = $longitude >= 6 && $longitude <= 38 && $latitude >= 68 && $latitude <= 98;
+
+          // Older attendance submissions stored longitude in the latitude column.
+          // Swap only when the reversed pair is a valid Indian coordinate and the direct pair is not.
+          if (!$directIsIndia && $swappedIsIndia) {
+            [$latitude, $longitude] = [$longitude, $latitude];
+          }
+
+          if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180 ||
+              (abs($latitude) < 0.000001 && abs($longitude) < 0.000001)) {
+            return null;
+          }
+
           return [
             'attendance_id' => $attendance->id,
             'user_id' => $attendance->user_id,
@@ -1424,12 +1441,13 @@ break;
             'employee_code' => optional($user)->employee_codes ?: '',
             'designation' => optional(optional($user)->getdesignation)->designation_name ?: 'Field employee',
             'zone' => optional(optional($user)->getdivision)->division_name ?: '',
-            'latitude' => (float) $attendance->punchin_latitude,
-            'longitude' => (float) $attendance->punchin_longitude,
+            'latitude' => $latitude,
+            'longitude' => $longitude,
             'address' => $attendance->punchin_address ?: 'Address unavailable',
             'time' => $attendance->punchin_time ? Carbon::parse($attendance->punchin_time)->format('h:i A') : '--',
           ];
         })
+        ->filter()
         ->values();
 
       return view('beats.punchin_locator', compact('punchIns'));
