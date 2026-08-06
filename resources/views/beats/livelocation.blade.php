@@ -63,6 +63,23 @@
             width: 100%;
             padding: 0;
         }
+        .live-location-page .location-filter-grid.is-live-only {
+            grid-template-columns: 1fr;
+        }
+        .live-location-page .location-filter-grid.is-live-only .location-action-field {
+            grid-column: 1 / -1;
+        }
+        .live-location-page .location-filter-grid.is-live-only .location-actions {
+            display: flex;
+            justify-content: flex-start;
+        }
+        body.fk-shell .live-location-page .location-filter-grid.is-live-only .location-actions .btn {
+            width: auto;
+            min-width: 190px;
+        }
+        .live-location-page .location-actions.geolocator-actions {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
         body.fk-shell .live-location-page .location-actions .btn {
             width: 100%;
             padding: 9px 10px !important;
@@ -213,8 +230,8 @@
         <div class="col-lg-12">
             <div class="fk-list-page-head">
                 <div class="fk-list-heading-block">
-                    <div class="fk-list-breadcrumb"><span>CRM</span><span>&rsaquo;</span><span class="fk-current">LIVE LOCATION</span></div>
-                    <div class="fk-list-title-row"><h1 class="fk-list-title">User Live Location</h1></div>
+                    <div class="fk-list-breadcrumb"><span>CRM</span><span>&rsaquo;</span><span class="fk-current">{{ $locationMode === 'live' ? 'USER LIVE LOCATION' : 'GEOLOCATOR' }}</span></div>
+                    <div class="fk-list-title-row"><h1 class="fk-list-title">{{ $locationMode === 'live' ? 'User Live Location' : 'Geolocator' }}</h1></div>
                 </div>
             </div>
             <div class="card mt-4 live-location-card" data-animation="true">
@@ -243,7 +260,8 @@
                     @endif
                     <form target="_blank" method="post" action="{{url('map-all')}}" class="location-filter-form" novalidate onsubmit="return validateLocationSubmit(event)">
                         @csrf
-                        <div class="location-filter-grid">
+                        <div class="location-filter-grid {{ $locationMode === 'live' ? 'is-live-only' : '' }}">
+                            @if($locationMode === 'geolocator')
                             <div class="location-filter-field">
                                 <div class="dropdown bootstrap-select show-tick">
                                     <select class="selectpicker" multiple id="branch_id" name="branch_id" data-style="location-select-control" title="Choose Branch" data-size="10" tabindex="-98">
@@ -304,14 +322,18 @@
                                         autocomplete="off" readonly>
                                 </div>
                             </div>
+                            @endif
                             <div class="location-action-field">
-                              <div class="location-actions">
+                              <div class="location-actions {{ $locationMode === 'geolocator' ? 'geolocator-actions' : '' }}">
+                                @if($locationMode === 'live')
                                 <button type="button" class="btn btn-sm location-action-btn all-users-location-btn" onclick="getAllUsersLiveLocations()">
                                     <i class="material-icons mr-1">groups</i> User Live Location
                                 </button>
+                                @else
                                 <button type="button" class="btn btn-sm location-action-btn" onclick="getActivityData()">Activity Detailed</button>
                                 <input type="submit" name="submit" class="btn btn-sm location-action-btn" value="Complete Map Activity">
                                 <input type="submit" name="submit" class="btn btn-sm location-action-btn" value="Track Activity">
+                                @endif
                               </div>
                             </div>
                         </div>

@@ -705,6 +705,7 @@ Route::get('beats-global-schedule-form', [BeatController::class, 'globalSchedule
     ->name('beats.globalScheduleForm');
     //Current Location
     Route::any('livelocation', [BeatController::class, 'livelocation']);
+    Route::get('location-geolocator', [BeatController::class, 'livelocation'])->name('location.geolocator');
     Route::get('livelocation-all-users', [BeatController::class, 'allUsersLiveLocations'])->name('livelocation.all-users');
     //Attendance
     Route::any('attendances', [AttendanceController::class, 'index'])->name('attendances.index');

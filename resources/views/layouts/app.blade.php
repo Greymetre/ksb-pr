@@ -2377,20 +2377,27 @@
                         </li>
                         @endif
                         @if(auth()->user()->can('user_location'))
-                        <li class="nav-link {{ request()->is('livelocation*') ? 'active' : '' }}">
+                        <li class="nav-link {{ request()->is('livelocation*') || request()->routeIs('location.geolocator') ? 'active' : '' }}">
                             <a class="hoveradd" data-toggle="collapse" href="#locationMenu"
-                                aria-expanded="{{ request()->is('livelocation*') ? 'true' : 'false' }}">
+                                aria-expanded="{{ request()->is('livelocation*') || request()->routeIs('location.geolocator') ? 'true' : 'false' }}">
                                 <i class="material-icons icon">location_on</i>
                                 <span>Location Management</span>
                                 <div class="d-none mobile_hide">Location Management</div>
                             </a>
-                            <div class="collapse {{ request()->is('livelocation*') ? 'show' : '' }}" id="locationMenu">
+                            <div class="collapse {{ request()->is('livelocation*') || request()->routeIs('location.geolocator') ? 'show' : '' }}" id="locationMenu">
                                 <ul class="navd">
                                     <li class="nav-link-btn {{ request()->is('livelocation*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('livelocation') }}">
                                             <i class="material-icons icon">share_location</i>
                                             <span>User Live Location</span>
                                             <div class="d-none mobile_hide">User Live Location</div>
+                                        </a>
+                                    </li>
+                                    <li class="nav-link-btn {{ request()->routeIs('location.geolocator') ? 'active' : '' }}">
+                                        <a class="hoveradd2" href="{{ route('location.geolocator') }}">
+                                            <i class="material-icons icon">my_location</i>
+                                            <span>Geolocator</span>
+                                            <div class="d-none mobile_hide">Geolocator</div>
                                         </a>
                                     </li>
                                 </ul>

@@ -1313,7 +1313,9 @@ break;
         $date = NULL;
       }
 
-      return view('beats.livelocation', compact('users', 'branches', 'divisions', 'departments', 'date', 'user_id'));
+      $locationMode = $request->routeIs('location.geolocator') ? 'geolocator' : 'live';
+
+      return view('beats.livelocation', compact('users', 'branches', 'divisions', 'departments', 'date', 'user_id', 'locationMode'));
     }
 
     public function allUsersLiveLocations()
