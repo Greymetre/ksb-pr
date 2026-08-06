@@ -10,6 +10,12 @@
             box-shadow: none !important;
         }
         .live-location-page .live-location-card > .card-body { padding: 20px !important; }
+        .live-location-page .live-location-card.is-live-locator {
+            border: 0 !important;
+            background: transparent !important;
+        }
+        .live-location-page .live-location-card.is-live-locator > .card-body { padding: 0 !important; }
+        .live-location-page .live-location-card.is-live-locator .location-workspace { margin-top: 0 !important; }
         .live-location-page .location-filter-grid {
             display: grid;
             grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -161,12 +167,16 @@
             background: rgba(5, 14, 36, .72) !important; color: var(--fk-list-heading, #f1f5ff) !important; box-shadow: none !important;
         }
         .live-location-page .live-users-zone-wrap { position: relative; margin-top: 9px; }
-        .live-location-page .live-users-zone-wrap .material-icons { position: absolute; z-index: 1; top: 50%; left: 11px; transform: translateY(-50%); color: var(--fk-list-dim, #8291ad); font-size: 16px; pointer-events: none; }
         body.fk-shell .live-location-page .live-users-zone-filter {
-            width: 100%; height: 38px !important; min-height: 38px !important; padding: 0 34px !important;
+            display: block; width: 100%; height: 38px !important; min-height: 38px !important; padding: 0 36px 0 14px !important;
             border: 1px solid rgba(90, 130, 220, .26) !important; border-radius: 9px !important;
             background: rgba(5, 14, 36, .72) !important; color: var(--fk-list-soft, #c8d5ea) !important;
-            box-shadow: none !important; outline: none; appearance: auto;
+            box-shadow: none !important; outline: none; appearance: auto; font-size: 11px !important; line-height: 38px !important;
+        }
+        body.fk-shell .live-location-page .live-users-zone-filter:hover,
+        body.fk-shell .live-location-page .live-users-zone-filter:focus {
+            border-color: rgba(34, 211, 238, .42) !important;
+            background-color: rgba(8, 22, 48, .96) !important;
         }
         .live-location-page .live-users-filters { display: flex; gap: 6px; margin-top: 10px; }
         body.fk-shell .live-location-page .live-user-filter {
@@ -266,7 +276,7 @@
                     <div class="fk-list-title-row"><h1 class="fk-list-title">{{ $locationMode === 'live' ? 'User Live Locator' : 'Geolocator' }}</h1></div>
                 </div>
             </div>
-            <div class="card mt-4 live-location-card" data-animation="true">
+            <div class="card mt-4 live-location-card {{ $locationMode === 'live' ? 'is-live-locator' : '' }}" data-animation="true">
                 <div class="card-body">
                     @if(session()->has('message_success'))
                     <div class="alert alert-success">
@@ -376,7 +386,6 @@
                                     <input type="search" class="form-control live-users-search" id="liveUsersSearch" placeholder="Search employee…" autocomplete="off">
                                 </div>
                                 <div class="live-users-zone-wrap">
-                                    <i class="material-icons">public</i>
                                     <select class="form-control live-users-zone-filter" id="liveUsersZoneFilter" aria-label="Filter employees by zone">
                                         <option value="all">All zones</option>
                                     </select>
