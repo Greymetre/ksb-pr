@@ -511,8 +511,8 @@
                 '<circle cx="19" cy="18" r="6.5" fill="#fff" stroke="rgba(0,0,0,.18)" stroke-width="2"/></svg>';
             return {
                 url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
-                scaledSize: new google.maps.Size(38, 50),
-                anchor: new google.maps.Point(19, 48)
+                scaledSize: new google.maps.Size(30, 40),
+                anchor: new google.maps.Point(15, 38)
             };
         }
 
