@@ -108,6 +108,30 @@
             letter-spacing: .1px;
         }
         .live-location-page .location-actions .all-users-location-btn .material-icons { font-size: 14px !important; }
+        body.fk-shell .live-location-page .location-filter-grid .bootstrap-select > button.btn.dropdown-toggle,
+        body.fk-shell .live-location-page .location-filter-grid .bootstrap-select > button.btn.location-select-control {
+            border: 1px solid var(--fk-list-border-strong, rgba(90, 130, 220, .34)) !important;
+            background-color: rgba(5, 14, 36, .72) !important;
+            background-image: none !important;
+            color: var(--fk-list-soft, #c8d5ea) !important;
+            box-shadow: none !important;
+        }
+        body.fk-shell .live-location-page .location-filter-grid .bootstrap-select > button.btn.dropdown-toggle:hover,
+        body.fk-shell .live-location-page .location-filter-grid .bootstrap-select > button.btn.dropdown-toggle:focus,
+        body.fk-shell .live-location-page .location-filter-grid .bootstrap-select.show > button.btn.dropdown-toggle {
+            border-color: rgba(34, 211, 238, .42) !important;
+            background-color: rgba(8, 22, 48, .96) !important;
+            background-image: none !important;
+            box-shadow: none !important;
+        }
+        body.fk-shell .live-location-page .location-actions .location-action-btn {
+            border: 1px solid var(--fk-list-border-strong, rgba(90, 130, 220, .34)) !important;
+            background-color: rgba(5, 14, 36, .72) !important;
+            background-image: none !important;
+            color: var(--fk-list-heading, #f1f5ff) !important;
+            box-shadow: none !important;
+            font-size: 11px !important;
+        }
         .live-location-page .location-workspace {
             display: none;
             margin: 20px 0 0 !important;
@@ -230,8 +254,8 @@
         <div class="col-lg-12">
             <div class="fk-list-page-head">
                 <div class="fk-list-heading-block">
-                    <div class="fk-list-breadcrumb"><span>CRM</span><span>&rsaquo;</span><span class="fk-current">{{ $locationMode === 'live' ? 'USER LIVE LOCATION' : 'GEOLOCATOR' }}</span></div>
-                    <div class="fk-list-title-row"><h1 class="fk-list-title">{{ $locationMode === 'live' ? 'User Live Location' : 'Geolocator' }}</h1></div>
+                    <div class="fk-list-breadcrumb"><span>CRM</span><span>&rsaquo;</span><span class="fk-current">{{ $locationMode === 'live' ? 'USER LIVE LOCATOR' : 'GEOLOCATOR' }}</span></div>
+                    <div class="fk-list-title-row"><h1 class="fk-list-title">{{ $locationMode === 'live' ? 'User Live Locator' : 'Geolocator' }}</h1></div>
                 </div>
             </div>
             <div class="card mt-4 live-location-card" data-animation="true">
@@ -390,6 +414,9 @@
                 $(this).addClass('active');
                 applyLiveUserFilters();
             });
+            @if($locationMode === 'live')
+            getAllUsersLiveLocations();
+            @endif
         })
 
         function showLocationWorkspace(showActivityDetails) {
