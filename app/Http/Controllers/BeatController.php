@@ -28,6 +28,7 @@
   use App\Models\UserLiveLocation;
   use App\Models\CheckIn;
   use App\Models\Order;
+  use App\Models\Attendance;
 
   class BeatController extends Controller
   {
@@ -1399,6 +1400,39 @@ break;
         ->values();
 
       return response()->json(['status' => true, 'locations' => $locations]);
+    }
+
+    public function punchInLocator()
+    {
+      $accessibleUserIds = getUsersReportingToAuth();
+      $punchIns = Attendance::with(['users.getdesignation', 'users.getdivision'])
+        ->whereIn('user_id', $accessibleUserIds)
+        ->whereDate('punchin_date', Carbon::today())
+        ->whereNotNull('punchin_latitude')
+        ->whereNotNull('punchin_longitude')
+        ->orderBy('punchin_time')
+        ->get()
+        ->filter(function ($attendance) {
+          return is_numeric($attendance->punchin_latitude) && is_numeric($attendance->punchin_longitude);
+        })
+        ->map(function ($attendance) {
+          $user = $attendance->users;
+          return [
+            'attendance_id' => $attendance->id,
+            'user_id' => $attendance->user_id,
+            'name' => optional($user)->name ?: 'Unknown user',
+            'employee_code' => optional($user)->employee_codes ?: '',
+            'designation' => optional(optional($user)->getdesignation)->designation_name ?: 'Field employee',
+            'zone' => optional(optional($user)->getdivision)->division_name ?: '',
+            'latitude' => (float) $attendance->punchin_latitude,
+            'longitude' => (float) $attendance->punchin_longitude,
+            'address' => $attendance->punchin_address ?: 'Address unavailable',
+            'time' => $attendance->punchin_time ? Carbon::parse($attendance->punchin_time)->format('h:i A') : '--',
+          ];
+        })
+        ->values();
+
+      return view('beats.punchin_locator', compact('punchIns'));
     }
 
   public function globalScheduleForm()

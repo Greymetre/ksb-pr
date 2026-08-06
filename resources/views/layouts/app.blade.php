@@ -2377,14 +2377,14 @@
                         </li>
                         @endif
                         @if(auth()->user()->can('user_location'))
-                        <li class="nav-link {{ request()->is('livelocation*') || request()->routeIs('location.geolocator') ? 'active' : '' }}">
+                        <li class="nav-link {{ request()->is('livelocation*') || request()->routeIs('location.geolocator') || request()->routeIs('location.punch-in-locator') ? 'active' : '' }}">
                             <a class="hoveradd" data-toggle="collapse" href="#locationMenu"
-                                aria-expanded="{{ request()->is('livelocation*') || request()->routeIs('location.geolocator') ? 'true' : 'false' }}">
+                                aria-expanded="{{ request()->is('livelocation*') || request()->routeIs('location.geolocator') || request()->routeIs('location.punch-in-locator') ? 'true' : 'false' }}">
                                 <i class="material-icons icon">location_on</i>
                                 <span>Location Management</span>
                                 <div class="d-none mobile_hide">Location Management</div>
                             </a>
-                            <div class="collapse {{ request()->is('livelocation*') || request()->routeIs('location.geolocator') ? 'show' : '' }}" id="locationMenu">
+                            <div class="collapse {{ request()->is('livelocation*') || request()->routeIs('location.geolocator') || request()->routeIs('location.punch-in-locator') ? 'show' : '' }}" id="locationMenu">
                                 <ul class="navd">
                                     <li class="nav-link-btn {{ request()->is('livelocation*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('livelocation') }}">
@@ -2398,6 +2398,13 @@
                                             <i class="material-icons icon">my_location</i>
                                             <span>Geolocator</span>
                                             <div class="d-none mobile_hide">Geolocator</div>
+                                        </a>
+                                    </li>
+                                    <li class="nav-link-btn {{ request()->routeIs('location.punch-in-locator') ? 'active' : '' }}">
+                                        <a class="hoveradd2" href="{{ route('location.punch-in-locator') }}">
+                                            <i class="material-icons icon">where_to_vote</i>
+                                            <span>User Punch-In Locator</span>
+                                            <div class="d-none mobile_hide">User Punch-In Locator</div>
                                         </a>
                                     </li>
                                 </ul>
