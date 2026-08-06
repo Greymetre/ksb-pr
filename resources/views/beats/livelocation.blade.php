@@ -50,18 +50,36 @@
             background-image: none !important;
         }
         body.fk-shell .live-location-page .location-filter-form .select2-selection--multiple {
+            height: 44px !important;
             min-height: 44px !important;
+            max-height: 44px !important;
+            overflow: hidden !important;
             border: 1px solid var(--fk-list-border-strong, rgba(90, 130, 220, .34)) !important;
             border-radius: 10px !important;
             background: rgba(5, 14, 36, .72) !important;
             box-shadow: none !important;
         }
         body.fk-shell .live-location-page .location-filter-form .select2-selection--multiple .select2-selection__rendered {
-            display: flex; align-items: center; gap: 4px; min-height: 42px; padding: 4px 36px 4px 12px !important;
+            display: flex !important; align-items: center; flex-wrap: nowrap !important; gap: 4px;
+            width: 100%; height: 42px !important; min-height: 42px !important; margin: 0 !important;
+            padding: 0 36px 0 12px !important; overflow: hidden !important; white-space: nowrap;
         }
         body.fk-shell .live-location-page .location-filter-form .select2-selection--multiple .select2-selection__choice {
-            margin: 0 !important; padding: 3px 7px !important; border: 1px solid rgba(34, 211, 238, .24) !important;
+            flex: 0 0 auto; margin: 0 !important; padding: 3px 7px !important; border: 1px solid rgba(34, 211, 238, .24) !important;
             border-radius: 6px !important; background: rgba(34, 211, 238, .09) !important; color: #c8d5ea !important;
+        }
+        body.fk-shell .live-location-page .location-filter-form .select2-selection--multiple .select2-search--inline {
+            flex: 1 1 auto; min-width: 0; height: 42px !important; margin: 0 !important;
+        }
+        body.fk-shell .live-location-page .location-filter-form .select2-selection--multiple .select2-search__field {
+            width: 100% !important; height: 42px !important; margin: 0 !important; padding: 0 !important;
+            color: var(--fk-list-soft, #c8d5ea) !important; font-size: 13px !important; line-height: 42px !important;
+        }
+        .live-location-page .multi-filter-field .select2-container { position: relative; }
+        .live-location-page .multi-filter-field .select2-container::after {
+            content: ''; position: absolute; top: 50%; right: 14px; width: 0; height: 0; transform: translateY(-25%);
+            border-top: 5px solid var(--fk-list-soft, #9eb0dc); border-right: 4px solid transparent; border-left: 4px solid transparent;
+            pointer-events: none; opacity: .9;
         }
         body.fk-shell .live-location-page .location-filter-form .bootstrap-select .filter-option-inner-inner,
         body.fk-shell .live-location-page .location-filter-form .select2-selection__rendered {
@@ -324,7 +342,7 @@
                     <form target="_blank" method="post" action="{{url('map-all')}}" class="location-filter-form" novalidate onsubmit="return validateLocationSubmit(event)">
                         @csrf
                         <div class="location-filter-grid {{ $locationMode === 'live' ? 'is-live-only' : '' }}">
-                            <div class="location-filter-field">
+                            <div class="location-filter-field multi-filter-field">
                                 <div>
                                     <select class="select2" multiple id="branch_id" name="branch_id" data-placeholder="Choose Branch">
                                         @if(@isset($branches ))
@@ -335,7 +353,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="location-filter-field">
+                            <div class="location-filter-field multi-filter-field">
                                 <div>
                                     <select class="select2" multiple id="division_id" name="division_id" data-placeholder="Choose Zone">
                                         @if(@isset($divisions ))
@@ -346,7 +364,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="location-filter-field">
+                            <div class="location-filter-field multi-filter-field">
                                 <div>
                                     <select class="select2" multiple id="department_id" name="department_id" data-placeholder="Choose Department">
                                         @if(@isset($departments ))
