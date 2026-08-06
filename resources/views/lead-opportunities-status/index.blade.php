@@ -119,6 +119,7 @@
               </div>--}}
             </div>
           </div>
+          </div>
           <!--  -->
           <div class="alert " style="display: none;">
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
