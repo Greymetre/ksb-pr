@@ -265,25 +265,28 @@
         .live-location-page .live-user-status.is-offline::before { background: #fb7185; }
         .live-location-page .live-user-distance { margin-top: 4px; color: #22d3ee; font-size: 10px; font-weight: 700; }
         .live-location-page .live-users-empty { padding: 36px 10px; color: var(--fk-list-dim, #8291ad); font-size: 11px; text-align: center; }
-        .live-location-page .gm-style .gm-style-iw-c { max-width: 390px !important; padding: 0 !important; border: 1px solid rgba(90, 130, 220, .38); border-radius: 14px; background: #0b1c3c !important; box-shadow: 0 18px 45px rgba(0, 0, 0, .36); }
+        .live-location-page .gm-style .gm-style-iw-c { max-width: 310px !important; padding: 0 !important; border: 1px solid rgba(90, 130, 220, .28); border-radius: 12px; background: #0b1c3c !important; box-shadow: 0 14px 32px rgba(0, 0, 0, .32); }
         .live-location-page .gm-style .gm-style-iw-d { overflow: hidden !important; }
         .live-location-page .gm-style .gm-style-iw-tc::after { background: #0b1c3c !important; }
-        .live-location-page .gm-style .gm-ui-hover-effect { filter: invert(1); opacity: .7; }
-        .live-location-page .live-user-popup { width: 360px; padding: 20px; color: var(--fk-list-soft, #c8d5ea); font-family: 'Inter', sans-serif; }
-        .live-location-page .live-user-popup-head { display: flex; align-items: center; gap: 12px; padding-right: 20px; }
-        .live-location-page .live-user-popup-avatar { display: grid; place-items: center; flex: 0 0 48px; width: 48px; height: 48px; border: 1px dashed rgba(130, 145, 180, .55); border-radius: 50%; color: #94a3c7; font-size: 11px; }
-        .live-location-page .live-user-popup-name { color: var(--fk-list-heading, #f1f5ff); font-size: 14px; font-weight: 800; }
-        .live-location-page .live-user-popup-role { margin-top: 3px; color: #8ea2ce; font-size: 11px; }
-        .live-location-page .live-user-popup-status { display: inline-flex; align-items: center; gap: 5px; margin-top: 7px; color: #6ee7b7; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+        .live-location-page .gm-style .gm-ui-hover-effect { top: 5px !important; right: 5px !important; width: 30px !important; height: 30px !important; border-radius: 8px !important; filter: invert(1); opacity: .68; }
+        .live-location-page .gm-style .gm-ui-hover-effect > span { width: 17px !important; height: 17px !important; margin: 6px !important; }
+        .live-location-page .gm-style .gm-ui-hover-effect > img { width: 16px !important; height: 16px !important; margin: 7px !important; }
+        .live-location-page .live-user-popup { width: 280px; padding: 14px; color: var(--fk-list-soft, #c8d5ea); font-family: 'Inter', sans-serif; }
+        .live-location-page .live-user-popup-head { display: flex; align-items: center; gap: 10px; padding-right: 22px; }
+        .live-location-page .live-user-popup-avatar { display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; border: 1px dashed rgba(130, 145, 180, .5); border-radius: 50%; color: #94a3c7; font-size: 10px; }
+        .live-location-page .live-user-popup-name { color: var(--fk-list-heading, #f1f5ff); font-size: 12px; font-weight: 800; line-height: 1.3; }
+        .live-location-page .live-user-popup-role { margin-top: 2px; color: #8ea2ce; font-size: 9px; }
+        .live-location-page .live-user-popup-status { display: inline-flex; align-items: center; gap: 5px; margin-top: 5px; color: #fbbf24; font-size: 8px; font-weight: 800; text-transform: uppercase; }
         .live-location-page .live-user-popup-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+        .live-location-page .live-user-popup-status.is-online { color: #6ee7b7; }
         .live-location-page .live-user-popup-status.is-offline { color: #fda4af; }
-        .live-location-page .live-user-popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 16px; }
-        .live-location-page .live-user-popup-metric { min-height: 72px; padding: 11px; border: 1px solid rgba(90, 130, 220, .26); border-radius: 10px; background: rgba(5, 14, 36, .28); }
-        .live-location-page .live-user-popup-label { color: #7184ae; font-size: 9px; letter-spacing: .8px; text-transform: uppercase; }
-        .live-location-page .live-user-popup-value { margin-top: 6px; color: var(--fk-list-heading, #f1f5ff); font-size: 13px; font-weight: 800; line-height: 1.25; }
+        .live-location-page .live-user-popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 12px; }
+        .live-location-page .live-user-popup-metric { min-height: 56px; padding: 9px; border: 1px solid rgba(90, 130, 220, .2); border-radius: 8px; background: rgba(5, 14, 36, .25); }
+        .live-location-page .live-user-popup-label { color: #7184ae; font-size: 7px; letter-spacing: .65px; text-transform: uppercase; }
+        .live-location-page .live-user-popup-value { margin-top: 4px; color: var(--fk-list-heading, #f1f5ff); font-size: 11px; font-weight: 750; line-height: 1.25; }
         .live-location-page .live-user-popup-value.is-cyan { color: #22d3ee; }
         .live-location-page .live-user-popup-value.is-green { color: #34d399; }
-        .live-location-page .live-user-popup-foot { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(90, 130, 220, .25); color: #8194bf; font-size: 10px; line-height: 1.65; }
+        .live-location-page .live-user-popup-foot { margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(90, 130, 220, .2); color: #8194bf; font-size: 8px; line-height: 1.55; }
         .live-location-page .map-column { padding: 0 !important; border-right: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)); }
         .live-location-page #map { width: 100% !important; height: 520px !important; background: #071126; }
         .live-location-page .activity-column { height: 520px; padding: 0 !important; overflow: hidden; }
@@ -650,8 +653,8 @@
                 '<circle cx="15" cy="14.3" r="4.6" fill="#fff" stroke="' + stroke + '" stroke-width="1.2"/></svg>';
             return {
                 url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
-                scaledSize: new google.maps.Size(24, 32),
-                anchor: new google.maps.Point(12, 31)
+                scaledSize: new google.maps.Size(18, 24),
+                anchor: new google.maps.Point(9, 23)
             };
         }
 
@@ -734,7 +737,7 @@
             }));
             identity.append($('<div>', { class: 'live-user-popup-role', text: location.designation || 'Field employee' }));
             identity.append($('<div>', {
-                class: 'live-user-popup-status' + (location.status === 'Offline' ? ' is-offline' : ''),
+                class: 'live-user-popup-status is-' + String(location.status || 'gps-off').toLowerCase().replace(/\s+/g, '-'),
                 text: location.status || 'GPS Off'
             }));
             head.append(identity);
