@@ -251,19 +251,19 @@
         }
         body.fk-shell .live-location-page .live-user-filter.active { border-color: rgba(34, 211, 238, .45) !important; background: rgba(34, 211, 238, .1) !important; color: #67e8f9 !important; }
         .live-location-page .live-users-list { height: calc(100% - 192px); padding: 8px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(34, 211, 238, .35) transparent; }
-        .live-location-page .live-user-row { display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 7px; padding: 10px; border: 1px solid transparent; border-radius: 10px; background: transparent; cursor: pointer; transition: .18s ease; }
+        .live-location-page .live-user-row { display: flex; align-items: flex-start; gap: 10px; width: 100%; margin-bottom: 6px; padding: 10px; border: 1px solid transparent; border-radius: 10px; background: transparent; cursor: pointer; transition: .18s ease; }
         .live-location-page .live-user-row:hover, .live-location-page .live-user-row.active { border-color: rgba(34, 211, 238, .25); background: rgba(34, 211, 238, .07); }
         .live-location-page .live-user-avatar { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px; border: 1px solid rgba(34, 211, 238, .28); border-radius: 10px; background: rgba(34, 211, 238, .1); color: #67e8f9; font-size: 10px; font-weight: 800; }
         .live-location-page .live-user-copy { min-width: 0; flex: 1; }
-        .live-location-page .live-user-name { overflow: hidden; color: var(--fk-list-heading, #f1f5ff); font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-        .live-location-page .live-user-role, .live-location-page .live-user-address { overflow: hidden; margin-top: 3px; color: var(--fk-list-dim, #8291ad); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
-        .live-location-page .live-user-status { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; color: var(--fk-list-dim, #8291ad); font-size: 8px; font-weight: 700; text-transform: uppercase; }
+        .live-location-page .live-user-name { overflow: hidden; color: var(--fk-list-heading, #f1f5ff); font-size: 12px; font-weight: 700; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+        .live-location-page .live-user-role, .live-location-page .live-user-address { overflow: hidden; margin-top: 3px; color: var(--fk-list-dim, #8291ad); font-size: 9px; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+        .live-location-page .live-user-status { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; color: var(--fk-list-dim, #8291ad); font-size: 8px; font-weight: 700; line-height: 1.3; text-transform: uppercase; }
         .live-location-page .live-user-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; }
         .live-location-page .live-user-status.is-online { color: #6ee7b7; }
         .live-location-page .live-user-status.is-online::before { background: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, .65); }
         .live-location-page .live-user-status.is-offline { color: #fda4af; }
         .live-location-page .live-user-status.is-offline::before { background: #fb7185; }
-        .live-location-page .live-user-distance { margin-top: 4px; color: #22d3ee; font-size: 10px; font-weight: 700; }
+        .live-location-page .live-user-distance { margin-top: 4px; color: #22d3ee; font-size: 10px; font-weight: 700; line-height: 1.3; }
         .live-location-page .live-users-empty { padding: 36px 10px; color: var(--fk-list-dim, #8291ad); font-size: 11px; text-align: center; }
         .live-location-page .gm-style .gm-style-iw-c { max-width: 310px !important; padding: 0 !important; border: 1px solid rgba(90, 130, 220, .28); border-radius: 12px; background: #0b1c3c !important; box-shadow: 0 14px 32px rgba(0, 0, 0, .32); }
         .live-location-page .gm-style .gm-style-iw-d { overflow: hidden !important; }
