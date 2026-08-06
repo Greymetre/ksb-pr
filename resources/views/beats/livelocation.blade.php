@@ -9,7 +9,7 @@
             background: var(--fk-list-panel, #0b1730) !important;
             box-shadow: none !important;
         }
-        .live-location-page .live-location-card > .card-body { padding: 20px !important; }
+        .live-location-page .live-location-card > .card-body { padding: 18px !important; }
         .live-location-page .live-location-card.is-live-locator {
             border: 0 !important;
             background: transparent !important;
@@ -20,7 +20,7 @@
             display: grid;
             grid-template-columns: repeat(12, minmax(0, 1fr));
             align-items: end;
-            gap: 14px;
+            gap: 12px;
             margin: 0;
         }
         .live-location-page .location-filter-field,
@@ -48,6 +48,20 @@
             color: var(--fk-list-soft, #c8d5ea) !important;
             box-shadow: none !important;
             background-image: none !important;
+        }
+        body.fk-shell .live-location-page .location-filter-form .select2-selection--multiple {
+            min-height: 44px !important;
+            border: 1px solid var(--fk-list-border-strong, rgba(90, 130, 220, .34)) !important;
+            border-radius: 10px !important;
+            background: rgba(5, 14, 36, .72) !important;
+            box-shadow: none !important;
+        }
+        body.fk-shell .live-location-page .location-filter-form .select2-selection--multiple .select2-selection__rendered {
+            display: flex; align-items: center; gap: 4px; min-height: 42px; padding: 4px 36px 4px 12px !important;
+        }
+        body.fk-shell .live-location-page .location-filter-form .select2-selection--multiple .select2-selection__choice {
+            margin: 0 !important; padding: 3px 7px !important; border: 1px solid rgba(34, 211, 238, .24) !important;
+            border-radius: 6px !important; background: rgba(34, 211, 238, .09) !important; color: #c8d5ea !important;
         }
         body.fk-shell .live-location-page .location-filter-form .bootstrap-select .filter-option-inner-inner,
         body.fk-shell .live-location-page .location-filter-form .select2-selection__rendered {
@@ -137,6 +151,12 @@
             color: var(--fk-list-heading, #f1f5ff) !important;
             box-shadow: none !important;
             font-size: 11px !important;
+            font-weight: 600 !important;
+        }
+        body.fk-shell .live-location-page .location-actions input.location-action-btn.btn,
+        body.fk-shell .live-location-page .location-actions button.location-action-btn.btn {
+            background: rgba(5, 14, 36, .72) !important;
+            color: var(--fk-list-heading, #f1f5ff) !important;
         }
         .live-location-page .location-workspace {
             display: none;
@@ -305,9 +325,8 @@
                         @csrf
                         <div class="location-filter-grid {{ $locationMode === 'live' ? 'is-live-only' : '' }}">
                             <div class="location-filter-field">
-                                <div class="dropdown bootstrap-select show-tick">
-                                    <select class="selectpicker" multiple id="branch_id" name="branch_id" data-style="location-select-control" title="Choose Branch" data-size="10" tabindex="-98">
-                                        <option disabled=""> Select Branch</option>
+                                <div>
+                                    <select class="select2" multiple id="branch_id" name="branch_id" data-placeholder="Choose Branch">
                                         @if(@isset($branches ))
                                         @foreach($branches as $branch)
                                         <option value="{!! $branch['id'] !!}">{!! $branch['name'] !!}</option>
@@ -317,9 +336,8 @@
                                 </div>
                             </div>
                             <div class="location-filter-field">
-                                <div class="dropdown bootstrap-select show-tick">
-                                    <select class="selectpicker" multiple id="division_id" name="division_id" data-style="location-select-control" title="Choose Zone" data-size="10" tabindex="-98">
-                                        <option disabled=""> Select Zone</option>
+                                <div>
+                                    <select class="select2" multiple id="division_id" name="division_id" data-placeholder="Choose Zone">
                                         @if(@isset($divisions ))
                                         @foreach($divisions as $division)
                                         <option value="{!! $division['id'] !!}">{!! $division['name'] !!}</option>
@@ -329,9 +347,8 @@
                                 </div>
                             </div>
                             <div class="location-filter-field">
-                                <div class="dropdown bootstrap-select show-tick">
-                                    <select class="selectpicker" multiple id="department_id" name="department_id" data-style="location-select-control" title="Choose Department" data-size="10" tabindex="-98">
-                                        <option disabled=""> Select Department</option>
+                                <div>
+                                    <select class="select2" multiple id="department_id" name="department_id" data-placeholder="Choose Department">
                                         @if(@isset($departments ))
                                         @foreach($departments as $department)
                                         <option value="{!! $department['id'] !!}">{!! $department['name'] !!}</option>
@@ -884,7 +901,7 @@
                         $.each(res.users, function(k, v) {
                             select.append('<option value="' + v.id + '" >' + v.name + '</option>');
                         });
-                        select.selectpicker('refresh');
+                        select.trigger('change.select2');
                     }
                 }
             });
@@ -906,7 +923,7 @@
                         $.each(res.users, function(k, v) {
                             select.append('<option value="' + v.id + '" >' + v.name + '</option>');
                         });
-                        select.selectpicker('refresh');
+                        select.trigger('change.select2');
                     }
                 }
             });
@@ -928,7 +945,7 @@
                         $.each(res.users, function(k, v) {
                             select.append('<option value="' + v.id + '" >' + v.name + '</option>');
                         });
-                        select.selectpicker('refresh');
+                        select.trigger('change.select2');
                     }
                 }
             });
