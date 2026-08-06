@@ -2289,7 +2289,7 @@
                         </li>
                         @if(auth()->user()->can('user_access'))
                         <li
-                            class="nav-link {{ request()->is('users*') || request()->is('targets*') || request()->is('livelocation*') || request()->is('permissions*') || request()->is('tours*') || request()->is('usercity*') || request()->is('new-joinings*') ? 'active' : '' }}">
+                            class="nav-link {{ request()->is('users*') || request()->is('targets*') || request()->is('permissions*') || request()->is('tours*') || request()->is('usercity*') || request()->is('new-joinings*') ? 'active' : '' }}">
                             <a class="hoveradd" data-toggle="collapse" href="#userMenu" aria-expanded="false">
                                 <i class="material-icons icon">badge</i>
                                 <!-- <span> {!! trans('panel.sidemenu.users_master') !!}</span> -->
@@ -2354,15 +2354,6 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('user_location'))
-                                    <li class="nav-link-btn {{ request()->is('livelocation*') ? 'active' : '' }}">
-                                        <a class="hoveradd2" href="{{ url('livelocation') }}">
-                                            <i class="material-icons icon">share_location</i>
-                                            <span>User Live Activity</span>
-                                            <div class="d-none mobile_hide"> User Live Location</div>
-                                        </a>
-                                    </li>
-                                    @endif
                                     @if(auth()->user()->can('tours'))
                                     <li class="nav-link-btn {{ request()->is('tours*') ? 'active' : '' }}">
                                         <a class="nav-link" href="{{ url('tours') }}">
@@ -2381,6 +2372,27 @@
                                         </a>
                                     </li>
                                     @endif
+                                </ul>
+                            </div>
+                        </li>
+                        @endif
+                        @if(auth()->user()->can('user_location'))
+                        <li class="nav-link {{ request()->is('livelocation*') ? 'active' : '' }}">
+                            <a class="hoveradd" data-toggle="collapse" href="#locationMenu"
+                                aria-expanded="{{ request()->is('livelocation*') ? 'true' : 'false' }}">
+                                <i class="material-icons icon">location_on</i>
+                                <span>Location Management</span>
+                                <div class="d-none mobile_hide">Location Management</div>
+                            </a>
+                            <div class="collapse {{ request()->is('livelocation*') ? 'show' : '' }}" id="locationMenu">
+                                <ul class="navd">
+                                    <li class="nav-link-btn {{ request()->is('livelocation*') ? 'active' : '' }}">
+                                        <a class="hoveradd2" href="{{ url('livelocation') }}">
+                                            <i class="material-icons icon">share_location</i>
+                                            <span>User Live Location</span>
+                                            <div class="d-none mobile_hide">User Live Location</div>
+                                        </a>
+                                    </li>
                                 </ul>
                             </div>
                         </li>
