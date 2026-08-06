@@ -135,9 +135,31 @@
         .live-location-page .live-user-role, .live-location-page .live-user-address { overflow: hidden; margin-top: 3px; color: var(--fk-list-dim, #8291ad); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
         .live-location-page .live-user-status { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; color: var(--fk-list-dim, #8291ad); font-size: 8px; font-weight: 700; text-transform: uppercase; }
         .live-location-page .live-user-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; }
-        .live-location-page .live-user-status.is-live { color: #6ee7b7; }
-        .live-location-page .live-user-status.is-live::before { background: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, .65); }
+        .live-location-page .live-user-status.is-online { color: #6ee7b7; }
+        .live-location-page .live-user-status.is-online::before { background: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, .65); }
+        .live-location-page .live-user-status.is-offline { color: #fda4af; }
+        .live-location-page .live-user-status.is-offline::before { background: #fb7185; }
+        .live-location-page .live-user-distance { margin-top: 4px; color: #22d3ee; font-size: 10px; font-weight: 700; }
         .live-location-page .live-users-empty { padding: 36px 10px; color: var(--fk-list-dim, #8291ad); font-size: 11px; text-align: center; }
+        .live-location-page .gm-style .gm-style-iw-c { max-width: 390px !important; padding: 0 !important; border: 1px solid rgba(90, 130, 220, .38); border-radius: 14px; background: #0b1c3c !important; box-shadow: 0 18px 45px rgba(0, 0, 0, .36); }
+        .live-location-page .gm-style .gm-style-iw-d { overflow: hidden !important; }
+        .live-location-page .gm-style .gm-style-iw-tc::after { background: #0b1c3c !important; }
+        .live-location-page .gm-style .gm-ui-hover-effect { filter: invert(1); opacity: .7; }
+        .live-location-page .live-user-popup { width: 360px; padding: 20px; color: var(--fk-list-soft, #c8d5ea); font-family: 'Inter', sans-serif; }
+        .live-location-page .live-user-popup-head { display: flex; align-items: center; gap: 12px; padding-right: 20px; }
+        .live-location-page .live-user-popup-avatar { display: grid; place-items: center; flex: 0 0 48px; width: 48px; height: 48px; border: 1px dashed rgba(130, 145, 180, .55); border-radius: 50%; color: #94a3c7; font-size: 11px; }
+        .live-location-page .live-user-popup-name { color: var(--fk-list-heading, #f1f5ff); font-size: 14px; font-weight: 800; }
+        .live-location-page .live-user-popup-role { margin-top: 3px; color: #8ea2ce; font-size: 11px; }
+        .live-location-page .live-user-popup-status { display: inline-flex; align-items: center; gap: 5px; margin-top: 7px; color: #6ee7b7; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+        .live-location-page .live-user-popup-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+        .live-location-page .live-user-popup-status.is-offline { color: #fda4af; }
+        .live-location-page .live-user-popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 16px; }
+        .live-location-page .live-user-popup-metric { min-height: 72px; padding: 11px; border: 1px solid rgba(90, 130, 220, .26); border-radius: 10px; background: rgba(5, 14, 36, .28); }
+        .live-location-page .live-user-popup-label { color: #7184ae; font-size: 9px; letter-spacing: .8px; text-transform: uppercase; }
+        .live-location-page .live-user-popup-value { margin-top: 6px; color: var(--fk-list-heading, #f1f5ff); font-size: 13px; font-weight: 800; line-height: 1.25; }
+        .live-location-page .live-user-popup-value.is-cyan { color: #22d3ee; }
+        .live-location-page .live-user-popup-value.is-green { color: #34d399; }
+        .live-location-page .live-user-popup-foot { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(90, 130, 220, .25); color: #8194bf; font-size: 10px; line-height: 1.65; }
         .live-location-page .map-column { padding: 0 !important; border-right: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)); }
         .live-location-page #map { width: 100% !important; height: 520px !important; background: #071126; }
         .live-location-page .activity-column { height: 520px; padding: 0 !important; overflow: hidden; }
@@ -307,8 +329,9 @@
                                 </div>
                                 <div class="live-users-filters">
                                     <button type="button" class="btn live-user-filter active" data-status="all">All</button>
-                                    <button type="button" class="btn live-user-filter" data-status="Live">Live</button>
-                                    <button type="button" class="btn live-user-filter" data-status="Stale">Stale</button>
+                                    <button type="button" class="btn live-user-filter" data-status="Online">Online</button>
+                                    <button type="button" class="btn live-user-filter" data-status="Offline">Offline</button>
+                                    <button type="button" class="btn live-user-filter" data-status="GPS Off">GPS Off</button>
                                 </div>
                             </div>
                             <div class="live-users-list" id="liveUsersList"></div>
@@ -428,7 +451,8 @@
         }
 
         function renderAllUsersMap(locations) {
-            liveUserLocations = locations.filter(function(location) {
+            liveUserLocations = locations;
+            var mappedLocations = locations.filter(function(location) {
                 var lat = parseFloat(location.latitude);
                 var lng = parseFloat(location.longitude);
                 return Number.isFinite(lat) && Number.isFinite(lng);
@@ -452,21 +476,14 @@
             liveUsersInfoWindow = new google.maps.InfoWindow();
             liveUserMarkers = [];
 
-            liveUserLocations.forEach(function(location) {
+            mappedLocations.forEach(function(location) {
                 var position = { lat: parseFloat(location.latitude), lng: parseFloat(location.longitude) };
                 bounds.extend(position);
                 var marker = new google.maps.Marker({
                     map: liveUsersMap,
                     position: position,
                     title: location.name || 'User',
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        fillColor: location.status === 'Live' ? '#34d399' : '#f59e0b',
-                        fillOpacity: 1,
-                        strokeColor: '#071329',
-                        strokeWeight: 3,
-                        scale: 9
-                    }
+                    icon: makeLiveUserMarkerIcon(location.status)
                 });
                 location.marker = marker;
                 marker.addListener('click', function() {
@@ -476,14 +493,27 @@
             });
 
             renderLiveUsersList(liveUserLocations);
-            if (!liveUserLocations.length) {
+            if (!mappedLocations.length) {
                 $('#map').html('<div class="activity-state">No valid user locations are available.</div>');
-            } else if (liveUserLocations.length === 1) {
+            } else if (mappedLocations.length === 1) {
                 liveUsersMap.setCenter(bounds.getCenter());
                 liveUsersMap.setZoom(14);
             } else {
                 liveUsersMap.fitBounds(bounds, 50);
             }
+        }
+
+        function makeLiveUserMarkerIcon(status) {
+            var color = status === 'Online' ? '#2fbd3b' : '#fb7185';
+            var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="38" height="50" viewBox="0 0 38 50">' +
+                '<defs><filter id="s" x="-60%" y="-30%" width="220%" height="190%"><feDropShadow dx="3" dy="5" stdDeviation="3" flood-color="#000" flood-opacity=".45"/></filter></defs>' +
+                '<path filter="url(#s)" d="M19 1C9.1 1 1 9.1 1 19c0 13.3 18 29 18 29s18-15.7 18-29C37 9.1 28.9 1 19 1z" fill="' + color + '" stroke="#168a24" stroke-width="2"/>' +
+                '<circle cx="19" cy="18" r="6.5" fill="#fff" stroke="rgba(0,0,0,.18)" stroke-width="2"/></svg>';
+            return {
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+                scaledSize: new google.maps.Size(38, 50),
+                anchor: new google.maps.Point(19, 48)
+            };
         }
 
         function getLiveUserInitials(name) {
@@ -506,10 +536,10 @@
                 var $copy = $('<div>', { class: 'live-user-copy' });
                 $copy.append($('<div>', { class: 'live-user-name', text: location.name || 'Unknown user' }));
                 $copy.append($('<div>', { class: 'live-user-role', text: location.designation || 'Field employee' }));
-                $copy.append($('<div>', { class: 'live-user-address', text: location.address || 'Address unavailable' }));
+                $copy.append($('<div>', { class: 'live-user-distance', text: Number(location.distance_km || 0).toFixed(1) + ' km travelled today' }));
                 $copy.append($('<div>', {
-                    class: 'live-user-status' + (location.status === 'Live' ? ' is-live' : ''),
-                    text: (location.status || 'Stale') + ' · ' + (location.time || 'Unknown')
+                    class: 'live-user-status is-' + String(location.status || 'gps-off').toLowerCase().replace(/\s+/g, '-'),
+                    text: location.status || 'GPS Off'
                 }));
                 $row.append($avatar, $copy).on('click', function() {
                     focusLiveUser(location.user_id, true);
@@ -522,27 +552,61 @@
             var location = liveUserLocations.find(function(item) {
                 return String(item.user_id) === String(userId);
             });
-            if (!location || !location.marker || !liveUsersMap) return;
+            if (!location) return;
 
             $('.live-user-row').removeClass('active');
             $('.live-user-row[data-user-id="' + userId + '"]').addClass('active');
+            if (!location.marker || !liveUsersMap) {
+                showLocationAlert('GPS location is not available for this user.');
+                return;
+            }
             if (moveMap) {
                 liveUsersMap.panTo(location.marker.getPosition());
                 liveUsersMap.setZoom(14);
             }
 
-            var content = document.createElement('div');
-            var name = document.createElement('strong');
-            var role = document.createElement('div');
-            var status = document.createElement('div');
-            var address = document.createElement('div');
-            name.textContent = (location.name || 'User') + (location.employee_code ? ' (' + location.employee_code + ')' : '');
-            role.textContent = location.designation || 'Field employee';
-            status.textContent = (location.status || 'Stale') + ' · Last update: ' + (location.time || 'Unknown');
-            address.textContent = location.address || 'Address unavailable';
-            content.append(name, role, status, address);
+            var content = buildLiveUserPopup(location);
             liveUsersInfoWindow.setContent(content);
             liveUsersInfoWindow.open(liveUsersMap, location.marker);
+        }
+
+        function buildLiveUserPopup(location) {
+            var popup = $('<div>', { class: 'live-user-popup' });
+            var head = $('<div>', { class: 'live-user-popup-head' });
+            head.append($('<div>', { class: 'live-user-popup-avatar', text: getLiveUserInitials(location.name) }));
+            var identity = $('<div>');
+            identity.append($('<div>', {
+                class: 'live-user-popup-name',
+                text: (location.name || 'User') + (location.employee_code ? ' (' + location.employee_code + ')' : '')
+            }));
+            identity.append($('<div>', { class: 'live-user-popup-role', text: location.designation || 'Field employee' }));
+            identity.append($('<div>', {
+                class: 'live-user-popup-status' + (location.status === 'Offline' ? ' is-offline' : ''),
+                text: location.status || 'GPS Off'
+            }));
+            head.append(identity);
+            popup.append(head);
+
+            var grid = $('<div>', { class: 'live-user-popup-grid' });
+            appendPopupMetric(grid, "Today's Plan", location.today_plan || 'No plan assigned', '');
+            appendPopupMetric(grid, 'Total KM Run', Number(location.distance_km || 0).toFixed(1) + ' km', 'is-cyan');
+            appendPopupMetric(grid, 'Customer Visits', String(location.visits_today || 0), '');
+            appendPopupMetric(grid, "Today's Order Value", '₹' + Number(location.order_value || 0).toLocaleString('en-IN'), 'is-green');
+            popup.append(grid);
+
+            var foot = $('<div>', { class: 'live-user-popup-foot' });
+            foot.append($('<div>', { text: 'Last update: ' + (location.time || 'Unknown') }));
+            if (location.mobile) foot.append($('<div>', { text: location.mobile }));
+            foot.append($('<div>', { text: location.address || 'Address unavailable' }));
+            popup.append(foot);
+            return popup.get(0);
+        }
+
+        function appendPopupMetric(container, label, value, valueClass) {
+            var metric = $('<div>', { class: 'live-user-popup-metric' });
+            metric.append($('<div>', { class: 'live-user-popup-label', text: label }));
+            metric.append($('<div>', { class: 'live-user-popup-value ' + valueClass, text: value }));
+            container.append(metric);
         }
 
         function applyLiveUserFilters() {
