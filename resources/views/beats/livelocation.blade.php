@@ -27,12 +27,23 @@
             border-radius: 10px !important;
             text-transform: none !important;
         }
+        .live-location-page .location-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+            width: 100%;
+            padding: 2px 15px 0;
+        }
+        .live-location-page .location-actions .btn { padding: 9px 15px !important; white-space: nowrap; }
         .live-location-page .all-users-location-btn {
             border: 1px solid rgba(34, 211, 238, .38) !important;
             background: rgba(34, 211, 238, .12) !important;
             color: var(--fk-list-accent, #22d3ee) !important;
         }
         .live-location-page .location-workspace {
+            display: none;
             margin: 20px 0 0 !important;
             padding: 0 !important;
             overflow: hidden;
@@ -40,6 +51,7 @@
             border-radius: 14px;
             background: rgba(5, 14, 36, .62);
         }
+        .live-location-page .location-workspace.is-visible { display: flex; }
         .live-location-page .map-column { padding: 0 !important; border-right: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)); }
         .live-location-page #map { width: 100% !important; height: 520px !important; background: #071126; }
         .live-location-page .activity-column { height: 520px; padding: 0 !important; overflow: hidden; }
@@ -77,6 +89,7 @@
         @media (max-width: 991px) {
             .live-location-page .map-column { border-right: 0; border-bottom: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)); }
             .live-location-page #map, .live-location-page .activity-column { height: 430px !important; }
+            .live-location-page .location-actions { justify-content: flex-start; }
         }
     </style>
     <div class="row mt-4 live-location-page">
@@ -164,38 +177,33 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group has-default bmd-form-group">
-                                    <input type="text" class="form-control datepicker" id="date" required name="date" value="{{$date??''}}" placeholder="Date From" autocomplete="off" readonly>
+                                    <input type="text" class="form-control datepicker" id="date" required name="date" value="{{ old('date', !empty($date) ? $date : \Carbon\Carbon::today()->format('Y-m-d')) }}" placeholder="Date From" autocomplete="off" readonly>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group has-default bmd-form-group">
                                     <input type="text" class="form-control datepicker" id="to_date" required name="to_date"
-                                        value="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" placeholder="Select Date"
+                                        value="{{ old('to_date', \Carbon\Carbon::today()->format('Y-m-d')) }}" placeholder="Date To"
                                         autocomplete="off" readonly>
                                 </div>
                             </div>
-                            <div class="col-md-2 p-0 text-center">
-                                <button type="button" class="btn btn-info btn-sm" onclick="getActivityData()">Activity Detailed</button>
-                            </div>
-                            <div class="col-md-2 p-0 text-center">
-                                <!-- <button type="button" class="btn btn-info btn-sm" onclick="getLocationData()">Location</button> -->
-                                <input type="submit" name="submit" class="btn btn-primary btn-sm" value="Complete Map Activity">
-                            </div>
-                            <div class="col-md-2 p-0 text-center">
-                                <input type="submit" name="submit" class="btn btn-primary btn-sm" value="Track Activity">
-                            </div>
-                            <div class="col-md-3 p-0 text-center">
+                            <div class="col-12">
+                              <div class="location-actions">
                                 <button type="button" class="btn btn-sm all-users-location-btn" onclick="getAllUsersLiveLocations()">
                                     <i class="material-icons mr-1" style="font-size:16px">groups</i> All Users Live Location
                                 </button>
+                                <button type="button" class="btn btn-info btn-sm" onclick="getActivityData()">Activity Detailed</button>
+                                <input type="submit" name="submit" class="btn btn-primary btn-sm" value="Complete Map Activity">
+                                <input type="submit" name="submit" class="btn btn-primary btn-sm" value="Track Activity">
+                              </div>
                             </div>
                         </div>
                     </form>
-                    <div class="row location-workspace">
-                        <div class="col-lg-7 map-column">
+                    <div class="row location-workspace" id="locationWorkspace">
+                        <div class="col-lg-7 map-column" id="mapColumn">
                             <div id="map"></div>
                         </div>
-                        <div class="col-lg-5 activity-column" id="custom-scroll">
+                        <div class="col-lg-5 activity-column" id="activityColumn">
                             <div class="activity-panel-head">
                                 <h3>Activity details</h3>
                                 <p>Click a location to focus it on the map.</p>
@@ -213,7 +221,16 @@
             $('#loader').hide();
         })
 
+        function showLocationWorkspace(showActivityDetails) {
+            $('#locationWorkspace').addClass('is-visible');
+            $('#activityColumn').toggleClass('d-none', !showActivityDetails);
+            $('#mapColumn')
+                .toggleClass('col-lg-7', showActivityDetails)
+                .toggleClass('col-lg-12', !showActivityDetails);
+        }
+
         function getAllUsersLiveLocations() {
+            showLocationWorkspace(false);
             var $button = $('.all-users-location-btn');
             var originalContent = $button.html();
             $button.prop('disabled', true).html('<i class="material-icons mr-1" style="font-size:16px">sync</i> Loading…');
@@ -346,6 +363,7 @@
         }
 
         function getActivityData() {
+            showLocationWorkspace(true);
             $("#todayActivity").empty();
             $("#todayActivity").append('<li class="activity-state">Loading activity…</li>');
             var date = $("input[name=date]").val();
