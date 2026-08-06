@@ -29,6 +29,7 @@
         .live-location-page .location-filter-form .select2-container { width: 100% !important; }
         body.fk-shell .live-location-page .location-filter-form .form-control,
         body.fk-shell .live-location-page .location-filter-form .bootstrap-select > .dropdown-toggle,
+        body.fk-shell .live-location-page .location-filter-form .bootstrap-select > .location-select-control,
         body.fk-shell .live-location-page .location-filter-form .bootstrap-select.show > .dropdown-toggle,
         body.fk-shell .live-location-page .location-filter-form .bootstrap-select > .dropdown-toggle:focus,
         body.fk-shell .live-location-page .location-filter-form .bootstrap-select > .dropdown-toggle:active,
@@ -75,7 +76,8 @@
         }
         body.fk-shell .live-location-page .location-actions .btn:hover,
         body.fk-shell .live-location-page .location-actions .btn:focus,
-        body.fk-shell .live-location-page .location-actions .btn:active {
+        body.fk-shell .live-location-page .location-actions .btn:active,
+        body.fk-shell .live-location-page .location-actions .btn.active {
             border-color: rgba(34, 211, 238, .46) !important;
             background: rgba(13, 35, 67, .94) !important;
             color: #fff !important;
@@ -130,7 +132,7 @@
         .live-location-page .activity-title { margin: 11px 0 5px; color: var(--fk-list-heading, #f1f5ff); font-size: 14px; font-weight: 800; }
         .live-location-page .activity-customer { margin: 0; color: var(--fk-list-soft, #c8d5ea); font-size: 12px; line-height: 1.45; }
         .live-location-page .activity-meta { margin: 6px 0 0; color: var(--fk-list-dim, #8291ad); font-size: 10px; line-height: 1.45; }
-        .live-location-page .activity-location-btn { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; margin: 12px 0 0 !important; padding: 6px 9px !important; border-radius: 7px !important; font-size: 10px !important; text-transform: none !important; }
+        .live-location-page .activity-location-btn { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; margin: 12px 0 0 !important; padding: 6px 9px !important; border: 1px solid rgba(34, 211, 238, .35) !important; border-radius: 7px !important; background: rgba(34, 211, 238, .08) !important; color: #67e8f9 !important; box-shadow: none !important; font-size: 10px !important; text-transform: none !important; }
         .live-location-page .activity-location-btn .material-icons { font-size: 14px; }
         .live-location-page .activity-state { padding: 36px 12px; color: var(--fk-list-dim, #8291ad); text-align: center; font-size: 12px; }
         @media (max-width: 991px) {
@@ -184,7 +186,7 @@
                         <div class="location-filter-grid">
                             <div class="location-filter-field">
                                 <div class="dropdown bootstrap-select show-tick">
-                                    <select class="selectpicker" multiple id="branch_id" name="branch_id" data-style="select-with-transition" title="Choose Branch" data-size="10" tabindex="-98">
+                                    <select class="selectpicker" multiple id="branch_id" name="branch_id" data-style="location-select-control" title="Choose Branch" data-size="10" tabindex="-98">
                                         <option disabled=""> Select Branch</option>
                                         @if(@isset($branches ))
                                         @foreach($branches as $branch)
@@ -196,7 +198,7 @@
                             </div>
                             <div class="location-filter-field">
                                 <div class="dropdown bootstrap-select show-tick">
-                                    <select class="selectpicker" multiple id="division_id" name="division_id" data-style="select-with-transition" title="Choose Zone" data-size="10" tabindex="-98">
+                                    <select class="selectpicker" multiple id="division_id" name="division_id" data-style="location-select-control" title="Choose Zone" data-size="10" tabindex="-98">
                                         <option disabled=""> Select Zone</option>
                                         @if(@isset($divisions ))
                                         @foreach($divisions as $division)
@@ -208,7 +210,7 @@
                             </div>
                             <div class="location-filter-field">
                                 <div class="dropdown bootstrap-select show-tick">
-                                    <select class="selectpicker" multiple id="department_id" name="department_id" data-style="select-with-transition" title="Choose Department" data-size="10" tabindex="-98">
+                                    <select class="selectpicker" multiple id="department_id" name="department_id" data-style="location-select-control" title="Choose Department" data-size="10" tabindex="-98">
                                         <option disabled=""> Select Department</option>
                                         @if(@isset($departments ))
                                         @foreach($departments as $department)
@@ -220,7 +222,7 @@
                             </div>
                             <div class="location-filter-field">
                                 <div class="dropdown bootstrap-select show-tick">
-                                    <select class="select2" id="user_id" name="user_id" data-style="select-with-transition" title="Choose User" data-size="10" tabindex="-98" required>
+                                    <select class="select2" id="user_id" name="user_id" title="Choose User" data-size="10" tabindex="-98" required>
                                         <option disabled="" selected> Select Users</option>
                                         @if(@isset($users ))
                                         @foreach($users as $user)
@@ -244,12 +246,12 @@
                             </div>
                             <div class="location-action-field">
                               <div class="location-actions">
-                                <button type="button" class="btn btn-sm all-users-location-btn" onclick="getAllUsersLiveLocations()">
-                                    <i class="material-icons mr-1">groups</i> All Users Live Location
+                                <button type="button" class="btn btn-sm location-action-btn all-users-location-btn" onclick="getAllUsersLiveLocations()">
+                                    <i class="material-icons mr-1">groups</i> User Live Location
                                 </button>
-                                <button type="button" class="btn btn-info btn-sm" onclick="getActivityData()">Activity Detailed</button>
-                                <input type="submit" name="submit" class="btn btn-primary btn-sm" value="Complete Map Activity">
-                                <input type="submit" name="submit" class="btn btn-primary btn-sm" value="Track Activity">
+                                <button type="button" class="btn btn-sm location-action-btn" onclick="getActivityData()">Activity Detailed</button>
+                                <input type="submit" name="submit" class="btn btn-sm location-action-btn" value="Complete Map Activity">
+                                <input type="submit" name="submit" class="btn btn-sm location-action-btn" value="Track Activity">
                               </div>
                             </div>
                         </div>
@@ -526,7 +528,7 @@
                             if (hasLocation) {
                                 var $locationButton = $('<button>', {
                                     type: 'button',
-                                    class: 'btn btn-info btn-sm activity-location-btn'
+                                    class: 'btn btn-sm activity-location-btn'
                                 }).append($('<i>', { class: 'material-icons', text: 'near_me' }))
                                   .append(document.createTextNode(' View on map'));
                                 $locationButton.on('click', function() {
