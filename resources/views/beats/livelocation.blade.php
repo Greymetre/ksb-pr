@@ -75,6 +75,10 @@
             width: 100% !important; height: 42px !important; margin: 0 !important; padding: 0 !important;
             color: var(--fk-list-soft, #c8d5ea) !important; font-size: 13px !important; line-height: 42px !important;
         }
+        body.fk-shell .live-location-page .location-filter-form .select2-selection--multiple .select2-search__field::placeholder {
+            color: var(--fk-list-soft, #c8d5ea) !important;
+            opacity: 1 !important;
+        }
         .live-location-page .multi-filter-field .select2-container { position: relative; }
         .live-location-page .multi-filter-field .select2-container::after {
             content: ''; position: absolute; top: 50%; right: 14px; width: 0; height: 0; transform: translateY(-25%);
