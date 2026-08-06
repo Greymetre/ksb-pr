@@ -1420,13 +1420,17 @@ break;
 
           $latitude = (float) $attendance->punchin_latitude;
           $longitude = (float) $attendance->punchin_longitude;
-          $directIsIndia = $latitude >= 6 && $latitude <= 38 && $longitude >= 68 && $longitude <= 98;
-          $swappedIsIndia = $longitude >= 6 && $longitude <= 38 && $latitude >= 68 && $latitude <= 98;
 
-          // Older attendance submissions stored longitude in the latitude column.
-          // Swap only when the reversed pair is a valid Indian coordinate and the direct pair is not.
-          if (!$directIsIndia && $swappedIsIndia) {
+          // The mobile punch-in API stores request latitude in punchin_longitude and
+          // request longitude in punchin_latitude. Reverse that mapping for App records.
+          if (strcasecmp((string) $attendance->punchin_from, 'App') === 0) {
             [$latitude, $longitude] = [$longitude, $latitude];
+          } else {
+            $directIsIndia = $latitude >= 6 && $latitude <= 38 && $longitude >= 68 && $longitude <= 98;
+            $swappedIsIndia = $longitude >= 6 && $longitude <= 38 && $latitude >= 68 && $latitude <= 98;
+            if (!$directIsIndia && $swappedIsIndia) {
+              [$latitude, $longitude] = [$longitude, $latitude];
+            }
           }
 
           if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180 ||
