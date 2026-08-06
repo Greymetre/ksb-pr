@@ -10,12 +10,34 @@
             box-shadow: none !important;
         }
         .live-location-page .live-location-card > .card-body { padding: 18px !important; }
-        .live-location-page .live-location-card.is-live-locator {
+        body.fk-shell .content .live-location-page .card.live-location-card.is-live-locator {
+            height: calc(100dvh - 170px);
+            min-height: 520px;
+            margin: 0 !important;
             border: 0 !important;
             background: transparent !important;
+            box-shadow: none !important;
         }
-        .live-location-page .live-location-card.is-live-locator > .card-body { padding: 0 !important; }
-        .live-location-page .live-location-card.is-live-locator .location-workspace { margin-top: 0 !important; }
+        body.fk-shell .content .live-location-page .card.live-location-card.is-live-locator > .card-body {
+            height: 100%; padding: 0 !important;
+        }
+        .live-location-page .live-location-card.is-live-locator .location-workspace {
+            height: 100%; margin: 0 !important;
+            border-color: rgba(90, 130, 220, .16);
+            border-radius: 12px;
+            background: rgba(5, 14, 36, .38);
+        }
+        .live-location-page .live-location-card.is-live-locator .live-users-panel,
+        .live-location-page .live-location-card.is-live-locator #map {
+            height: 100% !important;
+        }
+        .live-location-page .live-location-card.is-live-locator .live-users-panel {
+            flex: 0 0 340px; width: 340px; max-width: 340px;
+        }
+        .live-location-page .live-location-card.is-live-locator .map-column {
+            flex: 1 1 auto; width: auto; max-width: none;
+            border-right: 0;
+        }
         .live-location-page .location-filter-grid {
             display: grid;
             grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -217,8 +239,9 @@
         }
         body.fk-shell .live-location-page .live-users-zone-filter:hover,
         body.fk-shell .live-location-page .live-users-zone-filter:focus {
-            border-color: rgba(34, 211, 238, .42) !important;
-            background-color: rgba(8, 22, 48, .96) !important;
+            border-color: rgba(90, 130, 220, .34) !important;
+            background-color: rgba(8, 22, 48, .88) !important;
+            box-shadow: none !important;
         }
         .live-location-page .live-users-filters { display: flex; gap: 6px; margin-top: 10px; }
         body.fk-shell .live-location-page .live-user-filter {
@@ -301,6 +324,9 @@
             .live-location-page .location-action-field { grid-column: span 12; }
             .live-location-page .map-column { border-right: 0; border-bottom: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)); }
             .live-location-page .live-users-panel { height: 360px; border-right: 0; border-bottom: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)); }
+            body.fk-shell .content .live-location-page .card.live-location-card.is-live-locator { height: auto; min-height: 0; }
+            .live-location-page .live-location-card.is-live-locator .live-users-panel { flex: 0 0 100%; width: 100%; max-width: 100%; height: 360px !important; }
+            .live-location-page .live-location-card.is-live-locator #map { height: 430px !important; }
             .live-location-page #map, .live-location-page .activity-column { height: 430px !important; }
             .live-location-page .location-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
