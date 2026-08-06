@@ -21,37 +21,69 @@
         .live-location-page .location-date-field,
         .live-location-page .location-action-field { width: auto; max-width: none; padding: 0; }
         .live-location-page .location-filter-field { grid-column: span 3; }
-        .live-location-page .location-date-field { grid-column: span 2; }
-        .live-location-page .location-action-field { grid-column: span 8; }
-        .live-location-page .location-filter-form .form-control,
-        .live-location-page .location-filter-form .bootstrap-select > .dropdown-toggle,
-        .live-location-page .location-filter-form .select2-selection--single {
-            min-height: 42px;
+        .live-location-page .location-date-field { grid-column: span 2; align-self: center; }
+        .live-location-page .location-action-field { grid-column: span 8; align-self: center; }
+        .live-location-page .location-filter-form .form-group,
+        .live-location-page .location-filter-form .bmd-form-group { margin: 0 !important; padding: 0 !important; }
+        .live-location-page .location-filter-form .bootstrap-select,
+        .live-location-page .location-filter-form .select2-container { width: 100% !important; }
+        body.fk-shell .live-location-page .location-filter-form .form-control,
+        body.fk-shell .live-location-page .location-filter-form .bootstrap-select > .dropdown-toggle,
+        body.fk-shell .live-location-page .location-filter-form .bootstrap-select.show > .dropdown-toggle,
+        body.fk-shell .live-location-page .location-filter-form .bootstrap-select > .dropdown-toggle:focus,
+        body.fk-shell .live-location-page .location-filter-form .bootstrap-select > .dropdown-toggle:active,
+        body.fk-shell .live-location-page .location-filter-form .select2-selection--single {
+            height: 44px !important;
+            min-height: 44px !important;
             border: 1px solid var(--fk-list-border-strong, rgba(90, 130, 220, .34)) !important;
             border-radius: 10px !important;
             background: rgba(5, 14, 36, .72) !important;
             color: var(--fk-list-soft, #c8d5ea) !important;
             box-shadow: none !important;
+            background-image: none !important;
         }
-        .live-location-page .location-filter-form .btn {
-            min-height: 42px;
+        body.fk-shell .live-location-page .location-filter-form .bootstrap-select .filter-option-inner-inner,
+        body.fk-shell .live-location-page .location-filter-form .select2-selection__rendered {
+            color: var(--fk-list-soft, #c8d5ea) !important;
+            line-height: 42px !important;
+        }
+        body.fk-shell .live-location-page .location-filter-form .btn {
+            height: 44px !important;
+            min-height: 44px !important;
             margin: 0 !important;
             border-radius: 10px !important;
             text-transform: none !important;
         }
         .live-location-page .location-actions {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             align-items: center;
-            justify-content: flex-end;
             gap: 10px;
-            flex-wrap: wrap;
             width: 100%;
             padding: 0;
         }
-        .live-location-page .location-actions .btn { padding: 9px 13px !important; font-size: 11px !important; white-space: nowrap; }
-        .live-location-page .location-actions .all-users-location-btn {
+        body.fk-shell .live-location-page .location-actions .btn {
+            width: 100%;
+            padding: 9px 10px !important;
+            border: 1px solid rgba(90, 130, 220, .25) !important;
+            background: rgba(5, 14, 36, .76) !important;
+            color: var(--fk-list-heading, #f1f5ff) !important;
+            box-shadow: 0 7px 16px rgba(0, 0, 0, .16) !important;
+            font-size: 10px !important;
+            font-weight: 600 !important;
+            white-space: nowrap;
+        }
+        body.fk-shell .live-location-page .location-actions .btn:hover,
+        body.fk-shell .live-location-page .location-actions .btn:focus,
+        body.fk-shell .live-location-page .location-actions .btn:active {
+            border-color: rgba(34, 211, 238, .46) !important;
+            background: rgba(13, 35, 67, .94) !important;
+            color: #fff !important;
+            box-shadow: 0 7px 18px rgba(0, 0, 0, .2) !important;
+        }
+        body.fk-shell .live-location-page .location-actions .all-users-location-btn {
             border: 1px solid rgba(34, 211, 238, .38) !important;
-            background: rgba(34, 211, 238, .12) !important;
+            background: rgba(34, 211, 238, .08) !important;
             color: var(--fk-list-accent, #22d3ee) !important;
             font-size: 9px !important;
             letter-spacing: .1px;
@@ -107,12 +139,12 @@
             .live-location-page .location-action-field { grid-column: span 12; }
             .live-location-page .map-column { border-right: 0; border-bottom: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)); }
             .live-location-page #map, .live-location-page .activity-column { height: 430px !important; }
-            .live-location-page .location-actions { justify-content: flex-start; }
+            .live-location-page .location-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 575px) {
             .live-location-page .location-filter-field,
             .live-location-page .location-date-field { grid-column: span 12; }
-            .live-location-page .location-actions .btn { width: 100%; }
+            .live-location-page .location-actions { grid-template-columns: 1fr; }
         }
     </style>
     <div class="row mt-4 live-location-page">
