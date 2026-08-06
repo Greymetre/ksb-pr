@@ -1076,8 +1076,10 @@ $checks = CheckIn::where('user_id', $request->user_id)
                 if ($attan) {
                     $dayCoordinates = [];
                     $dayCoordinates[] = [
-                        'latitude' => $attan->punchin_latitude,
-                        'longitude' => $attan->punchin_longitude,
+                        // Punch-in values are stored in opposite legacy columns by
+                        // AttendanceController. Normalize them for Google Maps.
+                        'latitude' => $attan->punchin_longitude,
+                        'longitude' => $attan->punchin_latitude,
                         'name' => 'Punch In',
                         'date' => $date,
                         'time' => $attan->punchin_time ? Carbon::createFromFormat('H:i:s', $attan->punchin_time)->format('g:i A') : '-',
