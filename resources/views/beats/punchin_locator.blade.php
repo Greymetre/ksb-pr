@@ -31,12 +31,20 @@
         .punch-locator-page .gm-style .gm-style-iw-c { max-width:290px !important; padding:0 !important; border:1px solid rgba(90,130,220,.26); border-radius:11px; background:#0b1c3c !important; box-shadow:0 14px 32px rgba(0,0,0,.32); }
         .punch-locator-page .gm-style .gm-style-iw-d { overflow:hidden !important; }
         .punch-locator-page .gm-style .gm-style-iw-tc::after { background:#0b1c3c !important; }
-        .punch-locator-page .gm-style .gm-ui-hover-effect { top:4px !important; right:4px !important; width:28px !important; height:28px !important; filter:invert(1); opacity:.68; }
-        .punch-popup { width:260px; padding:14px 34px 14px 14px; font-family:'Inter',sans-serif; }
+        .punch-locator-page .gm-style .gm-style-iw-chr { position:absolute !important; z-index:3; top:0; right:0; width:34px; height:34px !important; min-height:0 !important; }
+        body.fk-shell .punch-locator-page .gm-style button.gm-ui-hover-effect {
+            top:5px !important; right:5px !important; width:26px !important; height:26px !important; min-height:26px !important;
+            margin:0 !important; padding:0 !important; border:0 !important; border-radius:7px !important;
+            outline:0 !important; background:rgba(255,255,255,.05) !important; box-shadow:none !important; opacity:.72;
+        }
+        .punch-locator-page .gm-style button.gm-ui-hover-effect:hover { background:rgba(255,255,255,.1) !important; opacity:1; }
+        .punch-locator-page .gm-style button.gm-ui-hover-effect > span { width:15px !important; height:15px !important; margin:5px !important; filter:invert(1); }
+        .punch-locator-page .gm-style button.gm-ui-hover-effect > img { width:15px !important; height:15px !important; margin:5px !important; filter:invert(1); }
+        .punch-popup { box-sizing:border-box; width:260px; padding:15px 38px 15px 15px; font-family:'Inter',sans-serif; text-align:left; }
         .punch-popup-name { color:#f1f5ff; font-size:13px; font-weight:800; line-height:1.3; }
         .punch-popup-role { margin-top:3px; color:#8ea2ce; font-size:10px; }
-        .punch-popup-address { margin-top:12px; color:#b8c6e4; font-size:10px; line-height:1.45; }
-        .punch-popup-time { margin-top:7px; color:#22d3ee; font-size:11px; font-weight:800; }
+        .punch-popup-address { margin-top:11px; color:#b8c6e4; font-size:10px; line-height:1.45; overflow-wrap:anywhere; unicode-bidi:plaintext; }
+        .punch-popup-time { margin-top:8px; color:#22d3ee; font-size:10px; font-weight:800; line-height:1.35; }
         @media(max-width:991px){.punch-locator-shell{height:auto;min-height:0;flex-wrap:wrap}.punch-locator-sidebar{flex:0 0 100%;width:100%;height:360px;border-right:0;border-bottom:1px solid rgba(90,130,220,.18)}.punch-map-wrap{flex:0 0 100%;height:430px}.punch-filter-grid{grid-template-columns:1fr 1fr}}
         @media(max-width:575px){.punch-filter-grid{grid-template-columns:1fr}.punch-list{height:calc(100% - 148px)}}
     </style>
