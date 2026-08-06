@@ -19,13 +19,13 @@
         body.fk-shell .content .punch-locator-page input.form-control.punch-search::placeholder { color:var(--fk-list-soft,#c8d5ea) !important; opacity:.72 !important; }
         body.fk-shell .punch-locator-page .punch-zone { padding:0 30px 0 10px !important; }
         .punch-list { height:calc(100% - 104px); padding:8px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:rgba(56,189,248,.3) transparent; }
-        .punch-user { display:flex; gap:10px; width:100%; margin-bottom:6px; padding:11px; border:1px solid transparent; border-radius:10px; cursor:pointer; transition:.18s ease; }
+        .punch-user { display:flex; align-items:flex-start; gap:9px; width:100%; margin-bottom:5px; padding:9px; border:1px solid transparent; border-radius:10px; cursor:pointer; transition:.18s ease; }
         .punch-user:hover,.punch-user.active { border-color:rgba(56,189,248,.22); background:rgba(56,189,248,.07); }
         .punch-avatar { display:grid; place-items:center; flex:0 0 36px; width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#3b82f6,#22d3ee); color:#fff; font-size:10px; font-weight:800; }
         .punch-copy { min-width:0; flex:1; }
-        .punch-name { overflow:hidden; color:#eef4ff; font-size:11px; font-weight:750; text-overflow:ellipsis; white-space:nowrap; }
-        .punch-role,.punch-address { overflow:hidden; margin-top:3px; color:#8294bd; font-size:8px; text-overflow:ellipsis; white-space:nowrap; }
-        .punch-time { margin-top:5px; color:#22d3ee; font-size:9px; font-weight:800; }
+        .punch-name { overflow:hidden; color:#eef4ff; font-size:11px; font-weight:750; line-height:1.2; text-overflow:ellipsis; white-space:nowrap; }
+        .punch-role,.punch-address { overflow:hidden; margin-top:2px; color:#8294bd; font-size:8px; line-height:1.2; text-overflow:ellipsis; white-space:nowrap; }
+        .punch-time { margin-top:3px; color:#22d3ee; font-size:9px; font-weight:800; line-height:1.2; }
         .punch-empty { padding:40px 12px; color:#8291ad; font-size:11px; text-align:center; }
         .punch-map-wrap { flex:1 1 auto; min-width:0; }
         #punchInMap { width:100%; height:100%; background:#071126; }
