@@ -1326,17 +1326,30 @@ break;
         ->groupBy('userid')
         ->pluck('id');
 
-      $userNames = User::whereIn('id', $accessibleUserIds)->pluck('name', 'id');
+      $usersById = User::with(['getdesignation', 'getbranch', 'getdivision'])
+        ->whereIn('id', $accessibleUserIds)
+        ->get()
+        ->keyBy('id');
       $locations = UserLiveLocation::whereIn('id', $latestLocationIds)
         ->get()
-        ->map(function ($location) use ($userNames) {
+        ->map(function ($location) use ($usersById) {
+          $user = $usersById->get($location->userid);
+          $reportedAt = $location->created_at ? Carbon::parse($location->created_at) : null;
+          $isLive = $reportedAt && $reportedAt->diffInMinutes(Carbon::now()) <= 15;
+
           return [
             'user_id' => $location->userid,
-            'name' => $userNames[$location->userid] ?? 'Unknown user',
+            'name' => $user->name ?? 'Unknown user',
+            'employee_code' => $user->employee_codes ?? '',
+            'designation' => optional($user?->getdesignation)->designation_name ?? 'Field employee',
+            'branch' => optional($user?->getbranch)->branch_name ?? '',
+            'division' => optional($user?->getdivision)->division_name ?? '',
             'latitude' => $location->latitude,
             'longitude' => $location->longitude,
             'address' => $location->address ?: 'Address unavailable',
-            'time' => $location->time ?: optional($location->created_at)->format('h:i A'),
+            'time' => $location->time ?: optional($reportedAt)->format('h:i A'),
+            'reported_at' => optional($reportedAt)->toIso8601String(),
+            'status' => $isLive ? 'Live' : 'Stale',
           ];
         })
         ->values();

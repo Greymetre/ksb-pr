@@ -101,6 +101,43 @@
             background: rgba(5, 14, 36, .62);
         }
         .live-location-page .location-workspace.is-visible { display: flex; }
+        .live-location-page .live-users-panel {
+            height: 520px;
+            padding: 0 !important;
+            overflow: hidden;
+            border-right: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22));
+            background: rgba(6, 17, 39, .94);
+        }
+        .live-location-page .live-users-head { padding: 15px; border-bottom: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)); }
+        .live-location-page .live-users-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .live-location-page .live-users-title { margin: 0; color: var(--fk-list-heading, #f1f5ff); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; }
+        .live-location-page .live-users-count { padding: 5px 8px; border: 1px solid rgba(34, 211, 238, .28); border-radius: 7px; background: rgba(34, 211, 238, .08); color: #67e8f9; font-size: 9px; font-weight: 800; }
+        .live-location-page .live-users-search-wrap { position: relative; margin-top: 12px; }
+        .live-location-page .live-users-search-wrap .material-icons { position: absolute; top: 50%; left: 11px; transform: translateY(-50%); color: var(--fk-list-dim, #8291ad); font-size: 16px; }
+        body.fk-shell .live-location-page .live-users-search {
+            width: 100%; height: 38px !important; min-height: 38px !important; padding: 0 12px 0 34px !important;
+            border: 1px solid rgba(90, 130, 220, .26) !important; border-radius: 9px !important;
+            background: rgba(5, 14, 36, .72) !important; color: var(--fk-list-heading, #f1f5ff) !important; box-shadow: none !important;
+        }
+        .live-location-page .live-users-filters { display: flex; gap: 6px; margin-top: 10px; }
+        body.fk-shell .live-location-page .live-user-filter {
+            min-height: 28px !important; height: 28px !important; padding: 0 9px !important;
+            border: 1px solid rgba(90, 130, 220, .24) !important; border-radius: 999px !important;
+            background: transparent !important; color: var(--fk-list-dim, #8291ad) !important; box-shadow: none !important; font-size: 9px !important;
+        }
+        body.fk-shell .live-location-page .live-user-filter.active { border-color: rgba(34, 211, 238, .45) !important; background: rgba(34, 211, 238, .1) !important; color: #67e8f9 !important; }
+        .live-location-page .live-users-list { height: calc(100% - 145px); padding: 8px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(34, 211, 238, .35) transparent; }
+        .live-location-page .live-user-row { display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 7px; padding: 10px; border: 1px solid transparent; border-radius: 10px; background: transparent; cursor: pointer; transition: .18s ease; }
+        .live-location-page .live-user-row:hover, .live-location-page .live-user-row.active { border-color: rgba(34, 211, 238, .25); background: rgba(34, 211, 238, .07); }
+        .live-location-page .live-user-avatar { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px; border: 1px solid rgba(34, 211, 238, .28); border-radius: 10px; background: rgba(34, 211, 238, .1); color: #67e8f9; font-size: 10px; font-weight: 800; }
+        .live-location-page .live-user-copy { min-width: 0; flex: 1; }
+        .live-location-page .live-user-name { overflow: hidden; color: var(--fk-list-heading, #f1f5ff); font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+        .live-location-page .live-user-role, .live-location-page .live-user-address { overflow: hidden; margin-top: 3px; color: var(--fk-list-dim, #8291ad); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+        .live-location-page .live-user-status { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; color: var(--fk-list-dim, #8291ad); font-size: 8px; font-weight: 700; text-transform: uppercase; }
+        .live-location-page .live-user-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; }
+        .live-location-page .live-user-status.is-live { color: #6ee7b7; }
+        .live-location-page .live-user-status.is-live::before { background: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, .65); }
+        .live-location-page .live-users-empty { padding: 36px 10px; color: var(--fk-list-dim, #8291ad); font-size: 11px; text-align: center; }
         .live-location-page .map-column { padding: 0 !important; border-right: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)); }
         .live-location-page #map { width: 100% !important; height: 520px !important; background: #071126; }
         .live-location-page .activity-column { height: 520px; padding: 0 !important; overflow: hidden; }
@@ -140,6 +177,7 @@
             .live-location-page .location-date-field { grid-column: span 6; }
             .live-location-page .location-action-field { grid-column: span 12; }
             .live-location-page .map-column { border-right: 0; border-bottom: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)); }
+            .live-location-page .live-users-panel { height: 360px; border-right: 0; border-bottom: 1px solid var(--fk-list-border, rgba(90, 130, 220, .22)); }
             .live-location-page #map, .live-location-page .activity-column { height: 430px !important; }
             .live-location-page .location-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
@@ -257,6 +295,24 @@
                         </div>
                     </form>
                     <div class="row location-workspace" id="locationWorkspace">
+                        <aside class="col-lg-4 live-users-panel d-none" id="liveUsersPanel">
+                            <div class="live-users-head">
+                                <div class="live-users-title-row">
+                                    <h3 class="live-users-title">Field team</h3>
+                                    <span class="live-users-count" id="liveUsersCount">0 records</span>
+                                </div>
+                                <div class="live-users-search-wrap">
+                                    <i class="material-icons">search</i>
+                                    <input type="search" class="form-control live-users-search" id="liveUsersSearch" placeholder="Search employee…" autocomplete="off">
+                                </div>
+                                <div class="live-users-filters">
+                                    <button type="button" class="btn live-user-filter active" data-status="all">All</button>
+                                    <button type="button" class="btn live-user-filter" data-status="Live">Live</button>
+                                    <button type="button" class="btn live-user-filter" data-status="Stale">Stale</button>
+                                </div>
+                            </div>
+                            <div class="live-users-list" id="liveUsersList"></div>
+                        </aside>
                         <div class="col-lg-7 map-column" id="mapColumn">
                             <div id="map"></div>
                         </div>
@@ -274,16 +330,31 @@
     </div>
 
     <script type="text/javascript">
+        var liveUsersMap = null;
+        var liveUsersInfoWindow = null;
+        var liveUserLocations = [];
+        var liveUserMarkers = [];
+        var liveUserStatusFilter = 'all';
+
         $(document).ready(function() {
             $('#loader').hide();
+            $('#liveUsersSearch').on('input', applyLiveUserFilters);
+            $('.live-user-filter').on('click', function() {
+                liveUserStatusFilter = $(this).data('status');
+                $('.live-user-filter').removeClass('active');
+                $(this).addClass('active');
+                applyLiveUserFilters();
+            });
         })
 
         function showLocationWorkspace(showActivityDetails) {
             $('#locationWorkspace').addClass('is-visible');
             $('#activityColumn').toggleClass('d-none', !showActivityDetails);
+            $('#liveUsersPanel').toggleClass('d-none', showActivityDetails);
             $('#mapColumn')
                 .toggleClass('col-lg-7', showActivityDetails)
-                .toggleClass('col-lg-12', !showActivityDetails);
+                .toggleClass('col-lg-8', !showActivityDetails)
+                .removeClass('col-lg-12');
         }
 
         function showLocationAlert(message) {
@@ -357,49 +428,136 @@
         }
 
         function renderAllUsersMap(locations) {
+            liveUserLocations = locations.filter(function(location) {
+                var lat = parseFloat(location.latitude);
+                var lng = parseFloat(location.longitude);
+                return Number.isFinite(lat) && Number.isFinite(lng);
+            });
+
             if (!locations.length) {
                 $('#map').html('<div class="activity-state">No user locations have been reported today.</div>');
+                $('#liveUsersList').html('<div class="live-users-empty">No employees have reported a location today.</div>');
+                $('#liveUsersCount').text('0 records');
                 return;
             }
 
-            var map = new google.maps.Map(document.getElementById('map'), {
+            liveUsersMap = new google.maps.Map(document.getElementById('map'), {
                 zoom: 6,
                 center: { lat: 20.5937, lng: 78.9629 },
-                mapTypeId: google.maps.MapTypeId.ROADMAP
+                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                mapTypeControl: false,
+                streetViewControl: false
             });
             var bounds = new google.maps.LatLngBounds();
-            var infoWindow = new google.maps.InfoWindow();
-            var validLocationCount = 0;
+            liveUsersInfoWindow = new google.maps.InfoWindow();
+            liveUserMarkers = [];
 
-            locations.forEach(function(location) {
+            liveUserLocations.forEach(function(location) {
                 var position = { lat: parseFloat(location.latitude), lng: parseFloat(location.longitude) };
-                if (!Number.isFinite(position.lat) || !Number.isFinite(position.lng)) return;
-
-                validLocationCount++;
                 bounds.extend(position);
-                var marker = new google.maps.Marker({ map: map, position: position, title: location.name || 'User' });
-                marker.addListener('click', function() {
-                    var content = document.createElement('div');
-                    var name = document.createElement('strong');
-                    var details = document.createElement('div');
-                    var address = document.createElement('div');
-                    name.textContent = location.name || 'User';
-                    details.textContent = 'Last update: ' + (location.time || 'Unknown');
-                    address.textContent = location.address || 'Address unavailable';
-                    content.append(name, details, address);
-                    infoWindow.setContent(content);
-                    infoWindow.open(map, marker);
+                var marker = new google.maps.Marker({
+                    map: liveUsersMap,
+                    position: position,
+                    title: location.name || 'User',
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        fillColor: location.status === 'Live' ? '#34d399' : '#f59e0b',
+                        fillOpacity: 1,
+                        strokeColor: '#071329',
+                        strokeWeight: 3,
+                        scale: 9
+                    }
                 });
+                location.marker = marker;
+                marker.addListener('click', function() {
+                    focusLiveUser(location.user_id, false);
+                });
+                liveUserMarkers.push(marker);
             });
 
-            if (!validLocationCount) {
+            renderLiveUsersList(liveUserLocations);
+            if (!liveUserLocations.length) {
                 $('#map').html('<div class="activity-state">No valid user locations are available.</div>');
-            } else if (validLocationCount === 1) {
-                map.setCenter(bounds.getCenter());
-                map.setZoom(14);
+            } else if (liveUserLocations.length === 1) {
+                liveUsersMap.setCenter(bounds.getCenter());
+                liveUsersMap.setZoom(14);
             } else {
-                map.fitBounds(bounds, 50);
+                liveUsersMap.fitBounds(bounds, 50);
             }
+        }
+
+        function getLiveUserInitials(name) {
+            return (name || 'User').split(/\s+/).slice(0, 2).map(function(part) {
+                return part.charAt(0).toUpperCase();
+            }).join('');
+        }
+
+        function renderLiveUsersList(locations) {
+            var $list = $('#liveUsersList').empty();
+            $('#liveUsersCount').text(locations.length + (locations.length === 1 ? ' record' : ' records'));
+            if (!locations.length) {
+                $list.append('<div class="live-users-empty">No employees match the current filter.</div>');
+                return;
+            }
+
+            locations.forEach(function(location) {
+                var $row = $('<div>', { class: 'live-user-row', 'data-user-id': location.user_id });
+                var $avatar = $('<div>', { class: 'live-user-avatar', text: getLiveUserInitials(location.name) });
+                var $copy = $('<div>', { class: 'live-user-copy' });
+                $copy.append($('<div>', { class: 'live-user-name', text: location.name || 'Unknown user' }));
+                $copy.append($('<div>', { class: 'live-user-role', text: location.designation || 'Field employee' }));
+                $copy.append($('<div>', { class: 'live-user-address', text: location.address || 'Address unavailable' }));
+                $copy.append($('<div>', {
+                    class: 'live-user-status' + (location.status === 'Live' ? ' is-live' : ''),
+                    text: (location.status || 'Stale') + ' · ' + (location.time || 'Unknown')
+                }));
+                $row.append($avatar, $copy).on('click', function() {
+                    focusLiveUser(location.user_id, true);
+                });
+                $list.append($row);
+            });
+        }
+
+        function focusLiveUser(userId, moveMap) {
+            var location = liveUserLocations.find(function(item) {
+                return String(item.user_id) === String(userId);
+            });
+            if (!location || !location.marker || !liveUsersMap) return;
+
+            $('.live-user-row').removeClass('active');
+            $('.live-user-row[data-user-id="' + userId + '"]').addClass('active');
+            if (moveMap) {
+                liveUsersMap.panTo(location.marker.getPosition());
+                liveUsersMap.setZoom(14);
+            }
+
+            var content = document.createElement('div');
+            var name = document.createElement('strong');
+            var role = document.createElement('div');
+            var status = document.createElement('div');
+            var address = document.createElement('div');
+            name.textContent = (location.name || 'User') + (location.employee_code ? ' (' + location.employee_code + ')' : '');
+            role.textContent = location.designation || 'Field employee';
+            status.textContent = (location.status || 'Stale') + ' · Last update: ' + (location.time || 'Unknown');
+            address.textContent = location.address || 'Address unavailable';
+            content.append(name, role, status, address);
+            liveUsersInfoWindow.setContent(content);
+            liveUsersInfoWindow.open(liveUsersMap, location.marker);
+        }
+
+        function applyLiveUserFilters() {
+            var query = ($('#liveUsersSearch').val() || '').toLowerCase().trim();
+            var visible = liveUserLocations.filter(function(location) {
+                var matchesStatus = liveUserStatusFilter === 'all' || location.status === liveUserStatusFilter;
+                var haystack = [location.name, location.employee_code, location.designation, location.branch, location.division, location.address]
+                    .filter(Boolean).join(' ').toLowerCase();
+                return matchesStatus && (!query || haystack.indexOf(query) !== -1);
+            });
+            var visibleIds = new Set(visible.map(function(location) { return String(location.user_id); }));
+            liveUserLocations.forEach(function(location) {
+                if (location.marker) location.marker.setMap(visibleIds.has(String(location.user_id)) ? liveUsersMap : null);
+            });
+            renderLiveUsersList(visible);
         }
 
         function getLocationData(lat, lang) {
