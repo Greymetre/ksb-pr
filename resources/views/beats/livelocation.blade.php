@@ -160,6 +160,14 @@
             border: 1px solid rgba(90, 130, 220, .26) !important; border-radius: 9px !important;
             background: rgba(5, 14, 36, .72) !important; color: var(--fk-list-heading, #f1f5ff) !important; box-shadow: none !important;
         }
+        .live-location-page .live-users-zone-wrap { position: relative; margin-top: 9px; }
+        .live-location-page .live-users-zone-wrap .material-icons { position: absolute; z-index: 1; top: 50%; left: 11px; transform: translateY(-50%); color: var(--fk-list-dim, #8291ad); font-size: 16px; pointer-events: none; }
+        body.fk-shell .live-location-page .live-users-zone-filter {
+            width: 100%; height: 38px !important; min-height: 38px !important; padding: 0 34px !important;
+            border: 1px solid rgba(90, 130, 220, .26) !important; border-radius: 9px !important;
+            background: rgba(5, 14, 36, .72) !important; color: var(--fk-list-soft, #c8d5ea) !important;
+            box-shadow: none !important; outline: none; appearance: auto;
+        }
         .live-location-page .live-users-filters { display: flex; gap: 6px; margin-top: 10px; }
         body.fk-shell .live-location-page .live-user-filter {
             min-height: 28px !important; height: 28px !important; padding: 0 9px !important;
@@ -167,7 +175,7 @@
             background: transparent !important; color: var(--fk-list-dim, #8291ad) !important; box-shadow: none !important; font-size: 9px !important;
         }
         body.fk-shell .live-location-page .live-user-filter.active { border-color: rgba(34, 211, 238, .45) !important; background: rgba(34, 211, 238, .1) !important; color: #67e8f9 !important; }
-        .live-location-page .live-users-list { height: calc(100% - 145px); padding: 8px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(34, 211, 238, .35) transparent; }
+        .live-location-page .live-users-list { height: calc(100% - 192px); padding: 8px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(34, 211, 238, .35) transparent; }
         .live-location-page .live-user-row { display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 7px; padding: 10px; border: 1px solid transparent; border-radius: 10px; background: transparent; cursor: pointer; transition: .18s ease; }
         .live-location-page .live-user-row:hover, .live-location-page .live-user-row.active { border-color: rgba(34, 211, 238, .25); background: rgba(34, 211, 238, .07); }
         .live-location-page .live-user-avatar { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px; border: 1px solid rgba(34, 211, 238, .28); border-radius: 10px; background: rgba(34, 211, 238, .1); color: #67e8f9; font-size: 10px; font-weight: 800; }
@@ -282,10 +290,10 @@
                         </span>
                     </div>
                     @endif
+                    @if($locationMode === 'geolocator')
                     <form target="_blank" method="post" action="{{url('map-all')}}" class="location-filter-form" novalidate onsubmit="return validateLocationSubmit(event)">
                         @csrf
                         <div class="location-filter-grid {{ $locationMode === 'live' ? 'is-live-only' : '' }}">
-                            @if($locationMode === 'geolocator')
                             <div class="location-filter-field">
                                 <div class="dropdown bootstrap-select show-tick">
                                     <select class="selectpicker" multiple id="branch_id" name="branch_id" data-style="location-select-control" title="Choose Branch" data-size="10" tabindex="-98">
@@ -346,22 +354,16 @@
                                         autocomplete="off" readonly>
                                 </div>
                             </div>
-                            @endif
                             <div class="location-action-field">
                               <div class="location-actions {{ $locationMode === 'geolocator' ? 'geolocator-actions' : '' }}">
-                                @if($locationMode === 'live')
-                                <button type="button" class="btn btn-sm location-action-btn all-users-location-btn" onclick="getAllUsersLiveLocations()">
-                                    <i class="material-icons mr-1">groups</i> User Live Location
-                                </button>
-                                @else
                                 <button type="button" class="btn btn-sm location-action-btn" onclick="getActivityData()">Activity Detailed</button>
                                 <input type="submit" name="submit" class="btn btn-sm location-action-btn" value="Complete Map Activity">
                                 <input type="submit" name="submit" class="btn btn-sm location-action-btn" value="Track Activity">
-                                @endif
                               </div>
                             </div>
                         </div>
                     </form>
+                    @endif
                     <div class="row location-workspace" id="locationWorkspace">
                         <aside class="col-lg-4 live-users-panel d-none" id="liveUsersPanel">
                             <div class="live-users-head">
@@ -372,6 +374,12 @@
                                 <div class="live-users-search-wrap">
                                     <i class="material-icons">search</i>
                                     <input type="search" class="form-control live-users-search" id="liveUsersSearch" placeholder="Search employee…" autocomplete="off">
+                                </div>
+                                <div class="live-users-zone-wrap">
+                                    <i class="material-icons">public</i>
+                                    <select class="form-control live-users-zone-filter" id="liveUsersZoneFilter" aria-label="Filter employees by zone">
+                                        <option value="all">All zones</option>
+                                    </select>
                                 </div>
                                 <div class="live-users-filters">
                                     <button type="button" class="btn live-user-filter active" data-status="all">All</button>
@@ -404,10 +412,15 @@
         var liveUserLocations = [];
         var liveUserMarkers = [];
         var liveUserStatusFilter = 'all';
+        var liveUserZoneFilter = 'all';
 
         $(document).ready(function() {
             $('#loader').hide();
             $('#liveUsersSearch').on('input', applyLiveUserFilters);
+            $('#liveUsersZoneFilter').on('change', function() {
+                liveUserZoneFilter = $(this).val() || 'all';
+                applyLiveUserFilters();
+            });
             $('.live-user-filter').on('click', function() {
                 liveUserStatusFilter = $(this).data('status');
                 $('.live-user-filter').removeClass('active');
@@ -501,6 +514,7 @@
 
         function renderAllUsersMap(locations) {
             liveUserLocations = locations;
+            populateLiveUserZoneFilter(locations);
             var mappedLocations = locations.filter(function(location) {
                 var lat = parseFloat(location.latitude);
                 var lng = parseFloat(location.longitude);
@@ -553,16 +567,32 @@
         }
 
         function makeLiveUserMarkerIcon(status) {
-            var color = status === 'Online' ? '#2fbd3b' : '#fb7185';
-            var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="38" height="50" viewBox="0 0 38 50">' +
-                '<defs><filter id="s" x="-60%" y="-30%" width="220%" height="190%"><feDropShadow dx="3" dy="5" stdDeviation="3" flood-color="#000" flood-opacity=".45"/></filter></defs>' +
-                '<path filter="url(#s)" d="M19 1C9.1 1 1 9.1 1 19c0 13.3 18 29 18 29s18-15.7 18-29C37 9.1 28.9 1 19 1z" fill="' + color + '" stroke="#168a24" stroke-width="2"/>' +
-                '<circle cx="19" cy="18" r="6.5" fill="#fff" stroke="rgba(0,0,0,.18)" stroke-width="2"/></svg>';
+            var online = status === 'Online';
+            var color = online ? '#22c55e' : '#fb7185';
+            var stroke = online ? '#15803d' : '#be123c';
+            var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="40" viewBox="0 0 30 40">' +
+                '<defs><filter id="s" x="-35%" y="-20%" width="170%" height="165%"><feDropShadow dx="1" dy="2" stdDeviation="1.2" flood-color="#020617" flood-opacity=".42"/></filter></defs>' +
+                '<path filter="url(#s)" d="M15 1.25A13.25 13.25 0 0 0 1.75 14.5C1.75 24.1 15 38.5 15 38.5S28.25 24.1 28.25 14.5A13.25 13.25 0 0 0 15 1.25Z" fill="' + color + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+                '<circle cx="15" cy="14.3" r="4.6" fill="#fff" stroke="' + stroke + '" stroke-width="1.2"/></svg>';
             return {
                 url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
-                scaledSize: new google.maps.Size(30, 40),
-                anchor: new google.maps.Point(15, 38)
+                scaledSize: new google.maps.Size(24, 32),
+                anchor: new google.maps.Point(12, 31)
             };
+        }
+
+        function populateLiveUserZoneFilter(locations) {
+            var currentZone = $('#liveUsersZoneFilter').val() || 'all';
+            var zones = locations.map(function(location) { return (location.division || '').trim(); })
+                .filter(Boolean)
+                .filter(function(zone, index, values) { return values.indexOf(zone) === index; })
+                .sort(function(first, second) { return first.localeCompare(second); });
+            var $zoneFilter = $('#liveUsersZoneFilter').empty().append($('<option>', { value: 'all', text: 'All zones' }));
+            zones.forEach(function(zone) {
+                $zoneFilter.append($('<option>', { value: zone, text: zone }));
+            });
+            liveUserZoneFilter = zones.indexOf(currentZone) !== -1 ? currentZone : 'all';
+            $zoneFilter.val(liveUserZoneFilter);
         }
 
         function getLiveUserInitials(name) {
@@ -662,15 +692,26 @@
             var query = ($('#liveUsersSearch').val() || '').toLowerCase().trim();
             var visible = liveUserLocations.filter(function(location) {
                 var matchesStatus = liveUserStatusFilter === 'all' || location.status === liveUserStatusFilter;
+                var matchesZone = liveUserZoneFilter === 'all' || location.division === liveUserZoneFilter;
                 var haystack = [location.name, location.employee_code, location.designation, location.branch, location.division, location.address]
                     .filter(Boolean).join(' ').toLowerCase();
-                return matchesStatus && (!query || haystack.indexOf(query) !== -1);
+                return matchesStatus && matchesZone && (!query || haystack.indexOf(query) !== -1);
             });
             var visibleIds = new Set(visible.map(function(location) { return String(location.user_id); }));
             liveUserLocations.forEach(function(location) {
                 if (location.marker) location.marker.setMap(visibleIds.has(String(location.user_id)) ? liveUsersMap : null);
             });
             renderLiveUsersList(visible);
+            if (liveUsersInfoWindow) liveUsersInfoWindow.close();
+            var visibleMapped = visible.filter(function(location) { return location.marker; });
+            if (liveUsersMap && visibleMapped.length === 1) {
+                liveUsersMap.setCenter(visibleMapped[0].marker.getPosition());
+                liveUsersMap.setZoom(14);
+            } else if (liveUsersMap && visibleMapped.length > 1) {
+                var filteredBounds = new google.maps.LatLngBounds();
+                visibleMapped.forEach(function(location) { filteredBounds.extend(location.marker.getPosition()); });
+                liveUsersMap.fitBounds(filteredBounds, 50);
+            }
         }
 
         function getLocationData(lat, lang) {
