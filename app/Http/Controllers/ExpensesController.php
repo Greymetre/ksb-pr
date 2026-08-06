@@ -1012,35 +1012,6 @@ class ExpensesController extends Controller
 
     public function all_map(Request $request)
     {
-        if ($request->submit === 'All Users Live Location') {
-            $accessibleUserIds = getUsersReportingToAuth();
-            $latestLocationIds = UserLiveLocation::query()
-                ->whereIn('userid', $accessibleUserIds)
-                ->whereDate('created_at', Carbon::today())
-                ->whereNotNull('latitude')
-                ->whereNotNull('longitude')
-                ->selectRaw('MAX(id) as id')
-                ->groupBy('userid')
-                ->pluck('id');
-
-            $userNames = User::whereIn('id', $accessibleUserIds)->pluck('name', 'id');
-            $locations = UserLiveLocation::whereIn('id', $latestLocationIds)
-                ->get()
-                ->map(function ($location) use ($userNames) {
-                    return [
-                        'user_id' => $location->userid,
-                        'name' => $userNames[$location->userid] ?? 'Unknown user',
-                        'latitude' => $location->latitude,
-                        'longitude' => $location->longitude,
-                        'address' => $location->address ?: 'Address unavailable',
-                        'time' => $location->time ?: optional($location->created_at)->format('h:i A'),
-                    ];
-                })
-                ->values();
-
-            return view('map.live-users', compact('locations'));
-        }
-
         if ($request->submit == 'Track Activity') {
             $rules = [
                 'user_id'   => 'required',

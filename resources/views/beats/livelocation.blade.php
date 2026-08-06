@@ -185,7 +185,7 @@
                                 <input type="submit" name="submit" class="btn btn-primary btn-sm" value="Track Activity">
                             </div>
                             <div class="col-md-3 p-0 text-center">
-                                <button type="submit" name="submit" value="All Users Live Location" formnovalidate class="btn btn-sm all-users-location-btn">
+                                <button type="button" class="btn btn-sm all-users-location-btn" onclick="getAllUsersLiveLocations()">
                                     <i class="material-icons mr-1" style="font-size:16px">groups</i> All Users Live Location
                                 </button>
                             </div>
@@ -210,10 +210,75 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
-            // getActivityData();
             $('#loader').hide();
-            getActivityData();
         })
+
+        function getAllUsersLiveLocations() {
+            var $button = $('.all-users-location-btn');
+            var originalContent = $button.html();
+            $button.prop('disabled', true).html('<i class="material-icons mr-1" style="font-size:16px">sync</i> Loading…');
+
+            $.ajax({
+                url: "{{ route('livelocation.all-users') }}",
+                dataType: 'json',
+                type: 'GET',
+                success: function(response) {
+                    renderAllUsersMap(response.locations || []);
+                },
+                error: function() {
+                    $('#map').html('<div class="activity-state">Unable to load live locations. Please try again.</div>');
+                },
+                complete: function() {
+                    $button.prop('disabled', false).html(originalContent);
+                }
+            });
+        }
+
+        function renderAllUsersMap(locations) {
+            if (!locations.length) {
+                $('#map').html('<div class="activity-state">No user locations have been reported today.</div>');
+                return;
+            }
+
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 6,
+                center: { lat: 20.5937, lng: 78.9629 },
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            });
+            var bounds = new google.maps.LatLngBounds();
+            var infoWindow = new google.maps.InfoWindow();
+            var validLocationCount = 0;
+
+            locations.forEach(function(location) {
+                var position = { lat: parseFloat(location.latitude), lng: parseFloat(location.longitude) };
+                if (!Number.isFinite(position.lat) || !Number.isFinite(position.lng)) return;
+
+                validLocationCount++;
+                bounds.extend(position);
+                var marker = new google.maps.Marker({ map: map, position: position, title: location.name || 'User' });
+                marker.addListener('click', function() {
+                    var content = document.createElement('div');
+                    var name = document.createElement('strong');
+                    var details = document.createElement('div');
+                    var address = document.createElement('div');
+                    name.textContent = location.name || 'User';
+                    details.textContent = 'Last update: ' + (location.time || 'Unknown');
+                    address.textContent = location.address || 'Address unavailable';
+                    content.append(name, details, address);
+                    infoWindow.setContent(content);
+                    infoWindow.open(map, marker);
+                });
+            });
+
+            if (!validLocationCount) {
+                $('#map').html('<div class="activity-state">No valid user locations are available.</div>');
+            } else if (validLocationCount === 1) {
+                map.setCenter(bounds.getCenter());
+                map.setZoom(14);
+            } else {
+                map.fitBounds(bounds, 50);
+            }
+        }
 
         function getLocationData(lat, lang) {
             if (lat !== '' && lang !== '' && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lang))) {

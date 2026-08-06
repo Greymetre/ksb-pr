@@ -25,6 +25,7 @@
   use App\Http\Requests\BeatRequest;
   use App\Models\MasterDistributor;
   use App\Models\SecondaryCustomer;
+  use App\Models\UserLiveLocation;
 
   class BeatController extends Controller
   {
@@ -1311,6 +1312,36 @@ break;
       }
 
       return view('beats.livelocation', compact('users', 'branches', 'divisions', 'departments', 'date', 'user_id'));
+    }
+
+    public function allUsersLiveLocations()
+    {
+      $accessibleUserIds = getUsersReportingToAuth();
+      $latestLocationIds = UserLiveLocation::query()
+        ->whereIn('userid', $accessibleUserIds)
+        ->whereDate('created_at', Carbon::today())
+        ->whereNotNull('latitude')
+        ->whereNotNull('longitude')
+        ->selectRaw('MAX(id) as id')
+        ->groupBy('userid')
+        ->pluck('id');
+
+      $userNames = User::whereIn('id', $accessibleUserIds)->pluck('name', 'id');
+      $locations = UserLiveLocation::whereIn('id', $latestLocationIds)
+        ->get()
+        ->map(function ($location) use ($userNames) {
+          return [
+            'user_id' => $location->userid,
+            'name' => $userNames[$location->userid] ?? 'Unknown user',
+            'latitude' => $location->latitude,
+            'longitude' => $location->longitude,
+            'address' => $location->address ?: 'Address unavailable',
+            'time' => $location->time ?: optional($location->created_at)->format('h:i A'),
+          ];
+        })
+        ->values();
+
+      return response()->json(['status' => true, 'locations' => $locations]);
     }
 
   public function globalScheduleForm()
