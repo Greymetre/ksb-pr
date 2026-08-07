@@ -1,4 +1,5 @@
 <x-app-layout>
+    @php($isCustomerLocator = ($locatorMode ?? 'punch') === 'customer')
     <script src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}" type="text/javascript"></script>
     <style>
         .punch-locator-page { margin-top: 0 !important; }
@@ -54,19 +55,19 @@
         <div class="col-lg-12">
             <div class="fk-list-page-head">
                 <div class="fk-list-heading-block">
-                    <div class="fk-list-breadcrumb"><span>CRM</span><span>&rsaquo;</span><span class="fk-current">USER PUNCH-IN LOCATOR</span></div>
-                    <div class="fk-list-title-row"><h1 class="fk-list-title">User Punch-In Locator</h1></div>
+                    <div class="fk-list-breadcrumb"><span>CRM</span><span>&rsaquo;</span><span class="fk-current">{{ $isCustomerLocator ? 'CUSTOMER LOCATOR' : 'USER PUNCH-IN LOCATOR' }}</span></div>
+                    <div class="fk-list-title-row"><h1 class="fk-list-title">{{ $isCustomerLocator ? 'Customer Check-In Map' : 'User Punch-In Locator' }}</h1></div>
                 </div>
             </div>
             <section class="punch-locator-shell">
                 <aside class="punch-locator-sidebar">
                     <div class="punch-locator-head">
                         <div class="punch-locator-title-row">
-                            <h2 class="punch-locator-title">Punch-ins today</h2>
+                            <h2 class="punch-locator-title">{{ $isCustomerLocator ? 'Customer check-ins today' : 'Punch-ins today' }}</h2>
                             <span class="punch-locator-count" id="punchCount">0 records</span>
                         </div>
                         <div class="punch-filter-grid">
-                            <div class="punch-search-wrap"><i class="material-icons">search</i><input type="search" class="form-control punch-search" id="punchSearch" placeholder="Search user…" autocomplete="off"></div>
+                            <div class="punch-search-wrap"><i class="material-icons">search</i><input type="search" class="form-control punch-search" id="punchSearch" placeholder="{{ $isCustomerLocator ? 'Search customer…' : 'Search user…' }}" autocomplete="off"></div>
                             <select class="form-control punch-zone" id="punchZone" aria-label="Filter punch-ins by zone"><option value="all">All zones</option></select>
                         </div>
                     </div>
@@ -79,6 +80,7 @@
 
     <script>
         var punchIns = @json($punchIns);
+        var isCustomerLocator = @json($isCustomerLocator);
         var punchMap;
         var punchInfoWindow;
 
@@ -135,10 +137,11 @@
         function renderPunchList(items) {
             var $list=$('#punchList').empty();
             $('#punchCount').text(items.length+(items.length===1?' record':' records'));
-            if(!items.length){$list.append('<div class="punch-empty">No punch-ins match the current filters.</div>');return;}
+            if(!items.length){$list.append($('<div>',{class:'punch-empty',text:isCustomerLocator?'No customer check-ins match the current filters.':'No punch-ins match the current filters.'}));return;}
             items.forEach(function(item){
                 var $row=$('<div>',{class:'punch-user','data-id':item.attendance_id});
-                var $copy=$('<div>',{class:'punch-copy'}).append($('<div>',{class:'punch-name',text:item.name}),$('<div>',{class:'punch-role',text:item.designation}),$('<div>',{class:'punch-address',text:item.address}),$('<div>',{class:'punch-time',text:'Punched in '+item.time}));
+                var $copy=$('<div>',{class:'punch-copy'}).append($('<div>',{class:'punch-name',text:item.name}),$('<div>',{class:'punch-role',text:item.designation}),$('<div>',{class:'punch-address',text:item.address}),$('<div>',{class:'punch-time',text:(isCustomerLocator?'Checked in ':'Punched in ')+item.time}));
+                if(isCustomerLocator&&item.representative){$copy.append($('<div>',{class:'punch-role',text:item.representative+' · '+item.representative_role}));}
                 $row.append($('<div>',{class:'punch-avatar',text:initials(item.name)}),$copy).on('click',function(){focusPunch(item.attendance_id,true);});
                 $list.append($row);
             });
@@ -149,7 +152,8 @@
             if(!item||!item.marker)return;
             $('.punch-user').removeClass('active'); $('.punch-user[data-id="'+id+'"]').addClass('active');
             if(moveMap){punchMap.panTo(item.marker.getPosition());punchMap.setZoom(14);}
-            var popup=$('<div>',{class:'punch-popup'}).append($('<div>',{class:'punch-popup-name',text:item.name}),$('<div>',{class:'punch-popup-role',text:item.designation}),$('<div>',{class:'punch-popup-address',text:item.address}),$('<div>',{class:'punch-popup-time',text:'Punched in at '+item.time}));
+            var popup=$('<div>',{class:'punch-popup'}).append($('<div>',{class:'punch-popup-name',text:item.name}),$('<div>',{class:'punch-popup-role',text:item.designation}),$('<div>',{class:'punch-popup-address',text:item.address}),$('<div>',{class:'punch-popup-time',text:(isCustomerLocator?'Checked in at ':'Punched in at ')+item.time}));
+            if(isCustomerLocator&&item.representative){popup.append($('<div>',{class:'punch-popup-role',text:item.representative+' · '+item.representative_role}));}
             punchInfoWindow.setContent(popup.get(0)); punchInfoWindow.open(punchMap,item.marker);
         }
 

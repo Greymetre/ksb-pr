@@ -1457,6 +1457,61 @@ break;
       return view('beats.punchin_locator', compact('punchIns'));
     }
 
+    public function customerLocator()
+    {
+      $accessibleUserIds = getUsersReportingToAuth();
+      $punchIns = CheckIn::with([
+          'customer.customertypes',
+          'user.getdesignation',
+          'user.getdivision',
+        ])
+        ->whereIn('user_id', $accessibleUserIds)
+        ->whereDate('checkin_date', Carbon::today())
+        ->where(function ($query) {
+          $query->whereNull('entity_type')->orWhere('entity_type', 'customer');
+        })
+        ->whereNotNull('customer_id')
+        ->whereNotNull('checkin_latitude')
+        ->whereNotNull('checkin_longitude')
+        ->orderBy('checkin_time')
+        ->get()
+        ->map(function ($checkIn) {
+          if (!is_numeric($checkIn->checkin_latitude) || !is_numeric($checkIn->checkin_longitude)) {
+            return null;
+          }
+
+          $latitude = (float) $checkIn->checkin_latitude;
+          $longitude = (float) $checkIn->checkin_longitude;
+          if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180 ||
+              (abs($latitude) < 0.000001 && abs($longitude) < 0.000001)) {
+            return null;
+          }
+
+          $customer = $checkIn->customer;
+          $user = $checkIn->user;
+          $customerName = optional($customer)->name ?: trim((optional($customer)->first_name ?? '') . ' ' . (optional($customer)->last_name ?? ''));
+
+          return [
+            'attendance_id' => $checkIn->id,
+            'name' => $customerName ?: 'Unknown customer',
+            'employee_code' => optional($customer)->customer_code ?: '',
+            'designation' => optional(optional($customer)->customertypes)->customertype_name ?: 'Customer',
+            'zone' => optional(optional($user)->getdivision)->division_name ?: '',
+            'representative' => optional($user)->name ?: 'Unknown employee',
+            'representative_role' => optional(optional($user)->getdesignation)->designation_name ?: 'Field employee',
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'address' => $checkIn->checkin_address ?: 'Address unavailable',
+            'time' => $checkIn->checkin_time ? Carbon::parse($checkIn->checkin_time)->format('h:i A') : '--',
+          ];
+        })
+        ->filter()
+        ->values();
+
+      $locatorMode = 'customer';
+      return view('beats.punchin_locator', compact('punchIns', 'locatorMode'));
+    }
+
   public function globalScheduleForm()
   {
       $users = User::where('status',1)->get();
