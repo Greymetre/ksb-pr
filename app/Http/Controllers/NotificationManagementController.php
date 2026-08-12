@@ -36,7 +36,6 @@ class NotificationManagementController extends Controller
             'state_id' => 'nullable|integer|exists:states,id',
             'district_id' => 'nullable|integer|exists:districts,id',
             'city_id' => 'nullable|integer|exists:cities,id',
-            'user_id' => 'nullable|integer|exists:users,id',
         ]);
 
         $districts = District::where('active', 'Y')
@@ -68,7 +67,8 @@ class NotificationManagementController extends Controller
             'state_id' => 'nullable|integer|exists:states,id',
             'district_id' => 'nullable|integer|exists:districts,id',
             'city_id' => 'nullable|integer|exists:cities,id',
-            'user_id' => 'nullable|integer|exists:users,id',
+            'user_ids' => 'nullable|array',
+            'user_ids.*' => 'integer|distinct|exists:users,id',
             'title' => 'required|string|max:150',
             'message' => 'required|string|max:1000',
             'image' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
@@ -119,7 +119,7 @@ class NotificationManagementController extends Controller
     private function usersQuery(array $filters = [])
     {
         return User::query()->where('active', 'Y')
-            ->when($filters['user_id'] ?? null, fn ($query, $id) => $query->where('users.id', $id))
+            ->when(!empty($filters['user_ids']), fn ($query) => $query->whereIn('users.id', $filters['user_ids']))
             ->when(
                 ($filters['state_id'] ?? null) || ($filters['district_id'] ?? null) || ($filters['city_id'] ?? null),
                 function ($query) use ($filters) {

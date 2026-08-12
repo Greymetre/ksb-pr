@@ -26,13 +26,29 @@
                                 </div>
                             @endforeach
                             <div class="col-md-3">
-                                <label for="user_id">User</label>
-                                <select class="form-control select2 notification-filter" name="user_id" id="user_id">
-                                    <option value="">All Users</option>
+                                <label>Users</label>
+                                <div class="border rounded p-2" style="max-height: 220px; overflow-y: auto;">
+                                    <div class="form-check mb-2">
+                                        <label class="form-check-label">
+                                            <input class="form-check-input" type="checkbox" id="select_all_users">
+                                            <strong>Select All</strong>
+                                            <span class="form-check-sign"><span class="check"></span></span>
+                                        </label>
+                                    </div>
+                                    <div id="userCheckboxes">
                                     @foreach($users as $user)
-                                        <option value="{{ $user->id }}">{{ $user->name }}{{ $user->mobile ? ' - '.$user->mobile : '' }}</option>
+                                        <div class="form-check">
+                                            <label class="form-check-label">
+                                                <input class="form-check-input user-checkbox" type="checkbox" name="user_ids[]"
+                                                    value="{{ $user->id }}" @checked(in_array($user->id, old('user_ids', [])))>
+                                                {{ $user->name }}{{ $user->mobile ? ' - '.$user->mobile : '' }}
+                                                <span class="form-check-sign"><span class="check"></span></span>
+                                            </label>
+                                        </div>
                                     @endforeach
-                                </select>
+                                    </div>
+                                </div>
+                                <small class="text-muted">Leave all unchecked to send to every matching user.</small>
                             </div>
                         </div>
                         <div class="row mt-4">
@@ -71,27 +87,47 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const filterUrl = @json(route('notification-management.filters'));
-            const state = $('#state_id'), district = $('#district_id'), city = $('#city_id'), user = $('#user_id');
+            const state = $('#state_id'), district = $('#district_id'), city = $('#city_id');
             let loading = false;
             function replaceOptions(element, rows, placeholder, labelKey, selected) {
                 element.empty().append(new Option(placeholder, ''));
                 rows.forEach(row => element.append(new Option(row[labelKey], row.id, false, String(row.id) === String(selected))));
                 element.trigger('change.select2');
             }
+            function replaceUsers(rows) {
+                const container = $('#userCheckboxes').empty();
+                rows.forEach(row => {
+                    const wrapper = $('<div>', {class: 'form-check'});
+                    const label = $('<label>', {class: 'form-check-label'});
+                    $('<input>', {class: 'form-check-input user-checkbox', type: 'checkbox', name: 'user_ids[]', value: row.id}).appendTo(label);
+                    label.append(document.createTextNode(' ' + row.display_name));
+                    label.append('<span class="form-check-sign"><span class="check"></span></span>');
+                    wrapper.append(label).appendTo(container);
+                });
+                $('#select_all_users').prop({checked: false, indeterminate: false});
+            }
+            function updateSelectAll() {
+                const checkboxes = $('.user-checkbox');
+                const checked = checkboxes.filter(':checked').length;
+                $('#select_all_users').prop('checked', checkboxes.length > 0 && checked === checkboxes.length)
+                    .prop('indeterminate', checked > 0 && checked < checkboxes.length);
+            }
             function refreshFilters(changedId) {
                 if (loading) return;
                 loading = true;
-                if (changedId === 'state_id') { district.val(''); city.val(''); user.val(''); }
-                else if (changedId === 'district_id') { city.val(''); user.val(''); }
-                else if (changedId === 'city_id') user.val('');
-                const values = {state_id: state.val(), district_id: district.val(), city_id: city.val(), user_id: user.val()};
+                if (changedId === 'state_id') { district.val(''); city.val(''); }
+                else if (changedId === 'district_id') city.val('');
+                const values = {state_id: state.val(), district_id: district.val(), city_id: city.val()};
                 $.get(filterUrl, values).done(function (response) {
                     replaceOptions(district, response.districts, 'All Districts', 'district_name', values.district_id);
                     replaceOptions(city, response.cities, 'All Cities', 'city_name', values.city_id);
-                    replaceOptions(user, response.users, 'All Users', 'display_name', values.user_id);
+                    replaceUsers(response.users);
                 }).always(() => loading = false);
             }
             $('.notification-filter').on('change', function () { refreshFilters(this.id); });
+            $('#select_all_users').on('change', function () { $('.user-checkbox').prop('checked', this.checked); updateSelectAll(); });
+            $('#userCheckboxes').on('change', '.user-checkbox', updateSelectAll);
+            updateSelectAll();
             $('#image').on('change', function () {
                 const file = this.files && this.files[0];
                 const preview = $('#notificationImagePreview');
