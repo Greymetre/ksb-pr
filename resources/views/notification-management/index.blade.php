@@ -30,7 +30,7 @@
         .news-user-remove { border: 0; padding: 0; background: transparent; color: #ff5d7a; font-weight: 700; cursor: pointer; }
         .news-user-dropdown {
             display: none; position: absolute; z-index: 1051; top: calc(100% + 2px); left: 0; width: 100%;
-            padding: 8px; overflow: hidden; border: 1px solid rgba(90, 130, 220, .34);
+            padding: 10px; overflow: hidden; border: 1px solid rgba(90, 130, 220, .34);
             border-radius: 14px; background: rgba(7, 18, 44, .98); box-shadow: 0 20px 48px rgba(0,0,0,.36);
         }
         .news-user-multiselect.open .news-user-dropdown { display: block; }
@@ -38,16 +38,34 @@
             width: 100% !important; height: 38px !important; padding: 0 12px !important;
             border: 1px solid var(--fk-form-border) !important; border-radius: 10px !important;
             background: var(--fk-form-bg) !important; color: var(--fk-list-text) !important;
+            font-size: 13px !important; font-weight: 300 !important; letter-spacing: 0 !important;
+            text-transform: none !important;
         }
         .news-user-search::placeholder { color: var(--fk-form-placeholder) !important; opacity: 1; }
-        .news-user-options { max-height: 260px; margin-top: 8px; overflow-y: auto; scrollbar-width: thin; }
-        .news-user-option {
-            display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 12px;
-            border-radius: 9px; color: var(--fk-list-text); font-size: 13px; font-weight: 300;
-            letter-spacing: normal; text-transform: none; cursor: pointer;
+        .news-user-options { max-height: 260px; margin-top: 8px; padding: 0 2px; overflow-y: auto; scrollbar-width: thin; }
+        body.fk-shell .content form #userMultiselect .news-user-option {
+            display: flex !important; align-items: center !important; gap: 10px !important;
+            width: 100% !important; min-height: 42px !important; margin: 0 !important; padding: 8px 10px !important;
+            border-radius: 9px !important; color: var(--fk-list-text) !important;
+            font-size: 13px !important; font-weight: 300 !important; line-height: 1.35 !important;
+            letter-spacing: 0 !important; text-transform: none !important; cursor: pointer;
         }
         .news-user-option:hover { background: var(--fk-list-panel); }
-        .news-user-option input { flex: 0 0 auto; accent-color: var(--fk-list-accent); }
+        body.fk-shell .content form #userMultiselect .news-user-option input[type="checkbox"] {
+            appearance: none !important; -webkit-appearance: none !important; flex: 0 0 17px !important;
+            width: 17px !important; height: 17px !important; min-height: 17px !important;
+            margin: 0 !important; padding: 0 !important; border: 1px solid var(--fk-form-border) !important;
+            border-radius: 4px !important; background: var(--fk-form-bg) !important; cursor: pointer;
+        }
+        body.fk-shell .content form #userMultiselect .news-user-option input[type="checkbox"]:checked {
+            border-color: var(--fk-list-accent) !important; background-color: var(--fk-list-accent) !important;
+            background-image: linear-gradient(135deg, transparent 45%, var(--fk-list-primary-text) 45%, var(--fk-list-primary-text) 58%, transparent 58%),
+                linear-gradient(45deg, transparent 32%, var(--fk-list-primary-text) 32%, var(--fk-list-primary-text) 45%, transparent 45%) !important;
+        }
+        .news-user-option span {
+            display: block; min-width: 0; overflow: hidden; color: inherit;
+            letter-spacing: 0 !important; text-transform: none !important; text-overflow: ellipsis; white-space: nowrap;
+        }
         .news-user-empty { padding: 12px; color: var(--fk-form-placeholder); font-size: 13px; }
 
     </style>
