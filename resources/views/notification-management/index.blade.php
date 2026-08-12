@@ -1,4 +1,44 @@
 <x-app-layout>
+    <style>
+        body.fk-shell #user_ids + .select2-container .select2-selection--multiple {
+            height: var(--fk-form-control-h) !important;
+            min-height: var(--fk-form-control-h) !important;
+            overflow: hidden !important;
+            padding: 3px 10px !important;
+        }
+
+        body.fk-shell #user_ids + .select2-container .select2-selection--multiple .select2-selection__rendered {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            gap: 5px !important;
+            width: 100% !important;
+            height: 34px !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            white-space: nowrap !important;
+            scrollbar-width: thin;
+            scrollbar-color: var(--fk-form-border) transparent;
+        }
+
+        body.fk-shell #user_ids + .select2-container .select2-selection__choice,
+        body.fk-shell #user_ids + .select2-container .select2-search--inline {
+            flex: 0 0 auto !important;
+            margin-top: 0 !important;
+        }
+
+        body.fk-shell #user_ids + .select2-container .select2-selection__choice,
+        body.fk-shell #user_ids + .select2-container .select2-search__field {
+            color: var(--fk-list-text) !important;
+            font-size: 13px !important;
+            font-weight: 300 !important;
+        }
+
+        body.fk-shell #user_ids + .select2-container .select2-search__field::placeholder {
+            color: var(--fk-form-placeholder) !important;
+            opacity: 1 !important;
+        }
+    </style>
     <div class="row">
         <div class="col-md-12">
             <div class="card">
