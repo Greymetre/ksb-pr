@@ -53,26 +53,6 @@
             opacity: 1 !important;
         }
 
-        body.fk-shell .user-select-search-wrap {
-            padding: 8px !important;
-        }
-
-        body.fk-shell .user-select-search {
-            width: 100% !important;
-            height: 38px !important;
-            padding: 0 12px !important;
-            border: 1px solid var(--fk-form-border) !important;
-            border-radius: 10px !important;
-            background: var(--fk-form-bg) !important;
-            color: var(--fk-list-text) !important;
-            outline: none !important;
-            box-shadow: none !important;
-        }
-
-        body.fk-shell .user-select-search::placeholder {
-            color: var(--fk-form-placeholder) !important;
-            opacity: 1 !important;
-        }
     </style>
     <div class="row">
         <div class="col-md-12">
@@ -174,23 +154,25 @@
             }
             $('.notification-filter').on('change', function () { refreshFilters(this.id); });
             $('#user_ids').on('select2:open', function () {
-                const results = $('.select2-container--open .select2-results');
-                if (!results.find('.user-select-search').length) {
-                    const search = $('<input>', {
+                const userSelect = $(this);
+                const dropdown = $('.select2-container--open .select2-dropdown');
+                let search = dropdown.find('.user-dropdown-search');
+                if (!search.length) {
+                    search = $('<input>', {
                         type: 'search',
-                        class: 'user-select-search',
+                        class: 'select2-search__field user-dropdown-search',
                         placeholder: 'Search Users...',
                         autocomplete: 'off'
                     });
-                    results.prepend($('<div>', {class: 'user-select-search-wrap'}).append(search));
+                    dropdown.prepend($('<span>', {class: 'select2-search select2-search--dropdown'}).append(search));
                     search.on('input', function () {
-                        const term = this.value.trim().toLowerCase();
-                        results.find('.select2-results__option[role="treeitem"]').each(function () {
-                            $(this).toggle(!term || $(this).text().toLowerCase().includes(term));
-                        });
+                        userSelect.data('select2').trigger('query', {term: this.value});
+                    }).on('keydown', function (event) {
+                        event.stopPropagation();
                     });
                 }
-                setTimeout(() => results.find('.user-select-search').trigger('focus'), 0);
+                search.val('');
+                setTimeout(() => search.trigger('focus'), 0);
             });
             $('#image').on('change', function () {
                 const file = this.files && this.files[0];
