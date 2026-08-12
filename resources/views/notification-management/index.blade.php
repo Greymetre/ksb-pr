@@ -27,6 +27,19 @@
             margin-top: 0 !important;
         }
 
+        body.fk-shell #user_ids + .select2-container .select2-search--inline {
+            min-width: 120px !important;
+        }
+
+        body.fk-shell #user_ids + .select2-container .select2-search--inline .select2-search__field {
+            width: auto !important;
+            min-width: 120px !important;
+            height: 32px !important;
+            margin: 0 !important;
+            padding: 0 3px !important;
+            line-height: 32px !important;
+        }
+
         body.fk-shell #user_ids + .select2-container .select2-selection__choice,
         body.fk-shell #user_ids + .select2-container .select2-search__field {
             color: var(--fk-list-text) !important;
@@ -34,8 +47,9 @@
             font-weight: 300 !important;
         }
 
-        body.fk-shell #user_ids + .select2-container .select2-search__field::placeholder {
-            color: var(--fk-form-placeholder) !important;
+        body.fk-shell #user_ids + .select2-container .select2-search__field::placeholder,
+        body.fk-shell #user_ids + .select2-container .select2-selection__placeholder {
+            color: var(--fk-list-text) !important;
             opacity: 1 !important;
         }
     </style>
@@ -75,7 +89,6 @@
                                         </option>
                                     @endforeach
                                 </select>
-                                <small class="text-muted">Select one or more users. Leave empty for all matching users.</small>
                             </div>
                         </div>
                         <div class="row mt-4">
