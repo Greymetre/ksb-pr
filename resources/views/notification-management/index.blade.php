@@ -1,57 +1,54 @@
 <x-app-layout>
     <style>
-        body.fk-shell #user_ids + .select2-container .select2-selection--multiple {
-            height: var(--fk-form-control-h) !important;
-            min-height: var(--fk-form-control-h) !important;
-            overflow: hidden !important;
-            padding: 3px 10px !important;
+        .news-user-multiselect { position: relative; }
+        .news-user-control {
+            display: flex; align-items: center; width: 100%; height: var(--fk-form-control-h, 42px);
+            padding: 4px 34px 4px 13px; overflow: hidden; cursor: pointer;
+            border: 1px solid var(--fk-form-border); border-radius: var(--fk-form-radius, 12px);
+            background: var(--fk-form-bg); color: var(--fk-list-text); box-shadow: none;
         }
-
-        body.fk-shell #user_ids + .select2-container .select2-selection--multiple .select2-selection__rendered {
-            display: flex !important;
-            flex-wrap: nowrap !important;
-            align-items: center !important;
-            gap: 5px !important;
-            width: 100% !important;
-            height: 34px !important;
-            overflow-x: auto !important;
-            overflow-y: hidden !important;
-            white-space: nowrap !important;
-            scrollbar-width: thin;
+        .news-user-control::after {
+            content: ''; position: absolute; right: 16px; top: 19px;
+            border: 4px solid transparent; border-top-color: var(--fk-list-soft);
+        }
+        .news-user-multiselect.open .news-user-control {
+            border-color: var(--fk-form-border-focus); background: var(--fk-form-bg-strong);
+            box-shadow: var(--fk-form-shadow);
+        }
+        .news-user-placeholder { color: var(--fk-list-text); font-size: 13px; font-weight: 300; white-space: nowrap; }
+        .news-user-selected {
+            display: flex; flex: 1; align-items: center; gap: 5px; min-width: 0;
+            overflow-x: auto; overflow-y: hidden; white-space: nowrap; scrollbar-width: thin;
             scrollbar-color: var(--fk-form-border) transparent;
         }
-
-        body.fk-shell #user_ids + .select2-container .select2-selection__choice,
-        body.fk-shell #user_ids + .select2-container .select2-search--inline {
-            flex: 0 0 auto !important;
-            margin-top: 0 !important;
+        .news-user-chip {
+            display: inline-flex; flex: 0 0 auto; align-items: center; gap: 6px; max-width: 260px;
+            padding: 3px 7px; border: 1px solid var(--fk-form-border); border-radius: 6px;
+            background: var(--fk-list-panel); color: var(--fk-list-text); font-size: 13px; font-weight: 300;
         }
-
-        body.fk-shell #user_ids + .select2-container .select2-search--inline {
-            min-width: 120px !important;
+        .news-user-chip-text { overflow: hidden; text-overflow: ellipsis; }
+        .news-user-remove { border: 0; padding: 0; background: transparent; color: #ff5d7a; font-weight: 700; cursor: pointer; }
+        .news-user-dropdown {
+            display: none; position: absolute; z-index: 1051; top: calc(100% + 2px); left: 0; width: 100%;
+            padding: 8px; overflow: hidden; border: 1px solid rgba(90, 130, 220, .34);
+            border-radius: 14px; background: rgba(7, 18, 44, .98); box-shadow: 0 20px 48px rgba(0,0,0,.36);
         }
-
-        body.fk-shell #user_ids + .select2-container .select2-search--inline .select2-search__field {
-            width: auto !important;
-            min-width: 120px !important;
-            height: 32px !important;
-            margin: 0 !important;
-            padding: 0 3px !important;
-            line-height: 32px !important;
+        .news-user-multiselect.open .news-user-dropdown { display: block; }
+        body.fk-shell .content .news-user-search {
+            width: 100% !important; height: 38px !important; padding: 0 12px !important;
+            border: 1px solid var(--fk-form-border) !important; border-radius: 10px !important;
+            background: var(--fk-form-bg) !important; color: var(--fk-list-text) !important;
         }
-
-        body.fk-shell #user_ids + .select2-container .select2-selection__choice,
-        body.fk-shell #user_ids + .select2-container .select2-search__field {
-            color: var(--fk-list-text) !important;
-            font-size: 13px !important;
-            font-weight: 300 !important;
+        .news-user-search::placeholder { color: var(--fk-form-placeholder) !important; opacity: 1; }
+        .news-user-options { max-height: 260px; margin-top: 8px; overflow-y: auto; scrollbar-width: thin; }
+        .news-user-option {
+            display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 12px;
+            border-radius: 9px; color: var(--fk-list-text); font-size: 13px; font-weight: 300;
+            letter-spacing: normal; text-transform: none; cursor: pointer;
         }
-
-        body.fk-shell #user_ids + .select2-container .select2-search__field::placeholder,
-        body.fk-shell #user_ids + .select2-container .select2-selection__placeholder {
-            color: var(--fk-list-text) !important;
-            opacity: 1 !important;
-        }
+        .news-user-option:hover { background: var(--fk-list-panel); }
+        .news-user-option input { flex: 0 0 auto; accent-color: var(--fk-list-accent); }
+        .news-user-empty { padding: 12px; color: var(--fk-form-placeholder); font-size: 13px; }
 
     </style>
     <div class="row">
@@ -82,14 +79,23 @@
                             @endforeach
                             <div class="col-md-3">
                                 <label for="user_ids">Users</label>
-                                <select class="form-control select2" name="user_ids[]" id="user_ids" multiple
-                                    data-placeholder="All Users" data-close-on-select="false" style="width: 100%;">
+                                <select name="user_ids[]" id="user_ids" multiple hidden>
                                     @foreach($users as $user)
                                         <option value="{{ $user->id }}" @selected(in_array($user->id, old('user_ids', [])))>
                                             {{ $user->name }}{{ $user->mobile ? ' - '.$user->mobile : '' }}
                                         </option>
                                     @endforeach
                                 </select>
+                                <div class="news-user-multiselect" id="userMultiselect">
+                                    <div class="news-user-control" tabindex="0" role="combobox" aria-expanded="false">
+                                        <span class="news-user-placeholder">All Users</span>
+                                        <div class="news-user-selected"></div>
+                                    </div>
+                                    <div class="news-user-dropdown">
+                                        <input type="search" class="news-user-search" placeholder="Search Users..." autocomplete="off">
+                                        <div class="news-user-options"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="row mt-4">
@@ -129,16 +135,55 @@
         document.addEventListener('DOMContentLoaded', function () {
             const filterUrl = @json(route('notification-management.filters'));
             const state = $('#state_id'), district = $('#district_id'), city = $('#city_id');
+            const userSelect = $('#user_ids'), userMultiselect = $('#userMultiselect');
             let loading = false;
             function replaceOptions(element, rows, placeholder, labelKey, selected) {
                 element.empty().append(new Option(placeholder, ''));
                 rows.forEach(row => element.append(new Option(row[labelKey], row.id, false, String(row.id) === String(selected))));
                 element.trigger('change.select2');
             }
+            function selectedUserIds() {
+                return (userSelect.val() || []).map(String);
+            }
+            function renderSelectedUsers() {
+                const selected = selectedUserIds();
+                const container = userMultiselect.find('.news-user-selected').empty();
+                userMultiselect.find('.news-user-placeholder').toggle(selected.length === 0);
+                selected.forEach(id => {
+                    const option = userSelect.find('option[value="' + id + '"]');
+                    const chip = $('<span>', {class: 'news-user-chip'});
+                    $('<span>', {class: 'news-user-chip-text', text: option.text().trim()}).appendTo(chip);
+                    $('<button>', {type: 'button', class: 'news-user-remove', text: '×', 'aria-label': 'Remove user'})
+                        .attr('data-user-id', id).appendTo(chip);
+                    container.append(chip);
+                });
+            }
+            function renderUserOptions(term = '') {
+                const selected = selectedUserIds();
+                const query = term.trim().toLowerCase();
+                const container = userMultiselect.find('.news-user-options').empty();
+                let matches = 0;
+                userSelect.find('option').each(function () {
+                    const text = $(this).text().trim();
+                    if (query && !text.toLowerCase().includes(query)) return;
+                    matches++;
+                    const label = $('<label>', {class: 'news-user-option'});
+                    $('<input>', {type: 'checkbox', value: this.value, checked: selected.includes(String(this.value))}).appendTo(label);
+                    $('<span>', {text}).appendTo(label);
+                    container.append(label);
+                });
+                if (!matches) container.append($('<div>', {class: 'news-user-empty', text: 'No users found'}));
+            }
+            function syncUserMultiselect() {
+                renderSelectedUsers();
+                renderUserOptions(userMultiselect.find('.news-user-search').val() || '');
+            }
             function replaceUsers(rows) {
-                const userSelect = $('#user_ids').empty();
+                userSelect.empty();
                 rows.forEach(row => userSelect.append(new Option(row.display_name, row.id)));
-                userSelect.val(null).trigger('change');
+                userSelect.val(null);
+                userMultiselect.find('.news-user-search').val('');
+                syncUserMultiselect();
             }
             function refreshFilters(changedId) {
                 if (loading) return;
@@ -153,27 +198,33 @@
                 }).always(() => loading = false);
             }
             $('.notification-filter').on('change', function () { refreshFilters(this.id); });
-            $('#user_ids').on('select2:open', function () {
-                const userSelect = $(this);
-                const dropdown = $('.select2-container--open .select2-dropdown');
-                let search = dropdown.find('.user-dropdown-search');
-                if (!search.length) {
-                    search = $('<input>', {
-                        type: 'search',
-                        class: 'select2-search__field user-dropdown-search',
-                        placeholder: 'Search Users...',
-                        autocomplete: 'off'
-                    });
-                    dropdown.prepend($('<span>', {class: 'select2-search select2-search--dropdown'}).append(search));
-                    search.on('input', function () {
-                        userSelect.data('select2').trigger('query', {term: this.value});
-                    }).on('keydown', function (event) {
-                        event.stopPropagation();
-                    });
-                }
-                search.val('');
-                setTimeout(() => search.trigger('focus'), 0);
+            userMultiselect.find('.news-user-control').on('click keydown', function (event) {
+                if (event.type === 'keydown' && !['Enter', ' ', 'ArrowDown'].includes(event.key)) return;
+                event.preventDefault();
+                const open = !userMultiselect.hasClass('open');
+                userMultiselect.toggleClass('open', open);
+                $(this).attr('aria-expanded', open);
+                if (open) setTimeout(() => userMultiselect.find('.news-user-search').trigger('focus'), 0);
             });
+            userMultiselect.find('.news-user-search').on('input', function () { renderUserOptions(this.value); });
+            userMultiselect.on('change', '.news-user-option input', function () {
+                const selected = selectedUserIds();
+                const id = String(this.value);
+                userSelect.val(this.checked ? [...new Set([...selected, id])] : selected.filter(value => value !== id));
+                renderSelectedUsers();
+            });
+            userMultiselect.on('click', '.news-user-remove', function (event) {
+                event.stopPropagation();
+                const id = String($(this).data('user-id'));
+                userSelect.val(selectedUserIds().filter(value => value !== id));
+                syncUserMultiselect();
+            });
+            $(document).on('click', function (event) {
+                if (!$(event.target).closest(userMultiselect).length) {
+                    userMultiselect.removeClass('open').find('.news-user-control').attr('aria-expanded', false);
+                }
+            });
+            syncUserMultiselect();
             $('#image').on('change', function () {
                 const file = this.files && this.files[0];
                 const preview = $('#notificationImagePreview');
