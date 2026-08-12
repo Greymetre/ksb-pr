@@ -26,29 +26,16 @@
                                 </div>
                             @endforeach
                             <div class="col-md-3">
-                                <label>Users</label>
-                                <div class="border rounded p-2" style="max-height: 220px; overflow-y: auto;">
-                                    <div class="form-check mb-2">
-                                        <label class="form-check-label">
-                                            <input class="form-check-input" type="checkbox" id="select_all_users">
-                                            <strong>Select All</strong>
-                                            <span class="form-check-sign"><span class="check"></span></span>
-                                        </label>
-                                    </div>
-                                    <div id="userCheckboxes">
+                                <label for="user_ids">Users</label>
+                                <select class="form-control select2" name="user_ids[]" id="user_ids" multiple
+                                    data-placeholder="All Users" data-close-on-select="false" style="width: 100%;">
                                     @foreach($users as $user)
-                                        <div class="form-check">
-                                            <label class="form-check-label">
-                                                <input class="form-check-input user-checkbox" type="checkbox" name="user_ids[]"
-                                                    value="{{ $user->id }}" @checked(in_array($user->id, old('user_ids', [])))>
-                                                {{ $user->name }}{{ $user->mobile ? ' - '.$user->mobile : '' }}
-                                                <span class="form-check-sign"><span class="check"></span></span>
-                                            </label>
-                                        </div>
+                                        <option value="{{ $user->id }}" @selected(in_array($user->id, old('user_ids', [])))>
+                                            {{ $user->name }}{{ $user->mobile ? ' - '.$user->mobile : '' }}
+                                        </option>
                                     @endforeach
-                                    </div>
-                                </div>
-                                <small class="text-muted">Leave all unchecked to send to every matching user.</small>
+                                </select>
+                                <small class="text-muted">Select one or more users. Leave empty for all matching users.</small>
                             </div>
                         </div>
                         <div class="row mt-4">
@@ -95,22 +82,9 @@
                 element.trigger('change.select2');
             }
             function replaceUsers(rows) {
-                const container = $('#userCheckboxes').empty();
-                rows.forEach(row => {
-                    const wrapper = $('<div>', {class: 'form-check'});
-                    const label = $('<label>', {class: 'form-check-label'});
-                    $('<input>', {class: 'form-check-input user-checkbox', type: 'checkbox', name: 'user_ids[]', value: row.id}).appendTo(label);
-                    label.append(document.createTextNode(' ' + row.display_name));
-                    label.append('<span class="form-check-sign"><span class="check"></span></span>');
-                    wrapper.append(label).appendTo(container);
-                });
-                $('#select_all_users').prop({checked: false, indeterminate: false});
-            }
-            function updateSelectAll() {
-                const checkboxes = $('.user-checkbox');
-                const checked = checkboxes.filter(':checked').length;
-                $('#select_all_users').prop('checked', checkboxes.length > 0 && checked === checkboxes.length)
-                    .prop('indeterminate', checked > 0 && checked < checkboxes.length);
+                const userSelect = $('#user_ids').empty();
+                rows.forEach(row => userSelect.append(new Option(row.display_name, row.id)));
+                userSelect.val(null).trigger('change');
             }
             function refreshFilters(changedId) {
                 if (loading) return;
@@ -125,9 +99,6 @@
                 }).always(() => loading = false);
             }
             $('.notification-filter').on('change', function () { refreshFilters(this.id); });
-            $('#select_all_users').on('change', function () { $('.user-checkbox').prop('checked', this.checked); updateSelectAll(); });
-            $('#userCheckboxes').on('change', '.user-checkbox', updateSelectAll);
-            updateSelectAll();
             $('#image').on('change', function () {
                 const file = this.files && this.files[0];
                 const preview = $('#notificationImagePreview');
