@@ -13,6 +13,7 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id')->index();
             $table->date('target_month')->index();
             $table->unsignedInteger('target');
+            $table->unsignedInteger('achievement')->nullable();
             $table->text('note')->nullable();
             $table->unsignedBigInteger('created_by')->nullable()->index();
             $table->timestamps();

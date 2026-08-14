@@ -305,7 +305,7 @@
                         <small>XLSX, XLS or CSV · Maximum 10 MB</small>
                     </label>
                     <p class="dealer-target-import-help">
-                        Required columns: <strong>Emp Code</strong>, <strong>New Dealer Plan Nos</strong>, and <strong>Month</strong>. Note is optional. Identical records are skipped; changed records are updated; new user/month records are added.
+                        Required columns: <strong>Emp Code</strong>, <strong>New Dealer Plan Nos</strong>, and <strong>Month</strong>. <strong>Achievement Nos</strong> and Note are optional. Imported achievements update the listing, totals, percentages, and future exports. Identical records are skipped; changed records are updated; new user/month records are added.
                     </p>
                 </div>
                 <div class="dealer-target-modal-footer">

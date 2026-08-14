@@ -36,9 +36,16 @@ class NewDealerTargetImport implements ToCollection, WithHeadingRow
         foreach ($rows as $row) {
             $employeeCode = trim((string) ($row['emp_code'] ?? ''));
             $targetValue = $row['new_dealer_plan_nos'] ?? null;
+            $achievementValue = $row['achievement_nos'] ?? null;
             $monthValue = $row['month'] ?? null;
 
             if ($employeeCode === '' || ! is_numeric($targetValue) || (int) $targetValue < 1 || empty($monthValue)) {
+                $this->skipped++;
+                continue;
+            }
+
+            $hasAchievement = $achievementValue !== null && trim((string) $achievementValue) !== '';
+            if ($hasAchievement && (! is_numeric($achievementValue) || (int) $achievementValue < 0)) {
                 $this->skipped++;
                 continue;
             }
@@ -63,6 +70,7 @@ class NewDealerTargetImport implements ToCollection, WithHeadingRow
             if (! $target->exists) {
                 $target->fill([
                     'target' => $targetNumber,
+                    'achievement' => $hasAchievement ? (int) $achievementValue : null,
                     'note' => $note,
                     'created_by' => $this->createdBy,
                 ])->save();
@@ -70,16 +78,25 @@ class NewDealerTargetImport implements ToCollection, WithHeadingRow
                 continue;
             }
 
-            if ((int) $target->target === $targetNumber && $this->normaliseNote($target->note) === $this->normaliseNote($note)) {
+            $achievementChanged = $hasAchievement
+                && ($target->achievement === null || (int) $target->achievement !== (int) $achievementValue);
+            if ((int) $target->target === $targetNumber
+                && ! $achievementChanged
+                && $this->normaliseNote($target->note) === $this->normaliseNote($note)) {
                 $this->unchanged++;
                 continue;
             }
 
-            $target->update([
+            $updates = [
                 'target' => $targetNumber,
                 'note' => $note,
                 'created_by' => $this->createdBy,
-            ]);
+            ];
+            if ($hasAchievement) {
+                $updates['achievement'] = (int) $achievementValue;
+            }
+
+            $target->update($updates);
             $this->updated++;
         }
     }

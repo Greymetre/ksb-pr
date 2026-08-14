@@ -62,11 +62,13 @@ class NewDealerTargetController extends Controller
             ->latest('id')
             ->get()
             ->map(function (NewDealerTarget $target) {
-                $month = Carbon::parse($target->target_month);
-                $target->achievement = DealerAppointment::query()
-                    ->where('created_by', $target->user_id)
-                    ->whereBetween('created_at', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])
-                    ->count();
+                if ($target->achievement === null) {
+                    $month = Carbon::parse($target->target_month);
+                    $target->achievement = DealerAppointment::query()
+                        ->where('created_by', $target->user_id)
+                        ->whereBetween('created_at', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])
+                        ->count();
+                }
 
                 return $target;
             });
@@ -76,9 +78,9 @@ class NewDealerTargetController extends Controller
 
     public function store(Request $request)
     {
-        if (! Schema::hasTable('new_dealer_targets')) {
+        if (! Schema::hasTable('new_dealer_targets') || ! Schema::hasColumn('new_dealer_targets', 'achievement')) {
             return redirect()->route('new-dealer-targets')
-                ->with('setup_error', 'Dealer targets database setup is pending. Please run the database migration.');
+                ->with('setup_error', 'Dealer targets achievement setup is pending. Please run the latest database migration.');
         }
 
         $validated = $request->validate([
@@ -110,9 +112,9 @@ class NewDealerTargetController extends Controller
 
     public function import(Request $request)
     {
-        if (! Schema::hasTable('new_dealer_targets')) {
+        if (! Schema::hasTable('new_dealer_targets') || ! Schema::hasColumn('new_dealer_targets', 'achievement')) {
             return redirect()->route('new-dealer-targets')
-                ->with('setup_error', 'Dealer targets database setup is pending. Please run the database migration.');
+                ->with('setup_error', 'Dealer targets achievement setup is pending. Please run the latest database migration.');
         }
 
         $request->validateWithBag('import', [

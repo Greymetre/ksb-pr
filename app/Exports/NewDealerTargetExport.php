@@ -59,11 +59,13 @@ class NewDealerTargetExport implements FromCollection, WithHeadings, WithMapping
             ->latest('id')
             ->get()
             ->map(function (NewDealerTarget $target) {
-                $month = Carbon::parse($target->target_month);
-                $target->achievement = DealerAppointment::query()
-                    ->where('created_by', $target->user_id)
-                    ->whereBetween('created_at', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])
-                    ->count();
+                if ($target->achievement === null) {
+                    $month = Carbon::parse($target->target_month);
+                    $target->achievement = DealerAppointment::query()
+                        ->where('created_by', $target->user_id)
+                        ->whereBetween('created_at', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])
+                        ->count();
+                }
 
                 return $target;
             });

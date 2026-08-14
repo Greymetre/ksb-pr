@@ -13,6 +13,7 @@ class NewDealerTarget extends Model
         'user_id',
         'target_month',
         'target',
+        'achievement',
         'note',
         'created_by',
     ];
@@ -20,6 +21,7 @@ class NewDealerTarget extends Model
     protected $casts = [
         'target_month' => 'date',
         'target' => 'integer',
+        'achievement' => 'integer',
     ];
 
     public function user()
