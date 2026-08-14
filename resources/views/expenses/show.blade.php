@@ -94,7 +94,7 @@ margin-top: 3px;
             @endif
 
             @if(auth()->user()->can(['expense_approve']))
-            <button type="button" class="btn btn-success approve_status">Approved</button>
+            <button type="button" class="btn btn-success approve_status">Approve Account</button>
             @endif
 
             @if(auth()->user()->can(['expense_reject']))
@@ -113,11 +113,11 @@ margin-top: 3px;
             @elseif($expense->checker_status=='4')
 
             @if(auth()->user()->can(['expense_unchecked']))
-            <button type="button" class="btn btn-dark checked_status">Checked</button>
+            <button type="button" class="btn btn-dark checked_status">Checked &amp; Approved</button>
             @endif
 
             @if(auth()->user()->can(['expense_approve']))
-            <button type="button" class="btn btn-success approve_status">Approved</button>
+            <button type="button" class="btn btn-success approve_status">Approve Account</button>
             @endif
 
             @if(auth()->user()->can(['expense_reject']))
@@ -131,11 +131,11 @@ margin-top: 3px;
             @elseif($expense->checker_status=='5')
 
             @if(auth()->user()->can(['expense_unchecked']))
-            <button type="button" class="btn btn-dark checked_status">Checked</button>
+            <button type="button" class="btn btn-dark checked_status">Checked &amp; Approved</button>
             @endif
 
             @if(auth()->user()->can(['expense_approve']))
-            <button type="button" class="btn btn-success approve_status">Approved</button>
+            <button type="button" class="btn btn-success approve_status">Approve Account</button>
             @endif
 
             @if(auth()->user()->can(['expense_reject']))
@@ -149,7 +149,7 @@ margin-top: 3px;
             @endif
 
             @if(auth()->user()->can(['expense_checked']))
-            <button type="button" class="btn btn-dark checked_status">Checked</button>
+            <button type="button" class="btn btn-dark checked_status">Checked &amp; Approved</button>
             @endif
 
             @if(auth()->user()->can(['expense_reject']))
