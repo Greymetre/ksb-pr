@@ -7,6 +7,7 @@ use App\Models\NewDealerTarget;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class NewDealerTargetController extends Controller
@@ -14,11 +15,16 @@ class NewDealerTargetController extends Controller
     public function index()
     {
         $users = User::query()
-            ->where(function ($query) {
-                $query->whereNull('isDeleted')->orWhere('isDeleted', '!=', 1);
-            })
             ->orderBy('name')
             ->get(['id', 'name', 'first_name', 'last_name', 'employee_codes']);
+
+        if (! Schema::hasTable('new_dealer_targets')) {
+            return view('sales.new_dealer_targets', [
+                'dealerTargets' => collect(),
+                'users' => $users,
+                'setupRequired' => true,
+            ]);
+        }
 
         $dealerTargets = NewDealerTarget::query()
             ->with(['user.getdivision'])
@@ -40,6 +46,11 @@ class NewDealerTargetController extends Controller
 
     public function store(Request $request)
     {
+        if (! Schema::hasTable('new_dealer_targets')) {
+            return redirect()->route('new-dealer-targets')
+                ->with('setup_error', 'Dealer targets database setup is pending. Please run the database migration.');
+        }
+
         $validated = $request->validate([
             'user_id' => ['required', 'integer', Rule::exists('users', 'id')],
             'target_month' => ['required', 'date_format:Y-m'],

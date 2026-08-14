@@ -67,6 +67,9 @@
         @if(session('success'))
             <div class="dealer-target-alert success">{{ session('success') }}</div>
         @endif
+        @if(!empty($setupRequired) || session('setup_error'))
+            <div class="dealer-target-alert error">{{ session('setup_error', 'Dealer targets database setup is pending. Please run the database migration.') }}</div>
+        @endif
         @if($errors->any())
             <div class="dealer-target-alert error">{{ $errors->first() }}</div>
         @endif
