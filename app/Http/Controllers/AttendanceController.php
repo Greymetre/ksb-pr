@@ -611,7 +611,7 @@ public function attendanceSummaryDownload(Request $request)
                         $row[] = $dayName === 'Sunday' ? 'PW' : 'P';
                         $totals['p']++;
                     } elseif ($workedMinutes >= 270) {
-                        $row[] = 'Half Day';
+                        $row[] = 'HF';
                         $totals['hd']++;
                     } else {
                         $row[] = 'A';
@@ -735,7 +735,7 @@ public function attendanceSummaryDownload(Request $request)
 
     if ($dayName === 'Sunday') {
         if ($doj && $doj <= $date) {
-            $row[] = 'W/O';
+            $row[] = 'WOOF';
             $totals['wo']++;
         } else {
             $row[] = '-';
