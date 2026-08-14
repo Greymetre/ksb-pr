@@ -1206,16 +1206,35 @@ dd(
       $user = $request->user();
       $validator = Validator::make($request->all(), [
         'id' => 'required|exists:attendances,id',
+        'punchout_time' => 'required|date_format:H:i',
       ]);
       if ($validator->fails()) {
-        return response()->json(['status' => 'error', 'message' =>  $validator->errors()], $this->badrequest);
+        return response()->json(['status' => 'error', 'message' => $validator->errors()->first()], $this->badrequest);
       }
 
       $punchout = Attendance::where('id', $request->id)->first();
-      $punchout->punchout_date = getcurentDate();
-      $punchout->punchout_time = getcurentTime();
+      $punchoutDate = $punchout->punchin_date;
+      $selectedPunchoutTime = Carbon::createFromFormat('H:i', $request->punchout_time)->format('H:i:s');
+      $punchInDateTime = Carbon::parse($punchout->punchin_date . ' ' . $punchout->punchin_time);
+      $punchOutDateTime = Carbon::parse($punchoutDate . ' ' . $selectedPunchoutTime);
+
+      if ($punchOutDateTime->lt($punchInDateTime)) {
+        return response()->json([
+          'status' => 'error',
+          'message' => 'Punch out time cannot be earlier than punch in time.',
+        ], $this->badrequest);
+      }
+
+      $workedSeconds = $punchInDateTime->diffInSeconds($punchOutDateTime);
+      $punchout->punchout_date = $punchoutDate;
+      $punchout->punchout_time = $selectedPunchoutTime;
       $punchout->punchout_summary = !empty($request['punchout_summary']) ? $request['punchout_summary'] : '';
-      $punchout->worked_time = gmdate("H:i:s", strtotime(getcurentDateTime()) - strtotime($punchout->punchin_date . ' ' . $punchout->punchin_time));
+      $punchout->worked_time = sprintf(
+        '%02d:%02d:%02d',
+        intdiv($workedSeconds, 3600),
+        intdiv($workedSeconds % 3600, 60),
+        $workedSeconds % 60
+      );
       if ($punchout->save()) {
         // $useractivity = array(
         //         'userid' => $user->id, 
