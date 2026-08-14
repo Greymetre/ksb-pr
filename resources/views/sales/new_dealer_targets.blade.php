@@ -125,7 +125,7 @@
             </div>
             <div class="dealer-target-actions">
                 <button type="button" class="dealer-target-btn"><i class="material-icons">upload</i> Import</button>
-                <button type="button" class="dealer-target-btn"><i class="material-icons">download</i> Export</button>
+                <a class="dealer-target-btn" href="{{ route('new-dealer-targets.export', request()->only(['search', 'zone_id', 'month'])) }}"><i class="material-icons">download</i> Export</a>
                 <button type="button" class="dealer-target-btn primary" id="openNewDealerTarget"><i class="material-icons">add</i> New Target</button>
             </div>
         </div>

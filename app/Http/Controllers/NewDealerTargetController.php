@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\NewDealerTargetExport;
 use App\Models\DealerAppointment;
 use App\Models\Division;
 use App\Models\NewDealerTarget;
@@ -10,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 
 class NewDealerTargetController extends Controller
 {
@@ -93,5 +95,15 @@ class NewDealerTargetController extends Controller
         );
 
         return redirect()->route('new-dealer-targets')->with('success', 'New dealer target saved successfully.');
+    }
+
+    public function export(Request $request)
+    {
+        abort_unless(Schema::hasTable('new_dealer_targets'), 404);
+
+        return Excel::download(
+            new NewDealerTargetExport($request),
+            'new_dealer_appointment_targets_' . now()->format('Y_m_d') . '.xlsx'
+        );
     }
 }

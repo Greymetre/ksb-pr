@@ -207,6 +207,7 @@ Route::post('/dealer-appointment-kyc-submit', [DealerAppointmentController::clas
 
 Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     Route::get('/new-dealer-targets', [NewDealerTargetController::class, 'index'])->name('new-dealer-targets');
+    Route::get('/new-dealer-targets/export', [NewDealerTargetController::class, 'export'])->name('new-dealer-targets.export');
     Route::post('/new-dealer-targets', [NewDealerTargetController::class, 'store'])->name('new-dealer-targets.store');
 
     Route::get('/dealer_account_statement', function () {
