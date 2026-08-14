@@ -897,8 +897,6 @@ public function attendanceSummaryDownload(Request $request)
           'type' => $request->working_type ?? ''
         ]);
 
-        dd('updated');
-
         $cityids = Beat::whereHas('beatschedules', function ($query) use ($request) {
           $query->where('user_id', '=', $request['user_id']);
           $query->whereDate('beat_date', '=', date('Y-m-d', strtotime($request['punchin_date'])));
@@ -947,7 +945,9 @@ $isHoliday = in_array($todayDate, $holidayDates);
 
 
 if (!$joiningDate) {
-    dd('Joining date missing');
+    // Attendance must still submit when legacy users do not have a joining
+    // date. Start future accrual calculations from today for such users.
+    $joiningDate = $today->copy();
 }
 
 if ($isSunday || $isHoliday) {
@@ -1126,11 +1126,6 @@ if (
 
       return Redirect::to('reports/attendancereport')->with('message_success', 'PunchIn Successfully');
     }
-dd(
-    'Punch-in time for ' . $user->name,
-    $attendance ? $attendance->punchin_time : 'No punch-in record',
-    $attendance ? $attendance->toArray() : 'No record found'
-);
     return redirect()->back()->with('message_danger', 'Error in Lead Stages')->withInput();
     // } catch (\Exception $e) {
     //   return redirect()->back()->withErrors($e->getMessage())->withInput();
