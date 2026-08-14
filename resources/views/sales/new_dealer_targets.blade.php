@@ -10,8 +10,14 @@
     <style>
         .dealer-target-page { color: #eef4ff; padding: 20px 24px 42px; }
         .dealer-target-header { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:28px; }
+        .dealer-target-breadcrumb { display:flex; align-items:center; gap:11px; margin:0 0 11px; color:#7187bd; font-size:11px !important; font-weight:700; letter-spacing:.24em; text-transform:uppercase; }
+        .dealer-target-breadcrumb .current { color:#438cf4; }
+        .dealer-target-title-row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
         .dealer-target-header h1 { color:#f4f7ff; font-size:28px !important; font-weight:700; line-height:1.25; margin:0 0 7px; }
+        .dealer-target-title-row h1 { margin-bottom:0; }
+        .dealer-target-record-count { min-height:36px; padding:0 18px; display:inline-flex; align-items:center; justify-content:center; color:#22d2ea; border:1px solid #1681a6; border-radius:999px; background:rgba(21,126,169,.18); font-size:14px !important; font-weight:700; white-space:nowrap; }
         .dealer-target-header p { color:#91a6d5; font-size:14px !important; line-height:1.5; margin:0; }
+        .dealer-target-title-row + p { margin-top:8px; }
         .dealer-target-actions { display:flex; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
         .dealer-target-btn { min-height:42px; padding:0 18px; border:1px solid #294677; border-radius:12px; background:#0a1838; color:#eef4ff; font-size:14px !important; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer; }
         .dealer-target-btn .material-icons { font-size:19px; }
@@ -136,7 +142,11 @@
         @endif
         <div class="dealer-target-header">
             <div>
-                <h1>New Dealer Appointment: Target vs Achievement</h1>
+                <div class="dealer-target-breadcrumb"><span>Sales Management</span><span>›</span><span class="current">New Dealer Targets</span></div>
+                <div class="dealer-target-title-row">
+                    <h1>New Dealer Appointment: Target vs Achievement</h1>
+                    <span class="dealer-target-record-count">{{ $dealerTargets->count() }} records</span>
+                </div>
                 <p>Track monthly new dealer appointment targets against achievement, by employee</p>
             </div>
             <div class="dealer-target-actions">
