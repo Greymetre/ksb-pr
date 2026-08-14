@@ -34,6 +34,12 @@
         .dealer-target-table { width:100%; min-width:1050px; border-collapse:collapse; }
         .dealer-target-table th { padding:16px 20px; text-align:left; color:#91a6d5; font-size:12px !important; letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid #294675; white-space:nowrap; }
         .dealer-target-table td { padding:17px 20px; color:#b7c7e8; font-size:14px !important; border-bottom:1px solid #223e6b; }
+        .dealer-target-row-actions { display:flex; align-items:center; gap:7px; white-space:nowrap; }
+        .dealer-target-action-btn { width:34px; height:34px; padding:0; display:inline-flex; align-items:center; justify-content:center; color:#b9caee; border:1px solid #315187; border-radius:9px; background:#091936; cursor:pointer; }
+        .dealer-target-action-btn:hover { color:#fff; border-color:#29cbe5; background:#123d60; }
+        .dealer-target-action-btn.delete:hover { color:#ff6682; border-color:#a43b5d; background:rgba(255,67,105,.1); }
+        .dealer-target-action-btn .material-icons { font-size:18px; }
+        .dealer-target-delete-form { margin:0; }
         .dealer-target-empty { padding:42px 20px !important; text-align:center; color:#91a6d5 !important; }
         .dealer-target-alert { padding:13px 17px; margin-bottom:20px; border-radius:10px; font-size:14px; }
         .dealer-target-alert.success { color:#24dfa4; border:1px solid #167d69; background:rgba(20,174,132,.12); }
@@ -199,11 +205,22 @@
             </div>
             <div class="dealer-target-table-wrap">
                 <table class="dealer-target-table">
-                    <thead><tr><th>Emp Code</th><th>Emp Name</th><th>Zone</th><th>Month</th><th>Plan Nos</th><th>Achievement Nos</th><th>Achievement %</th><th>Note</th></tr></thead>
+                    <thead><tr><th>No</th><th>Action</th><th>Emp Code</th><th>Emp Name</th><th>Zone</th><th>Month</th><th>Plan Nos</th><th>Achievement Nos</th><th>Achievement %</th><th>Note</th></tr></thead>
                     <tbody>
                         @forelse($dealerTargets as $target)
                             @php $percentage = $target->target > 0 ? round(($target->achievement / $target->target) * 100, 1) : 0; @endphp
                             <tr>
+                                <td>{{ $loop->iteration }}</td>
+                                <td>
+                                    <div class="dealer-target-row-actions">
+                                        <button type="button" class="dealer-target-action-btn editDealerTarget" title="Edit" data-id="{{ $target->id }}" data-user-id="{{ $target->user_id }}" data-month="{{ $target->target_month->format('Y-m') }}" data-target="{{ $target->target }}" data-achievement="{{ $target->achievement }}" data-note="{{ $target->note }}"><i class="material-icons">edit</i></button>
+                                        <form class="dealer-target-delete-form" method="POST" action="{{ route('new-dealer-targets.destroy', $target) }}" onsubmit="return confirm('Are you sure you want to delete this dealer target?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="dealer-target-action-btn delete" title="Delete"><i class="material-icons">clear</i></button>
+                                        </form>
+                                    </div>
+                                </td>
                                 <td>{{ $target->user->employee_codes ?? '—' }}</td>
                                 <td>{{ $target->user->name ?: trim(($target->user->first_name ?? '').' '.($target->user->last_name ?? '')) }}</td>
                                 <td>{{ optional($target->user->getdivision)->division_name ?? '—' }}</td>
@@ -213,7 +230,7 @@
                                 <td>{{ $target->note ?: '—' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="dealer-target-empty">No dealer target records available.</td></tr>
+                            <tr><td colspan="10" class="dealer-target-empty">No dealer target records available.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -223,10 +240,11 @@
 
     <div class="dealer-target-modal {{ $errors->getBag('default')->any() ? 'show' : '' }}" id="newDealerTargetModal" aria-hidden="{{ $errors->getBag('default')->any() ? 'false' : 'true' }}">
         <div class="dealer-target-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="newDealerTargetTitle">
-            <form method="POST" action="{{ route('new-dealer-targets.store') }}">
+            <form method="POST" action="{{ route('new-dealer-targets.store') }}" id="dealerTargetForm">
                 @csrf
+                <input type="hidden" name="target_id" id="dealerTargetId" value="{{ old('target_id') }}">
                 <div class="dealer-target-modal-head">
-                    <h2 id="newDealerTargetTitle">New Dealer Appointment Target</h2>
+                    <h2 id="newDealerTargetTitle">{{ old('target_id') ? 'Edit Dealer Appointment Target' : 'New Dealer Appointment Target' }}</h2>
                     <button type="button" class="dealer-target-modal-close closeNewDealerTarget" aria-label="Close"><i class="material-icons">close</i></button>
                 </div>
                 <div class="dealer-target-modal-body">
@@ -274,13 +292,17 @@
                         <input class="dealer-target-input" id="dealerTargetNumber" name="target" type="number" min="1" step="1" value="{{ old('target') }}" placeholder="e.g. 12" required>
                     </div>
                     <div class="dealer-target-field">
+                        <label for="dealerTargetAchievement">Achievement (Nos.)</label>
+                        <input class="dealer-target-input" id="dealerTargetAchievement" name="achievement" type="number" min="0" step="1" value="{{ old('achievement') }}" placeholder="Calculated automatically when left blank">
+                    </div>
+                    <div class="dealer-target-field">
                         <label for="dealerTargetNote">Note</label>
                         <textarea class="dealer-target-input" id="dealerTargetNote" name="note" maxlength="500" placeholder="Optional note">{{ old('note') }}</textarea>
                     </div>
                 </div>
                 <div class="dealer-target-modal-footer">
                     <button type="button" class="dealer-target-btn closeNewDealerTarget">Cancel</button>
-                    <button type="submit" class="dealer-target-btn primary"><i class="material-icons">save</i> Save</button>
+                    <button type="submit" class="dealer-target-btn primary"><i class="material-icons">save</i> <span id="dealerTargetSaveText">{{ old('target_id') ? 'Update' : 'Save' }}</span></button>
                 </div>
             </form>
         </div>
@@ -332,7 +354,6 @@
                 document.body.style.overflow = open ? 'hidden' : '';
             }
 
-            openButton.addEventListener('click', function () { setModal(true); });
             closeButtons.forEach(function (button) {
                 button.addEventListener('click', function () { setModal(false); });
             });
@@ -428,6 +449,52 @@
             document.getElementById('dealerTargetPreviousYear').addEventListener('click', function () { calendarYearValue--; renderMonths(); });
             document.getElementById('dealerTargetNextYear').addEventListener('click', function () { calendarYearValue++; renderMonths(); });
             renderMonths();
+
+            const targetIdInput = document.getElementById('dealerTargetId');
+            const targetNumberInput = document.getElementById('dealerTargetNumber');
+            const targetAchievementInput = document.getElementById('dealerTargetAchievement');
+            const targetNoteInput = document.getElementById('dealerTargetNote');
+            const targetModalTitle = document.getElementById('newDealerTargetTitle');
+            const targetSaveText = document.getElementById('dealerTargetSaveText');
+
+            function setTargetFormMode(target) {
+                const editing = Boolean(target);
+                targetIdInput.value = editing ? target.dataset.id : '';
+                targetModalTitle.textContent = editing ? 'Edit Dealer Appointment Target' : 'New Dealer Appointment Target';
+                targetSaveText.textContent = editing ? 'Update' : 'Save';
+                targetNumberInput.value = editing ? target.dataset.target : '';
+                targetAchievementInput.value = editing ? target.dataset.achievement : '';
+                targetNoteInput.value = editing ? target.dataset.note : '';
+
+                const selectedUserId = editing ? target.dataset.userId : '';
+                userInput.value = selectedUserId;
+                userOptions.forEach(function (option) {
+                    const active = option.dataset.id === selectedUserId;
+                    option.classList.toggle('active', active);
+                    if (active) userText.textContent = option.dataset.label;
+                });
+                if (!editing) userText.textContent = 'Select user...';
+
+                const selectedMonth = editing ? target.dataset.month : new Date().toISOString().slice(0, 7);
+                monthInput.value = selectedMonth;
+                calendarYearValue = Number(selectedMonth.slice(0, 4));
+                monthText.textContent = monthNames[Number(selectedMonth.slice(5, 7)) - 1] + ' ' + calendarYearValue;
+                userSearch.value = '';
+                userOptions.forEach(function (option) { option.style.display = 'block'; });
+                userEmpty.style.display = 'none';
+                renderMonths();
+            }
+
+            openButton.addEventListener('click', function () {
+                setTargetFormMode(null);
+                setModal(true);
+            });
+            document.querySelectorAll('.editDealerTarget').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    setTargetFormMode(this);
+                    setModal(true);
+                });
+            });
 
             const zoneFilter = document.getElementById('dealerTargetZoneFilter');
             const zoneTrigger = document.getElementById('dealerTargetZoneTrigger');

@@ -210,6 +210,7 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     Route::get('/new-dealer-targets/export', [NewDealerTargetController::class, 'export'])->name('new-dealer-targets.export');
     Route::post('/new-dealer-targets/import', [NewDealerTargetController::class, 'import'])->name('new-dealer-targets.import');
     Route::post('/new-dealer-targets', [NewDealerTargetController::class, 'store'])->name('new-dealer-targets.store');
+    Route::delete('/new-dealer-targets/{newDealerTarget}', [NewDealerTargetController::class, 'destroy'])->name('new-dealer-targets.destroy');
 
     Route::get('/dealer_account_statement', function () {
         abort_if(Gate::denies('dealer_account_statement'), Response::HTTP_FORBIDDEN, '403 Forbidden');

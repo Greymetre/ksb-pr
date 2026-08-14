@@ -84,20 +84,49 @@ class NewDealerTargetController extends Controller
         }
 
         $validated = $request->validate([
+            'target_id' => ['nullable', 'integer', Rule::exists('new_dealer_targets', 'id')],
             'user_id' => ['required', 'integer', Rule::exists('users', 'id')],
             'target_month' => ['required', 'date_format:Y-m'],
             'target' => ['required', 'integer', 'min:1'],
+            'achievement' => ['nullable', 'integer', 'min:0'],
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
         $month = Carbon::createFromFormat('Y-m', $validated['target_month'])->startOfMonth();
+        $targetId = $validated['target_id'] ?? null;
 
-        NewDealerTarget::updateOrCreate(
-            ['user_id' => $validated['user_id'], 'target_month' => $month->toDateString()],
-            ['target' => $validated['target'], 'note' => $validated['note'] ?? null, 'created_by' => auth()->id()]
-        );
+        $duplicate = NewDealerTarget::query()
+            ->where('user_id', $validated['user_id'])
+            ->whereDate('target_month', $month->toDateString())
+            ->when($targetId, function ($query) use ($targetId) {
+                $query->where('id', '!=', $targetId);
+            })
+            ->exists();
 
-        return redirect()->route('new-dealer-targets')->with('success', 'New dealer target saved successfully.');
+        if ($duplicate) {
+            return back()->withInput()->withErrors([
+                'target_month' => 'A target already exists for this user and month.',
+            ]);
+        }
+
+        $values = [
+            'user_id' => $validated['user_id'],
+            'target_month' => $month->toDateString(),
+            'target' => $validated['target'],
+            'achievement' => array_key_exists('achievement', $validated) ? $validated['achievement'] : null,
+            'note' => $validated['note'] ?? null,
+            'created_by' => auth()->id(),
+        ];
+
+        if ($targetId) {
+            NewDealerTarget::query()->findOrFail($targetId)->update($values);
+        } else {
+            NewDealerTarget::query()->create($values);
+        }
+
+        return redirect()->route('new-dealer-targets')->with('success', $targetId
+            ? 'New dealer target updated successfully.'
+            : 'New dealer target saved successfully.');
     }
 
     public function export(Request $request)
@@ -138,5 +167,12 @@ class NewDealerTargetController extends Controller
         }
 
         return redirect()->route('new-dealer-targets')->with('success', $summary . '.');
+    }
+
+    public function destroy(NewDealerTarget $newDealerTarget)
+    {
+        $newDealerTarget->delete();
+
+        return redirect()->route('new-dealer-targets')->with('success', 'New dealer target deleted successfully.');
     }
 }
