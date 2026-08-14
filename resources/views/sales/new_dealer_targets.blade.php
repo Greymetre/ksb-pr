@@ -23,13 +23,15 @@
         .dealer-target-btn { min-height:42px; padding:0 18px; border:1px solid #294677; border-radius:12px; background:#0a1838; color:#eef4ff; font-size:14px !important; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer; }
         .dealer-target-btn .material-icons { font-size:19px; }
         .dealer-target-btn.primary { border:0; color:#06152e; background:linear-gradient(100deg,#26cce0,#438cf4); }
-        .dealer-target-stats { display:grid; grid-template-columns:repeat(3,minmax(190px,1fr)); gap:12px; max-width:760px; margin-bottom:20px; }
-        .dealer-target-stat { position:relative; min-height:94px; padding:15px 17px; overflow:hidden; border:1px solid #284775; border-radius:13px; background:linear-gradient(145deg,#0c2148,#0a1c3f); transition:transform .2s ease,border-color .2s ease; }
-        .dealer-target-stat:hover { transform:translateY(-2px); border-color:#35629a; }
-        .dealer-target-stat-label { display:flex; align-items:center; justify-content:space-between; gap:9px; color:#94a9d8; font-size:10px !important; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
-        .dealer-target-stat-label .material-icons { flex:0 0 auto; color:#24cde8; font-size:17px; font-weight:400; }
-        .dealer-target-stat-value { color:#f3f7ff; font-size:26px !important; line-height:1; font-weight:700; margin-top:14px; }
-        .dealer-target-delta { color:#ff5477; font-size:10px !important; font-weight:600; margin-top:9px; }
+        .dealer-target-stats { display:grid; grid-template-columns:repeat(3,minmax(180px,1fr)); gap:9px; max-width:690px; margin-bottom:20px; }
+        .dealer-target-stat { position:relative; min-height:68px; padding:10px 12px; display:flex; align-items:center; overflow:hidden; border:1px solid rgba(34,211,238,.25); border-radius:14px; background:linear-gradient(135deg,rgba(34,211,238,.1),rgba(8,20,50,.72)); box-shadow:inset 0 1px 0 rgba(255,255,255,.025); transition:transform .2s ease,border-color .2s ease; }
+        .dealer-target-stat:hover { transform:translateY(-1px); border-color:rgba(34,211,238,.58); }
+        .dealer-target-stat-icon { width:36px; height:36px; margin-right:10px; display:flex; align-items:center; justify-content:center; flex:0 0 36px; color:#24cde8; border:1px solid rgba(34,211,238,.3); border-radius:11px; background:rgba(34,211,238,.1); }
+        .dealer-target-stat-icon .material-icons { color:inherit; font-size:18px !important; }
+        .dealer-target-stat-content { min-width:0; display:flex; flex-direction:column; }
+        .dealer-target-stat-label { color:#94a9d8; font-size:9px !important; font-weight:600; letter-spacing:.055em; line-height:1.2; text-transform:uppercase; white-space:nowrap; }
+        .dealer-target-stat-value { margin-top:5px; color:#f3f7ff; font-family:'Sora','Inter',sans-serif; font-size:20px !important; line-height:1; font-weight:700; }
+        .dealer-target-delta { color:#ff5477; font-size:8px !important; font-weight:600; margin-top:5px; line-height:1; }
         .dealer-target-filters { display:grid; grid-template-columns:minmax(260px,1.45fr) repeat(2,minmax(190px,1fr)); gap:12px; align-items:start; max-width:1120px; margin-bottom:24px; }
         .dealer-target-filter-wrap { position:relative; }
         .dealer-target-search-wrap { position:relative; }
@@ -167,19 +169,22 @@
 
         <div class="dealer-target-stats">
             <div class="dealer-target-stat">
-                <div class="dealer-target-stat-label"><span>Total Plan (New Dealers)</span><i class="material-icons">outlined_flag</i></div>
-                <div class="dealer-target-stat-value">{{ $totalPlan }}</div>
+                <div class="dealer-target-stat-icon"><i class="material-icons">outlined_flag</i></div>
+                <div class="dealer-target-stat-content"><div class="dealer-target-stat-label">Total Plan (New Dealers)</div><div class="dealer-target-stat-value">{{ $totalPlan }}</div></div>
             </div>
             <div class="dealer-target-stat">
-                <div class="dealer-target-stat-label"><span>Total Achievement</span><i class="material-icons">add_business</i></div>
-                <div class="dealer-target-stat-value">{{ $totalAchievement }}</div>
+                <div class="dealer-target-stat-icon"><i class="material-icons">add_business</i></div>
+                <div class="dealer-target-stat-content"><div class="dealer-target-stat-label">Total Achievement</div><div class="dealer-target-stat-value">{{ $totalAchievement }}</div></div>
             </div>
             <div class="dealer-target-stat">
-                <div class="dealer-target-stat-label"><span>Overall Achievement %</span><i class="material-icons">bar_chart</i></div>
-                <div class="dealer-target-stat-value">{{ $achievementPercentage }}%</div>
-                @if($totalPlan > 0 && $achievementPercentage < 100)
-                    <div class="dealer-target-delta"><i class="material-icons" style="font-size:12px;vertical-align:-2px;">trending_down</i> {{ round(100 - $achievementPercentage, 1) }}% below target</div>
-                @endif
+                <div class="dealer-target-stat-icon"><i class="material-icons">bar_chart</i></div>
+                <div class="dealer-target-stat-content">
+                    <div class="dealer-target-stat-label">Overall Achievement %</div>
+                    <div class="dealer-target-stat-value">{{ $achievementPercentage }}%</div>
+                    @if($totalPlan > 0 && $achievementPercentage < 100)
+                        <div class="dealer-target-delta">{{ round(100 - $achievementPercentage, 1) }}% below target</div>
+                    @endif
+                </div>
             </div>
         </div>
 
