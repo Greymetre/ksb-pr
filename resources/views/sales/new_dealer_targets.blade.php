@@ -47,6 +47,16 @@
         .dealer-target-input { width:100%; height:48px; padding:0 15px; color:#eef4ff; font-size:14px !important; border:1px solid #315187; border-radius:11px; background:#091936; outline:none; }
         textarea.dealer-target-input { height:90px; padding-top:13px; resize:vertical; }
         .dealer-target-input:focus { border-color:#26cce0; box-shadow:0 0 0 2px rgba(38,204,224,.12); }
+        .dealer-target-custom-select { position:relative; }
+        .dealer-target-select-trigger { display:flex; align-items:center; justify-content:space-between; text-align:left; cursor:pointer; }
+        .dealer-target-select-trigger .material-icons { color:#8fa7d6; font-size:21px; }
+        .dealer-target-select-panel { display:none; position:absolute; top:calc(100% + 7px); left:0; right:0; z-index:100003; padding:10px; overflow:hidden; border:1px solid #315187; border-radius:11px; background:#071733; box-shadow:0 16px 35px rgba(0,0,0,.42); }
+        .dealer-target-select-panel.show { display:block; }
+        .dealer-target-user-search { height:40px; margin-bottom:8px; }
+        .dealer-target-user-options { max-height:230px; overflow-y:auto; }
+        .dealer-target-user-option { width:100%; padding:10px 12px; color:#b9c8e8; text-align:left; border:0; border-radius:8px; background:transparent; cursor:pointer; font-size:14px; }
+        .dealer-target-user-option:hover, .dealer-target-user-option.active { color:#fff; background:#123d60; }
+        .dealer-target-user-empty { display:none; padding:18px 12px; color:#8fa4d3; text-align:center; font-size:13px; }
         .dealer-target-month-wrap { position:relative; }
         .dealer-target-month-wrap .dealer-target-input { padding-right:48px; cursor:pointer; }
         .dealer-target-month-icon { position:absolute; top:50%; right:15px; transform:translateY(-50%); color:#8fa7d6; pointer-events:none; font-size:21px; }
@@ -70,6 +80,14 @@
         .new-dealer-month-picker .ui-datepicker-calendar { display:none !important; }
         .new-dealer-month-picker .ui-datepicker-buttonpane { display:flex; justify-content:flex-end; gap:8px; padding-top:10px; border:0; background:transparent; }
         .new-dealer-month-picker .ui-datepicker-buttonpane button { padding:7px 12px; color:#071733; border:0; border-radius:7px; background:#2fc5ec; font-weight:700; opacity:1; }
+        .dealer-target-month-panel { padding:14px; }
+        .dealer-target-month-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; color:#eef4ff; font-weight:700; }
+        .dealer-target-month-nav { width:34px; height:34px; display:flex; align-items:center; justify-content:center; color:#a8b9dd; border:1px solid #315187; border-radius:8px; background:#0a1d40; cursor:pointer; }
+        .dealer-target-month-nav .material-icons { font-size:19px; }
+        .dealer-target-month-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+        .dealer-target-month-option { padding:9px 5px; color:#b9c8e8; border:1px solid transparent; border-radius:8px; background:transparent; cursor:pointer; font-size:13px; }
+        .dealer-target-month-option:hover { color:#fff; background:#123d60; }
+        .dealer-target-month-option.active { color:#06152e; border-color:#2fc5ec; background:#2fc5ec; font-weight:700; }
         .dealer-target-modal-footer { display:flex; align-items:center; justify-content:flex-end; gap:12px; padding:17px 24px 22px; }
         .dealer-target-modal-footer .dealer-target-btn { min-width:110px; }
         .dealer-target-table tr:last-child td { border-bottom:0; }
@@ -171,21 +189,41 @@
                 </div>
                 <div class="dealer-target-modal-body">
                     <div class="dealer-target-field">
-                        <label for="dealerTargetUser">Employee</label>
-                        <select class="dealer-target-input" id="dealerTargetUser" name="user_id" required>
-                            <option value="">Select employee...</option>
-                            @foreach($users as $user)
-                                <option value="{{ $user->id }}" {{ (string) old('user_id') === (string) $user->id ? 'selected' : '' }}>
-                                    {{ $user->employee_codes ? $user->employee_codes.' - ' : '' }}{{ $user->name ?: trim($user->first_name.' '.$user->last_name) }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <label for="dealerTargetUserTrigger">User</label>
+                        @php $oldUser = $users->firstWhere('id', (int) old('user_id')); @endphp
+                        <div class="dealer-target-custom-select" id="dealerTargetUserSelect">
+                            <button type="button" class="dealer-target-input dealer-target-select-trigger" id="dealerTargetUserTrigger">
+                                <span id="dealerTargetUserText">{{ $oldUser ? (($oldUser->employee_codes ? $oldUser->employee_codes.' - ' : '').($oldUser->name ?: trim($oldUser->first_name.' '.$oldUser->last_name))) : 'Select user...' }}</span>
+                                <i class="material-icons">expand_more</i>
+                            </button>
+                            <div class="dealer-target-select-panel" id="dealerTargetUserPanel">
+                                <input type="search" class="dealer-target-input dealer-target-user-search" id="dealerTargetUserSearch" placeholder="Search user name or code" autocomplete="off">
+                                <div class="dealer-target-user-options">
+                                    @foreach($users as $user)
+                                        @php $userLabel = ($user->employee_codes ? $user->employee_codes.' - ' : '').($user->name ?: trim($user->first_name.' '.$user->last_name)); @endphp
+                                        <button type="button" class="dealer-target-user-option {{ (string) old('user_id') === (string) $user->id ? 'active' : '' }}" data-id="{{ $user->id }}" data-label="{{ $userLabel }}">{{ $userLabel }}</button>
+                                    @endforeach
+                                    <div class="dealer-target-user-empty" id="dealerTargetUserEmpty">No users found</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input id="dealerTargetUser" name="user_id" type="hidden" value="{{ old('user_id') }}" required>
                     </div>
                     <div class="dealer-target-field">
                         <label for="dealerTargetMonth">Month</label>
                         <div class="dealer-target-month-wrap">
-                            <input class="dealer-target-input" id="dealerTargetMonthDisplay" type="text" value="{{ \Carbon\Carbon::createFromFormat('Y-m', old('target_month', now()->format('Y-m')))->format('F Y') }}" placeholder="Select month" autocomplete="off" readonly required>
+                            <button type="button" class="dealer-target-input dealer-target-select-trigger" id="dealerTargetMonthDisplay">
+                                <span id="dealerTargetMonthText">{{ \Carbon\Carbon::createFromFormat('Y-m', old('target_month', now()->format('Y-m')))->format('F Y') }}</span>
+                            </button>
                             <i class="material-icons dealer-target-month-icon">calendar_month</i>
+                            <div class="dealer-target-select-panel dealer-target-month-panel" id="dealerTargetMonthPanel">
+                                <div class="dealer-target-month-head">
+                                    <button type="button" class="dealer-target-month-nav" id="dealerTargetPreviousYear"><i class="material-icons">chevron_left</i></button>
+                                    <span id="dealerTargetCalendarYear"></span>
+                                    <button type="button" class="dealer-target-month-nav" id="dealerTargetNextYear"><i class="material-icons">chevron_right</i></button>
+                                </div>
+                                <div class="dealer-target-month-grid" id="dealerTargetMonthGrid"></div>
+                            </div>
                         </div>
                         <input id="dealerTargetMonth" name="target_month" type="hidden" value="{{ old('target_month', now()->format('Y-m')) }}">
                     </div>
@@ -229,48 +267,78 @@
                 if (event.key === 'Escape') setModal(false);
             });
 
-            if (window.jQuery) {
-                const $modal = jQuery('#newDealerTargetModal');
-                const $employee = jQuery('#dealerTargetUser');
-                const $monthDisplay = jQuery('#dealerTargetMonthDisplay');
-                const $monthValue = jQuery('#dealerTargetMonth');
+            const userTrigger = document.getElementById('dealerTargetUserTrigger');
+            const userPanel = document.getElementById('dealerTargetUserPanel');
+            const userSearch = document.getElementById('dealerTargetUserSearch');
+            const userInput = document.getElementById('dealerTargetUser');
+            const userText = document.getElementById('dealerTargetUserText');
+            const userOptions = Array.from(document.querySelectorAll('.dealer-target-user-option'));
+            const userEmpty = document.getElementById('dealerTargetUserEmpty');
 
-                if (jQuery.fn.select2) {
-                    if ($employee.hasClass('select2-hidden-accessible')) $employee.select2('destroy');
-                    $employee.select2({
-                        width: '100%',
-                        placeholder: 'Select employee...',
-                        dropdownParent: $modal,
-                        dropdownCssClass: 'new-dealer-target-dropdown'
-                    });
-                }
+            userTrigger.addEventListener('click', function () {
+                userPanel.classList.toggle('show');
+                monthPanel.classList.remove('show');
+                if (userPanel.classList.contains('show')) setTimeout(function () { userSearch.focus(); }, 0);
+            });
+            userSearch.addEventListener('input', function () {
+                const query = this.value.trim().toLowerCase();
+                let visible = 0;
+                userOptions.forEach(function (option) {
+                    const matches = option.dataset.label.toLowerCase().includes(query);
+                    option.style.display = matches ? 'block' : 'none';
+                    if (matches) visible++;
+                });
+                userEmpty.style.display = visible ? 'none' : 'block';
+            });
+            userOptions.forEach(function (option) {
+                option.addEventListener('click', function () {
+                    userInput.value = this.dataset.id;
+                    userText.textContent = this.dataset.label;
+                    userOptions.forEach(function (item) { item.classList.remove('active'); });
+                    this.classList.add('active');
+                    userPanel.classList.remove('show');
+                });
+            });
 
-                if (jQuery.fn.datepicker) {
-                    $monthDisplay.datepicker({
-                        dateFormat: 'MM yy',
-                        changeMonth: true,
-                        changeYear: true,
-                        showButtonPanel: true,
-                        closeText: 'Select',
-                        beforeShow: function () {
-                            setTimeout(function () {
-                                jQuery('#ui-datepicker-div').addClass('new-dealer-month-picker');
-                                jQuery('.ui-datepicker-calendar').hide();
-                            }, 0);
-                        },
-                        onClose: function () {
-                            const month = jQuery('#ui-datepicker-div .ui-datepicker-month option:selected').val();
-                            const year = jQuery('#ui-datepicker-div .ui-datepicker-year option:selected').val();
-                            if (month !== undefined && year) {
-                                const date = new Date(Number(year), Number(month), 1);
-                                $monthDisplay.val(jQuery.datepicker.formatDate('MM yy', date));
-                                $monthValue.val(year + '-' + String(Number(month) + 1).padStart(2, '0'));
-                            }
-                            jQuery('#ui-datepicker-div').removeClass('new-dealer-month-picker');
-                        }
+            const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            const monthTrigger = document.getElementById('dealerTargetMonthDisplay');
+            const monthPanel = document.getElementById('dealerTargetMonthPanel');
+            const monthGrid = document.getElementById('dealerTargetMonthGrid');
+            const monthInput = document.getElementById('dealerTargetMonth');
+            const monthText = document.getElementById('dealerTargetMonthText');
+            const calendarYear = document.getElementById('dealerTargetCalendarYear');
+            let calendarYearValue = Number((monthInput.value || new Date().toISOString().slice(0, 7)).slice(0, 4));
+
+            function renderMonths() {
+                calendarYear.textContent = calendarYearValue;
+                monthGrid.innerHTML = '';
+                monthNames.forEach(function (name, index) {
+                    const value = calendarYearValue + '-' + String(index + 1).padStart(2, '0');
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'dealer-target-month-option' + (monthInput.value === value ? ' active' : '');
+                    button.textContent = name.slice(0, 3);
+                    button.addEventListener('click', function () {
+                        monthInput.value = value;
+                        monthText.textContent = name + ' ' + calendarYearValue;
+                        monthPanel.classList.remove('show');
                     });
-                }
+                    monthGrid.appendChild(button);
+                });
             }
+            monthTrigger.addEventListener('click', function () {
+                monthPanel.classList.toggle('show');
+                userPanel.classList.remove('show');
+                renderMonths();
+            });
+            document.getElementById('dealerTargetPreviousYear').addEventListener('click', function () { calendarYearValue--; renderMonths(); });
+            document.getElementById('dealerTargetNextYear').addEventListener('click', function () { calendarYearValue++; renderMonths(); });
+            renderMonths();
+
+            document.addEventListener('click', function (event) {
+                if (!document.getElementById('dealerTargetUserSelect').contains(event.target)) userPanel.classList.remove('show');
+                if (!event.target.closest('.dealer-target-month-wrap')) monthPanel.classList.remove('show');
+            });
         });
     </script>
 </x-app-layout>
