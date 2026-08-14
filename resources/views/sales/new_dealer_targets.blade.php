@@ -8,38 +8,47 @@
     @endphp
 
     <style>
-        .dealer-target-page { color: #eef4ff; padding: 20px 24px 42px; }
-        .dealer-target-header { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:28px; }
+        .dealer-target-page { color:#eef4ff; padding:20px 24px 42px; font-family:inherit; }
+        .dealer-target-header { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:24px; }
+        .dealer-target-header > div:first-child { flex:1 1 auto; min-width:0; }
         .dealer-target-breadcrumb { display:flex; align-items:center; gap:11px; margin:0 0 11px; color:#7187bd; font-size:11px !important; font-weight:700; letter-spacing:.24em; text-transform:uppercase; }
         .dealer-target-breadcrumb .current { color:#438cf4; }
         .dealer-target-title-row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-        .dealer-target-header h1 { color:#f4f7ff; font-size:28px !important; font-weight:700; line-height:1.25; margin:0 0 7px; }
+        .dealer-target-header h1 { color:#f4f7ff; font-size:26px !important; font-weight:700; line-height:1.25; margin:0 0 7px; }
         .dealer-target-title-row h1 { margin-bottom:0; }
         .dealer-target-record-count { min-height:36px; padding:0 18px; display:inline-flex; align-items:center; justify-content:center; color:#22d2ea; border:1px solid #1681a6; border-radius:999px; background:rgba(21,126,169,.18); font-size:14px !important; font-weight:700; white-space:nowrap; }
         .dealer-target-header p { color:#91a6d5; font-size:14px !important; line-height:1.5; margin:0; }
         .dealer-target-title-row + p { margin-top:8px; }
-        .dealer-target-actions { display:flex; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
+        .dealer-target-actions { flex:0 0 auto; display:flex; gap:10px; flex-wrap:nowrap; justify-content:flex-end; padding-top:3px; }
         .dealer-target-btn { min-height:42px; padding:0 18px; border:1px solid #294677; border-radius:12px; background:#0a1838; color:#eef4ff; font-size:14px !important; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer; }
         .dealer-target-btn .material-icons { font-size:19px; }
         .dealer-target-btn.primary { border:0; color:#06152e; background:linear-gradient(100deg,#26cce0,#438cf4); }
-        .dealer-target-stats { display:grid; grid-template-columns:repeat(3,minmax(220px,1fr)); gap:18px; max-width:920px; margin-bottom:26px; }
-        .dealer-target-stat { min-height:125px; padding:22px; border:1px solid #284775; border-radius:16px; background:#0c2148; }
-        .dealer-target-stat-label { color:#94a9d8; font-size:13px !important; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
-        .dealer-target-stat-value { color:#f3f7ff; font-size:34px !important; line-height:1; font-weight:700; margin-top:18px; }
+        .dealer-target-stats { display:grid; grid-template-columns:repeat(3,minmax(220px,1fr)); gap:16px; max-width:920px; margin-bottom:24px; }
+        .dealer-target-stat { position:relative; min-height:126px; padding:20px 22px; overflow:hidden; border:1px solid #284775; border-radius:15px; background:linear-gradient(145deg,#0c2148,#0a1c3f); transition:transform .2s ease,border-color .2s ease; }
+        .dealer-target-stat:hover { transform:translateY(-2px); border-color:#35629a; }
+        .dealer-target-stat-label { display:flex; align-items:center; justify-content:space-between; gap:12px; color:#94a9d8; font-size:12px !important; font-weight:700; letter-spacing:.045em; text-transform:uppercase; }
+        .dealer-target-stat-label .material-icons { flex:0 0 auto; color:#24cde8; font-size:21px; font-weight:400; }
+        .dealer-target-stat-value { color:#f3f7ff; font-size:32px !important; line-height:1; font-weight:700; margin-top:19px; }
         .dealer-target-delta { color:#ff5477; font-size:13px !important; font-weight:600; margin-top:14px; }
-        .dealer-target-filters { display:grid; grid-template-columns:minmax(250px,1.5fr) repeat(2,minmax(180px,1fr)); gap:12px; align-items:start; max-width:1200px; margin-bottom:24px; }
+        .dealer-target-filters { display:grid; grid-template-columns:minmax(260px,1.45fr) repeat(2,minmax(190px,1fr)); gap:12px; align-items:start; max-width:1120px; margin-bottom:24px; }
         .dealer-target-filter-wrap { position:relative; }
+        .dealer-target-search-wrap { position:relative; }
+        .dealer-target-search-wrap > .material-icons { position:absolute; z-index:1; top:50%; left:15px; transform:translateY(-50%); color:#8fa7d6; font-size:20px; pointer-events:none; }
+        .dealer-target-search-wrap .dealer-target-control { padding-left:46px; }
         .dealer-target-filter-btn { min-width:112px; height:46px; }
-        .dealer-target-control { height:46px; padding:0 16px; border:1px solid #294878; border-radius:12px; background:#091936; color:#cbd8f4; font-size:14px !important; width:100%; outline:none; }
+        .dealer-target-control { height:46px; padding:0 16px; border:1px solid #294878; border-radius:12px; background:#091936; color:#cbd8f4; font-size:14px !important; width:100%; outline:none; transition:border-color .2s ease,box-shadow .2s ease; }
+        .dealer-target-control:focus { border-color:#26cce0; box-shadow:0 0 0 2px rgba(38,204,224,.1); }
+        .dealer-target-filter-label { display:flex; align-items:center; gap:10px; }
+        .dealer-target-filter-label .material-icons { color:#8fa7d6; font-size:19px; }
         .dealer-target-table-card { overflow:hidden; border:1px solid #284775; border-top:3px solid #23cee8; border-radius:19px; background:#0b2046; }
-        .dealer-target-table-title { display:flex; align-items:center; gap:15px; padding:22px 28px; border-bottom:1px solid #274371; }
+        .dealer-target-table-title { display:flex; align-items:center; gap:14px; padding:19px 24px; border-bottom:1px solid #274371; }
         .dealer-target-table-title .icon-box { width:48px; height:48px; border:1px solid #23cee8; border-radius:13px; display:flex; align-items:center; justify-content:center; color:#23cee8; }
         .dealer-target-table-title h2 { color:#eef4ff; font-size:19px !important; margin:0; }
         .dealer-target-table-title p { color:#8fa4d3; font-size:13px !important; margin:3px 0 0; }
         .dealer-target-table-wrap { overflow-x:auto; }
         .dealer-target-table { width:100%; min-width:1050px; border-collapse:collapse; }
-        .dealer-target-table th { padding:16px 20px; text-align:left; color:#91a6d5; font-size:12px !important; letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid #294675; white-space:nowrap; }
-        .dealer-target-table td { padding:17px 20px; color:#b7c7e8; font-size:14px !important; border-bottom:1px solid #223e6b; }
+        .dealer-target-table th { padding:15px 18px; text-align:left; color:#91a6d5; font-size:11px !important; font-weight:700; letter-spacing:.075em; text-transform:uppercase; border-bottom:1px solid #294675; white-space:nowrap; }
+        .dealer-target-table td { padding:15px 18px; color:#b7c7e8; font-size:13px !important; border-bottom:1px solid #223e6b; }
         .dealer-target-row-actions { display:flex; align-items:center; gap:7px; white-space:nowrap; }
         .dealer-target-action-btn { width:34px; height:34px; padding:0; display:inline-flex; align-items:center; justify-content:center; color:#b9caee; border:1px solid #315187; border-radius:9px; background:#091936; cursor:pointer; }
         .dealer-target-action-btn:hover { color:#fff; border-color:#29cbe5; background:#123d60; }
@@ -121,7 +130,7 @@
         .achievement-pill.low { color:#ff5978; border:1px solid #a43b5d; background:rgba(255,67,105,.12); }
         @media (max-width: 991px) {
             .dealer-target-header { flex-direction:column; }
-            .dealer-target-actions { justify-content:flex-start; }
+            .dealer-target-actions { justify-content:flex-start; flex-wrap:wrap; }
             .dealer-target-stats { grid-template-columns:1fr; max-width:none; }
             .dealer-target-filters { grid-template-columns:1fr; max-width:none; }
         }
@@ -158,27 +167,30 @@
 
         <div class="dealer-target-stats">
             <div class="dealer-target-stat">
-                <div class="dealer-target-stat-label">Total Plan (New Dealers)</div>
+                <div class="dealer-target-stat-label"><span>Total Plan (New Dealers)</span><i class="material-icons">outlined_flag</i></div>
                 <div class="dealer-target-stat-value">{{ $totalPlan }}</div>
             </div>
             <div class="dealer-target-stat">
-                <div class="dealer-target-stat-label">Total Achievement</div>
+                <div class="dealer-target-stat-label"><span>Total Achievement</span><i class="material-icons">add_business</i></div>
                 <div class="dealer-target-stat-value">{{ $totalAchievement }}</div>
             </div>
             <div class="dealer-target-stat">
-                <div class="dealer-target-stat-label">Overall Achievement %</div>
+                <div class="dealer-target-stat-label"><span>Overall Achievement %</span><i class="material-icons">bar_chart</i></div>
                 <div class="dealer-target-stat-value">{{ $achievementPercentage }}%</div>
                 @if($totalPlan > 0 && $achievementPercentage < 100)
-                    <div class="dealer-target-delta">{{ round(100 - $achievementPercentage, 1) }}% below target</div>
+                    <div class="dealer-target-delta"><i class="material-icons" style="font-size:15px;vertical-align:-3px;">trending_down</i> {{ round(100 - $achievementPercentage, 1) }}% below target</div>
                 @endif
             </div>
         </div>
 
         <form class="dealer-target-filters" method="GET" action="{{ route('new-dealer-targets') }}" id="dealerTargetFilterForm">
-            <input class="dealer-target-control" id="dealerTargetSearchFilter" name="search" type="search" value="{{ request('search') }}" placeholder="Search by user name or code" autocomplete="off">
+            <div class="dealer-target-search-wrap">
+                <i class="material-icons">search</i>
+                <input class="dealer-target-control" id="dealerTargetSearchFilter" name="search" type="search" value="{{ request('search') }}" placeholder="Search by user name or code" autocomplete="off">
+            </div>
             <div class="dealer-target-custom-select dealer-target-filter-wrap" id="dealerTargetZoneFilter">
                 <button type="button" class="dealer-target-control dealer-target-select-trigger" id="dealerTargetZoneTrigger">
-                    <span id="dealerTargetZoneText">{{ $selectedZone->division_name ?? 'All Zones' }}</span><i class="material-icons">expand_more</i>
+                    <span class="dealer-target-filter-label"><i class="material-icons">public</i><span id="dealerTargetZoneText">{{ $selectedZone->division_name ?? 'All Zones' }}</span></span><i class="material-icons">expand_more</i>
                 </button>
                 <div class="dealer-target-select-panel" id="dealerTargetZonePanel">
                     <div class="dealer-target-user-options">
@@ -192,8 +204,8 @@
             </div>
             <div class="dealer-target-month-wrap dealer-target-filter-wrap">
                 <button type="button" class="dealer-target-control dealer-target-select-trigger" id="dealerTargetFilterMonthTrigger">
-                    <span id="dealerTargetFilterMonthText">{{ $selectedFilterMonth ? \Carbon\Carbon::createFromFormat('Y-m', $selectedFilterMonth)->format('F Y') : 'All Months' }}</span>
-                    <i class="material-icons">calendar_month</i>
+                    <span class="dealer-target-filter-label"><i class="material-icons">calendar_month</i><span id="dealerTargetFilterMonthText">{{ $selectedFilterMonth ? \Carbon\Carbon::createFromFormat('Y-m', $selectedFilterMonth)->format('F Y') : 'All Months' }}</span></span>
+                    <i class="material-icons">expand_more</i>
                 </button>
                 <div class="dealer-target-select-panel dealer-target-month-panel" id="dealerTargetFilterMonthPanel">
                     <div class="dealer-target-month-head">
