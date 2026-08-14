@@ -284,11 +284,31 @@
      }
 
      body.fk-shell .expense-inline-filters {
-       margin: 4px 18px 8px;
-       padding: 12px;
-       border: 1px solid rgba(90, 130, 220, .22);
+       max-height: 0;
+       margin: 0 18px;
+       padding: 0 12px;
+       overflow: hidden;
+       border: 1px solid transparent;
        border-radius: 12px;
        background: rgba(7, 18, 44, .45);
+       opacity: 0;
+       pointer-events: none;
+       transition: max-height .3s ease, margin .3s ease, padding .3s ease, border-color .3s ease, opacity .2s ease;
+     }
+
+     body.fk-shell .expense-inline-filters.is-expanded {
+       max-height: 420px;
+       margin: 4px 18px 8px;
+       padding: 12px;
+       border-color: rgba(90, 130, 220, .22);
+       opacity: 1;
+       pointer-events: auto;
+     }
+
+     body.fk-shell .fk-list-actions .expense-filter-toggle.is-active {
+       border-color: rgba(34, 211, 238, .55) !important;
+       background: rgba(34, 211, 238, .14) !important;
+       color: #22d3ee !important;
      }
 
      body.fk-shell .expense-inline-filters:empty {
@@ -342,6 +362,12 @@
 
      @media (max-width: 575px) {
        body.fk-shell .expense-inline-filters {
+         margin-right: 12px;
+         margin-left: 12px;
+       }
+
+       body.fk-shell .expense-inline-filters.is-expanded {
+         max-height: 900px;
          margin-right: 12px;
          margin-left: 12px;
        }
@@ -419,8 +445,34 @@
        var form = document.querySelector('.card-header form[action*="expenses-download"]');
        if (target && form) {
          target.appendChild(form);
+         target.setAttribute('aria-hidden', 'true');
        }
      })();
+
+     setTimeout(function installExpenseFilterToggle() {
+       var actions = document.querySelector('.fk-list-page-head .fk-list-actions');
+       var target = document.getElementById('expenseInlineFilters');
+       if (!actions || !target || actions.querySelector('.expense-filter-toggle')) {
+         return;
+       }
+
+       var button = document.createElement('button');
+       button.type = 'button';
+       button.className = 'btn fk-filter-trigger expense-filter-toggle';
+       button.setAttribute('aria-controls', 'expenseInlineFilters');
+       button.setAttribute('aria-expanded', 'false');
+       button.innerHTML = '<span class="material-icons">tune</span><span>Filters</span>';
+
+       button.addEventListener('click', function () {
+         var expanded = target.classList.toggle('is-expanded');
+         button.classList.toggle('is-active', expanded);
+         button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+         target.setAttribute('aria-hidden', expanded ? 'false' : 'true');
+       });
+
+       var createButton = actions.querySelector('.fk-create-action');
+       actions.insertBefore(button, createButton || null);
+     }, 0);
 
      $(document).on('click', '.expense-status-card[data-expense-status]', function () {
        var status = String($(this).data('expense-status'));
