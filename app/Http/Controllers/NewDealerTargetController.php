@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DealerAppointment;
+use App\Models\Division;
 use App\Models\NewDealerTarget;
 use App\Models\User;
 use Carbon\Carbon;
@@ -12,22 +13,48 @@ use Illuminate\Validation\Rule;
 
 class NewDealerTargetController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $users = User::query()
             ->orderBy('name')
             ->get(['id', 'name', 'first_name', 'last_name', 'employee_codes']);
 
+        $zones = Division::query()
+            ->where('active', 'Y')
+            ->orderBy('division_name')
+            ->get(['id', 'division_name']);
+
         if (! Schema::hasTable('new_dealer_targets')) {
             return view('sales.new_dealer_targets', [
                 'dealerTargets' => collect(),
                 'users' => $users,
+                'zones' => $zones,
                 'setupRequired' => true,
             ]);
         }
 
         $dealerTargets = NewDealerTarget::query()
             ->with(['user.getdivision'])
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = trim($request->input('search'));
+                $query->whereHas('user', function ($userQuery) use ($search) {
+                    $userQuery->where(function ($nameQuery) use ($search) {
+                        $nameQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('employee_codes', 'like', "%{$search}%");
+                    });
+                });
+            })
+            ->when($request->filled('zone_id'), function ($query) use ($request) {
+                $query->whereHas('user', function ($userQuery) use ($request) {
+                    $userQuery->where('division_id', (int) $request->input('zone_id'));
+                });
+            })
+            ->when(preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', (string) $request->input('month')), function ($query) use ($request) {
+                $month = Carbon::createFromFormat('Y-m', $request->input('month'));
+                $query->whereDate('target_month', $month->startOfMonth()->toDateString());
+            })
             ->latest('target_month')
             ->latest('id')
             ->get()
@@ -41,7 +68,7 @@ class NewDealerTargetController extends Controller
                 return $target;
             });
 
-        return view('sales.new_dealer_targets', compact('dealerTargets', 'users'));
+        return view('sales.new_dealer_targets', compact('dealerTargets', 'users', 'zones'));
     }
 
     public function store(Request $request)

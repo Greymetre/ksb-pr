@@ -3,6 +3,8 @@
         $totalPlan = $dealerTargets->sum('target');
         $totalAchievement = $dealerTargets->sum('achievement');
         $achievementPercentage = $totalPlan > 0 ? round(($totalAchievement / $totalPlan) * 100, 1) : 0;
+        $selectedZone = $zones->firstWhere('id', (int) request('zone_id'));
+        $selectedFilterMonth = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', (string) request('month')) ? request('month') : null;
     @endphp
 
     <style>
@@ -19,7 +21,9 @@
         .dealer-target-stat-label { color:#94a9d8; font-size:13px !important; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
         .dealer-target-stat-value { color:#f3f7ff; font-size:34px !important; line-height:1; font-weight:700; margin-top:18px; }
         .dealer-target-delta { color:#ff5477; font-size:13px !important; font-weight:600; margin-top:14px; }
-        .dealer-target-filters { display:grid; grid-template-columns:minmax(280px,1.5fr) repeat(2,minmax(190px,1fr)); gap:14px; max-width:1000px; margin-bottom:24px; }
+        .dealer-target-filters { display:grid; grid-template-columns:minmax(250px,1.5fr) repeat(2,minmax(180px,1fr)) auto auto; gap:12px; align-items:start; margin-bottom:24px; }
+        .dealer-target-filter-wrap { position:relative; }
+        .dealer-target-filter-btn { min-width:112px; height:46px; }
         .dealer-target-control { height:46px; padding:0 16px; border:1px solid #294878; border-radius:12px; background:#091936; color:#cbd8f4; font-size:14px !important; width:100%; outline:none; }
         .dealer-target-table-card { overflow:hidden; border:1px solid #284775; border-top:3px solid #23cee8; border-radius:19px; background:#0b2046; }
         .dealer-target-table-title { display:flex; align-items:center; gap:15px; padding:22px 28px; border-bottom:1px solid #274371; }
@@ -144,11 +148,41 @@
             </div>
         </div>
 
-        <div class="dealer-target-filters">
-            <input class="dealer-target-control" type="search" placeholder="Search by employee name or code">
-            <select class="dealer-target-control"><option>All Zones</option><option>North</option><option>South</option><option>East</option><option>West</option><option>Central</option></select>
-            <select class="dealer-target-control"><option>All Months</option><option>Jun 2026</option><option>Jul 2026</option><option>Aug 2026</option></select>
-        </div>
+        <form class="dealer-target-filters" method="GET" action="{{ route('new-dealer-targets') }}" id="dealerTargetFilterForm">
+            <input class="dealer-target-control" name="search" type="search" value="{{ request('search') }}" placeholder="Search by user name or code">
+            <div class="dealer-target-custom-select dealer-target-filter-wrap" id="dealerTargetZoneFilter">
+                <button type="button" class="dealer-target-control dealer-target-select-trigger" id="dealerTargetZoneTrigger">
+                    <span id="dealerTargetZoneText">{{ $selectedZone->division_name ?? 'All Zones' }}</span><i class="material-icons">expand_more</i>
+                </button>
+                <div class="dealer-target-select-panel" id="dealerTargetZonePanel">
+                    <div class="dealer-target-user-options">
+                        <button type="button" class="dealer-target-user-option {{ request('zone_id') ? '' : 'active' }}" data-zone-id="" data-zone-label="All Zones">All Zones</button>
+                        @foreach($zones as $zone)
+                            <button type="button" class="dealer-target-user-option {{ (string) request('zone_id') === (string) $zone->id ? 'active' : '' }}" data-zone-id="{{ $zone->id }}" data-zone-label="{{ $zone->division_name }}">{{ $zone->division_name }}</button>
+                        @endforeach
+                    </div>
+                </div>
+                <input type="hidden" name="zone_id" id="dealerTargetZoneValue" value="{{ request('zone_id') }}">
+            </div>
+            <div class="dealer-target-month-wrap dealer-target-filter-wrap">
+                <button type="button" class="dealer-target-control dealer-target-select-trigger" id="dealerTargetFilterMonthTrigger">
+                    <span id="dealerTargetFilterMonthText">{{ $selectedFilterMonth ? \Carbon\Carbon::createFromFormat('Y-m', $selectedFilterMonth)->format('F Y') : 'All Months' }}</span>
+                    <i class="material-icons">calendar_month</i>
+                </button>
+                <div class="dealer-target-select-panel dealer-target-month-panel" id="dealerTargetFilterMonthPanel">
+                    <div class="dealer-target-month-head">
+                        <button type="button" class="dealer-target-month-nav" id="dealerTargetFilterPreviousYear"><i class="material-icons">chevron_left</i></button>
+                        <span id="dealerTargetFilterCalendarYear"></span>
+                        <button type="button" class="dealer-target-month-nav" id="dealerTargetFilterNextYear"><i class="material-icons">chevron_right</i></button>
+                    </div>
+                    <div class="dealer-target-month-grid" id="dealerTargetFilterMonthGrid"></div>
+                    <button type="button" class="dealer-target-user-option" id="dealerTargetAllMonths">All Months</button>
+                </div>
+                <input type="hidden" name="month" id="dealerTargetFilterMonthValue" value="{{ $selectedFilterMonth }}">
+            </div>
+            <button type="submit" class="dealer-target-btn primary dealer-target-filter-btn"><i class="material-icons">filter_alt</i> Apply</button>
+            <a href="{{ route('new-dealer-targets') }}" class="dealer-target-btn dealer-target-filter-btn">Reset</a>
+        </form>
 
         <div class="dealer-target-table-card">
             <div class="dealer-target-table-title">
@@ -335,9 +369,71 @@
             document.getElementById('dealerTargetNextYear').addEventListener('click', function () { calendarYearValue++; renderMonths(); });
             renderMonths();
 
+            const zoneFilter = document.getElementById('dealerTargetZoneFilter');
+            const zoneTrigger = document.getElementById('dealerTargetZoneTrigger');
+            const zonePanel = document.getElementById('dealerTargetZonePanel');
+            const zoneValue = document.getElementById('dealerTargetZoneValue');
+            const zoneText = document.getElementById('dealerTargetZoneText');
+            const zoneOptions = Array.from(zonePanel.querySelectorAll('[data-zone-id]'));
+
+            zoneTrigger.addEventListener('click', function () {
+                zonePanel.classList.toggle('show');
+                filterMonthPanel.classList.remove('show');
+            });
+            zoneOptions.forEach(function (option) {
+                option.addEventListener('click', function () {
+                    zoneValue.value = this.dataset.zoneId;
+                    zoneText.textContent = this.dataset.zoneLabel;
+                    zoneOptions.forEach(function (item) { item.classList.remove('active'); });
+                    this.classList.add('active');
+                    zonePanel.classList.remove('show');
+                });
+            });
+
+            const filterMonthTrigger = document.getElementById('dealerTargetFilterMonthTrigger');
+            const filterMonthPanel = document.getElementById('dealerTargetFilterMonthPanel');
+            const filterMonthGrid = document.getElementById('dealerTargetFilterMonthGrid');
+            const filterMonthValue = document.getElementById('dealerTargetFilterMonthValue');
+            const filterMonthText = document.getElementById('dealerTargetFilterMonthText');
+            const filterCalendarYear = document.getElementById('dealerTargetFilterCalendarYear');
+            let filterYearValue = Number((filterMonthValue.value || new Date().toISOString().slice(0, 7)).slice(0, 4));
+
+            function renderFilterMonths() {
+                filterCalendarYear.textContent = filterYearValue;
+                filterMonthGrid.innerHTML = '';
+                monthNames.forEach(function (name, index) {
+                    const value = filterYearValue + '-' + String(index + 1).padStart(2, '0');
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'dealer-target-month-option' + (filterMonthValue.value === value ? ' active' : '');
+                    button.textContent = name.slice(0, 3);
+                    button.addEventListener('click', function () {
+                        filterMonthValue.value = value;
+                        filterMonthText.textContent = name + ' ' + filterYearValue;
+                        filterMonthPanel.classList.remove('show');
+                    });
+                    filterMonthGrid.appendChild(button);
+                });
+            }
+            filterMonthTrigger.addEventListener('click', function () {
+                filterMonthPanel.classList.toggle('show');
+                zonePanel.classList.remove('show');
+                renderFilterMonths();
+            });
+            document.getElementById('dealerTargetFilterPreviousYear').addEventListener('click', function () { filterYearValue--; renderFilterMonths(); });
+            document.getElementById('dealerTargetFilterNextYear').addEventListener('click', function () { filterYearValue++; renderFilterMonths(); });
+            document.getElementById('dealerTargetAllMonths').addEventListener('click', function () {
+                filterMonthValue.value = '';
+                filterMonthText.textContent = 'All Months';
+                filterMonthPanel.classList.remove('show');
+            });
+            renderFilterMonths();
+
             document.addEventListener('click', function (event) {
                 if (!document.getElementById('dealerTargetUserSelect').contains(event.target)) userPanel.classList.remove('show');
                 if (!event.target.closest('.dealer-target-month-wrap')) monthPanel.classList.remove('show');
+                if (!zoneFilter.contains(event.target)) zonePanel.classList.remove('show');
+                if (!document.getElementById('dealerTargetFilterMonthTrigger').parentElement.contains(event.target)) filterMonthPanel.classList.remove('show');
             });
         });
     </script>
