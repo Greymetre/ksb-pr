@@ -520,6 +520,7 @@ public function attendanceSummaryDownload(Request $request)
         'Leave (CL)',
         'Holiday (H)',
         'Week Off (W/O)',
+        'Miss-Punch',
         'Total Days',
     ];
 
@@ -576,7 +577,7 @@ public function attendanceSummaryDownload(Request $request)
                     $isHalfDay = (bool) array_intersect($workingTypes, ['First Half Leave', 'Second Half Leave']);
 
                     if ($isCompOff) {
-                        $row[] = 'P';
+                        $row[] = 'Comp-Off';
                         $totals['p']++;
                     } elseif ($isHalfDay) {
                         $row[] = '1/2P+1/2CL';
@@ -689,7 +690,7 @@ public function attendanceSummaryDownload(Request $request)
         $isHalfDay = in_array($leave->type, ['First Half Leave', 'Second Half Leave'], true);
 
         if ($isCompOff) {
-            $row[] = 'P';
+            $row[] = 'Comp-Off';
             $totals['p']++;
         } elseif ($isHalfDay) {
             $row[] = '1/2P+1/2CL';
@@ -759,6 +760,7 @@ public function attendanceSummaryDownload(Request $request)
         $row[] = (string) $totals['cl'];
         $row[] = (string) $totals['h'];
         $row[] = (string) $totals['wo'];
+        $row[] = (string) $totals['mis'];
         $row[] = (string) $totals['atte'];
 
         // Basic user info columns
