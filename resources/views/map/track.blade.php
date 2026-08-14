@@ -2,11 +2,21 @@
 <html>
 
 <head>
-    <title>Track Map</title>
+    <title>Track Activity - {{ \Carbon\Carbon::parse($selectedDate)->format('d M Y') }}</title>
     <style>
         #map {
-            height: 700px;
+            height: 100vh;
             width: 100%;
+        }
+
+        .no-location-data {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #071634;
+            color: #eaf1ff;
+            font: 600 18px Arial, sans-serif;
         }
     </style>
 
@@ -14,6 +24,11 @@
         const locations = @json($coordinates);
 
         function initMap() {
+            if (!locations.length) {
+                document.getElementById("map").innerHTML = '<div class="no-location-data">No location activity found for {{ \Carbon\Carbon::parse($selectedDate)->format('d M Y') }}.</div>';
+                return;
+            }
+
             const map = new google.maps.Map(document.getElementById("map"), {
                 zoom: 14,
                 center: {

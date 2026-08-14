@@ -1068,6 +1068,7 @@ class ExpensesController extends Controller
         if ($request->submit == 'Track Activity') {
             $rules = [
                 'user_id'   => 'required',
+                'track_date' => 'required|date|after_or_equal:' . Carbon::today()->subDays(14)->format('Y-m-d') . '|before_or_equal:' . Carbon::today()->format('Y-m-d'),
             ];
 
             $validator = Validator::make($request->all(), $rules);
@@ -1077,7 +1078,15 @@ class ExpensesController extends Controller
 
             $coordinates = [];
 
-            $all_data = UserLiveLocation::where('userid', $request->user_id)->whereDate('created_at', Carbon::today())->orderBy('id', 'asc')->get();
+            $selectedDate = Carbon::parse($request->track_date)->format('Y-m-d');
+            $all_data = UserLiveLocation::where('userid', $request->user_id)
+                ->whereDate('created_at', $selectedDate)
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->where('latitude', '!=', '')
+                ->where('longitude', '!=', '')
+                ->orderBy('id', 'asc')
+                ->get();
 
             foreach ($all_data as $check) {
                 // Add Check-In Data
@@ -1087,7 +1096,7 @@ class ExpensesController extends Controller
                     'time' => $check->time,
                 ];
             }
-            return view('map.track', compact('coordinates'));
+            return view('map.track', compact('coordinates', 'selectedDate'));
 
         } else {
             $rules = [

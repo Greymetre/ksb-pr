@@ -436,9 +436,36 @@
                               <div class="location-actions {{ $locationMode === 'geolocator' ? 'geolocator-actions' : '' }}">
                                 <button type="button" class="btn btn-sm location-action-btn" onclick="getActivityData()">Activity Detailed</button>
                                 <input type="submit" name="submit" class="btn btn-sm location-action-btn" value="Complete Map Activity">
-                                <input type="submit" name="submit" class="btn btn-sm location-action-btn" value="Track Activity">
+                                <button type="button" class="btn btn-sm location-action-btn" data-toggle="modal" data-target="#trackActivityDateModal">
+                                  Track Activity
+                                </button>
                               </div>
                             </div>
+                        </div>
+
+                        <div class="modal fade" id="trackActivityDateModal" tabindex="-1" role="dialog" aria-labelledby="trackActivityDateModalLabel" aria-hidden="true">
+                          <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content card">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="trackActivityDateModalLabel">Select activity date</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                  <span aria-hidden="true">&times;</span>
+                                </button>
+                              </div>
+                              <div class="modal-body">
+                                <label for="track_date">Activity Date</label>
+                                <input type="date" class="form-control" id="track_date" name="track_date"
+                                  value="{{ \Carbon\Carbon::today()->format('Y-m-d') }}"
+                                  min="{{ \Carbon\Carbon::today()->subDays(14)->format('Y-m-d') }}"
+                                  max="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" required>
+                                <small class="form-text text-muted">You can select today or any date from the previous 14 days.</small>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                <button type="submit" name="submit" value="Track Activity" class="btn btn-info">Show Activity</button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                     </form>
                     @endif
@@ -557,7 +584,12 @@
             var action = submitter ? submitter.value : '';
 
             if (action === 'Track Activity') {
-                return validateLocationFilters(false);
+                if (!validateLocationFilters(false)) return false;
+                if (!$('#track_date').val()) {
+                    showLocationAlert('Please select an activity date.');
+                    return false;
+                }
+                return true;
             }
             if (action === 'Complete Map Activity') {
                 return validateLocationFilters(true);
