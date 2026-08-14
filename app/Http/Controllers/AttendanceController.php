@@ -462,7 +462,14 @@ public function attendanceSummaryDownload(Request $request)
     $last60Days = Carbon::now()->subDays(60);
 
     // Build users query
-    $attendancesummary = User::with(['attendance_details', 'createdbyname', 'getbranch', 'userinfo'])
+    $attendancesummary = User::with([
+        'attendance_details',
+        'createdbyname',
+        'getbranch',
+        'getdesignation',
+        'getdivision',
+        'userinfo',
+    ])
         ->where('active', 'Y')
         ->whereDoesntHave('roles', function ($query) {
             $query->whereIn('id', config('constants.customer_roles'));
@@ -491,18 +498,6 @@ public function attendanceSummaryDownload(Request $request)
             ->unique()
             ->all()
     );
-    $allManagerIds = $users->pluck('reportingids')
-    ->filter()
-    ->flatMap(function ($ids) {
-        return array_map('trim', explode(',', $ids));
-    })
-    ->unique()
-    ->values();
-    $managers = \App\Models\User::whereIn('id', $allManagerIds)
-    ->get()
-    ->keyBy('id');
-    
-
     // Build date labels
     $label2 = [];
     foreach ($period as $date) {
@@ -514,7 +509,8 @@ public function attendanceSummaryDownload(Request $request)
         'User Id',
         'Employee Code',
         'User Name',
-        'Reporting Managers',
+        'Designation',
+        'Zone',
     ];
 
     $label3 = [
@@ -549,7 +545,7 @@ public function attendanceSummaryDownload(Request $request)
     $headings = array_merge($label1, $label2, $label3);
 
     // Generate data rows
-    $data = $users->map(function ($user) use ($period, $last60Days, $holidayData, $start_date, $end_date, $managers) {
+    $data = $users->map(function ($user) use ($period, $last60Days, $holidayData, $start_date, $end_date) {
         $holidays = collect(explode(',', (string) $user->branch_id))
             ->flatMap(fn ($branchId) => $holidayData->get((int) trim($branchId), []))
             ->filter(fn ($date) => $date >= $start_date && $date <= $end_date)
@@ -745,37 +741,13 @@ $row[] = (string) $totals['p'];  // Present
 // TOTAL Days (attendance count)
 $row[] = (string) $totals['atte'];
 
-$managerNames = [];
-
-$ids = $user->reportingids;
-
-// string → array
-if (is_string($ids)) {
-    $ids = explode(',', $ids);
-}
-
-$ids = $ids ?? [];
-
-foreach ($ids as $id) {
-    $id = trim($id);
-
-    $manager = $managers[$id] ?? null;
-
-    if ($manager) {
-        $managerNames[] = $manager->name;
-    }
-}
-
-$reportingManagers = !empty($managerNames)
-    ? implode(', ', $managerNames)
-    : '-';
-
         // Basic user info columns
         $basic = [
             $user->id ?? '',
             $user->employee_codes ?? '',
             $user->name ?? '',
-            $reportingManagers,
+            $user->getdesignation->designation_name ?? '-',
+            $user->getdivision->division_name ?? '-',
         ];
 
         return array_merge($basic, $row);

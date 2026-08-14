@@ -180,15 +180,16 @@ FromArray,
 
     private function getDateColumnLetters(): array
     {
-        $fixed = 3; // User Id, Employee Code, User Name
-        $dateCount = count($this->headings) - $fixed - 4; // 4 summary columns now
-
         $letters = [];
-        $colIndex = $fixed + 1; // column D = first date
-
-        for ($i = 0; $i < $dateCount; $i++) {
-            $letters[] = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
-            $colIndex++;
+        foreach ($this->headings as $index => $heading) {
+            try {
+                $date = Carbon::createFromFormat('j-M-Y', (string) $heading);
+                if ($date && $date->format('j-M-Y') === $heading) {
+                    $letters[] = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
+                }
+            } catch (\Exception $e) {
+                // Non-date headings are intentionally ignored.
+            }
         }
 
         return $letters;
