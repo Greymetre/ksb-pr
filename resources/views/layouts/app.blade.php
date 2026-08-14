@@ -2065,7 +2065,7 @@
                         <li class="fk-menu-section"><span>Team</span></li>
                         @if(auth()->user()->can('target_users_access'))
                         <li
-                            class="nav-link {{ request()->is('sales_users*') || request()->is('sales_dealer*') || request()->is('branches_sales_target*') || request()->is('primary_scheme') || request()->is('primary_scheme_report') || request()->is('planned-sop*') || request()->is('planned-sop-forecast*') ? 'active' : '' }}">
+                            class="nav-link {{ request()->is('sales_users*') || request()->is('sales_dealer*') || request()->is('new-dealer-targets') || request()->is('branches_sales_target*') || request()->is('primary_scheme') || request()->is('primary_scheme_report') || request()->is('planned-sop*') || request()->is('planned-sop-forecast*') ? 'active' : '' }}">
                             <a class="collapsed hoveradd" data-toggle="collapse" href="#salesUserMenu"
                                 aria-expanded="false">
                                 <i class="material-icons icon">real_estate_agent</i>
@@ -2074,6 +2074,13 @@
                             </a>
                             <div class="collapse" id="salesUserMenu" style="">
                                 <ul class="navd">
+                                    <li class="nav-link-btn {{ request()->is('new-dealer-targets') ? 'active' : '' }}">
+                                        <a class="hoveradd2" href="{{ route('new-dealer-targets') }}">
+                                            <i class="material-icons icon">add_business</i>
+                                            <span>New Dealer Targets</span>
+                                            <div class="d-none mobile_hide">New Dealer Targets</div>
+                                        </a>
+                                    </li>
                                     @if(auth()->user()->can('target_users_access_sales'))
                                     <li class="nav-link-btn {{ request()->is('sales_users*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('sales_users/target_users') }}">

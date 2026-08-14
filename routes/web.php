@@ -205,6 +205,20 @@ Route::post('/dealer-appointment-kyc-submit', [DealerAppointmentController::clas
 
 
 Route::group(['middleware' => ['auth', 'resource.permission']], function () {
+    Route::get('/new-dealer-targets', function () {
+        $dealerTargets = collect([
+            ['employee_code' => 'FK-1006', 'employee_name' => 'Arjun Nair', 'zone' => 'North', 'month' => 'Jun 2026', 'plan' => 11, 'achievement' => 11, 'note' => 'On track'],
+            ['employee_code' => 'FK-1003', 'employee_name' => 'Anita Singh', 'zone' => 'South', 'month' => 'Jul 2026', 'plan' => 8, 'achievement' => 8, 'note' => 'Target met'],
+            ['employee_code' => 'FK-1005', 'employee_name' => 'Pooja Mehta', 'zone' => 'Central', 'month' => 'Jul 2026', 'plan' => 9, 'achievement' => 10, 'note' => 'Above target'],
+            ['employee_code' => 'FK-1007', 'employee_name' => 'Kavita Joshi', 'zone' => 'West', 'month' => 'Aug 2026', 'plan' => 7, 'achievement' => 3, 'note' => 'New dealer onboarding pending'],
+            ['employee_code' => 'FK-1001', 'employee_name' => 'Ramesh Kumar', 'zone' => 'North', 'month' => 'Aug 2026', 'plan' => 12, 'achievement' => 9, 'note' => 'Focus on tier-2 towns'],
+            ['employee_code' => 'FK-1002', 'employee_name' => 'Suresh Yadav', 'zone' => 'West', 'month' => 'Aug 2026', 'plan' => 10, 'achievement' => 11, 'note' => 'Above target'],
+            ['employee_code' => 'FK-1004', 'employee_name' => 'Neha Sharma', 'zone' => 'East', 'month' => 'Aug 2026', 'plan' => 15, 'achievement' => 6, 'note' => 'Follow-up required'],
+        ]);
+
+        return view('sales.new_dealer_targets', compact('dealerTargets'));
+    })->name('new-dealer-targets');
+
     Route::get('/dealer_account_statement', function () {
         abort_if(Gate::denies('dealer_account_statement'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         return view('work_in_progress');
