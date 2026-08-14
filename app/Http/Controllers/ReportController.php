@@ -849,7 +849,8 @@ public function dealerProductivityExport(Request $request)
                         $query->whereIn('working_type', [
                             'Full Day Leave',
                             'First Half Leave',
-                            'Second Half Leave'
+                            'Second Half Leave',
+                            'Leave'
                         ]);
                     }
 
@@ -859,9 +860,81 @@ public function dealerProductivityExport(Request $request)
                             ->orWhereNotIn('working_type', [
                                 'Full Day Leave',
                                 'First Half Leave',
-                                'Second Half Leave'
+                                'Second Half Leave',
+                                'Leave'
                             ]);
                         });
+                    }
+                }
+
+                if (!empty($request->attendance_type_status)) {
+                    $leaveTypes = ['Full Day Leave', 'First Half Leave', 'Second Half Leave', 'Leave'];
+                    $workedSecondsSql = "COALESCE(TIME_TO_SEC(NULLIF(worked_time, '')), TIMESTAMPDIFF(SECOND, TIMESTAMP(punchin_date, punchin_time), TIMESTAMP(COALESCE(punchout_date, punchin_date), punchout_time)))";
+
+                    switch ($request->attendance_type_status) {
+                        case 'present':
+                            $query->where(function ($workingQuery) use ($leaveTypes) {
+                                    $workingQuery->whereNull('working_type')->orWhereNotIn('working_type', $leaveTypes);
+                                })
+                                ->whereNotNull('punchout_time')
+                                ->whereRaw('DAYOFWEEK(punchin_date) <> 1')
+                                ->whereRaw("{$workedSecondsSql} >= ?", [510 * 60]);
+                            break;
+                        case 'present_week_off':
+                            $query->where(function ($workingQuery) use ($leaveTypes) {
+                                    $workingQuery->whereNull('working_type')->orWhereNotIn('working_type', $leaveTypes);
+                                })
+                                ->whereNotNull('punchout_time')
+                                ->whereRaw('DAYOFWEEK(punchin_date) = 1')
+                                ->whereRaw("{$workedSecondsSql} >= ?", [510 * 60]);
+                            break;
+                        case 'half_day':
+                            $query->where(function ($workingQuery) use ($leaveTypes) {
+                                    $workingQuery->whereNull('working_type')->orWhereNotIn('working_type', $leaveTypes);
+                                })
+                                ->whereNotNull('punchout_time')
+                                ->whereRaw("{$workedSecondsSql} >= ?", [270 * 60])
+                                ->whereRaw("{$workedSecondsSql} < ?", [510 * 60]);
+                            break;
+                        case 'absent':
+                            $query->where(function ($workingQuery) use ($leaveTypes) {
+                                    $workingQuery->whereNull('working_type')->orWhereNotIn('working_type', $leaveTypes);
+                                })
+                                ->whereNotNull('punchout_time')
+                                ->whereRaw("{$workedSecondsSql} < ?", [270 * 60]);
+                            break;
+                        case 'miss_punch':
+                            $query->where(function ($workingQuery) use ($leaveTypes) {
+                                    $workingQuery->whereNull('working_type')->orWhereNotIn('working_type', $leaveTypes);
+                                })
+                                ->whereNotNull('punchin_time')
+                                ->whereNull('punchout_time');
+                            break;
+                        case 'casual_leave':
+                            $query->whereIn('working_type', $leaveTypes)
+                                ->whereExists(function ($leaveQuery) {
+                                    $leaveQuery->select(DB::raw(1))
+                                        ->from('leaves')
+                                        ->whereColumn('leaves.user_id', 'attendances.user_id')
+                                        ->whereColumn('leaves.from_date', '<=', 'attendances.punchin_date')
+                                        ->whereColumn('leaves.to_date', '>=', 'attendances.punchin_date')
+                                        ->where('leaves.bal_type', 'Casual Balance');
+                                });
+                            break;
+                        case 'comp_off':
+                            $query->whereIn('working_type', $leaveTypes)
+                                ->whereExists(function ($leaveQuery) {
+                                    $leaveQuery->select(DB::raw(1))
+                                        ->from('leaves')
+                                        ->whereColumn('leaves.user_id', 'attendances.user_id')
+                                        ->whereColumn('leaves.from_date', '<=', 'attendances.punchin_date')
+                                        ->whereColumn('leaves.to_date', '>=', 'attendances.punchin_date')
+                                        ->where('leaves.bal_type', 'Comp-off Balance');
+                                });
+                            break;
+                        case 'holiday':
+                            $query->where('working_type', 'Holiday');
+                            break;
                     }
                 }
 

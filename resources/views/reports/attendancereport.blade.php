@@ -102,11 +102,25 @@
                     </div>
 
                     <div class="p-2" style="width: 250px;">
-                      <select class="selectpicker" name="status" id="status" data-style="select-with-transition" title="Select User">
-                        <option value="">Select Status</option>
+                      <select class="selectpicker" name="status" id="approval_status" data-style="select-with-transition" title="Select Approval Status">
+                        <option value="">Select Approval Status</option>
                         <option value="0">Pending</option>
                         <option value="1">Approved</option>
                         <option value="2">Rejected</option>
+                      </select>
+                    </div>
+
+                    <div class="p-2" style="width: 250px;">
+                      <select class="selectpicker" name="attendance_type_status" id="attendance_type_status" data-style="select-with-transition" title="Select Attendance Status">
+                        <option value="">All Attendance Statuses</option>
+                        <option value="present">Present (P)</option>
+                        <option value="present_week_off">Present Week Off (PW)</option>
+                        <option value="half_day">Half Day (HF)</option>
+                        <option value="absent">Absent (A)</option>
+                        <option value="miss_punch">Miss Punch (MIS)</option>
+                        <option value="casual_leave">Casual Leave (CL)</option>
+                        <option value="comp_off">Comp-Off</option>
+                        <option value="holiday">Holiday (H)</option>
                       </select>
                     </div>
                     <div class="p-2" style="width: 200px;">
@@ -698,7 +712,8 @@
               d.active = $('#active').val(),
               d.start_date = $('#start_date').val(),
               d.end_date = $('#end_date').val(),
-              d.status = $('#status').val(),
+              d.status = $('#approval_status').val(),
+              d.attendance_type_status = $('#attendance_type_status').val(),
               d.type = $('#type').val(); 
           }
         },
@@ -744,7 +759,7 @@
       $('#active').change(function() {
         table.draw();
       });
-      $('#status').change(function() {
+      $('#approval_status, #attendance_type_status').change(function() {
         table.draw();
       });
       $('#designation_id').change(function() {
