@@ -21,7 +21,7 @@
         .dealer-target-stat-label { color:#94a9d8; font-size:13px !important; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
         .dealer-target-stat-value { color:#f3f7ff; font-size:34px !important; line-height:1; font-weight:700; margin-top:18px; }
         .dealer-target-delta { color:#ff5477; font-size:13px !important; font-weight:600; margin-top:14px; }
-        .dealer-target-filters { display:grid; grid-template-columns:minmax(250px,1.5fr) repeat(2,minmax(180px,1fr)) auto auto; gap:12px; align-items:start; margin-bottom:24px; }
+        .dealer-target-filters { display:grid; grid-template-columns:minmax(250px,1.5fr) repeat(2,minmax(180px,1fr)); gap:12px; align-items:start; max-width:1200px; margin-bottom:24px; }
         .dealer-target-filter-wrap { position:relative; }
         .dealer-target-filter-btn { min-width:112px; height:46px; }
         .dealer-target-control { height:46px; padding:0 16px; border:1px solid #294878; border-radius:12px; background:#091936; color:#cbd8f4; font-size:14px !important; width:100%; outline:none; }
@@ -149,7 +149,7 @@
         </div>
 
         <form class="dealer-target-filters" method="GET" action="{{ route('new-dealer-targets') }}" id="dealerTargetFilterForm">
-            <input class="dealer-target-control" name="search" type="search" value="{{ request('search') }}" placeholder="Search by user name or code">
+            <input class="dealer-target-control" id="dealerTargetSearchFilter" name="search" type="search" value="{{ request('search') }}" placeholder="Search by user name or code" autocomplete="off">
             <div class="dealer-target-custom-select dealer-target-filter-wrap" id="dealerTargetZoneFilter">
                 <button type="button" class="dealer-target-control dealer-target-select-trigger" id="dealerTargetZoneTrigger">
                     <span id="dealerTargetZoneText">{{ $selectedZone->division_name ?? 'All Zones' }}</span><i class="material-icons">expand_more</i>
@@ -180,8 +180,6 @@
                 </div>
                 <input type="hidden" name="month" id="dealerTargetFilterMonthValue" value="{{ $selectedFilterMonth }}">
             </div>
-            <button type="submit" class="dealer-target-btn primary dealer-target-filter-btn"><i class="material-icons">filter_alt</i> Apply</button>
-            <a href="{{ route('new-dealer-targets') }}" class="dealer-target-btn dealer-target-filter-btn">Reset</a>
         </form>
 
         <div class="dealer-target-table-card">
@@ -375,6 +373,7 @@
             const zoneValue = document.getElementById('dealerTargetZoneValue');
             const zoneText = document.getElementById('dealerTargetZoneText');
             const zoneOptions = Array.from(zonePanel.querySelectorAll('[data-zone-id]'));
+            const filterForm = document.getElementById('dealerTargetFilterForm');
 
             zoneTrigger.addEventListener('click', function () {
                 zonePanel.classList.toggle('show');
@@ -387,6 +386,7 @@
                     zoneOptions.forEach(function (item) { item.classList.remove('active'); });
                     this.classList.add('active');
                     zonePanel.classList.remove('show');
+                    filterForm.submit();
                 });
             });
 
@@ -411,6 +411,7 @@
                         filterMonthValue.value = value;
                         filterMonthText.textContent = name + ' ' + filterYearValue;
                         filterMonthPanel.classList.remove('show');
+                        filterForm.submit();
                     });
                     filterMonthGrid.appendChild(button);
                 });
@@ -426,8 +427,16 @@
                 filterMonthValue.value = '';
                 filterMonthText.textContent = 'All Months';
                 filterMonthPanel.classList.remove('show');
+                filterForm.submit();
             });
             renderFilterMonths();
+
+            const searchFilter = document.getElementById('dealerTargetSearchFilter');
+            let searchTimer;
+            searchFilter.addEventListener('input', function () {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(function () { filterForm.submit(); }, 500);
+            });
 
             document.addEventListener('click', function (event) {
                 if (!document.getElementById('dealerTargetUserSelect').contains(event.target)) userPanel.classList.remove('show');
