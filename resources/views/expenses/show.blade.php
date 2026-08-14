@@ -546,7 +546,7 @@ margin-top: 3px;
             <i class="material-icons">perm_identity</i>
           </div>
           <h4 class="card-title">
-            <span class="modal-title">Submit </span> Approve <span class="pull-right">
+            <span class="modal-title">Submit </span> Checked &amp; Approved <span class="pull-right">
               <a href="javascript:void(0)" class="btn btn-just-icon btn-danger" data-dismiss="modal">
                 <i class="material-icons">clear</i>
               </a>
@@ -571,7 +571,7 @@ margin-top: 3px;
 
               </div>
             </div>
-            <input type="button" class="btn btn-info save-apr" onclick="disableButton()" value="Approve">
+            <input type="button" class="btn btn-info save-apr" onclick="disableButton()" value="Checked &amp; Approved">
           </form>
         </div>
       </div>
