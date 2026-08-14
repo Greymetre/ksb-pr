@@ -673,7 +673,7 @@ $('body').on('click', '.checked_by_reporting_status', function () {
 $('body').on('click', '.approve_status', function () {
     var id = $('#expenseid').val();
     var token = $("meta[name='csrf-token']").attr("content");
-    if (!confirm("Are You sure do you want to checked expense status")) {
+    if (!confirm("Are you sure you want to approve the expense status?")) {
         return false;
     } else {
 

@@ -518,7 +518,7 @@ margin-top: 3px;
         <div class="modal-body">
           <form method="POST" action="{{ route('rejectExpense') }}" enctype="multipart/form-data" id="rejectExpenseForm"> @csrf
             <div class="row">
-              <div class="col-md-6">
+              <div class="col-md-12">
                 <div class="input-group input-group-outline my-3">
                   <label class="form-label">Reason </label>
                   <input type="text" name="reason" id="reason" class="form-control" value="{!! old( 'reason') !!}" required> <br><br>
@@ -539,7 +539,7 @@ margin-top: 3px;
   <!-- new model for approve status -->
 
   <div class="modal fade bd-example-modal-lg" id="approve_expense" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content card">
         <div class="card-header card-header-icon card-header-theme">
           <div class="card-icon">
@@ -556,7 +556,7 @@ margin-top: 3px;
         <div class="modal-body">
           <form method="POST" action="{{ route('approveExpense') }}" enctype="multipart/form-data" id="approveExpenseForms"> @csrf
             <div class="row">
-              <div class="col-md-6">
+              <div class="col-md-12">
                 <div class="input-group input-group-outline my-3">
                   <label class="form-label">Approve Amount</label>
                   <input type="text" name="approve_amnt" id="approve_amnt" class="form-control" value="{!! old( 'reason') !!}" required> <br><br>
@@ -581,6 +581,67 @@ margin-top: 3px;
   <!-- end model for status -->
 
   <!-- Custom styles for this page -->
+
+  <style>
+    body.fk-shell .fk-expense-modal #approve_expense .modal-dialog {
+      display: flex;
+      width: calc(100% - 30px) !important;
+      max-width: 640px !important;
+      height: auto !important;
+      min-height: calc(100% - 3.5rem);
+      margin: 1.75rem auto !important;
+      align-items: center;
+    }
+
+    body.fk-shell .fk-expense-modal #approve_expense .modal-content {
+      width: 100%;
+      height: auto !important;
+      max-height: calc(100vh - 60px);
+      margin: 0 !important;
+      overflow-y: auto;
+      border-radius: 16px !important;
+    }
+
+    body.fk-shell .fk-expense-modal #approve_expense .card-header {
+      display: flex;
+      min-height: 76px;
+      margin: 0 !important;
+      padding: 16px 20px !important;
+      align-items: center;
+    }
+
+    body.fk-shell .fk-expense-modal #approve_expense .card-icon {
+      margin: 0 16px 0 0 !important;
+      flex: 0 0 auto;
+    }
+
+    body.fk-shell .fk-expense-modal #approve_expense .card-title {
+      display: flex;
+      width: 100%;
+      margin: 0 !important;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    body.fk-shell .fk-expense-modal #approve_expense .modal-body {
+      padding: 24px !important;
+    }
+
+    body.fk-shell .fk-expense-modal #approve_expense .modal-body .row {
+      margin-right: -8px;
+      margin-left: -8px;
+    }
+
+    body.fk-shell .fk-expense-modal #approve_expense .modal-body [class*="col-"] {
+      padding-right: 8px;
+      padding-left: 8px;
+    }
+
+    body.fk-shell .fk-expense-modal #approve_expense .save-apr {
+      min-width: 190px;
+      margin: 12px 0 0 !important;
+    }
+  </style>
 
   <script type="text/javascript">
     $("document").ready(function() {
