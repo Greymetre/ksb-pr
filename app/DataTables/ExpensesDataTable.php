@@ -216,7 +216,7 @@ class ExpensesDataTable extends DataTable
         }
 
 
-        if ($request['status'] != NULL) {
+        if ($request['status'] !== null && $request['status'] !== '') {
             $data->where('checker_status', $request['status']);
         }
 

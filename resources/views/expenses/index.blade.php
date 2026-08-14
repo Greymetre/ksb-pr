@@ -150,34 +150,48 @@
            </div>
 
            <div class="expense-status-summary" aria-label="Expense status summary">
-             <div class="expense-status-card is-pending">
+             <button type="button" class="expense-status-card is-pending" data-expense-status="0">
                <div class="expense-status-icon"><i class="material-icons">schedule</i></div>
                <div class="expense-status-content">
                  <span class="expense-status-label">Pending</span>
                  <strong class="expense-status-value" id="pending_count">{{$pending_count}}</strong>
                </div>
-             </div>
-             <div class="expense-status-card is-approved">
+             </button>
+             <button type="button" class="expense-status-card is-approved" data-expense-status="1">
                <div class="expense-status-icon"><i class="material-icons">check_circle</i></div>
                <div class="expense-status-content">
                  <span class="expense-status-label">Approved</span>
                  <strong class="expense-status-value" id="approve_count">{{$approve_count}}</strong>
                </div>
-             </div>
-             <div class="expense-status-card is-rejected">
+             </button>
+             <button type="button" class="expense-status-card is-rejected" data-expense-status="2">
                <div class="expense-status-icon"><i class="material-icons">cancel</i></div>
                <div class="expense-status-content">
                  <span class="expense-status-label">Rejected</span>
                  <strong class="expense-status-value" id="reject_count">{{$reject_count}}</strong>
                </div>
-             </div>
-             <div class="expense-status-card is-checked">
+             </button>
+             <button type="button" class="expense-status-card is-checked" data-expense-status="3">
                <div class="expense-status-icon"><i class="material-icons">verified</i></div>
                <div class="expense-status-content">
                  <span class="expense-status-label">Checked</span>
                  <strong class="expense-status-value" id="checked_count">{{$checked_count}}</strong>
                </div>
-             </div>
+             </button>
+             <button type="button" class="expense-status-card is-reporting-checked" data-expense-status="4">
+               <div class="expense-status-icon"><i class="material-icons">fact_check</i></div>
+               <div class="expense-status-content">
+                 <span class="expense-status-label">Checked By Reporting</span>
+                 <strong class="expense-status-value" id="reporting_checked_count">{{$reporting_checked_count}}</strong>
+               </div>
+             </button>
+             <button type="button" class="expense-status-card is-hold" data-expense-status="5">
+               <div class="expense-status-icon"><i class="material-icons">pause_circle</i></div>
+               <div class="expense-status-content">
+                 <span class="expense-status-label">Hold</span>
+                 <strong class="expense-status-value" id="hold_count">{{$hold_count}}</strong>
+               </div>
+             </button>
            </div>
 
            <div class="table-responsive">
@@ -329,6 +343,13 @@
      var multiCheck = "{{ url('checkExpenses')}}";
      var multiReject = "{{ url('rejectExpenses')}}";
      var token = $("meta[name='csrf-token']").attr("content");
+
+     $(document).on('click', '.expense-status-card[data-expense-status]', function () {
+       var status = String($(this).data('expense-status'));
+       $('.expense-status-card').removeClass('is-active');
+       $(this).addClass('is-active');
+       $('#status').val(status).trigger('change');
+     });
 
 
      function resetFilter() {

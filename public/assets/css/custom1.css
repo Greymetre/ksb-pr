@@ -3131,8 +3131,8 @@ body.fk-shell .customer-show-page .table thead th {
 /* Expense listing status summary */
 body.fk-shell .expense-status-summary {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
     padding: 16px 18px 4px;
 }
 
@@ -3141,13 +3141,31 @@ body.fk-shell .expense-status-card {
     position: relative;
     display: flex;
     align-items: center;
-    min-height: 82px;
-    padding: 14px 16px;
+    min-height: 68px;
+    padding: 10px 11px;
     overflow: hidden;
     border: 1px solid rgba(var(--expense-status-rgb), .25);
     border-radius: 14px;
     background: linear-gradient(135deg, rgba(var(--expense-status-rgb), .13), rgba(8, 20, 50, .72));
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025);
+    color: inherit;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    appearance: none;
+    transition: border-color .2s ease, background .2s ease, transform .2s ease;
+}
+
+body.fk-shell .expense-status-card:hover,
+body.fk-shell .expense-status-card.is-active {
+    border-color: rgba(var(--expense-status-rgb), .62);
+    background: linear-gradient(135deg, rgba(var(--expense-status-rgb), .22), rgba(8, 20, 50, .78));
+    transform: translateY(-1px);
+}
+
+body.fk-shell .expense-status-card:focus-visible {
+    outline: 2px solid rgb(var(--expense-status-rgb));
+    outline-offset: 2px;
 }
 
 body.fk-shell .expense-status-card::after {
@@ -3177,23 +3195,31 @@ body.fk-shell .expense-status-card.is-checked {
     --expense-status-rgb: 34, 211, 238;
 }
 
+body.fk-shell .expense-status-card.is-reporting-checked {
+    --expense-status-rgb: 59, 130, 246;
+}
+
+body.fk-shell .expense-status-card.is-hold {
+    --expense-status-rgb: 148, 163, 184;
+}
+
 body.fk-shell .expense-status-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
-    margin-right: 13px;
+    width: 36px;
+    height: 36px;
+    margin-right: 9px;
     border: 1px solid rgba(var(--expense-status-rgb), .28);
     border-radius: 12px;
     background: rgba(var(--expense-status-rgb), .12);
     color: rgb(var(--expense-status-rgb));
-    flex: 0 0 42px;
+    flex: 0 0 36px;
 }
 
 body.fk-shell .expense-status-icon .material-icons {
     color: inherit !important;
-    font-size: 21px !important;
+    font-size: 18px !important;
 }
 
 body.fk-shell .expense-status-content {
@@ -3204,7 +3230,7 @@ body.fk-shell .expense-status-content {
 
 body.fk-shell .expense-status-label {
     color: #91a4d3;
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 500;
     letter-spacing: .6px;
     line-height: 1.2;
@@ -3215,7 +3241,7 @@ body.fk-shell .expense-status-value {
     margin-top: 5px;
     color: #f7f9ff;
     font-family: 'Sora', 'Inter', sans-serif;
-    font-size: 22px;
+    font-size: 19px;
     font-weight: 700;
     line-height: 1;
 }
