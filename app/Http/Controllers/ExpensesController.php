@@ -783,19 +783,19 @@ class ExpensesController extends Controller
             // return redirect(route('expenses.show', ["expense" => $expense_id]))->with('success', 'Approve amount greater than to claim amount');
         }
 
-        $expense_detail->update(['reason' => $reason, 'checker_status' => '1', 'approve_reject_by' => Auth::user()->id, 'approve_amount' => $approve_amnt]);
+        $expense_detail->update(['reason' => $reason, 'checker_status' => '3', 'approve_reject_by' => Auth::user()->id, 'approve_amount' => $approve_amnt]);
 
         if ($expense_id) {
             $logdata = array(
                 'log_date' => date('Y-m-d'),
                 'expense_id' => $expense_id,
                 'created_by' => Auth::user()->id,
-                'status_type' => 'approved'
+                'status_type' => 'checked'
             );
             ExpenseLog::create($logdata);
         }
 
-        return response()->json(['status' => 'success', 'message' => 'Approve amount.']);
+        return response()->json(['status' => 'success', 'message' => 'Expense checked and approved amount saved successfully.']);
         // return redirect(route('expenses.show', ["expense" => $expense_id]))->with('success', 'Approved amount');
     }
 
@@ -831,12 +831,18 @@ class ExpensesController extends Controller
         $expenses->checker_status = $status;
         $expenses->approve_reject_by = Auth::user()->id;
         $expenses->save();
-        if ($status == '3') {
+        if ($status == '1') {
+            $status_type = 'Approved';
+            $message = 'Expense approved successfully';
+        } elseif ($status == '3') {
             $status_type = 'Checked';
+            $message = 'Status checked successfully';
         } elseif ($status == '4') {
             $status_type = 'Checked By Reporting';
+            $message = 'Status checked by reporting successfully';
         } elseif ($status == '5') {
             $status_type = 'Hold';
+            $message = 'Expense put on hold successfully';
         }
 
         if ($request->id) {
@@ -849,7 +855,7 @@ class ExpensesController extends Controller
             ExpenseLog::create($logdata);
         }
 
-        return response()->json(['status' => 'success', 'message' => 'Status checked successfully']);
+        return response()->json(['status' => 'success', 'message' => $message]);
         // return redirect(route('expenses.index'));
     }
 

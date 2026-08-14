@@ -683,7 +683,7 @@ $('body').on('click', '.approve_status', function () {
             data: {
                 _token: token,
                 id: id,
-                status: '3'
+                status: '1'
             },
             success: function (data) {
                 $('.message').empty();
