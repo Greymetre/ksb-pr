@@ -589,9 +589,34 @@ public function attendanceSummaryDownload(Request $request)
                     continue;
                 }
                 if (!empty($attendance->punchin_time) && !empty($attendance->punchout_time)) {
-                    // Full attendance → Present
-                    $row[] = 'P';
-                    $totals['p']++;
+                    // Classify attendance using actual working duration.
+                    // 8:30+ = full day, 4:30 to <8:30 = half day,
+                    // and below 4:30 = absent.
+                    $workedMinutes = 0;
+                    if (!empty($attendance->worked_time)) {
+                        $workedParts = array_map('intval', explode(':', $attendance->worked_time));
+                        $workedMinutes = (($workedParts[0] ?? 0) * 60) + ($workedParts[1] ?? 0);
+                    } else {
+                        try {
+                            $punchIn = Carbon::parse($attendance->punchin_date . ' ' . $attendance->punchin_time);
+                            $punchOutDate = $attendance->punchout_date ?: $attendance->punchin_date;
+                            $punchOut = Carbon::parse($punchOutDate . ' ' . $attendance->punchout_time);
+                            $workedMinutes = $punchIn->diffInMinutes($punchOut, false);
+                        } catch (\Exception $e) {
+                            $workedMinutes = 0;
+                        }
+                    }
+
+                    if ($workedMinutes >= 510) {
+                        $row[] = $dayName === 'Sunday' ? 'PW' : 'P';
+                        $totals['p']++;
+                    } elseif ($workedMinutes >= 270) {
+                        $row[] = 'Half Day';
+                        $totals['hd']++;
+                    } else {
+                        $row[] = 'A';
+                        $totals['a']++;
+                    }
                     continue;
                 }
 
