@@ -449,10 +449,23 @@
        }
      })();
 
-     setTimeout(function installExpenseFilterToggle() {
+     (function installExpenseFilterToggle(attempt) {
        var actions = document.querySelector('.fk-list-page-head .fk-list-actions');
        var target = document.getElementById('expenseInlineFilters');
-       if (!actions || !target || actions.querySelector('.expense-filter-toggle')) {
+       if (!target) {
+         return;
+       }
+
+       if (!actions) {
+         if (attempt < 50) {
+           setTimeout(function () {
+             installExpenseFilterToggle(attempt + 1);
+           }, 100);
+         }
+         return;
+       }
+
+       if (actions.querySelector('.expense-filter-toggle')) {
          return;
        }
 
@@ -472,7 +485,7 @@
 
        var createButton = actions.querySelector('.fk-create-action');
        actions.insertBefore(button, createButton || null);
-     }, 0);
+     })(0);
 
      $(document).on('click', '.expense-status-card[data-expense-status]', function () {
        var status = String($(this).data('expense-status'));
