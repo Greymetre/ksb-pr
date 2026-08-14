@@ -37,10 +37,10 @@ class Kernel extends ConsoleKernel
         // $schedule->command('send:all-users-goly')->timezone('Asia/Kolkata')->dailyAt('02:00');
         // $schedule->command('send:all-users-target')->timezone('Asia/Kolkata')->dailyAt('02:15');
         // $schedule->command('send:all-branch-goly')->timezone('Asia/Kolkata')->dailyAt('02:30');
-        $schedule->command('locations:delete-old')
-            ->timezone('Asia/Kolkata')
-            ->dailyAt('01:30')
-            ->withoutOverlapping();
+        $schedule->command('locations:delete-old')->everyMinute();
+            // ->timezone('Asia/Kolkata')
+            // ->dailyAt('01:30')
+            // ->withoutOverlapping();
         $schedule->command('tasks:send-pending-today')->everyMinute();
     }
 
