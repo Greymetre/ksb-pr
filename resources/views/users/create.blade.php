@@ -1,5 +1,32 @@
 <x-app-layout>
 
+    <style>
+        #assignedCitiesControl .select2-container {
+            width: 100% !important;
+        }
+
+        #assignedCitiesControl.cities-collapsed .select2-selection--multiple,
+        #assignedCitiesControl.cities-collapsed .select2-selection__rendered {
+            max-height: 52px !important;
+            overflow: hidden !important;
+        }
+
+        #toggleAssignedCities {
+            margin-top: 10px;
+            padding: 7px 14px;
+            border: 1px solid #2d66b3;
+            border-radius: 8px;
+            background: rgba(45, 102, 179, .14);
+            color: #d8e7ff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #toggleAssignedCities:hover {
+            background: rgba(45, 102, 179, .28);
+        }
+    </style>
 
 
     <div class="row">
@@ -496,7 +523,7 @@
                                 <div class="col-md-6">
                                     <div class="input_section">
                                         <label class="col-form-label">Assign Cities</label>
-                                        <div class="form-group has-default bmd-form-group">
+                                        <div class="form-group has-default bmd-form-group {{ $user->id ? 'cities-collapsed' : '' }}" id="assignedCitiesControl">
                                             <select
                                                 class="form-control select2 {{ $errors->has('cities') ? 'is-invalid' : '' }}"
                                                 name="cities[]" id="cities" multiple >
@@ -506,6 +533,11 @@
                                                     {{ $cities }}</option>
                                                 @endforeach
                                             </select>
+                                            @if($user->id)
+                                            <button type="button" id="toggleAssignedCities" aria-expanded="false" style="display:none;">
+                                                Expand assigned cities
+                                            </button>
+                                            @endif
                                             @if ($errors->has('cities'))
                                             <div class="error">
                                                 <p class="text-danger">{{ $errors->first('cities') }}</p>
@@ -1598,6 +1630,36 @@
         $('.submituser').click(function() {
 
         });
+
+        var $citiesControl = $('#assignedCitiesControl');
+        var $citiesToggle = $('#toggleAssignedCities');
+
+        function refreshAssignedCitiesToggle() {
+            if (!$citiesToggle.length) return;
+
+            window.setTimeout(function() {
+                var wasExpanded = !$citiesControl.hasClass('cities-collapsed');
+                $citiesControl.addClass('cities-collapsed');
+                var rendered = $citiesControl.find('.select2-selection__rendered').get(0);
+                var hasMultipleRows = rendered && rendered.scrollHeight > rendered.clientHeight + 2;
+
+                $citiesToggle.toggle(hasMultipleRows);
+                if (wasExpanded && hasMultipleRows) {
+                    $citiesControl.removeClass('cities-collapsed');
+                }
+            }, 100);
+        }
+
+        $citiesToggle.on('click', function() {
+            var willExpand = $citiesControl.hasClass('cities-collapsed');
+            $citiesControl.toggleClass('cities-collapsed', !willExpand);
+            $(this)
+                .attr('aria-expanded', willExpand ? 'true' : 'false')
+                .text(willExpand ? 'Collapse assigned cities' : 'Expand assigned cities');
+        });
+
+        $('#cities').on('change select2:select select2:unselect', refreshAssignedCitiesToggle);
+        refreshAssignedCitiesToggle();
     });
     $('.copyaddreess').click(function() {
         var checked = $(this).is(':checked');
