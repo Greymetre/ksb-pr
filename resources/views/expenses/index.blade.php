@@ -266,6 +266,54 @@
      .modal-fullscreen .modal-body {
        overflow-y: auto;
      }
+
+     #getallexpenses tbody td:nth-child(10) {
+       text-align: center;
+       vertical-align: middle;
+     }
+
+     body.fk-shell #getallexpenses .expense-list-status-group {
+       display: flex;
+       width: 100%;
+       align-items: center;
+       justify-content: center;
+     }
+
+     body.fk-shell #getallexpenses .expense-list-status {
+       width: auto;
+       min-width: 105px;
+       height: 36px;
+       min-height: 36px;
+       margin: 0;
+       padding: 0 14px !important;
+       border: 0 !important;
+       border-radius: 8px !important;
+       color: #fff !important;
+       font-size: 12px;
+       font-weight: 600;
+       line-height: 1.2;
+       white-space: nowrap;
+     }
+
+     body.fk-shell #getallexpenses .expense-list-status.btn-success {
+       background: #4caf50 !important;
+     }
+
+     body.fk-shell #getallexpenses .expense-list-status.btn-danger {
+       background: #f44336 !important;
+     }
+
+     body.fk-shell #getallexpenses .expense-list-status.btn-dark {
+       background: #343a40 !important;
+     }
+
+     body.fk-shell #getallexpenses .expense-list-status.btn-info {
+       background: #00bcd4 !important;
+     }
+
+     body.fk-shell #getallexpenses .expense-list-status.btn-warning {
+       background: #ff9800 !important;
+     }
    </style>
    <script>
      var expensesIndexUrl = "{{ route('expenses.index') }}";

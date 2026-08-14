@@ -88,22 +88,22 @@ class ExpensesDataTable extends DataTable
                 $btn = '';
                 $activebtn = '';
                 if ($query->checker_status == '1') {
-                    $btn = $btn . "<button type='button' onclick='showExpense($query->id)' class='btn btn-success'>Approved</span></button>";
+                    $btn = $btn . "<button type='button' onclick='showExpense($query->id)' class='btn btn-success expense-list-status'>Approved</button>";
                 } elseif ($query->checker_status == '2') {
-                    $btn = $btn . "<button type='button' onclick='showExpense($query->id)' class='btn btn-danger'>Rejected</span></button>";
+                    $btn = $btn . "<button type='button' onclick='showExpense($query->id)' class='btn btn-danger expense-list-status'>Rejected</button>";
                 } elseif ($query->checker_status == '3') {
-                    $btn = $btn . "<button type='button' onclick='showExpense($query->id)' class='btn btn-dark'>Checked</span></button>";
+                    $btn = $btn . "<button type='button' onclick='showExpense($query->id)' class='btn btn-dark expense-list-status'>Checked</button>";
                 } elseif ($query->checker_status == '4') {
-                    $btn = $btn . "<button type='button' onclick='showExpense($query->id)' class='btn btn-info'>Checked By Reporting</span></button>";
+                    $btn = $btn . "<button type='button' onclick='showExpense($query->id)' class='btn btn-info expense-list-status'>Checked By Reporting</button>";
                 }elseif ($query->checker_status == '5') {
-                    $btn = $btn . "<button type='button' onclick='showExpense($query->id)' class='btn btn-dark'>Hold</span></button>";
+                    $btn = $btn . "<button type='button' onclick='showExpense($query->id)' class='btn btn-dark expense-list-status'>Hold</button>";
                 } else {
-                    $btn = $btn . "<button type='button' onclick='showExpense($query->id)' class='btn btn-warning'>Pending</span></button>";
+                    $btn = $btn . "<button type='button' onclick='showExpense($query->id)' class='btn btn-warning expense-list-status'>Pending</button>";
                 }
                 if ($request->ip() == '111.118.252.250' || $request->ip() == 'http://192.168.0.210/') {
                     $btn = $btn . "<a href='".url('/map-all').'?id='.$query->user_id."'  class='btn btn-warning'>LOC</span></a>";
                 }
-                return '<div class="btn-group btn-group-sm" role="group" aria-label="Small button group">
+                return '<div class="btn-group btn-group-sm expense-list-status-group" role="group" aria-label="Expense status">
                                             ' . $btn . '
                                         </div>' . $activebtn;
             })
