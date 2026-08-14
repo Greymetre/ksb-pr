@@ -10,7 +10,6 @@
         }
     </style>
 
-    <script src="https://unpkg.com/@googlemaps/markerclustererplus/dist/index.min.js"></script>
     <script>
         const locations = @json($coordinates);
 
@@ -115,10 +114,6 @@
                 return marker;
             });
 
-            // Cluster the markers
-            new MarkerClusterer(map, markers, {
-                imagePath: "https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m"
-            });
         }
     </script>
 
