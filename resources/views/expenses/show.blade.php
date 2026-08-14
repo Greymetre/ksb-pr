@@ -226,14 +226,14 @@ margin-top: 3px;
           <!-- info row -->
           <div class="row invoice-info">
             <div class="col-sm-4 invoice-col">
-              <span class="expense-from-label">From</span>
+              <span class="expense-detail-label">From</span>
               <address>
                 <strong>{!! isset($expense['users']['name']) ? $expense['users']['name'] :'' !!} ({{$expense->users->getdesignation->designation_name??''}}) </strong><br>
               </address>
             </div>
             <!-- /.col -->
             <div class="col-sm-4 invoice-col">
-              Expense Type
+              <span class="expense-detail-label">Expense Type</span>
               <address>
                 <strong>{!! $expense['expense_type']['name'] !!}
                   ( {!! isset($expense['expense_type']['allowance_type_id'])?config('constants.allowance_type.'.$expense['expense_type']['allowance_type_id']):''!!} )
@@ -244,7 +244,7 @@ margin-top: 3px;
             </div>
 
             <div class="col-sm-4 invoice-col">
-              Date
+              <span class="expense-detail-label">Date</span>
               <address>
                 <!-- <strong>{!! $expense['date'] !!}</strong><br> -->
                 <strong>{!! date("d/m/Y g:i a", strtotime($expense['date'])) !!}</strong><br>
@@ -254,7 +254,7 @@ margin-top: 3px;
 
           <div class="row invoice-info">
             <div class="col-sm-4 invoice-col">
-              Expense Status
+              <span class="expense-detail-label">Expense Status</span>
               <address>
                 <strong> @if($expense->checker_status=='1')
                   Approve
@@ -275,13 +275,13 @@ margin-top: 3px;
             </div>
             <!-- /.col -->
             <div class="col-sm-4 invoice-col">
-              Status Change Reason
+              <span class="expense-detail-label">Status Change Reason</span>
               <address>
                 <strong>{{$expense->reason??""}}</strong><br>
               </address>
             </div>
             <div class="col-sm-4 invoice-col">
-              Department
+              <span class="expense-detail-label">Department</span>
               <address>
                 <strong>{{$expense['users']['getdepartment']?$expense['users']['getdepartment']['name']:'-'}}</strong><br>
               </address>
@@ -599,7 +599,7 @@ margin-top: 3px;
       line-height: 1.25;
     }
 
-    body.fk-shell .expense-from-label {
+    body.fk-shell .expense-detail-label {
       display: block;
       margin-bottom: 8px;
       color: #fff !important;
