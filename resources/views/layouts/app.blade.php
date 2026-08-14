@@ -3891,7 +3891,7 @@
             const title = (node.getAttribute('title') || node.textContent || '').toLowerCase();
             const icon = node.querySelector ? node.querySelector('.material-icons') : null;
             const iconText = icon ? icon.textContent.trim() : '';
-            return node.matches('a') && (href.indexOf('/create') !== -1 || href.indexOf('create') !== -1 || iconText === 'add_circle' || title.indexOf('add') !== -1);
+            return node.matches('a') && (node.classList.contains('fk-preserve-list-action') || href.indexOf('/create') !== -1 || href.indexOf('create') !== -1 || iconText === 'add_circle' || title.indexOf('add') !== -1);
         }
 
         function isFilterForm(form) {
@@ -3917,6 +3917,8 @@
         }
 
         function getCreateLabel(link, titleText) {
+            const customLabel = (link.getAttribute('data-fk-action-label') || '').trim();
+            if (customLabel) return customLabel;
             const explicitTitle = (link.getAttribute('title') || '').replace(/\s+/g, ' ').trim();
             const titleMatch = explicitTitle.match(/\badd\s+(.+)$/i);
             if (titleMatch && titleMatch[1]) return 'Add New ' + titleMatch[1].replace(/\s+list$/i, '').trim();
@@ -3927,7 +3929,8 @@
         function enhanceCreateAction(link, titleText) {
             link.classList.remove('btn-just-icon');
             link.classList.add('fk-create-action');
-            link.innerHTML = '<span class="material-icons">add_circle</span><span>' + getCreateLabel(link, titleText) + '</span>';
+            const icon = (link.getAttribute('data-fk-action-icon') || 'add_circle').trim();
+            link.innerHTML = '<span class="material-icons">' + icon + '</span><span>' + getCreateLabel(link, titleText) + '</span>';
         }
 
         function isTemplateAction(link) {

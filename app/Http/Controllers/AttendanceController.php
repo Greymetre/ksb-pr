@@ -735,7 +735,7 @@ public function attendanceSummaryDownload(Request $request)
 
     if ($dayName === 'Sunday') {
         if ($doj && $doj <= $date) {
-            $row[] = 'WOOF';
+            $row[] = 'WOFF';
             $totals['wo']++;
         } else {
             $row[] = '-';

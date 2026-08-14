@@ -167,9 +167,13 @@
                     <button class="btn btn-success btn-sm multiChange mr-1" data-status="1"  title="Approve">Approve</button>
                     <button class="btn btn-danger btn-sm multiChange mr-2" data-status="2" title="Reject">Reject</button>
                   </div>
-                  @if(auth()->user()->can(['attendance_create']))
+                  @if(auth()->user()->can('attendance_create') || auth()->user()->hasAnyRole(['superadmin', 'Admin', 'Sub_Admin', 'subAdmin', 'HR_Admin']))
 
-                  <a data-toggle="modal" data-target="#submitAttendance" class="custom-btn create" title="Punch In">
+                  <a data-toggle="modal" data-target="#submitAttendance"
+                    class="custom-btn create fk-preserve-list-action"
+                    data-fk-action-label="Punch In"
+                    data-fk-action-icon="schedule"
+                    title="Punch In">
                     Punch In
                   </a>
                   @endif
