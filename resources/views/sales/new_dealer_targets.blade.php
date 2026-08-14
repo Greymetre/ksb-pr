@@ -205,22 +205,28 @@
             </div>
             <div class="dealer-target-table-wrap">
                 <table class="dealer-target-table">
-                    <thead><tr><th>No</th><th>Action</th><th>Emp Code</th><th>Emp Name</th><th>Zone</th><th>Month</th><th>Plan Nos</th><th>Achievement Nos</th><th>Achievement %</th><th>Note</th></tr></thead>
+                    <thead><tr><th>No</th>@if(auth()->user()->can('new_dealer_target_edit') || auth()->user()->can('new_dealer_target_delete'))<th>Action</th>@endif<th>Emp Code</th><th>Emp Name</th><th>Zone</th><th>Month</th><th>Plan Nos</th><th>Achievement Nos</th><th>Achievement %</th><th>Note</th></tr></thead>
                     <tbody>
                         @forelse($dealerTargets as $target)
                             @php $percentage = $target->target > 0 ? round(($target->achievement / $target->target) * 100, 1) : 0; @endphp
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
+                                @if(auth()->user()->can('new_dealer_target_edit') || auth()->user()->can('new_dealer_target_delete'))
                                 <td>
                                     <div class="dealer-target-row-actions">
+                                        @can('new_dealer_target_edit')
                                         <button type="button" class="dealer-target-action-btn editDealerTarget" title="Edit" data-id="{{ $target->id }}" data-user-id="{{ $target->user_id }}" data-month="{{ $target->target_month->format('Y-m') }}" data-target="{{ $target->target }}" data-achievement="{{ $target->achievement }}" data-note="{{ $target->note }}"><i class="material-icons">edit</i></button>
+                                        @endcan
+                                        @can('new_dealer_target_delete')
                                         <form class="dealer-target-delete-form" method="POST" action="{{ route('new-dealer-targets.destroy', $target) }}" onsubmit="return confirm('Are you sure you want to delete this dealer target?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="dealer-target-action-btn delete" title="Delete"><i class="material-icons">clear</i></button>
                                         </form>
+                                        @endcan
                                     </div>
                                 </td>
+                                @endif
                                 <td>{{ $target->user->employee_codes ?? '—' }}</td>
                                 <td>{{ $target->user->name ?: trim(($target->user->first_name ?? '').' '.($target->user->last_name ?? '')) }}</td>
                                 <td>{{ optional($target->user->getdivision)->division_name ?? '—' }}</td>
@@ -230,7 +236,7 @@
                                 <td>{{ $target->note ?: '—' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="10" class="dealer-target-empty">No dealer target records available.</td></tr>
+                            <tr><td colspan="{{ (auth()->user()->can('new_dealer_target_edit') || auth()->user()->can('new_dealer_target_delete')) ? 10 : 9 }}" class="dealer-target-empty">No dealer target records available.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -291,7 +297,7 @@
                         <label for="dealerTargetNumber">New Dealer Appointment Target (Nos.)</label>
                         <input class="dealer-target-input" id="dealerTargetNumber" name="target" type="number" min="1" step="1" value="{{ old('target') }}" placeholder="e.g. 12" required>
                     </div>
-                    <div class="dealer-target-field">
+                    <div class="dealer-target-field" id="dealerTargetAchievementField" style="{{ old('target_id') ? '' : 'display:none;' }}">
                         <label for="dealerTargetAchievement">Achievement (Nos.)</label>
                         <input class="dealer-target-input" id="dealerTargetAchievement" name="achievement" type="number" min="0" step="1" value="{{ old('achievement') }}" placeholder="Calculated automatically when left blank">
                     </div>
@@ -453,6 +459,7 @@
             const targetIdInput = document.getElementById('dealerTargetId');
             const targetNumberInput = document.getElementById('dealerTargetNumber');
             const targetAchievementInput = document.getElementById('dealerTargetAchievement');
+            const targetAchievementField = document.getElementById('dealerTargetAchievementField');
             const targetNoteInput = document.getElementById('dealerTargetNote');
             const targetModalTitle = document.getElementById('newDealerTargetTitle');
             const targetSaveText = document.getElementById('dealerTargetSaveText');
@@ -464,6 +471,7 @@
                 targetSaveText.textContent = editing ? 'Update' : 'Save';
                 targetNumberInput.value = editing ? target.dataset.target : '';
                 targetAchievementInput.value = editing ? target.dataset.achievement : '';
+                targetAchievementField.style.display = editing ? 'block' : 'none';
                 targetNoteInput.value = editing ? target.dataset.note : '';
 
                 const selectedUserId = editing ? target.dataset.userId : '';

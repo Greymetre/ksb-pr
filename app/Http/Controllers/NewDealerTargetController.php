@@ -95,6 +95,10 @@ class NewDealerTargetController extends Controller
         $month = Carbon::createFromFormat('Y-m', $validated['target_month'])->startOfMonth();
         $targetId = $validated['target_id'] ?? null;
 
+        if ($targetId) {
+            abort_unless(auth()->user()->can('new_dealer_target_edit'), 403, '403 Forbidden');
+        }
+
         $duplicate = NewDealerTarget::query()
             ->where('user_id', $validated['user_id'])
             ->whereDate('target_month', $month->toDateString())
@@ -113,7 +117,7 @@ class NewDealerTargetController extends Controller
             'user_id' => $validated['user_id'],
             'target_month' => $month->toDateString(),
             'target' => $validated['target'],
-            'achievement' => array_key_exists('achievement', $validated) ? $validated['achievement'] : null,
+            'achievement' => $targetId && array_key_exists('achievement', $validated) ? $validated['achievement'] : null,
             'note' => $validated['note'] ?? null,
             'created_by' => auth()->id(),
         ];
@@ -171,6 +175,8 @@ class NewDealerTargetController extends Controller
 
     public function destroy(NewDealerTarget $newDealerTarget)
     {
+        abort_unless(auth()->user()->can('new_dealer_target_delete'), 403, '403 Forbidden');
+
         $newDealerTarget->delete();
 
         return redirect()->route('new-dealer-targets')->with('success', 'New dealer target deleted successfully.');
