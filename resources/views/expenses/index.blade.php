@@ -149,6 +149,8 @@
              <span class="message"></span>
            </div>
 
+           <div id="expenseInlineFilters" class="expense-inline-filters" aria-label="Expense filters"></div>
+
            <div class="expense-status-summary" aria-label="Expense status summary">
              <button type="button" class="expense-status-card is-pending" data-expense-status="0">
                <div class="expense-status-icon"><i class="material-icons">schedule</i></div>
@@ -281,6 +283,74 @@
        overflow-y: auto;
      }
 
+     body.fk-shell .expense-inline-filters {
+       margin: 4px 18px 8px;
+       padding: 12px;
+       border: 1px solid rgba(90, 130, 220, .22);
+       border-radius: 12px;
+       background: rgba(7, 18, 44, .45);
+     }
+
+     body.fk-shell .expense-inline-filters:empty {
+       display: none;
+     }
+
+     body.fk-shell .expense-inline-filters form {
+       width: 100%;
+       margin: 0;
+     }
+
+     body.fk-shell .expense-inline-filters .d-flex {
+       display: grid !important;
+       grid-template-columns: repeat(6, minmax(145px, 1fr));
+       gap: 10px;
+       align-items: center;
+     }
+
+     body.fk-shell .expense-inline-filters .p-2 {
+       width: auto !important;
+       min-width: 0;
+       padding: 0 !important;
+     }
+
+     body.fk-shell .expense-inline-filters .select2-container,
+     body.fk-shell .expense-inline-filters select,
+     body.fk-shell .expense-inline-filters .form-control {
+       width: 100% !important;
+     }
+
+     body.fk-shell .expense-inline-filters .btn {
+       width: 100% !important;
+       min-width: 0 !important;
+       height: 42px !important;
+       min-height: 42px !important;
+       margin: 0 !important;
+       border-radius: 10px !important;
+     }
+
+     @media (max-width: 1399px) {
+       body.fk-shell .expense-inline-filters .d-flex {
+         grid-template-columns: repeat(4, minmax(145px, 1fr));
+       }
+     }
+
+     @media (max-width: 991px) {
+       body.fk-shell .expense-inline-filters .d-flex {
+         grid-template-columns: repeat(2, minmax(145px, 1fr));
+       }
+     }
+
+     @media (max-width: 575px) {
+       body.fk-shell .expense-inline-filters {
+         margin-right: 12px;
+         margin-left: 12px;
+       }
+
+       body.fk-shell .expense-inline-filters .d-flex {
+         grid-template-columns: 1fr;
+       }
+     }
+
      #getallexpenses tbody td:nth-child(10) {
        text-align: center;
        vertical-align: middle;
@@ -343,6 +413,14 @@
      var multiCheck = "{{ url('checkExpenses')}}";
      var multiReject = "{{ url('rejectExpenses')}}";
      var token = $("meta[name='csrf-token']").attr("content");
+
+     (function moveExpenseFiltersInline() {
+       var target = document.getElementById('expenseInlineFilters');
+       var form = document.querySelector('.card-header form[action*="expenses-download"]');
+       if (target && form) {
+         target.appendChild(form);
+       }
+     })();
 
      $(document).on('click', '.expense-status-card[data-expense-status]', function () {
        var status = String($(this).data('expense-status'));
