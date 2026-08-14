@@ -609,7 +609,16 @@ class ExpensesController extends Controller
 
 
 
-        $expenses = $expenses->with('get_time_history')->orderBy('id', 'desc')->get();
+        $expenses = $expenses
+            ->with('get_time_history')
+            ->orderBy('date', 'asc')
+            ->orderBy(
+                User::select('name')
+                    ->whereColumn('users.id', 'expenses.user_id'),
+                'asc'
+            )
+            ->orderBy('id', 'asc')
+            ->get();
 
         $data = $expenses->map(function ($item, $key) {
 
