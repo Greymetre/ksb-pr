@@ -7,13 +7,18 @@
 
         #assignedCitiesControl.cities-collapsed .select2-selection--multiple,
         #assignedCitiesControl.cities-collapsed .select2-selection__rendered {
-            max-height: 52px !important;
+            height: 54px !important;
+            min-height: 54px !important;
+            max-height: 54px !important;
             overflow: hidden !important;
         }
 
         #toggleAssignedCities {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             margin-top: 10px;
-            padding: 7px 14px;
+            padding: 8px 14px;
             border: 1px solid #2d66b3;
             border-radius: 8px;
             background: rgba(45, 102, 179, .14);
@@ -25,6 +30,10 @@
 
         #toggleAssignedCities:hover {
             background: rgba(45, 102, 179, .28);
+        }
+
+        #toggleAssignedCities .material-icons {
+            font-size: 18px;
         }
     </style>
 
@@ -534,8 +543,9 @@
                                                 @endforeach
                                             </select>
                                             @if($user->id)
-                                            <button type="button" id="toggleAssignedCities" aria-expanded="false" style="display:none;">
-                                                Expand assigned cities
+                                            <button type="button" id="toggleAssignedCities" aria-expanded="false">
+                                                <span class="material-icons" aria-hidden="true">expand_more</span>
+                                                <span class="toggle-label">Show all cities</span>
                                             </button>
                                             @endif
                                             @if ($errors->has('cities'))
@@ -1634,32 +1644,15 @@
         var $citiesControl = $('#assignedCitiesControl');
         var $citiesToggle = $('#toggleAssignedCities');
 
-        function refreshAssignedCitiesToggle() {
-            if (!$citiesToggle.length) return;
-
-            window.setTimeout(function() {
-                var wasExpanded = !$citiesControl.hasClass('cities-collapsed');
-                $citiesControl.addClass('cities-collapsed');
-                var rendered = $citiesControl.find('.select2-selection__rendered').get(0);
-                var hasMultipleRows = rendered && rendered.scrollHeight > rendered.clientHeight + 2;
-
-                $citiesToggle.toggle(hasMultipleRows);
-                if (wasExpanded && hasMultipleRows) {
-                    $citiesControl.removeClass('cities-collapsed');
-                }
-            }, 100);
-        }
-
         $citiesToggle.on('click', function() {
             var willExpand = $citiesControl.hasClass('cities-collapsed');
             $citiesControl.toggleClass('cities-collapsed', !willExpand);
             $(this)
                 .attr('aria-expanded', willExpand ? 'true' : 'false')
-                .text(willExpand ? 'Collapse assigned cities' : 'Expand assigned cities');
+                .find('.material-icons')
+                .text(willExpand ? 'expand_less' : 'expand_more');
+            $(this).find('.toggle-label').text(willExpand ? 'Collapse cities' : 'Show all cities');
         });
-
-        $('#cities').on('change select2:select select2:unselect', refreshAssignedCitiesToggle);
-        refreshAssignedCitiesToggle();
     });
     $('.copyaddreess').click(function() {
         var checked = $(this).is(':checked');
