@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\NewDealerTargetExport;
+use App\Imports\NewDealerTargetImport;
 use App\Models\DealerAppointment;
 use App\Models\Division;
 use App\Models\NewDealerTarget;
@@ -105,5 +106,35 @@ class NewDealerTargetController extends Controller
             new NewDealerTargetExport($request),
             'new_dealer_appointment_targets_' . now()->format('Y_m_d') . '.xlsx'
         );
+    }
+
+    public function import(Request $request)
+    {
+        if (! Schema::hasTable('new_dealer_targets')) {
+            return redirect()->route('new-dealer-targets')
+                ->with('setup_error', 'Dealer targets database setup is pending. Please run the database migration.');
+        }
+
+        $request->validateWithBag('import', [
+            'import_file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
+        ]);
+
+        $import = new NewDealerTargetImport(auth()->id());
+
+        try {
+            Excel::import($import, $request->file('import_file'));
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return redirect()->route('new-dealer-targets')
+                ->with('import_error', 'The file could not be imported. Please check the column headings and data format.');
+        }
+
+        $summary = "Import completed: {$import->added} added, {$import->updated} updated, {$import->unchanged} unchanged";
+        if ($import->skipped > 0) {
+            $summary .= ", {$import->skipped} skipped";
+        }
+
+        return redirect()->route('new-dealer-targets')->with('success', $summary . '.');
     }
 }

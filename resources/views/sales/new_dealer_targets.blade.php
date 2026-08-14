@@ -94,6 +94,13 @@
         .dealer-target-month-option.active { color:#06152e; border-color:#2fc5ec; background:#2fc5ec; font-weight:700; }
         .dealer-target-modal-footer { display:flex; align-items:center; justify-content:flex-end; gap:12px; padding:17px 24px 22px; }
         .dealer-target-modal-footer .dealer-target-btn { min-width:110px; }
+        .dealer-target-file-input { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; }
+        .dealer-target-file-box { min-height:145px; padding:24px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; text-align:center; color:#a8b9dc; border:1px dashed #3b6097; border-radius:12px; background:#091936; cursor:pointer; transition:.2s ease; }
+        .dealer-target-file-box:hover { color:#eef4ff; border-color:#26cce0; background:#0b2448; }
+        .dealer-target-file-box .material-icons { color:#29cbe5; font-size:34px; }
+        .dealer-target-file-box strong { color:#eef4ff; font-size:15px; }
+        .dealer-target-file-box small { color:#8296c3; font-size:12px; }
+        .dealer-target-import-help { margin:15px 0 0; color:#91a6d5; font-size:12px; line-height:1.6; }
         .dealer-target-table tr:last-child td { border-bottom:0; }
         .dealer-target-table .number { color:#f1f5ff; font-weight:700; }
         .achievement-pill { display:inline-flex; min-width:76px; justify-content:center; padding:7px 12px; border-radius:999px; font-weight:700; }
@@ -112,10 +119,13 @@
         @if(session('success'))
             <div class="dealer-target-alert success">{{ session('success') }}</div>
         @endif
+        @if(session('import_error'))
+            <div class="dealer-target-alert error">{{ session('import_error') }}</div>
+        @endif
         @if(!empty($setupRequired) || session('setup_error'))
             <div class="dealer-target-alert error">{{ session('setup_error', 'Dealer targets database setup is pending. Please run the database migration.') }}</div>
         @endif
-        @if($errors->any())
+        @if($errors->getBag('default')->any())
             <div class="dealer-target-alert error">{{ $errors->first() }}</div>
         @endif
         <div class="dealer-target-header">
@@ -124,7 +134,7 @@
                 <p>Track monthly new dealer appointment targets against achievement, by employee</p>
             </div>
             <div class="dealer-target-actions">
-                <button type="button" class="dealer-target-btn"><i class="material-icons">upload</i> Import</button>
+                <button type="button" class="dealer-target-btn" id="openDealerTargetImport"><i class="material-icons">upload</i> Import</button>
                 <a class="dealer-target-btn" href="{{ route('new-dealer-targets.export', request()->only(['search', 'zone_id', 'month'])) }}"><i class="material-icons">download</i> Export</a>
                 <button type="button" class="dealer-target-btn primary" id="openNewDealerTarget"><i class="material-icons">add</i> New Target</button>
             </div>
@@ -211,7 +221,7 @@
         </div>
     </div>
 
-    <div class="dealer-target-modal {{ $errors->any() ? 'show' : '' }}" id="newDealerTargetModal" aria-hidden="{{ $errors->any() ? 'false' : 'true' }}">
+    <div class="dealer-target-modal {{ $errors->getBag('default')->any() ? 'show' : '' }}" id="newDealerTargetModal" aria-hidden="{{ $errors->getBag('default')->any() ? 'false' : 'true' }}">
         <div class="dealer-target-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="newDealerTargetTitle">
             <form method="POST" action="{{ route('new-dealer-targets.store') }}">
                 @csrf
@@ -276,11 +286,45 @@
         </div>
     </div>
 
+    <div class="dealer-target-modal {{ $errors->import->any() ? 'show' : '' }}" id="dealerTargetImportModal" aria-hidden="{{ $errors->import->any() ? 'false' : 'true' }}">
+        <div class="dealer-target-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dealerTargetImportTitle">
+            <form method="POST" action="{{ route('new-dealer-targets.import') }}" enctype="multipart/form-data">
+                @csrf
+                <div class="dealer-target-modal-head">
+                    <h2 id="dealerTargetImportTitle">Import New Dealer Targets</h2>
+                    <button type="button" class="dealer-target-modal-close closeDealerTargetImport" aria-label="Close"><i class="material-icons">close</i></button>
+                </div>
+                <div class="dealer-target-modal-body">
+                    @if($errors->import->any())
+                        <div class="dealer-target-alert error">{{ $errors->import->first() }}</div>
+                    @endif
+                    <input class="dealer-target-file-input" id="dealerTargetImportFile" type="file" name="import_file" accept=".xlsx,.xls,.csv" required>
+                    <label class="dealer-target-file-box" for="dealerTargetImportFile">
+                        <i class="material-icons">upload_file</i>
+                        <strong id="dealerTargetImportFileName">Choose Excel or CSV file</strong>
+                        <small>XLSX, XLS or CSV · Maximum 10 MB</small>
+                    </label>
+                    <p class="dealer-target-import-help">
+                        Required columns: <strong>Emp Code</strong>, <strong>New Dealer Plan Nos</strong>, and <strong>Month</strong>. Note is optional. Identical records are skipped; changed records are updated; new user/month records are added.
+                    </p>
+                </div>
+                <div class="dealer-target-modal-footer">
+                    <button type="button" class="dealer-target-btn closeDealerTargetImport">Cancel</button>
+                    <button type="submit" class="dealer-target-btn primary"><i class="material-icons">upload</i> Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const modal = document.getElementById('newDealerTargetModal');
             const openButton = document.getElementById('openNewDealerTarget');
             const closeButtons = document.querySelectorAll('.closeNewDealerTarget');
+            const importModal = document.getElementById('dealerTargetImportModal');
+            const importOpenButton = document.getElementById('openDealerTargetImport');
+            const importCloseButtons = document.querySelectorAll('.closeDealerTargetImport');
+            const importFile = document.getElementById('dealerTargetImportFile');
 
             function setModal(open) {
                 modal.classList.toggle('show', open);
@@ -295,8 +339,26 @@
             modal.addEventListener('click', function (event) {
                 if (event.target === modal) setModal(false);
             });
+            function setImportModal(open) {
+                importModal.classList.toggle('show', open);
+                importModal.setAttribute('aria-hidden', open ? 'false' : 'true');
+                document.body.style.overflow = open ? 'hidden' : '';
+            }
+            importOpenButton.addEventListener('click', function () { setImportModal(true); });
+            importCloseButtons.forEach(function (button) {
+                button.addEventListener('click', function () { setImportModal(false); });
+            });
+            importModal.addEventListener('click', function (event) {
+                if (event.target === importModal) setImportModal(false);
+            });
+            importFile.addEventListener('change', function () {
+                document.getElementById('dealerTargetImportFileName').textContent = this.files.length ? this.files[0].name : 'Choose Excel or CSV file';
+            });
             document.addEventListener('keydown', function (event) {
-                if (event.key === 'Escape') setModal(false);
+                if (event.key === 'Escape') {
+                    setModal(false);
+                    setImportModal(false);
+                }
             });
 
             const userTrigger = document.getElementById('dealerTargetUserTrigger');
