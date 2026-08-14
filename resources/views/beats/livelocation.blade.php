@@ -338,6 +338,34 @@
             .live-location-page .location-date-field { grid-column: span 12; }
             .live-location-page .location-actions { grid-template-columns: 1fr; }
         }
+
+        #trackActivityDateModal .modal-footer {
+            display: flex !important;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 18px 24px 24px;
+        }
+
+        #trackActivityDateModal .modal-footer .btn {
+            width: auto !important;
+            min-width: 145px;
+            height: 46px;
+            margin: 0 !important;
+            padding: 0 22px !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px !important;
+            white-space: nowrap;
+        }
+
+        #trackActivityDateModal .modal-footer .btn-secondary {
+            border: 1px solid rgba(90, 130, 220, .42) !important;
+            background: rgba(8, 20, 50, .75) !important;
+            color: #d8e7ff !important;
+        }
     </style>
     <div class="row mt-4 live-location-page">
         <div class="col-lg-12">
@@ -436,7 +464,7 @@
                               <div class="location-actions {{ $locationMode === 'geolocator' ? 'geolocator-actions' : '' }}">
                                 <button type="button" class="btn btn-sm location-action-btn" onclick="getActivityData()">Activity Detailed</button>
                                 <input type="submit" name="submit" class="btn btn-sm location-action-btn" value="Complete Map Activity">
-                                <button type="button" class="btn btn-sm location-action-btn" data-toggle="modal" data-target="#trackActivityDateModal">
+                                <button type="button" id="openTrackActivityDate" class="btn btn-sm location-action-btn">
                                   Track Activity
                                 </button>
                               </div>
@@ -598,6 +626,14 @@
             showLocationAlert('Please choose a location action.');
             return false;
         }
+
+        $('#openTrackActivityDate').on('click', function() {
+            if (!validateLocationFilters(false)) {
+                return;
+            }
+
+            $('#trackActivityDateModal').modal('show');
+        });
 
         function getAllUsersLiveLocations() {
             showLocationWorkspace(false);
