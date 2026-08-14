@@ -217,7 +217,7 @@ margin-top: 3px;
           <div class="row">
             <div class="col-4">
               <h4>
-                <small class="float-left">{{ trans('panel.expenses.title') }} #{!! $expense['id'] !!}</small>
+                <small class="float-left expense-record-title">{{ trans('panel.expenses.title') }} #{!! $expense['id'] !!}</small>
               </h4>
             </div>
 
@@ -226,7 +226,7 @@ margin-top: 3px;
           <!-- info row -->
           <div class="row invoice-info">
             <div class="col-sm-4 invoice-col">
-              From
+              <span class="expense-from-label">From</span>
               <address>
                 <strong>{!! isset($expense['users']['name']) ? $expense['users']['name'] :'' !!} ({{$expense->users->getdesignation->designation_name??''}}) </strong><br>
               </address>
@@ -590,6 +590,24 @@ margin-top: 3px;
   <!-- Custom styles for this page -->
 
   <style>
+    body.fk-shell .expense-record-title {
+      display: block;
+      margin-bottom: 12px;
+      color: #fff !important;
+      font-size: 20px !important;
+      font-weight: 700 !important;
+      line-height: 1.25;
+    }
+
+    body.fk-shell .expense-from-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #fff !important;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
     body.fk-shell .fk-expense-modal #approve_expense .modal-dialog {
       display: flex;
       width: calc(100% - 30px) !important;
