@@ -395,6 +395,24 @@ class ExpensesController extends Controller
 
         $paln = TourProgramme::where('userid', $expense->user_id)->where('date', $expense->date)->first();
         $total_visit = count(CheckIn::where('user_id', $expense->user_id)->where('checkin_date', $expense->date)->groupBy('customer_id')->get());
+        $attendance = Attendance::where('user_id', $expense->user_id)
+            ->whereDate('punchin_date', Carbon::parse($expense->date)->toDateString())
+            ->orderBy('punchin_time')
+            ->first();
+
+        $total_working_hours = $attendance->worked_time ?? null;
+        if ($attendance && empty($total_working_hours) && $attendance->punchin_time && $attendance->punchout_time) {
+            $punchIn = Carbon::parse($attendance->punchin_date . ' ' . $attendance->punchin_time);
+            $punchOutDate = $attendance->punchout_date ?: $attendance->punchin_date;
+            $punchOut = Carbon::parse($punchOutDate . ' ' . $attendance->punchout_time);
+            $totalSeconds = $punchIn->diffInSeconds($punchOut);
+            $total_working_hours = sprintf(
+                '%02d:%02d:%02d',
+                intdiv($totalSeconds, 3600),
+                intdiv($totalSeconds % 3600, 60),
+                $totalSeconds % 60
+            );
+        }
 
         $isPastExpense = Carbon::parse($expense->date)->startOfDay()->lt(Carbon::today());
 
@@ -412,7 +430,15 @@ class ExpensesController extends Controller
 
         $logdetails = ExpenseLog::with('logusers')->where('expense_id', $expense->id)->orderBy('id', 'desc')->get();
         //$expense->update(['accountant_status'=>'3','checker_status'=>'3']);
-        return view('expenses.show', compact('expense', 'logdetails', 'paln', 'total_visit', 'total_dis'))->render();
+        return view('expenses.show', compact(
+            'expense',
+            'logdetails',
+            'paln',
+            'total_visit',
+            'total_dis',
+            'attendance',
+            'total_working_hours'
+        ))->render();
     }
 
     /**

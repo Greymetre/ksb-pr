@@ -305,6 +305,32 @@ margin-top: 3px;
             </div>
           </div>
 
+          <div class="expense-attendance-details">
+            <h5 class="expense-attendance-title">Attendance Details</h5>
+            <div class="row">
+              <div class="col-md-4 expense-attendance-item">
+                <span>Punch In Time</span>
+                <strong>{{ !empty($attendance?->punchin_time) ? date('h:i A', strtotime($attendance->punchin_time)) : '-' }}</strong>
+              </div>
+              <div class="col-md-8 expense-attendance-item">
+                <span>Punch In Address</span>
+                <strong>{{ $attendance?->punchin_address ?: '-' }}</strong>
+              </div>
+              <div class="col-md-4 expense-attendance-item">
+                <span>Punch Out Time</span>
+                <strong>{{ !empty($attendance?->punchout_time) ? date('h:i A', strtotime($attendance->punchout_time)) : '-' }}</strong>
+              </div>
+              <div class="col-md-8 expense-attendance-item">
+                <span>Punch Out Address</span>
+                <strong>{{ $attendance?->punchout_address ?: '-' }}</strong>
+              </div>
+              <div class="col-md-4 expense-attendance-item">
+                <span>Total Working Hours</span>
+                <strong>{{ $total_working_hours ?: '-' }}</strong>
+              </div>
+            </div>
+          </div>
+
 
 
 
@@ -583,6 +609,45 @@ margin-top: 3px;
   <!-- Custom styles for this page -->
 
   <style>
+    body.fk-shell .expense-attendance-details {
+      margin: 18px 0 22px;
+      padding: 18px;
+      border: 1px solid rgba(90, 130, 220, .22);
+      border-radius: 12px;
+      background: rgba(7, 18, 44, .55);
+    }
+
+    body.fk-shell .expense-attendance-title {
+      margin: 0 0 14px !important;
+      color: #f7f9ff !important;
+      font-size: 16px !important;
+      font-weight: 600 !important;
+    }
+
+    body.fk-shell .expense-attendance-item {
+      display: flex;
+      min-height: 68px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    body.fk-shell .expense-attendance-item span {
+      margin-bottom: 6px;
+      color: #91a4d3;
+      font-size: 12px;
+      letter-spacing: .3px;
+    }
+
+    body.fk-shell .expense-attendance-item strong {
+      color: #f7f9ff !important;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
     body.fk-shell .fk-expense-modal #approve_expense .modal-dialog {
       display: flex;
       width: calc(100% - 30px) !important;
