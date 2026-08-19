@@ -3492,3 +3492,41 @@ body.fk-shell .expense-show-popup .activity-time {
         max-width: 100%;
     }
 }
+
+/* Preserved listing actions (e.g. bulk Approve/Reject in attendance report)
+   moved from the legacy card-header into the new fk-list-actions bar. */
+body.fk-shell .fk-list-actions .fk-preserved-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+body.fk-shell .fk-list-actions .fk-preserved-action.d-none {
+    display: none !important;
+}
+
+body.fk-shell .fk-list-actions .fk-preserved-action .btn,
+body.fk-shell .fk-list-actions .fk-preserved-action button.btn,
+body.fk-shell .fk-list-actions .fk-preserved-action a.btn {
+    min-width: 118px;
+    padding: 0 18px !important;
+}
+
+body.fk-shell .fk-list-actions .fk-preserved-action .btn-success {
+    border-color: transparent !important;
+    background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%) !important;
+    color: #04140a !important;
+    font-weight: 600;
+}
+
+body.fk-shell .fk-list-actions .fk-preserved-action .btn-danger {
+    border-color: transparent !important;
+    background: linear-gradient(90deg, #dc2626 0%, #f87171 100%) !important;
+    color: #1a0505 !important;
+    font-weight: 600;
+}
+
+body.fk-shell .fk-list-actions .fk-preserved-action .btn-success:hover,
+body.fk-shell .fk-list-actions .fk-preserved-action .btn-danger:hover {
+    filter: brightness(1.08);
+}

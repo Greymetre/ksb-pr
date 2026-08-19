@@ -163,7 +163,7 @@
                 </form>
                 @endif
                 <div class="next-btn">
-                  <div class="btn-group multi-a-r d-none">
+                  <div class="btn-group multi-a-r d-none fk-preserve-list-action">
                     <button class="btn btn-success btn-sm multiChange mr-1" data-status="1"  title="Approve">Approve</button>
                     <button class="btn btn-danger btn-sm multiChange mr-2" data-status="2" title="Reject">Reject</button>
                   </div>

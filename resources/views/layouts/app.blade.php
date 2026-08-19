@@ -4078,6 +4078,8 @@
             const drawerTools = drawer.querySelector('.fk-filter-drawer-tools');
             const preservedAdds = [];
             const preservedAddSet = new Set();
+            const preservedCustom = [];
+            const preservedCustomSet = new Set();
             const appended = new Set();
             const toolKeys = new Set();
 
@@ -4116,7 +4118,14 @@
             }
 
             candidates.forEach(function(container) {
+                Array.from(container.querySelectorAll('.fk-preserve-list-action')).forEach(function(node) {
+                    if (node.matches('a') || preservedCustomSet.has(node)) return;
+                    if (node.parentElement && node.parentElement.closest('.fk-preserve-list-action')) return;
+                    preservedCustom.push(node);
+                    preservedCustomSet.add(node);
+                });
                 Array.from(container.querySelectorAll('a')).forEach(function(link) {
+                    if (link.closest('.fk-preserve-list-action') && !link.matches('.fk-preserve-list-action')) return;
                     if (isCreateAction(link) && !preservedAddSet.has(link)) {
                         preservedAdds.push(link);
                         preservedAddSet.add(link);
@@ -4127,6 +4136,7 @@
                     }
                 });
                 Array.from(container.querySelectorAll('form')).forEach(function(form) {
+                    if (form.closest('.fk-preserve-list-action')) return;
                     if (isUploadForm(form)) {
                         appendHeaderTool('upload', makeToolButton('upload', form));
                     } else if (isFilterForm(form) && !appended.has(form)) {
@@ -4156,6 +4166,11 @@
                 document.body.appendChild(drawer);
                 actions.appendChild(createFilterButton(drawer));
             }
+
+            preservedCustom.forEach(function(node) {
+                node.classList.add('fk-preserved-action');
+                actions.appendChild(node);
+            });
 
             preservedAdds.forEach(function(link) {
                 enhanceCreateAction(link, titleText);
