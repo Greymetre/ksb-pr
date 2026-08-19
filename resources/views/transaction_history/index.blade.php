@@ -76,7 +76,7 @@
                 </form>
                 @endif
                 <div class="next-btn">
-                  <div class="btn-group multi-a-r d-none">
+                  <div class="btn-group multi-a-r d-none fk-preserve-list-action">
                     <button class="btn btn-just-icon btn-success" title="Re-Calculate Point" id="recalcute_point">
                       <i class="material-icons">check</i> 
                     </button>

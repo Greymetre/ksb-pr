@@ -1208,8 +1208,14 @@ if (
         if ($remark_status) $message .= ' Remark: ' . $remark_status;
         SendPushNotification($attendance->user_id, $message, 'attendance', $attendance->id, 'Attendance rejected');
       }
+      if ($request->ajax()) {
+        return response()->json(['status' => 'success', 'message' => 'Attendance Rejected Successfully']);
+      }
       return Redirect::to('reports/attendancereport')->with('message_success', 'Attendance Rejected Successfully');
     } catch (\Exception $e) {
+      if ($request->ajax()) {
+        return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+      }
       return redirect()->back()->withErrors($e->getMessage())->withInput();
     }
   }

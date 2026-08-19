@@ -3530,3 +3530,29 @@ body.fk-shell .fk-list-actions .fk-preserved-action .btn-success:hover,
 body.fk-shell .fk-list-actions .fk-preserved-action .btn-danger:hover {
     filter: brightness(1.08);
 }
+
+body.fk-shell .fk-list-actions .fk-preserved-action .btn-dark {
+    border-color: transparent !important;
+    background: linear-gradient(90deg, #334155 0%, #64748b 100%) !important;
+    color: #eef2ff !important;
+    font-weight: 600;
+}
+
+body.fk-shell .fk-list-actions .fk-preserved-action .btn-warning {
+    border-color: transparent !important;
+    background: linear-gradient(90deg, #d97706 0%, #fbbf24 100%) !important;
+    color: #1a1003 !important;
+    font-weight: 600;
+}
+
+body.fk-shell .fk-list-actions .fk-preserved-action .btn-just-icon,
+body.fk-shell .fk-list-actions .fk-preserved-action button.btn-just-icon,
+body.fk-shell .fk-list-actions .fk-preserved-action a.btn-just-icon {
+    width: 42px;
+    min-width: 42px;
+    padding: 0 !important;
+}
+
+body.fk-shell .fk-list-actions .fk-preserved-action .btn-just-icon .material-icons {
+    font-size: 20px;
+}

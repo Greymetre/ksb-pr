@@ -264,7 +264,8 @@ $(document).ready(function () {
                 id: selectedValues.toString()
               },
               success: function(data) {
-                oTable.draw();
+                oTable.draw(false);
+                $(".multi-a-r").addClass("d-none");
                 $('.message').empty();
                 $('.alert').show();
                 if (data.status == 'success') {
@@ -287,7 +288,8 @@ $(document).ready(function () {
                 id: selectedValues.toString()
               },
               success: function(data) {
-                oTable.draw();
+                oTable.draw(false);
+                $(".multi-a-r").addClass("d-none");
                 $('.message').empty();
                 $('.alert').show();
                 if (data.status == 'success') {
@@ -310,7 +312,8 @@ $(document).ready(function () {
                   id: selectedValues.toString()
                 },
                 success: function(data) {
-                  oTable.draw();
+                  oTable.draw(false);
+                  $(".multi-a-r").addClass("d-none");
                   $('.message').empty();
                   $('.alert').show();
                   if (data.status == 'success') {

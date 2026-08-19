@@ -13,7 +13,7 @@
               <div class="btn-group header-frm-btn">
                 <div class="next-btn">
                   @if(auth()->user()->hasRole('Sub_Admin') || auth()->user()->hasRole('PUMPCH') || auth()->user()->hasRole('superadmin'))
-                  <div class="btn-group multi-a-r d-none">
+                  <div class="btn-group multi-a-r d-none fk-preserve-list-action">
                     <button class="btn btn-just-icon btn-warning mr-2"
                       title="Verify SOP"
                       id="verify_sop"
@@ -22,7 +22,7 @@
                     </button>
                   </div>
                   @if(auth()->user()->hasRole('superadmin'))
-                  <div class="btn-group multi-a-r d-none">
+                  <div class="btn-group multi-a-r d-none fk-preserve-list-action">
                     <button class="btn btn-just-icon btn-success mr-2"
                       title="Approve SOP"
                       id="approved_sop"

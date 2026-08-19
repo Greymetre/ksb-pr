@@ -805,7 +805,7 @@
             }
             $('.message').append(data.message);
             //oTable.draw();
-            table.draw();
+            table.draw(false);
           },
         });
       });
@@ -875,7 +875,7 @@ $('body').on('click', '.punchoutnow', function () {
             }
             $('.message').append(data.message);
             //oTable.draw();
-            table.draw();
+            table.draw(false);
           },
         });
       });
@@ -904,7 +904,8 @@ $('body').on('click', '.punchoutnow', function () {
               id: selectedValues.toString()
             },
             success: function(data) {
-              table.draw();
+              table.draw(false);
+              $(".multi-a-r").addClass("d-none");
               $('.message').empty();
               $('.alert').show();
               if (data.status == 'success') {
@@ -924,6 +925,36 @@ $('body').on('click', '.punchoutnow', function () {
         }        
     });
 
+      // reject remark form -> submit over ajax so the table stays on the current page
+      $('body').on('submit', '#createleadstagesForm_new', function(e) {
+        e.preventDefault();
+        var $form = $(this);
+        var $submit = $form.find('button.save');
+        $submit.prop('disabled', true);
+        $.ajax({
+          url: $form.attr('action'),
+          type: 'POST',
+          data: $form.serialize(),
+          success: function(data) {
+            $("#rejec_attendance").modal('hide');
+            $('#remark_status').val('');
+            table.draw(false);
+            $(".multi-a-r").addClass("d-none");
+            $('.message').empty();
+            $('.alert').show();
+            if (data.status == 'success') {
+              $('.alert').addClass("alert-success");
+            } else {
+              $('.alert').addClass("alert-danger");
+            }
+            $('.message').append(data.message);
+          },
+          complete: function() {
+            $submit.prop('disabled', false);
+          }
+        });
+      });
+
       //approve
       $('body').on('click', '.approve_status', function() {
         var id = $(this).attr("value");
@@ -941,7 +972,7 @@ $('body').on('click', '.punchoutnow', function () {
           },
           success: function(data) {
             console.log(data);
-            table.draw();
+            table.draw(false);
             $('.message').empty();
             $('.alert').show();
             if (data.status == 'success') {
@@ -1015,7 +1046,7 @@ $('#punchOutForm').on('submit', function (e) {
         success: function (response) {
             if (response.status === 'success') {
                 $('#punchOutModal').modal('hide');           // ← closes modal
-                $('#getattendance').DataTable().draw();      // ← refreshes table
+                $('#getattendance').DataTable().draw(false);      // ← refreshes table, stays on current page
                 $('#punchOutForm')[0].reset();               // ← clears form
             } else {
                 $('#punchOutForm').prepend(
