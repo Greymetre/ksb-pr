@@ -215,7 +215,7 @@
                 return line;
             }
 
-            // ---------- movement trail: small numbered dots ----------
+            // ---------- movement trail: default numbered markers ----------
             locations.forEach((loc, index) => {
                 if (!isValidPoint(loc.latitude, loc.longitude)) return;
 
@@ -224,21 +224,8 @@
 
                 const marker = new google.maps.Marker({
                     position: position,
-                    label: {
-                        text: `${index + 1}`,
-                        color: "#ffffff",
-                        fontSize: "9px",
-                        fontWeight: "600"
-                    },
+                    label: `${index + 1}`,
                     title: loc.name || `Movement point ${index + 1}`,
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 9,
-                        fillColor: "#2563eb",
-                        fillOpacity: 1,
-                        strokeColor: "#ffffff",
-                        strokeWeight: 2
-                    },
                     zIndex: 10,
                     map: map
                 });
@@ -359,7 +346,7 @@
     <div id="map"></div>
     <div class="map-legend">
         <strong>{{ \Carbon\Carbon::parse($selectedDate)->format('d M Y') }}</strong>
-        <span><i style="background:#2563eb"></i> Movement point</span>
+        <span><i style="background:#ea4335"></i> Movement point</span>
         <span><i style="background:#16a34a"></i> Customer visit (check in)</span>
         <span><i style="background:#f59e0b"></i> Customer visit (check out)</span>
     </div>
