@@ -287,6 +287,9 @@
         } elseif ($rows->customer_type === 'master') {
             $customerName = optional($rows->distributor)->name ?? 'N/A';
             $mobile = optional($rows->distributor)->mobile ?? 'N/A';
+        } elseif ($rows->customer_id) {
+            $customerName = optional($rows->legacyCustomer)->name ?? 'N/A';
+            $mobile = optional($rows->legacyCustomer)->mobile ?? 'N/A';
         }
     @endphp
 
@@ -306,9 +309,10 @@
                   </div>
                   @if($beats->exists && isset($beats['beatcustomers']))
                   <script>
+                     // master_id keys, matching beatCustomerKey() below
                      window.existingBeatCustomers = [
                         @foreach($beats['beatcustomers'] as $rows)
-                              "{{ $rows['distributor_id'] }}",
+                              "{{ ($rows['customer_type'] ?: 'customer') }}_{{ $rows['distributor_id'] ?: $rows['customer_id'] }}",
                         @endforeach
                      ];
                   </script>
@@ -648,28 +652,41 @@ var $select = $('#tab_beat_users tbody tr:last').find(".user");
 
 let selectedCustomers = new Set();
 
-// Helper: Rebuild all customer dropdowns excluding taken IDs
+// the three masters (retailer / distributor / customer) have their own id
+// sequences, so a counter is identified by master + id, never by id alone
+function beatCustomerKey(type, id) {
+    var master = String(type || '').toLowerCase();
+    if (master === 'retailer') master = 'secondary';
+    if (master === 'distributor') master = 'master';
+    return master + '_' + String(id);
+}
+
+// Helper: Rebuild all customer dropdowns excluding counters already taken
 function updateAllCustomerDropdowns() {
     const allSelects = document.querySelectorAll('.beat-customer-rows .customer');
 
     allSelects.forEach(select => {
         const currentValue = select.value || '';
+        const currentType = $(select).closest('tr').find('.customer_type').val() || '';
+        const currentKey = currentValue ? beatCustomerKey(currentType, currentValue) : '';
 
         // Clear & rebuild
         select.innerHTML = '<option value="">Select Customer</option>';
 
         if (window.allAvailableCustomers && window.allAvailableCustomers.length > 0) {
             window.allAvailableCustomers.forEach(cust => {
-                const idStr = String(cust.id);
+                const key = beatCustomerKey(cust.type, cust.id);
 
                 // Show option if:
                 // - not taken by anyone else, OR
-                // - it is the currently selected value in THIS dropdown
-                if (!selectedCustomers.has(idStr) || idStr === currentValue) {
+                // - it is the currently selected counter in THIS dropdown
+                if (!selectedCustomers.has(key) || key === currentKey) {
                     const option = new Option(
                         `${cust.name} ${cust.mobile || ''}`.trim(),
                         cust.id
                     );
+                    // the save uses this to know which master the id belongs to
+                    option.setAttribute('data-type', cust.type);
                     select.add(option);
                 }
             });
@@ -720,24 +737,8 @@ function getRetailerlist() {
                 showCustomerNotice('');
             }
 
+            // rebuilds every row, the newly added one included
             updateAllCustomerDropdowns();
-
-            // Populate only the last (new) row
-            const lastSelect = $('#tab_beat_customer tr:last .customer')[0];
-            if (lastSelect) {
-                lastSelect.innerHTML = '<option value="">Select Customer</option>';
-
-                res.forEach(cust => {
-                    if (!selectedCustomers.has(String(cust.id))) {
-const opt = new Option(`${cust.name} (${cust.mobile})`, cust.id);
-opt.setAttribute("data-type", cust.type);
-lastSelect.add(opt);
-                        lastSelect.add(opt);
-                    }
-                });
-
-                $(lastSelect).select2();
-            }
         },
         error: function(xhr) {
             console.error("Failed to load customers", xhr && xhr.responseText);
@@ -765,8 +766,8 @@ $(document).ready(function () {
     const $customerTable = $('table.beat-customer-rows');
     let customerCounter = $customerTable.find('tbody tr').length + 1;
     if (window.existingBeatCustomers && window.existingBeatCustomers.length > 0) {
-    window.existingBeatCustomers.forEach(id => {
-        selectedCustomers.add(String(id));
+    window.existingBeatCustomers.forEach(key => {
+        selectedCustomers.add(String(key));
     });
 }
 
@@ -799,35 +800,34 @@ $(document).ready(function () {
 
     // Remove dynamic row
     $customerTable.on('click', '.remove-customer-rows', function () {
-        const removedId = $(this).closest('tr').find('.customer').val();
-        if (removedId) selectedCustomers.delete(String(removedId));
-        $(this).closest('tr').remove();
+        const $row = $(this).closest('tr');
+        const removedKey = $row.data('prev-customer-key');
+        if (removedKey) selectedCustomers.delete(removedKey);
+        $row.remove();
         updateAllCustomerDropdowns();
     });
 
     // Track changes in dynamic selects
     $(document).on('change', '.beat-customer-rows .customer', function () {
         const customerId = this.value;
-            const customerText = $(this).find(":selected").text();
-
-    console.log("Selected Customer ID:", customerId);
-    console.log("Selected Customer Name:", customerText);
         const $row = $(this).closest('tr');
-        const prevId = $row.data('prev-customer-id');
+        const type = $(this).find(':selected').data('type') || '';
+        const prevKey = $row.data('prev-customer-key');
 
-        if (prevId) selectedCustomers.delete(String(prevId));
+        if (prevKey) selectedCustomers.delete(prevKey);
+
+        // the master this id belongs to travels with the row so the server can
+        // store it against the right table
+        $row.find('.customer_type').val(type);
 
         if (customerId) {
-            selectedCustomers.add(String(customerId));
-            $row.data('prev-customer-id', customerId);
+            const key = beatCustomerKey(type, customerId);
+            selectedCustomers.add(key);
+            $row.data('prev-customer-key', key);
         } else {
-            $row.removeData('prev-customer-id');
+            $row.removeData('prev-customer-key');
         }
 
-
-            const type = $(this).find(':selected').data('type');
-    $row.find('.customer_type').val(type);
-    
         updateAllCustomerDropdowns();
     });
 
@@ -841,7 +841,9 @@ $(document).ready(function () {
     $('.beat-customer-rows .customer').each(function () {
         const val = $(this).val();
         if (val && val !== '') {
-            selectedCustomers.add(String(val));
+            const key = beatCustomerKey($(this).closest('tr').find('.customer_type').val(), val);
+            selectedCustomers.add(key);
+            $(this).closest('tr').data('prev-customer-key', key);
         }
     });
 

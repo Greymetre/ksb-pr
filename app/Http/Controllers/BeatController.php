@@ -241,14 +241,22 @@
           foreach ($request['customers'] as $key => $value) {
             if (!empty($value)) {
 
-                    list($type,$id) = explode('_',$value);
+              // the dropdown posts the id in customers[] and the master it came
+              // from in the matching customer_type[] row
+              $parsed = $this->parseBeatCustomerSelection($value, $request['customer_type'][$key] ?? null);
+              if (!$parsed) {
+                continue;
+              }
+              list($type, $id) = $parsed;
 
         BeatCustomer::updateOrCreate(
-        [
+        array_merge(
+          [
             'beat_id' => $response['id'],
-            'distributor_id' => $id,
             'customer_type' => $type
-        ],
+          ],
+          $type === 'customer' ? ['customer_id' => $id] : ['distributor_id' => $id]
+        ),
         [
             'active' => 'Y',
             'created_at' => getcurentDateTime(),
@@ -467,13 +475,26 @@ $customers = $retailers
         if ($response['status'] == 'success') {
           if ($request['customers']) {
             foreach ($request['customers'] as $key => $value) {
-              BeatCustomer::updateOrCreate(['distributor_id' => $value], [
-                'active' => 'Y',
-                'beat_id' => $request['beat_id'],
-                'distributor_id' => $value,
-                'created_at' => getcurentDateTime(),
-                'updated_at' => getcurentDateTime(),
-              ]);
+              $parsed = $this->parseBeatCustomerSelection($value, $request['customer_type'][$key] ?? null);
+              if (!$parsed) {
+                continue;
+              }
+              list($type, $id) = $parsed;
+
+              BeatCustomer::updateOrCreate(
+                array_merge(
+                  [
+                    'beat_id' => $request['beat_id'],
+                    'customer_type' => $type
+                  ],
+                  $type === 'customer' ? ['customer_id' => $id] : ['distributor_id' => $id]
+                ),
+                [
+                  'active' => 'Y',
+                  'created_at' => getcurentDateTime(),
+                  'updated_at' => getcurentDateTime(),
+                ]
+              );
             }
           }
           if ($request['beatdetail']) {
@@ -850,9 +871,11 @@ break;
                 // Get type from separate array
                 $type = $request->customer_type[$key] ?? null;
 
-                // Map type
-    if($type == 'distributor') $type = 'master';
-    elseif($type == 'retailer') $type = 'secondary';
+                $parsed = $this->parseBeatCustomerSelection($customer, $type);
+                if (!$parsed) {
+                    continue;
+                }
+                list($type, $customer) = $parsed;
 
     // ✅ Validate existence in DB
     if ($type == 'master' && !\App\Models\MasterDistributor::find($customer)) {
@@ -861,14 +884,19 @@ break;
     if ($type == 'secondary' && !\App\Models\SecondaryCustomer::find($customer)) {
         return redirect()->back()->with('message_danger','Retailer not found')->withInput();
     }
+    if ($type == 'customer' && !\App\Models\Customers::find($customer)) {
+        return redirect()->back()->with('message_danger','Customer not found')->withInput();
+    }
 
     // Insert/update DB
     BeatCustomer::updateOrCreate(
-        [
-            'beat_id' => $request->beat_id,
-            'distributor_id' => $customer,
-            'customer_type' => $type
-        ],
+        array_merge(
+            [
+                'beat_id' => $request->beat_id,
+                'customer_type' => $type
+            ],
+            $type === 'customer' ? ['customer_id' => $customer] : ['distributor_id' => $customer]
+        ),
         [
             'active' => 'Y',
             'created_at' => getcurentDateTime(),
@@ -1518,6 +1546,40 @@ break;
       $beats = Beat::all();
 
       return view('beats.global_schedule_form', compact('users','beats'));
+  }
+
+  /**
+   * The Beat Customer dropdown posts the counter id plus the master it came
+   * from ("retailer" / "distributor" / "customer"). Older markup posted a
+   * combined "type_id" value, so both shapes are accepted here.
+   *
+   * @return array|null  [customer_type, id]
+   */
+  private function parseBeatCustomerSelection($value, $type = null)
+  {
+    $value = trim((string) $value);
+    if ($value === '') {
+      return null;
+    }
+
+    if (!is_numeric($value) && strpos($value, '_') !== false) {
+      list($type, $value) = explode('_', $value, 2);
+    }
+
+    $type = strtolower(trim((string) $type));
+    $map = [
+      'distributor' => 'master',
+      'master' => 'master',
+      'retailer' => 'secondary',
+      'secondary' => 'secondary',
+      'customer' => 'customer',
+    ];
+
+    if (!isset($map[$type]) || !is_numeric($value)) {
+      return null;   // never store a row we cannot resolve back to a counter
+    }
+
+    return [$map[$type], (int) $value];
   }
 
   /**

@@ -523,10 +523,49 @@ public function getRetailerlist(Request $request)
             $distributors->whereIn('billing_district', $districtValues);
         }
 
-        /* ---------- Merge Both ---------- */
+        /* ---------- Customer master (legacy customers table) ---------- */
+
+        $customers = Customers::query()
+            ->where('customers.active', 'Y')
+            ->select([
+                'customers.id',
+                DB::raw("COALESCE(NULLIF(customers.name, ''), TRIM(CONCAT(COALESCE(customers.first_name, ''), ' ', COALESCE(customers.last_name, '')))) as name"),
+                'customers.mobile',
+                DB::raw('NULL as state_id'),
+                DB::raw('NULL as district_id'),
+                DB::raw('NULL as city_id')
+            ])
+            ->selectRaw("'customer' as type");
+
+        // legacy customers keep their location on the addresses table
+        if ($state || !empty($cityIds) || !empty($districtIds)) {
+            $customers->whereExists(function ($query) use ($state, $cityIds, $districtIds, $districtCityIds) {
+                $query->select(DB::raw(1))
+                    ->from('addresses')
+                    ->whereColumn('addresses.customer_id', 'customers.id');
+
+                if ($state) {
+                    $query->where('addresses.state_id', $state);
+                }
+
+                if (!empty($cityIds)) {
+                    $query->whereIn('addresses.city_id', $cityIds);
+                } elseif (!empty($districtIds)) {
+                    $query->where(function ($sub) use ($districtIds, $districtCityIds) {
+                        $sub->whereIn('addresses.district_id', $districtIds);
+                        if (!empty($districtCityIds)) {
+                            $sub->orWhereIn('addresses.city_id', $districtCityIds);
+                        }
+                    });
+                }
+            });
+        }
+
+        /* ---------- Merge All ---------- */
 
         $data = $retailers
             ->unionAll($distributors)
+            ->unionAll($customers)
             ->orderBy('name','asc')
             ->get();
 

@@ -44,6 +44,18 @@ public function retailerFull()
     return $this->belongsTo(\App\Models\SecondaryCustomer::class,'distributor_id','id');
 }
 
+// counters that still live in the legacy customer master
+public function legacyCustomer()
+{
+    return $this->belongsTo(\App\Models\Customers::class,'customer_id','id')
+        ->select('id','name','first_name','last_name','mobile','customer_code','latitude','longitude');
+}
+
+public function legacyCustomerFull()
+{
+    return $this->belongsTo(\App\Models\Customers::class,'customer_id','id');
+}
+
 public function distributorFull()
 {
     return $this->belongsTo(\App\Models\MasterDistributor::class,'distributor_id','id');
@@ -60,6 +72,10 @@ public function customerName()
         return optional($this->distributor)->trade_name;
     }
 
+    if ($this->customer_id) {
+        return optional($this->legacyCustomer)->name;
+    }
+
     return null;
 }
 
@@ -73,6 +89,10 @@ public function getCustomerAttribute()
         return $this->retailer; // already loaded relation
     }
 
+    if ($this->customer_id) {
+        return $this->legacyCustomer;
+    }
+
     return null;
 }
 
@@ -84,6 +104,10 @@ public function getCustomerFullAttribute()
 
     if ($this->customer_type === 'secondary') {
         return $this->retailerFull;
+    }
+
+    if ($this->customer_id) {
+        return $this->legacyCustomerFull;
     }
 
     return null;
