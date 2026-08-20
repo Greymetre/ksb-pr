@@ -169,15 +169,15 @@ class TourController extends Controller
                         ->addColumn('stauts', function ($query) {
                             if($query->status == '0'){
                                 $btn = ' <button type="button" data-status="0" class="btn btn-warning btn-just-icon btn-sm change_status" value="'.$query->id.'" title="Change Status(Pending)">
-                                 <i class="material-icons">hourglass_empty</i>
+                                 <i class="material-icons">pending</i>
                                 </button>';
                             }elseif($query->status == '1'){
                                  $btn = ' <button type="button" data-status="1" class="btn btn-success btn-just-icon btn-sm change_status" value="'.$query->id.'" title="Change Status(Approved)">
-                                 <i class="material-icons">check_circle</i>
+                                 <i class="material-icons">approval</i>
                                  </button>';
                             }else{
                                  $btn = ' <button type="button" data-status="2" class="btn btn-danger btn-just-icon btn-sm change_status" value="'.$query->id.'" title="Change Status(Rejected)">
-                                 <i class="material-icons">cancel</i>
+                                 <i class="material-icons">circle</i>
                                  </button>';
                             }
 
@@ -189,7 +189,7 @@ class TourController extends Controller
                               // if(auth()->user()->can(['tour_edit']))
                               // {
 
-                               $btn = $btn.'<a href="javascript:void(0)" class="btn btn-info btn-just-icon btn-sm edit" id="'.encrypt($query->id).'" title="'.trans('panel.global.edit').' '.trans('panel.category.title_singular').'">
+                               $btn = $btn.'<a href"javascript:void(0)" class="btn btn-info btn-just-icon btn-sm edit" id="'.encrypt($query->id).'" title="'.trans('panel.global.edit').' '.trans('panel.category.title_singular').'">
                                <i class="material-icons">edit</i>
                                 </a>';
 
