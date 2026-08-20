@@ -149,7 +149,7 @@
                   @endif
                   <a href="{{ route('tours.create') }}" class="btn btn-just-icon btn-theme"><i
                       class="material-icons">add_circle</i></a>
-                  <div class="d-flex align-items-center gap-2" style="gap:8px;">
+                  <div id="tour-bulk-actions" class="align-items-center gap-2" style="display:none; gap:8px;">
 
                     <button class="btn btn-success btn-sm bulk-approve px-3 py-2">
                       Approve
@@ -726,6 +726,32 @@ renderObjectives();
 
         });
 
+
+        function syncTourBulkActions() {
+          var rowCheckboxes = $('.checked_all');
+          var checkedCount = rowCheckboxes.filter(':checked').length;
+
+          $('#tour-bulk-actions').css('display', checkedCount > 0 ? 'flex' : 'none');
+          $('#check_all')
+            .prop('checked', rowCheckboxes.length > 0 && checkedCount === rowCheckboxes.length)
+            .prop('indeterminate', checkedCount > 0 && checkedCount < rowCheckboxes.length);
+        }
+
+        $('body').on('change', '.checked_all', function() {
+          syncTourBulkActions();
+        });
+
+        $('body').on('change', '#check_all', function() {
+          $('.checked_all').prop('checked', this.checked);
+          syncTourBulkActions();
+        });
+
+        $('#gettour').on('draw.dt', function() {
+          $('#check_all').prop('checked', false).prop('indeterminate', false);
+          syncTourBulkActions();
+        });
+
+        syncTourBulkActions();
 
         $('body').on('click', '.bulk-approve', function() {
 
