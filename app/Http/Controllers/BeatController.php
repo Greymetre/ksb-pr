@@ -1519,4 +1519,423 @@ break;
 
       return view('beats.global_schedule_form', compact('users','beats'));
   }
+
+  /**
+   * Beat Route Optimized – filter screen. The map stays blank until a user and
+   * date are chosen, exactly like the geolocator screen.
+   */
+  public function beatRouteOptimizer()
+  {
+    $accessibleUserIds = getUsersReportingToAuth();
+
+    // only users who actually carry a beat: assigned via beat_users or scheduled
+    $beatUserIds = BeatUser::whereIn('user_id', $accessibleUserIds)->pluck('user_id')
+      ->merge(BeatSchedule::whereIn('user_id', $accessibleUserIds)->pluck('user_id'))
+      ->unique()
+      ->values();
+
+    $users = User::whereDoesntHave('roles', function ($query) {
+      $query->whereIn('id', config('constants.customer_roles'));
+    })
+      ->whereIn('id', $beatUserIds)
+      ->orderBy('name')
+      ->get(['id', 'name', 'employee_codes'])
+      ->map(function ($user) {
+        return [
+          'id' => $user->id,
+          'name' => $user->employee_codes ? $user->name . ' (' . $user->employee_codes . ')' : $user->name,
+        ];
+      })
+      ->values();
+
+    return view('beats.routeoptimizer', compact('users'));
+  }
+
+  /**
+   * Builds the optimized visit sequence for one user on one date:
+   * beat of the day -> aligned counters -> nearest neighbour ordering from the
+   * user's start point -> per stop distance, ETA and visit priority.
+   */
+  public function beatRouteOptimizerData(Request $request)
+  {
+    $validator = Validator::make($request->all(), [
+      'user_id' => 'required',
+      'date' => 'required|date',
+    ]);
+
+    if ($validator->fails()) {
+      return response()->json(['status' => 'error', 'message' => $validator->errors()->first()], 200);
+    }
+
+    $userId = (int) $request->user_id;
+    $date = Carbon::parse($request->date)->format('Y-m-d');
+
+    $accessibleUserIds = getUsersReportingToAuth();
+    if (!in_array($userId, (array) $accessibleUserIds)) {
+      return response()->json(['status' => 'error', 'message' => 'You are not allowed to view this user.'], 200);
+    }
+
+    $user = User::find($userId);
+    if (!$user) {
+      return response()->json(['status' => 'error', 'message' => 'User not found.'], 200);
+    }
+
+    // ---- beat of the day (fall back to the user's assigned beats) ----
+    $schedules = BeatSchedule::with('beats')
+      ->where('user_id', $userId)
+      ->whereDate('beat_date', $date)
+      ->get();
+
+    $planSource = 'scheduled';
+    $beatIds = $schedules->pluck('beat_id')->filter()->unique()->values();
+
+    if ($beatIds->isEmpty()) {
+      $planSource = 'assigned';
+      $beatIds = BeatUser::where('user_id', $userId)->pluck('beat_id')->filter()->unique()->values();
+    }
+
+    if ($beatIds->isEmpty()) {
+      return response()->json([
+        'status' => 'empty',
+        'message' => 'No beat is scheduled or assigned to ' . $user->name . ' for ' . Carbon::parse($date)->format('d M Y') . '.',
+      ], 200);
+    }
+
+    $beatNames = Beat::whereIn('id', $beatIds)->pluck('beat_name', 'id');
+
+    // ---- counters aligned to those beats ----
+    $beatCustomers = BeatCustomer::with(['retailerFull.city', 'distributorFull'])
+      ->whereIn('beat_id', $beatIds)
+      ->get();
+
+    $stops = [];
+    foreach ($beatCustomers as $beatCustomer) {
+      $stop = $this->mapBeatCustomerToStop($beatCustomer, $beatNames);
+      if ($stop) {
+        $stops[$stop['key']] = $stop;   // key dedupes a counter aligned to two beats
+      }
+    }
+    $stops = array_values($stops);
+
+    if (empty($stops)) {
+      return response()->json([
+        'status' => 'empty',
+        'message' => 'No counter is aligned to ' . implode(', ', $beatNames->toArray()) . '.',
+      ], 200);
+    }
+
+    // ---- visit history for priority + today's progress ----
+    $this->attachVisitHistory($stops, $userId, $date);
+
+    // ---- start point: punch in, else first GPS ping of the day ----
+    $start = $this->resolveRouteStartPoint($userId, $date);
+
+    // ---- nearest neighbour ordering ----
+    $mapped = array_values(array_filter($stops, function ($stop) {
+      return $stop['latitude'] !== null && $stop['longitude'] !== null;
+    }));
+    $unmapped = array_values(array_filter($stops, function ($stop) {
+      return $stop['latitude'] === null || $stop['longitude'] === null;
+    }));
+
+    $ordered = $this->orderStopsByNearestNeighbour($mapped, $start);
+
+    // ---- distance, ETA and sequence numbers ----
+    $startTime = Carbon::parse($date . ' ' . ($start['time'] ?? '09:00:00'));
+    $clock = $startTime->copy();
+    $totalKm = 0;
+    $previous = $start && $start['latitude'] !== null ? $start : null;
+
+    foreach ($ordered as $index => &$stop) {
+      $legKm = $previous
+        ? round(haversineGreatCircleDistance($previous['latitude'], $previous['longitude'], $stop['latitude'], $stop['longitude']), 1)
+        : 0;
+
+      $totalKm += $legKm;
+      $clock->addMinutes((int) round(($legKm / self::ROUTE_AVG_SPEED_KMPH) * 60));
+
+      $stop['sequence'] = $index + 1;
+      $stop['leg_km'] = $legKm;
+      $stop['eta'] = $clock->format('g:i A');
+
+      $clock->addMinutes(self::ROUTE_STOP_MINUTES);
+      $previous = $stop;
+    }
+    unset($stop);
+
+    foreach ($unmapped as $index => &$stop) {
+      $stop['sequence'] = count($ordered) + $index + 1;
+      $stop['leg_km'] = null;
+      $stop['eta'] = null;
+    }
+    unset($stop);
+
+    $route = array_merge($ordered, $unmapped);
+
+    return response()->json([
+      'status' => 'success',
+      'plan_source' => $planSource,
+      'user' => [
+        'id' => $user->id,
+        'name' => $user->name,
+        'designation' => optional($user->getdesignation)->designation_name ?? 'Field employee',
+      ],
+      'beat_name' => implode(', ', $beatNames->toArray()),
+      'date' => Carbon::parse($date)->format('d M Y'),
+      'start' => $start,
+      'summary' => [
+        'stops' => count($route),
+        'mapped_stops' => count($ordered),
+        'unmapped_stops' => count($unmapped),
+        'visited' => count(array_filter($route, function ($stop) { return $stop['visited']; })),
+        'route_km' => round($totalKm, 1),
+        'start_time' => $startTime->format('g:i A'),
+        'finish_time' => count($ordered) ? $clock->format('g:i A') : null,
+      ],
+      'stops' => $route,
+    ], 200);
+  }
+
+  const ROUTE_AVG_SPEED_KMPH = 20;   // city running average used for the ETA
+  const ROUTE_STOP_MINUTES = 15;     // assumed time spent at each counter
+
+  /**
+   * beat_customers row -> map stop. Coordinates live in gps_location ("lat,lng")
+   * for master/secondary counters and in lat/long columns for legacy customers.
+   */
+  private function mapBeatCustomerToStop($beatCustomer, $beatNames)
+  {
+    $beatName = $beatNames[$beatCustomer->beat_id] ?? '';
+
+    if ($beatCustomer->customer_type === 'master' && $beatCustomer->distributorFull) {
+      $entity = $beatCustomer->distributorFull;
+      [$latitude, $longitude] = $this->splitGpsLocation($entity->gps_location);
+
+      return [
+        'key' => 'distributor:' . $entity->id,
+        'entity_type' => 'distributor',
+        'entity_id' => $entity->id,
+        'name' => $entity->trade_name ?: $entity->legal_name ?: 'Unnamed distributor',
+        'code' => $entity->distributor_code ?: '',
+        'category' => $entity->category ?: 'Distributor',
+        'mobile' => $entity->mobile ?: '',
+        'address' => trim(($entity->billing_address ?? '') . ' ' . ($entity->billing_city ?? '')),
+        'city' => $entity->billing_city ?: '',
+        'beat_name' => $beatName,
+        'latitude' => $latitude,
+        'longitude' => $longitude,
+      ];
+    }
+
+    if ($beatCustomer->customer_type === 'secondary' && $beatCustomer->retailerFull) {
+      $entity = $beatCustomer->retailerFull;
+      [$latitude, $longitude] = $this->splitGpsLocation($entity->gps_location);
+
+      return [
+        'key' => 'secondary_customer:' . $entity->id,
+        'entity_type' => 'secondary_customer',
+        'entity_id' => $entity->id,
+        'name' => $entity->shop_name ?: $entity->owner_name ?: 'Unnamed counter',
+        'code' => $entity->owner_name ?: '',
+        'category' => $entity->sub_type ?: ($entity->type ?: 'Retailer'),
+        'mobile' => $entity->mobile_number ?: '',
+        'address' => trim(($entity->address_line ?? '') . ' ' . (optional($entity->city)->city_name ?? '')),
+        'city' => optional($entity->city)->city_name ?: '',
+        'beat_name' => $beatName,
+        'latitude' => $latitude,
+        'longitude' => $longitude,
+      ];
+    }
+
+    if ($beatCustomer->customer_id) {
+      $entity = \App\Models\Customers::find($beatCustomer->customer_id);
+      if (!$entity) {
+        return null;
+      }
+
+      return [
+        'key' => 'customer:' . $entity->id,
+        'entity_type' => 'customer',
+        'entity_id' => $entity->id,
+        'name' => $entity->name ?: trim(($entity->first_name ?? '') . ' ' . ($entity->last_name ?? '')),
+        'code' => $entity->customer_code ?: '',
+        'category' => 'Customer',
+        'mobile' => $entity->mobile ?: ($entity->contact_number ?: ''),
+        'address' => '',
+        'city' => '',
+        'beat_name' => $beatName,
+        'latitude' => is_numeric($entity->latitude) ? (float) $entity->latitude : null,
+        'longitude' => is_numeric($entity->longitude) ? (float) $entity->longitude : null,
+      ];
+    }
+
+    return null;
+  }
+
+  private function splitGpsLocation($gpsLocation)
+  {
+    if (empty($gpsLocation) || strpos($gpsLocation, ',') === false) {
+      return [null, null];
+    }
+
+    $parts = array_map('trim', explode(',', $gpsLocation));
+    if (count($parts) < 2 || !is_numeric($parts[0]) || !is_numeric($parts[1])) {
+      return [null, null];
+    }
+
+    return [(float) $parts[0], (float) $parts[1]];
+  }
+
+  /**
+   * Marks which counters are already done on the selected date and how long it
+   * has been since the last visit, which drives the priority badge.
+   */
+  private function attachVisitHistory(&$stops, $userId, $date)
+  {
+    $entityIds = array_column($stops, 'entity_id');
+
+    $todaysCheckIns = CheckIn::where('user_id', $userId)
+      ->whereDate('checkin_date', $date)
+      ->get(['entity_type', 'entity_id', 'customer_id', 'checkin_time']);
+
+    $lastVisits = CheckIn::selectRaw('entity_type, entity_id, customer_id, MAX(checkin_date) as last_date')
+      ->where(function ($query) use ($entityIds) {
+        $query->whereIn('entity_id', $entityIds)->orWhereIn('customer_id', $entityIds);
+      })
+      ->whereDate('checkin_date', '<', $date)
+      ->groupBy('entity_type', 'entity_id', 'customer_id')
+      ->get();
+
+    foreach ($stops as &$stop) {
+      $done = $todaysCheckIns->first(function ($checkIn) use ($stop) {
+        return ($checkIn->entity_type === $stop['entity_type'] && (int) $checkIn->entity_id === (int) $stop['entity_id'])
+          || ($stop['entity_type'] === 'customer' && (int) $checkIn->customer_id === (int) $stop['entity_id']);
+      });
+
+      $last = $lastVisits
+        ->filter(function ($row) use ($stop) {
+          return ($row->entity_type === $stop['entity_type'] && (int) $row->entity_id === (int) $stop['entity_id'])
+            || ($stop['entity_type'] === 'customer' && (int) $row->customer_id === (int) $stop['entity_id']);
+        })
+        ->max('last_date');
+
+      $daysSince = $last ? (int) abs(Carbon::parse($last)->diffInDays(Carbon::parse($date))) : null;
+
+      $stop['visited'] = (bool) $done;
+      $stop['visited_at'] = $done && $done->checkin_time ? date('g:i A', strtotime($done->checkin_time)) : null;
+      $stop['last_visit'] = $last ? Carbon::parse($last)->format('d M Y') : null;
+      $stop['days_since_visit'] = $daysSince;
+
+      if ($done) {
+        $stop['priority'] = 'visited';
+        $stop['priority_label'] = 'VISITED';
+      } elseif ($daysSince === null) {
+        $stop['priority'] = 'new';
+        $stop['priority_label'] = 'NEW COUNTER';
+      } elseif ($daysSince > 30) {
+        $stop['priority'] = 'overdue';
+        $stop['priority_label'] = 'OVERDUE VISIT';
+      } elseif ($daysSince >= 15) {
+        $stop['priority'] = 'followup';
+        $stop['priority_label'] = 'FOLLOW-UP DUE';
+      } else {
+        $stop['priority'] = 'routine';
+        $stop['priority_label'] = 'ROUTINE CHECK-IN';
+      }
+    }
+    unset($stop);
+  }
+
+  /**
+   * Route origin: punch-in location of the day, else the first GPS ping.
+   * Punch-in lat/long are stored in swapped columns by AttendanceController.
+   */
+  private function resolveRouteStartPoint($userId, $date)
+  {
+    $attendance = Attendance::where('user_id', $userId)
+      ->where('punchin_date', $date)
+      ->first();
+
+    if ($attendance && is_numeric($attendance->punchin_longitude) && is_numeric($attendance->punchin_latitude)) {
+      return [
+        'latitude' => (float) $attendance->punchin_longitude,
+        'longitude' => (float) $attendance->punchin_latitude,
+        'label' => 'Punch In',
+        'address' => $attendance->punchin_address ?: '',
+        'time' => $attendance->punchin_time ?: '09:00:00',
+      ];
+    }
+
+    $firstPing = UserLiveLocation::where('userid', $userId)
+      ->whereDate('created_at', $date)
+      ->whereNotNull('latitude')
+      ->whereNotNull('longitude')
+      ->orderBy('id')
+      ->first();
+
+    if ($firstPing && is_numeric($firstPing->latitude) && is_numeric($firstPing->longitude)) {
+      return [
+        'latitude' => (float) $firstPing->latitude,
+        'longitude' => (float) $firstPing->longitude,
+        'label' => 'Day start',
+        'address' => $firstPing->address ?: '',
+        'time' => $firstPing->time ? date('H:i:s', strtotime($firstPing->time)) : '09:00:00',
+      ];
+    }
+
+    return [
+      'latitude' => null,
+      'longitude' => null,
+      'label' => 'Beat start',
+      'address' => '',
+      'time' => '09:00:00',
+    ];
+  }
+
+  /**
+   * Greedy nearest neighbour: from the start point always hop to the closest
+   * counter that has not been visited by the route yet.
+   */
+  private function orderStopsByNearestNeighbour($stops, $start)
+  {
+    if (count($stops) < 2) {
+      return $stops;
+    }
+
+    $remaining = $stops;
+    $ordered = [];
+
+    $currentLat = $start['latitude'];
+    $currentLng = $start['longitude'];
+
+    if ($currentLat === null || $currentLng === null) {
+      $first = array_shift($remaining);
+      $ordered[] = $first;
+      $currentLat = $first['latitude'];
+      $currentLng = $first['longitude'];
+    }
+
+    while (!empty($remaining)) {
+      $nearestIndex = 0;
+      $nearestDistance = null;
+
+      foreach ($remaining as $index => $candidate) {
+        $distance = haversineGreatCircleDistance($currentLat, $currentLng, $candidate['latitude'], $candidate['longitude']);
+        if ($nearestDistance === null || $distance < $nearestDistance) {
+          $nearestDistance = $distance;
+          $nearestIndex = $index;
+        }
+      }
+
+      $next = $remaining[$nearestIndex];
+      unset($remaining[$nearestIndex]);
+      $remaining = array_values($remaining);
+
+      $ordered[] = $next;
+      $currentLat = $next['latitude'];
+      $currentLng = $next['longitude'];
+    }
+
+    return $ordered;
+  }
   }

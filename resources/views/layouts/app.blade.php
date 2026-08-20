@@ -3072,7 +3072,7 @@
                 </li>
                 @endif
                 @if(auth()->user()->can('visitreport_access') || auth()->user()->can('beat_access'))
-                <li class="nav-link {{ request()->is('beats*') || request()->is('beatdetail*') ? 'active' : '' }}">
+                <li class="nav-link {{ request()->is('beats*') || request()->is('beatdetail*') || request()->is('beat-route-optimized*') ? 'active' : '' }}">
                     <a class="collapsed hoveradd" data-toggle="collapse" href="#beatMenu" aria-expanded="false">
                         <i class="material-icons icon">houseboat</i>
                         <span> Beats Management
@@ -3096,6 +3096,15 @@
                                     <i class="material-icons icon">waves</i>
                                     <span>{!! trans('panel.sidemenu.beatdetail') !!}</span>
                                     <div class="d-none mobile_hide"> {!! trans('panel.sidemenu.beatdetail') !!}</div>
+                                </a>
+                            </li>
+                            @endif
+                            @if(auth()->user()->can('beat_access'))
+                            <li class="nav-link-btn {{ request()->is('beat-route-optimized*') ? 'active' : '' }}">
+                                <a class="hoveradd2" href="{{ url('beat-route-optimized') }}">
+                                    <i class="material-icons icon">route</i>
+                                    <span>Beat Route Optimized</span>
+                                    <div class="d-none mobile_hide"> Beat Route Optimized</div>
                                 </a>
                             </li>
                             @endif
