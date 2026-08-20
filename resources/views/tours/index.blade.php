@@ -149,13 +149,15 @@
                   @endif
                   <a href="{{ route('tours.create') }}" class="btn btn-just-icon btn-theme"><i
                       class="material-icons">add_circle</i></a>
-                  <div class="d-flex align-items-center gap-2" style="gap:8px;">
+                  <div class="btn-group multi-a-r d-none fk-preserve-list-action">
 
-                    <button class="btn btn-success btn-sm bulk-approve px-3 py-2">
+                    <button type="button" class="btn btn-success btn-sm bulk-approve mr-1"
+                      title="Approve">
                       Approve
                     </button>
 
-                    <button class="btn btn-danger btn-sm bulk-reject px-3 py-2">
+                    <button type="button" class="btn btn-danger btn-sm bulk-reject mr-2"
+                      title="Reject">
                       Reject
                     </button>
 
@@ -384,11 +386,29 @@
     <script type="text/javascript">
 
         var table
+
+      // show the bulk Approve/Reject actions only when rows are selected
+      // (global: the bulk handlers live in a later script block)
+      function syncTourBulkActions() {
+        var rowCheckboxes = $('.checked_all');
+        var checkedCount = rowCheckboxes.filter(':checked').length;
+
+        $('.multi-a-r').toggleClass('d-none', checkedCount === 0);
+        $('#check_all')
+          .prop('checked', rowCheckboxes.length > 0 && checkedCount === rowCheckboxes.length)
+          .prop('indeterminate', checkedCount > 0 && checkedCount < rowCheckboxes.length);
+      }
+
       $(document).ready(function() {
 
-        $('#check_all').click(function() {
+        $('body').on('click', '#check_all', function() {
           var checked = $(this).prop('checked');
           $('.checked_all').prop('checked', checked);
+          syncTourBulkActions();
+        });
+
+        $('body').on('change', '.checked_all', function() {
+          syncTourBulkActions();
         });
 
 
@@ -727,6 +747,12 @@ renderObjectives();
         });
 
 
+        $('#gettour').on('draw.dt', function() {
+          $('#check_all').prop('checked', false).prop('indeterminate', false);
+          syncTourBulkActions();
+        });
+
+
         $('body').on('click', '.bulk-approve', function() {
 
           var selectedIds = $('.checked_all:checked').map(function() {
@@ -779,6 +805,7 @@ renderObjectives();
 
                 $('.checked_all').prop('checked', false);
                 $('#check_all').prop('checked', false);
+                syncTourBulkActions();
 
               } else {
                 Swal.fire('Error updating status', '', 'error');
