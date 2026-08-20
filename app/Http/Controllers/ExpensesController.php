@@ -1096,7 +1096,36 @@ class ExpensesController extends Controller
                     'time' => $check->time,
                 ];
             }
-            return view('map.track', compact('coordinates', 'selectedDate'));
+
+            // Customer visits of the same day, plotted on top of the movement trail
+            // so the viewer can tell where the user actually met a customer.
+            $visits = [];
+            $checkIns = CheckIn::with('visitreport')
+                ->where('user_id', $request->user_id)
+                ->where('checkin_date', $selectedDate)
+                ->orderBy('checkin_time', 'asc')
+                ->orderBy('id', 'asc')
+                ->get();
+
+            foreach ($checkIns as $index => $check) {
+                $visits[] = [
+                    'sequence' => $index + 1,
+                    'customer' => $check->entity_name ?: 'Unknown',
+                    'customer_type' => $check->entity_type_display ?: 'Customer',
+                    'checkin_time' => $check->checkin_time ? date('g:i A', strtotime($check->checkin_time)) : '-',
+                    'checkout_time' => $check->checkout_time ? date('g:i A', strtotime($check->checkout_time)) : '',
+                    'duration' => $this->formatVisitDuration($check->time_interval),
+                    'checkin_address' => $check->checkin_address ?: '',
+                    'checkout_address' => $check->checkout_address ?: '',
+                    'remark' => optional($check->visitreport)->description ?: '',
+                    'latitude' => $check->checkin_latitude,
+                    'longitude' => $check->checkin_longitude,
+                    'checkout_latitude' => $check->checkout_latitude,
+                    'checkout_longitude' => $check->checkout_longitude,
+                ];
+            }
+
+            return view('map.track', compact('coordinates', 'visits', 'selectedDate'));
 
         } else {
             $rules = [
@@ -1186,6 +1215,28 @@ $checks = CheckIn::where('user_id', $request->user_id)
 
             return view('map.route', compact('coordinates'));
         }
+    }
+
+    /**
+     * check_in.time_interval is stored as an H:i:s duration. Present it as "1h 05m".
+     */
+    private function formatVisitDuration($interval)
+    {
+        if (empty($interval)) {
+            return '';
+        }
+
+        $parts = explode(':', (string) $interval);
+        if (count($parts) < 2 || !is_numeric($parts[0]) || !is_numeric($parts[1])) {
+            return (string) $interval;
+        }
+
+        $hours = (int) $parts[0];
+        $minutes = (int) $parts[1];
+
+        return $hours > 0
+            ? $hours . 'h ' . str_pad($minutes, 2, '0', STR_PAD_LEFT) . 'm'
+            : $minutes . 'm';
     }
 
 
