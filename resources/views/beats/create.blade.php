@@ -264,6 +264,7 @@
                         <tbody>
                         </tbody>
                      </table>
+                     <p id="beatCustomerNotice" class="text-danger small" style="display:none;margin:0 0 8px;"></p>
                      @if($beats->exists)
                      <button class="btn btn-theme pull-right"> Add</button>
                      </form>
@@ -711,7 +712,14 @@ function getRetailerlist() {
         },
         success: function(res) {
             // Store full list globally
-            window.allAvailableCustomers = res || [];
+            window.allAvailableCustomers = Array.isArray(res) ? res : [];
+
+            if (!window.allAvailableCustomers.length) {
+                showCustomerNotice('No retailer or distributor is saved under the selected State / District / City, so there is nothing to add here. Add the counter first, or widen the beat area.');
+            } else {
+                showCustomerNotice('');
+            }
+
             updateAllCustomerDropdowns();
 
             // Populate only the last (new) row
@@ -731,10 +739,23 @@ lastSelect.add(opt);
                 $(lastSelect).select2();
             }
         },
-        error: function() {
-            console.error("Failed to load customers");
+        error: function(xhr) {
+            console.error("Failed to load customers", xhr && xhr.responseText);
+            showCustomerNotice('Could not load the counter list. Please retry, and report it if it keeps failing.');
         }
     });
+}
+
+// keeps the reason for an empty Beat Customer dropdown visible on the form
+function showCustomerNotice(message) {
+    var $notice = $('#beatCustomerNotice');
+    if (!$notice.length) return;
+
+    if (message) {
+        $notice.text(message).show();
+    } else {
+        $notice.text('').hide();
+    }
 }
 
 // ────────────────────────────────────────────────

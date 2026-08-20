@@ -454,8 +454,21 @@ public function getRetailerlist(Request $request)
         $district = $request->input('district_id');
         $city     = $request->input('city_id');
 
-        $districtIds  = is_array($district) ? $district : ($district ? [$district] : []);
-        $cityIds      = is_array($city) ? $city : ($city ? [$city] : []);
+        $districtIds  = array_filter(is_array($district) ? $district : ($district ? [$district] : []));
+        $cityIds      = array_filter(is_array($city) ? $city : ($city ? [$city] : []));
+
+        // master_distributors stores billing_state / billing_district / billing_city
+        // as text: rows saved by the current form keep the id, older/imported rows
+        // keep the name, so both have to be matched.
+        $stateValues    = $this->locationFilterValues($state ? [$state] : [], State::class, 'state_name');
+        $districtValues = $this->locationFilterValues($districtIds, District::class, 'district_name');
+        $cityValues     = $this->locationFilterValues($cityIds, City::class, 'city_name');
+
+        // cities that belong to the selected districts, so a retailer saved
+        // without a district is still picked up through its city
+        $districtCityIds = !empty($districtIds)
+            ? City::whereIn('district_id', $districtIds)->pluck('id')->toArray()
+            : [];
 
         /* ---------- Retailers ---------- */
 
@@ -474,12 +487,17 @@ public function getRetailerlist(Request $request)
             $retailers->where('state_id', $state);
         }
 
-        if (!empty($districtIds)) {
-            $retailers->whereIn('district_id', $districtIds);
-        }
-
+        // a city already sits inside the chosen district, so filtering on both
+        // only drops counters whose district column was never filled in
         if (!empty($cityIds)) {
             $retailers->whereIn('city_id', $cityIds);
+        } elseif (!empty($districtIds)) {
+            $retailers->where(function ($query) use ($districtIds, $districtCityIds) {
+                $query->whereIn('district_id', $districtIds);
+                if (!empty($districtCityIds)) {
+                    $query->orWhereIn('city_id', $districtCityIds);
+                }
+            });
         }
 
         /* ---------- Distributors ---------- */
@@ -495,16 +513,14 @@ public function getRetailerlist(Request $request)
             ])
             ->selectRaw("'distributor' as type");
 
-        if ($state) {
-            $distributors->where('billing_state', $state);
+        if ($state && !empty($stateValues)) {
+            $distributors->whereIn('billing_state', $stateValues);
         }
 
-        if (!empty($districtIds)) {
-            $distributors->whereIn('billing_district', $districtIds);
-        }
-
-        if (!empty($cityIds)) {
-            $distributors->whereIn('billing_city', $cityIds);
+        if (!empty($cityValues)) {
+            $distributors->whereIn('billing_city', $cityValues);
+        } elseif (!empty($districtValues)) {
+            $distributors->whereIn('billing_district', $districtValues);
         }
 
         /* ---------- Merge Both ---------- */
@@ -526,6 +542,21 @@ public function getRetailerlist(Request $request)
     }
 }
 
+/**
+ * Location filters arrive as ids while some tables keep the name instead,
+ * so both the ids and their names are returned for the IN () comparison.
+ */
+private function locationFilterValues(array $ids, string $model, string $nameColumn)
+{
+    $ids = array_values(array_filter($ids));
+    if (empty($ids)) {
+        return [];
+    }
+
+    $names = $model::whereIn('id', $ids)->pluck($nameColumn)->filter()->toArray();
+
+    return array_values(array_unique(array_merge($ids, $names)));
+}
 
 
     // public function getRetailerlist(Request $request)
