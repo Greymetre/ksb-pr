@@ -345,6 +345,30 @@
             routine: '#22d3ee'
         };
 
+        var PRIORITY_STROKES = {
+            visited: '#15803d',
+            overdue: '#be123c',
+            followup: '#b45309',
+            new: '#0e7490',
+            routine: '#0e7490'
+        };
+
+        // same teardrop pin the geolocator map uses, sized so the stop number
+        // fits inside the white dot
+        function makeRouteMarkerIcon(color, stroke) {
+            var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="40" viewBox="0 0 30 40">' +
+                '<defs><filter id="s" x="-35%" y="-20%" width="170%" height="165%"><feDropShadow dx="1" dy="2" stdDeviation="1.2" flood-color="#020617" flood-opacity=".42"/></filter></defs>' +
+                '<path filter="url(#s)" d="M15 1.25A13.25 13.25 0 0 0 1.75 14.5C1.75 24.1 15 38.5 15 38.5S28.25 24.1 28.25 14.5A13.25 13.25 0 0 0 15 1.25Z" fill="' + color + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+                '<circle cx="15" cy="14.3" r="7.2" fill="#fff" stroke="' + stroke + '" stroke-width="1.2"/></svg>';
+
+            return {
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+                scaledSize: new google.maps.Size(30, 40),
+                anchor: new google.maps.Point(15, 39),
+                labelOrigin: new google.maps.Point(15, 14.3)
+            };
+        }
+
         // the layout initialises every .select2 on ready, so this page only wires
         // up its own controls here
         $(document).ready(function() {
@@ -495,6 +519,7 @@
             beatRouteMap = new google.maps.Map(document.getElementById('beatRouteMap'), {
                 zoom: 12,
                 center: { lat: parseFloat(stops[0].latitude), lng: parseFloat(stops[0].longitude) },
+                mapTypeId: google.maps.MapTypeId.HYBRID,
                 mapTypeControl: false,
                 streetViewControl: false
             });
@@ -514,14 +539,7 @@
                     map: beatRouteMap,
                     title: data.start.label,
                     zIndex: 300,
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 9,
-                        fillColor: '#a855f7',
-                        fillOpacity: 1,
-                        strokeColor: '#ffffff',
-                        strokeWeight: 2
-                    }
+                    icon: makeRouteMarkerIcon('#a855f7', '#6b21a8')
                 });
                 startMarker.addListener('click', function() {
                     var content = document.createElement('div');
@@ -554,18 +572,14 @@
                     zIndex: 200,
                     label: {
                         text: String(stop.sequence),
-                        color: '#04121f',
+                        color: PRIORITY_STROKES[stop.priority] || '#0e7490',
                         fontSize: '11px',
                         fontWeight: '700'
                     },
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 13,
-                        fillColor: PRIORITY_COLORS[stop.priority] || '#22d3ee',
-                        fillOpacity: 1,
-                        strokeColor: '#ffffff',
-                        strokeWeight: 2
-                    }
+                    icon: makeRouteMarkerIcon(
+                        PRIORITY_COLORS[stop.priority] || '#22d3ee',
+                        PRIORITY_STROKES[stop.priority] || '#0e7490'
+                    )
                 });
 
                 marker.addListener('click', function() {
@@ -590,7 +604,12 @@
             }
 
             if (!bounds.isEmpty()) {
-                beatRouteMap.fitBounds(bounds, 60);
+                if (path.length === 1) {
+                    beatRouteMap.setCenter(bounds.getCenter());
+                    beatRouteMap.setZoom(14);
+                } else {
+                    beatRouteMap.fitBounds(bounds, 60);
+                }
             }
             $('#routeLegend').show();
 
