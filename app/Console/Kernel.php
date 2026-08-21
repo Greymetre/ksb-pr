@@ -41,6 +41,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Asia/Kolkata')
             ->dailyAt('01:30')
             ->withoutOverlapping();
+        // safety net for live locations stored without an address (geocode failed or per request cap hit)
+        $schedule->command('locations:update-address')
+            ->timezone('Asia/Kolkata')
+            ->hourly()
+            ->withoutOverlapping();
         $schedule->command('tasks:send-pending-today')->everyMinute();
     }
 

@@ -435,6 +435,9 @@ if (! function_exists('getLatLongToAddress')) {
         $ch = curl_init(sprintf('%s?%s', 'http://api.positionstack.com/v1/reverse', $queryString));
 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        // keep a slow geocode response from stalling the request that asked for it
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         $json = curl_exec($ch);
         curl_close($ch);
         $results = json_decode($json, true);

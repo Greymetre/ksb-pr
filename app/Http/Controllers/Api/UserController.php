@@ -23,6 +23,15 @@ use App\Models\Leave;
 
 class UserController extends Controller
 {
+    /** Max reverse geocode calls allowed inside one live location request. */
+    const LIVE_LOCATION_ADDRESS_LIMIT = 10;
+
+    /** Addresses already resolved during the current request, keyed by rounded lat,lng. */
+    private $liveLocationAddressCache = [];
+
+    /** How many reverse geocode calls the current request has made. */
+    private $liveLocationAddressLookups = 0;
+
     public function __construct()
     {
 
@@ -160,7 +169,7 @@ class UserController extends Controller
                         continue;
                     }
 
-                    $location = array("active"   =>  "Y", "userid" => $userid, 'latitude' => $row['latitude'], 'longitude' => $row['longitude'], 'time' => $locationTime, 'created_at' => date('Y-m-d H:i:s'));
+                    $location = array("active"   =>  "Y", "userid" => $userid, 'latitude' => $row['latitude'], 'longitude' => $row['longitude'], 'address' => $this->resolveLiveLocationAddress($row['latitude'], $row['longitude']), 'time' => $locationTime, 'created_at' => date('Y-m-d H:i:s'));
                     array_push($collection, $location);
                     $lastLocation = (object) $location;
                 }
@@ -168,7 +177,7 @@ class UserController extends Controller
                 $locationTime = date('Y-m-d H:i:s', strtotime($request['time']));
                 $collection = [];
                 if ($this->shouldStoreLiveLocation($lastLocation, $request['latitude'], $request['longitude'], $locationTime)) {
-                    $collection = array('active'  =>  'Y', 'userid' => $userid, 'latitude' => $request['latitude'], 'longitude' => $request['longitude'], 'time' => $locationTime, 'created_at' => date('Y-m-d H:i:s'));
+                    $collection = array('active'  =>  'Y', 'userid' => $userid, 'latitude' => $request['latitude'], 'longitude' => $request['longitude'], 'address' => $this->resolveLiveLocationAddress($request['latitude'], $request['longitude']), 'time' => $locationTime, 'created_at' => date('Y-m-d H:i:s'));
                 }
             }
             if (empty($collection)) {
@@ -182,6 +191,48 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], $this->internalError);
         }
+    }
+
+    /**
+     * Reverse geocode a live location the same way punch in / punch out does.
+     *
+     * Coordinates repeated inside one request reuse the first lookup, and the
+     * number of lookups per request is capped so a large offline batch cannot
+     * stall the API. Anything left empty is filled later by locations:update-address.
+     */
+    private function resolveLiveLocationAddress($latitude, $longitude)
+    {
+        if (!is_numeric($latitude) || !is_numeric($longitude)) {
+            return '';
+        }
+
+        $cacheKey = round((float) $latitude, 4) . ',' . round((float) $longitude, 4);
+        if (array_key_exists($cacheKey, $this->liveLocationAddressCache)) {
+            return $this->liveLocationAddressCache[$cacheKey];
+        }
+
+        if ($this->liveLocationAddressLookups >= self::LIVE_LOCATION_ADDRESS_LIMIT) {
+            return '';
+        }
+
+        $this->liveLocationAddressLookups++;
+
+        try {
+            // the helper expects longitude first - same call order used on punch in / punch out
+            $address = (string) getLatLongToAddress($longitude, $latitude);
+        } catch (\Exception $e) {
+            \Log::warning('Live location address lookup failed', [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'error' => $e->getMessage(),
+            ]);
+            $address = '';
+        }
+
+        $address = mb_substr($address, 0, 450);
+        $this->liveLocationAddressCache[$cacheKey] = $address;
+
+        return $address;
     }
 
     private function shouldStoreLiveLocation($lastLocation, $latitude, $longitude, $locationTime)
