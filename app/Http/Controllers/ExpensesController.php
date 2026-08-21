@@ -1094,6 +1094,7 @@ class ExpensesController extends Controller
                     'latitude' => $check->latitude,
                     'longitude' => $check->longitude,
                     'time' => $check->time,
+                    'address' => $check->address ?: '',
                 ];
             }
 

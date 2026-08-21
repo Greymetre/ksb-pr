@@ -68,8 +68,11 @@
             pointer-events: none;
         }
 
-        .map-tooltip .tooltip-title {
+        .map-tooltip span {
             display: block;
+        }
+
+        .map-tooltip .tooltip-title {
             font-weight: 700;
         }
 
@@ -215,69 +218,26 @@
                 return line;
             }
 
-            // ---------- movement trail: default numbered markers ----------
-            locations.forEach((loc, index) => {
-                if (!isValidPoint(loc.latitude, loc.longitude)) return;
-
-                const position = toLatLngLiteral(loc.latitude, loc.longitude);
-                bounds.extend(position);
-
-                const marker = new google.maps.Marker({
-                    position: position,
-                    label: `${index + 1}`,
-                    title: loc.name || `Movement point ${index + 1}`,
-                    zIndex: 10,
-                    map: map
-                });
-
-                attachTooltip(marker, () => {
-                    const wrap = document.createDocumentFragment();
-                    wrap.appendChild(textLine(`Movement point ${index + 1}`, "tooltip-title"));
-                    wrap.appendChild(textLine(loc.time || '-'));
-                    return wrap;
-                });
-            });
-
-            // ---------- customer visits: highlighted pins ----------
             const infoWindow = new google.maps.InfoWindow();
 
-            const visitPin = (fillColor) => ({
+            const mapPin = (fillColor, scale) => ({
                 path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",
                 fillColor: fillColor,
                 fillOpacity: 1,
                 strokeColor: "#ffffff",
                 strokeWeight: 2,
-                scale: 1.9,
+                scale: scale || 1.9,
                 anchor: new google.maps.Point(12, 22),
                 labelOrigin: new google.maps.Point(12, 9)
             });
 
-            function visitTooltip(visit, stage) {
-                const wrap = document.createDocumentFragment();
-                wrap.appendChild(textLine(visit.customer, "tooltip-title"));
-                const timing = stage === 'checkout'
-                    ? `Check Out · ${visit.checkout_time || '-'}`
-                    : `Check In · ${visit.checkin_time || '-'}`;
-                wrap.appendChild(textLine(timing));
-                return wrap;
-            }
+            const visitPin = (fillColor) => mapPin(fillColor);
 
-            function visitInfoContent(visit, stage) {
+            function infoContent(title, subtitle, rows) {
                 const wrap = document.createElement("div");
                 wrap.className = "info-window";
-                wrap.appendChild(textLine(`${visit.sequence}. ${visit.customer}`, "info-title"));
-                wrap.appendChild(textLine(visit.customer_type || 'Customer', "info-type"));
-
-                const rows = [];
-                rows.push(['Check In', visit.checkin_time || '-']);
-                if (visit.checkout_time) rows.push(['Check Out', visit.checkout_time]);
-                if (visit.duration) rows.push(['Duration', visit.duration]);
-
-                const address = stage === 'checkout'
-                    ? (visit.checkout_address || visit.checkin_address)
-                    : visit.checkin_address;
-                if (address) rows.push(['Address', address]);
-                if (visit.remark) rows.push(['Remark', visit.remark]);
+                wrap.appendChild(textLine(title, "info-title"));
+                if (subtitle) wrap.appendChild(textLine(subtitle, "info-type"));
 
                 rows.forEach(([label, value]) => {
                     const row = document.createElement("span");
@@ -290,6 +250,86 @@
                 });
 
                 return wrap;
+            }
+
+            // ---------- movement trail: numbered markers, last one highlighted ----------
+            const lastMovementIndex = (() => {
+                for (let i = locations.length - 1; i >= 0; i--) {
+                    if (isValidPoint(locations[i].latitude, locations[i].longitude)) return i;
+                }
+                return -1;
+            })();
+
+            locations.forEach((loc, index) => {
+                if (!isValidPoint(loc.latitude, loc.longitude)) return;
+
+                const position = toLatLngLiteral(loc.latitude, loc.longitude);
+                bounds.extend(position);
+                const isLast = index === lastMovementIndex;
+                const heading = isLast
+                    ? `Last known location (point ${index + 1})`
+                    : `Movement point ${index + 1}`;
+
+                const marker = new google.maps.Marker({
+                    position: position,
+                    label: isLast
+                        ? { text: `${index + 1}`, color: "#ffffff", fontSize: "11px", fontWeight: "700" }
+                        : `${index + 1}`,
+                    title: loc.name || heading,
+                    icon: isLast ? mapPin("#7c3aed", 2.2) : undefined,
+                    zIndex: isLast ? 300 : 10,
+                    map: map
+                });
+
+                attachTooltip(marker, () => {
+                    const wrap = document.createDocumentFragment();
+                    wrap.appendChild(textLine(heading, "tooltip-title"));
+                    wrap.appendChild(textLine(loc.time || '-'));
+                    if (loc.address) wrap.appendChild(textLine(loc.address));
+                    return wrap;
+                });
+
+                marker.addListener("click", () => {
+                    tooltip.style.display = "none";
+                    const rows = [['Time', loc.time || '-']];
+                    if (loc.address) rows.push(['Address', loc.address]);
+                    infoWindow.setContent(infoContent(
+                        heading,
+                        isLast ? 'Last known location' : 'Movement',
+                        rows
+                    ));
+                    infoWindow.open(map, marker);
+                });
+            });
+
+            // ---------- customer visits: highlighted pins ----------
+            function visitTooltip(visit, stage) {
+                const wrap = document.createDocumentFragment();
+                wrap.appendChild(textLine(visit.customer, "tooltip-title"));
+                const timing = stage === 'checkout'
+                    ? `Check Out · ${visit.checkout_time || '-'}`
+                    : `Check In · ${visit.checkin_time || '-'}`;
+                wrap.appendChild(textLine(timing));
+                return wrap;
+            }
+
+            function visitInfoContent(visit, stage) {
+                const rows = [];
+                rows.push(['Check In', visit.checkin_time || '-']);
+                if (visit.checkout_time) rows.push(['Check Out', visit.checkout_time]);
+                if (visit.duration) rows.push(['Duration', visit.duration]);
+
+                const address = stage === 'checkout'
+                    ? (visit.checkout_address || visit.checkin_address)
+                    : visit.checkin_address;
+                if (address) rows.push(['Address', address]);
+                if (visit.remark) rows.push(['Remark', visit.remark]);
+
+                return infoContent(
+                    `${visit.sequence}. ${visit.customer}`,
+                    visit.customer_type || 'Customer',
+                    rows
+                );
             }
 
             function addVisitMarker(visit, stage, lat, lng) {
@@ -347,6 +387,7 @@
     <div class="map-legend">
         <strong>{{ \Carbon\Carbon::parse($selectedDate)->format('d M Y') }}</strong>
         <span><i style="background:#ea4335"></i> Movement point</span>
+        <span><i style="background:#7c3aed"></i> Last known location</span>
         <span><i style="background:#16a34a"></i> Customer visit (check in)</span>
         <span><i style="background:#f59e0b"></i> Customer visit (check out)</span>
     </div>
