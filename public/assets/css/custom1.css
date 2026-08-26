@@ -3465,7 +3465,7 @@ body.fk-shell .expense-show-popup .activity-time {
 
 @media (max-width: 991px) {
     body.fk-shell .expense-show-popup .expense-show-main,
-    body.fk-shell .expense-show-popup .expense-show-activity {
+    body.fk-shell .expense-show-popup .expense-show-attachment {
         flex: 0 0 100%;
         max-width: 100%;
     }
