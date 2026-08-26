@@ -306,6 +306,24 @@ margin-top: 3px;
                   <h6>Today Plan - {{ $city->city_name ?? '' }} </h6>
                   <h6>Today Visit - {{ $city->city_name  ?? '' }}</h6>
                   <h6>Live Location - <a href="{{url('/livelocation').'?user_id='.$expense->user_id.'&date='.$expense->date}}"><i class="material-icons">location_on</i></a></h6>
+                  @php
+                  // the expense day itself is what gets tracked, and the controller already
+                  // checked whether that day still has a live location trail to plot
+                  $trackDate = $expense->date ? \Carbon\Carbon::parse($expense->date)->format('Y-m-d') : null;
+                  $trackAvailable = $trackDate && ($has_track_activity ?? false);
+                  @endphp
+                  <h6>Geolocator -
+                    @if($trackAvailable)
+                    <a href="{{ url('map-all').'?submit='.urlencode('Track Activity').'&user_id='.$expense->user_id.'&track_date='.$trackDate }}"
+                      target="_blank" rel="noopener" title="Open track activity for {{ \Carbon\Carbon::parse($trackDate)->format('d M Y') }}"><i class="material-icons">travel_explore</i></a>
+                    @else
+                    @php
+                    $trackMessage = 'No track activity found for ' . ($trackDate ? \Carbon\Carbon::parse($trackDate)->format('d M Y') : 'this expense') . '. Live location data is only kept for the last 15 days.';
+                    @endphp
+                    <a href="javascript:void(0);" class="geolocator-unavailable" title="{{ $trackMessage }}"
+                      onclick="showGeolocatorUnavailable({{ \Illuminate\Support\Js::from($trackMessage) }}); return false;"><i class="material-icons">travel_explore</i></a>
+                    @endif
+                  </h6>
                 </div>
                 <div class="col-md-6">
                   <h6>Total Visit - {{$total_visit??"0"}}</h6>
@@ -587,6 +605,23 @@ margin-top: 3px;
 
   <!-- end model for status -->
 
+  <script>
+    // older expenses have no live location trail left to plot, so tell the user
+    // instead of sending them to a track activity page that would only error out
+    function showGeolocatorUnavailable(message) {
+      if (window.Swal && typeof window.Swal.fire === 'function') {
+        window.Swal.fire({
+          icon: 'info',
+          title: 'No track activity',
+          text: message,
+          confirmButtonText: 'OK'
+        });
+      } else {
+        window.alert(message);
+      }
+    }
+  </script>
+
   <!-- Custom styles for this page -->
 
   <style>
@@ -597,6 +632,16 @@ margin-top: 3px;
       font-size: 20px !important;
       font-weight: 700 !important;
       line-height: 1.25;
+    }
+
+    /* the expense detail modal is fullscreen, so keep the alert on top of it */
+    .swal2-container.swal2-shown {
+      z-index: 999999 !important;
+    }
+
+    body.fk-shell .geolocator-unavailable {
+      opacity: .45;
+      cursor: not-allowed;
     }
 
     body.fk-shell .expense-detail-label {

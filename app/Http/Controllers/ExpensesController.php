@@ -440,6 +440,16 @@ class ExpensesController extends Controller
             $expense->save();
         }
 
+        // the geolocator link replays the expense date on the track activity map, so only
+        // offer it when that day still has a live location trail (they are purged after 15 days)
+        $has_track_activity = UserLiveLocation::where('userid', $expense->user_id)
+            ->whereDate('created_at', Carbon::parse($expense->date)->toDateString())
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->where('latitude', '!=', '')
+            ->where('longitude', '!=', '')
+            ->exists();
+
         $logdetails = ExpenseLog::with('logusers')->where('expense_id', $expense->id)->orderBy('id', 'desc')->get();
         //$expense->update(['accountant_status'=>'3','checker_status'=>'3']);
         return view('expenses.show', compact(
@@ -449,7 +459,8 @@ class ExpensesController extends Controller
             'total_visit',
             'total_dis',
             'attendance',
-            'total_working_hours'
+            'total_working_hours',
+            'has_track_activity'
         ))->render();
     }
 
@@ -1068,7 +1079,7 @@ class ExpensesController extends Controller
         if ($request->submit == 'Track Activity') {
             $rules = [
                 'user_id'   => 'required',
-                'track_date' => 'required|date|after_or_equal:' . Carbon::today()->subDays(14)->format('Y-m-d') . '|before_or_equal:' . Carbon::today()->format('Y-m-d'),
+                'track_date' => 'required|date|before_or_equal:' . Carbon::today()->format('Y-m-d'),
             ];
 
             $validator = Validator::make($request->all(), $rules);
