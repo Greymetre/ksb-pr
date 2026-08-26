@@ -71,7 +71,7 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
 @endphp
 
 <div class="row expense-show-popup">
-  <div class="{{ count($expense_attachments) ? 'col-lg-7' : 'col-lg-12' }} expense-show-main">
+  <div class="col-lg-7 expense-show-main">
 
     @if(Session::has('success'))
     <div class="alert alert-success" id="hide_div">
@@ -97,11 +97,9 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
 
     <div class="card">
       <div class="card-body">
-        <div class="row expense-show-toolbar">
-          <div class="col-4">
-            <h3 class="card-title pb-3">Approve View</h3>
-          </div>
-          <div class="col-8 expense-show-actions">
+        <div class="expense-show-toolbar">
+          <h3 class="card-title">Approve View</h3>
+          <div class="expense-show-actions">
 
 
             @if($expense->checker_status=='3')
@@ -235,219 +233,163 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
         <hr>
 
         <div class="invoice p-3 mb-3">
-          <!-- title row -->
-          <div class="row">
-            <div class="col-4">
-              <h4>
-                <small class="float-left expense-record-title">{{ trans('panel.expenses.title') }} #{!! $expense['id'] !!}</small>
-              </h4>
-            </div>
+          @php
+          $statusMap = [
+            '1' => ['Approved', 'approve'],
+            '2' => ['Rejected', 'reject'],
+            '3' => ['Checked', 'checked'],
+            '4' => ['Checked By Reporting', 'reporting'],
+            '5' => ['Hold', 'hold'],
+          ];
+          [$statusLabel, $statusSlug] = $statusMap[(string) $expense->checker_status] ?? ['Pending', 'pending'];
+          $city = \App\Models\City::find(optional($paln)->town);
+          $trackDate = $expense->date ? \Carbon\Carbon::parse($expense->date)->format('Y-m-d') : null;
+          $trackAvailable = $trackDate && ($has_track_activity ?? false);
+          $trackMessage = 'No track activity found for ' . ($trackDate ? \Carbon\Carbon::parse($trackDate)->format('d M Y') : 'this expense') . '. Live location data is only kept for the last 15 days.';
+          @endphp
 
-            <!-- /.col -->
-          </div>
-          <!-- info row -->
-          <div class="row invoice-info">
-            <div class="col-sm-4 invoice-col">
-              <span class="expense-detail-label">From</span>
-              <address>
-                <strong>{!! isset($expense['users']['name']) ? $expense['users']['name'] :'' !!} ({{$expense->users->getdesignation->designation_name??''}}) </strong><br>
-              </address>
-            </div>
-            <!-- /.col -->
-            <div class="col-sm-4 invoice-col">
-              <span class="expense-detail-label">Expense Type</span>
-              <address>
-                <strong>{!! $expense['expense_type']['name'] !!}
-                  ( {!! isset($expense['expense_type']['allowance_type_id'])?config('constants.allowance_type.'.$expense['expense_type']['allowance_type_id']):''!!} )
-                </strong><br>
-              </address>
-
-
-            </div>
-
-            <div class="col-sm-4 invoice-col">
-              <span class="expense-detail-label">Date</span>
-              <address>
-                <!-- <strong>{!! $expense['date'] !!}</strong><br> -->
-                <strong>{!! date("d/m/Y g:i a", strtotime($expense['date'])) !!}</strong><br>
-              </address>
-            </div>
+          <div class="expense-record-head">
+            <span class="expense-record-title">{{ trans('panel.expenses.title') }} #{!! $expense['id'] !!}</span>
+            <span class="expense-status-chip is-{{ $statusSlug }}">{{ $statusLabel }}</span>
           </div>
 
-          <div class="row invoice-info">
-            <div class="col-sm-4 invoice-col">
-              <span class="expense-detail-label">Expense Status</span>
-              <address>
-                <strong> @if($expense->checker_status=='1')
-                  Approve
-                  @elseif($expense->checker_status=='2')
-                  Reject
-                  @elseif($expense->checker_status=='3')
-                  Checked
-                  @elseif($expense->checker_status=='4')
-                  Checked By Reporting
-                  @elseif($expense->checker_status=='5')
-                  Hold
+          <div class="expense-info-grid">
+            <div class="expense-info-cell">
+              <span class="expense-info-label">From</span>
+              <span class="expense-info-value">
+                {!! isset($expense['users']['name']) ? $expense['users']['name'] : '' !!}
+                <small>{{$expense->users->getdesignation->designation_name??''}}</small>
+              </span>
+            </div>
+
+            <div class="expense-info-cell">
+              <span class="expense-info-label">Expense Type</span>
+              <span class="expense-info-value">
+                {!! $expense['expense_type']['name'] !!}
+                <small>{!! isset($expense['expense_type']['allowance_type_id'])?config('constants.allowance_type.'.$expense['expense_type']['allowance_type_id']):'' !!}</small>
+              </span>
+            </div>
+
+            <div class="expense-info-cell">
+              <span class="expense-info-label">Date</span>
+              <span class="expense-info-value">{!! date("d M Y", strtotime($expense['date'])) !!}</span>
+            </div>
+
+            <div class="expense-info-cell">
+              <span class="expense-info-label">Department</span>
+              <span class="expense-info-value">{{$expense['users']['getdepartment']?$expense['users']['getdepartment']['name']:'-'}}</span>
+            </div>
+
+            <div class="expense-info-cell">
+              <span class="expense-info-label">Rate</span>
+              <span class="expense-info-value">{!! $expense['rate'] ?? $expense['expense_type']['rate'] ?? 0 !!}</span>
+            </div>
+
+            <div class="expense-info-cell">
+              <span class="expense-info-label">Status Change Reason</span>
+              <span class="expense-info-value">{{ $expense->reason ?: '-' }}</span>
+            </div>
+          </div>
+
+          <div class="expense-meta-panel">
+            <div class="expense-meta-col">
+              <div class="expense-meta-row">
+                <span>Punch In</span>
+                <strong>
+                  {{ !empty($attendance?->punchin_time) ? date('h:i A', strtotime($attendance->punchin_time)) : '-' }}
+                  <small>{{ $attendance?->punchin_address ?: '-' }}</small>
+                </strong>
+              </div>
+              <div class="expense-meta-row">
+                <span>Punch Out</span>
+                <strong>
+                  {{ !empty($attendance?->punchout_time) ? date('h:i A', strtotime($attendance->punchout_time)) : '-' }}
+                  <small>{{ $attendance?->punchout_address ?: '-' }}</small>
+                </strong>
+              </div>
+              <div class="expense-meta-row">
+                <span>Total Working Hours</span>
+                <strong>{{ $total_working_hours ?: '-' }}</strong>
+              </div>
+            </div>
+
+            <div class="expense-meta-col">
+              <div class="expense-meta-row">
+                <span>Today Plan</span>
+                <strong>{{ $city->city_name ?? '-' }}</strong>
+              </div>
+              <div class="expense-meta-row">
+                <span>Today Visit</span>
+                <strong>{{ $city->city_name ?? '-' }}</strong>
+              </div>
+              <div class="expense-meta-row">
+                <span>Total Visit</span>
+                <strong>{{$total_visit??"0"}}</strong>
+              </div>
+              <div class="expense-meta-row">
+                <span>Total KM Run</span>
+                <strong>{{$total_dis? number_format($total_dis, 2) :"0.00"}}</strong>
+              </div>
+              <div class="expense-meta-row">
+                <span>Location</span>
+                <strong class="expense-meta-links">
+                  <a href="{{url('/livelocation').'?user_id='.$expense->user_id.'&date='.$expense->date}}" title="Live location">
+                    <i class="material-icons">location_on</i> Live
+                  </a>
+                  @if($trackAvailable)
+                  <a href="{{ url('map-all').'?submit='.urlencode('Track Activity').'&user_id='.$expense->user_id.'&track_date='.$trackDate }}"
+                    target="_blank" rel="noopener" title="Open track activity for {{ \Carbon\Carbon::parse($trackDate)->format('d M Y') }}">
+                    <i class="material-icons">travel_explore</i> Geolocator
+                  </a>
                   @else
-                  Pending
+                  <a href="javascript:void(0);" class="geolocator-unavailable" title="{{ $trackMessage }}"
+                    onclick="showGeolocatorUnavailable({{ \Illuminate\Support\Js::from($trackMessage) }}); return false;">
+                    <i class="material-icons">travel_explore</i> Geolocator
+                  </a>
                   @endif
-
-                </strong><br>
-              </address>
-            </div>
-            <!-- /.col -->
-            <div class="col-sm-4 invoice-col">
-              <span class="expense-detail-label">Status Change Reason</span>
-              <address>
-                <strong>{{$expense->reason??""}}</strong><br>
-              </address>
-            </div>
-            <div class="col-sm-4 invoice-col">
-              <span class="expense-detail-label">Department</span>
-              <address>
-                <strong>{{$expense['users']['getdepartment']?$expense['users']['getdepartment']['name']:'-'}}</strong><br>
-              </address>
-            </div>
-            <div class="col-sm-6 invoice-col expense-attendance-inline">
-              <h6>
-                Punch In - {{ !empty($attendance?->punchin_time) ? date('h:i A', strtotime($attendance->punchin_time)) : '-' }}
-                | {{ $attendance?->punchin_address ?: '-' }}
-              </h6>
-              <h6>
-                Punch Out - {{ !empty($attendance?->punchout_time) ? date('h:i A', strtotime($attendance->punchout_time)) : '-' }}
-                | {{ $attendance?->punchout_address ?: '-' }}
-              </h6>
-              <h6>Total Working Hours - {{ $total_working_hours ?: '-' }}</h6>
-            </div>
-            <div class="col-sm-6 invoice-col">
-              <div class="row">
-                <div class="col-md-6">
-                  @php
-                  $city = \App\Models\City::find(optional($paln)->town);
-                  @endphp
-                  <h6>Today Plan - {{ $city->city_name ?? '' }} </h6>
-                  <h6>Today Visit - {{ $city->city_name  ?? '' }}</h6>
-                  <h6>Live Location - <a href="{{url('/livelocation').'?user_id='.$expense->user_id.'&date='.$expense->date}}"><i class="material-icons">location_on</i></a></h6>
-                  @php
-                  // the expense day itself is what gets tracked, and the controller already
-                  // checked whether that day still has a live location trail to plot
-                  $trackDate = $expense->date ? \Carbon\Carbon::parse($expense->date)->format('Y-m-d') : null;
-                  $trackAvailable = $trackDate && ($has_track_activity ?? false);
-                  @endphp
-                  <h6>Geolocator -
-                    @if($trackAvailable)
-                    <a href="{{ url('map-all').'?submit='.urlencode('Track Activity').'&user_id='.$expense->user_id.'&track_date='.$trackDate }}"
-                      target="_blank" rel="noopener" title="Open track activity for {{ \Carbon\Carbon::parse($trackDate)->format('d M Y') }}"><i class="material-icons">travel_explore</i></a>
-                    @else
-                    @php
-                    $trackMessage = 'No track activity found for ' . ($trackDate ? \Carbon\Carbon::parse($trackDate)->format('d M Y') : 'this expense') . '. Live location data is only kept for the last 15 days.';
-                    @endphp
-                    <a href="javascript:void(0);" class="geolocator-unavailable" title="{{ $trackMessage }}"
-                      onclick="showGeolocatorUnavailable({{ \Illuminate\Support\Js::from($trackMessage) }}); return false;"><i class="material-icons">travel_explore</i></a>
-                    @endif
-                  </h6>
-                </div>
-                <div class="col-md-6">
-                  <h6>Total Visit - {{$total_visit??"0"}}</h6>
-                  <h6>Total KM Run - {{$total_dis? number_format($total_dis, 2) :"0.00"}}</h6>
-                </div>
+                </strong>
               </div>
             </div>
           </div>
 
           @if($expense->expense_type->allowance_type_id == '1')
-
-          <!-- Table row -->
-          <div class="row">
-            <div class="col-12 table-responsive">
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th>{{ trans('panel.expenses.fields.start_km') }}</th>
-                    <th>{{ trans('panel.expenses.fields.stop_km') }}</th>
-                    <th>{{ trans('panel.expenses.fields.total_km') }}</th>
-                    <th>{{ trans('panel.expenses.fields.rate') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>{!! $expense['start_km']??0 !!}</td>
-                    <td>{!! $expense['stop_km']??0 !!}</td>
-                    <td>{!! $expense['total_km']??0 !!}</td>
-                    <td>{!! $expense['rate'] ?? $expense['expense_type']['rate'] ?? 0 !!}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <!-- /.col -->
+          <div class="table-responsive">
+            <table class="table table-striped expense-km-table">
+              <thead>
+                <tr>
+                  <th>{{ trans('panel.expenses.fields.start_km') }}</th>
+                  <th>{{ trans('panel.expenses.fields.stop_km') }}</th>
+                  <th>{{ trans('panel.expenses.fields.total_km') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{!! $expense['start_km']??0 !!}</td>
+                  <td>{!! $expense['stop_km']??0 !!}</td>
+                  <td>{!! $expense['total_km']??0 !!}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <!-- /.row -->
-
-          @else
-
-          <!-- Table row -->
-          <div class="row">
-            <div class="col-12 table-responsive">
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th>{{ trans('panel.expenses.fields.rate') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>{!! $expense['rate'] ?? $expense['expense_type']['rate'] ?? 0 !!}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <!-- /.col -->
-          </div>
-          <!-- /.row -->
-
           @endif
 
-
-
-          <div class="row">
-            <div class="col-6">
-              <div class="table-responsive">
-                <table class="table">
-                  <tbody>
-                    <tr>
-                      <th style="width:20%">Claim Amount:</th>
-                      <td>{{$expense['claim_amount']??0}}</td>
-                      <input type="text" name="claims" id="claim_new_amount" value="{{$expense['claim_amount']??0}}" hidden>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+          <div class="expense-amount-grid">
+            <div class="expense-amount-card">
+              <span class="expense-info-label">Claim Amount</span>
+              <span class="expense-amount-value">{{$expense['claim_amount']??0}}</span>
+              <input type="text" name="claims" id="claim_new_amount" value="{{$expense['claim_amount']??0}}" hidden>
             </div>
-
-            <div class="col-6">
-              <div class="table-responsive">
-                <table class="table">
-                  <tbody>
-                    <tr>
-                      <th style="width:25%">Approved Amount</th>
-                      <td>{{$expense['approve_amount']??0}}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            <div class="expense-amount-card is-approved">
+              <span class="expense-info-label">Approved Amount</span>
+              <span class="expense-amount-value">{{$expense['approve_amount']??0}}</span>
             </div>
           </div>
 
-          <div class="row">
-            <!-- accepted payments column -->
-            <div class="col-6">
-              <p class="lead"></p>
-              <p class="text-muted well well-sm shadow-none" style="margin-top: 10px;">
-                <strong> Note:</strong>
-                {!! $expense['note'] !!}
-              </p>
-            </div>
+          <div class="expense-note-panel">
+            <span class="expense-info-label">Note</span>
+            <p>{!! $expense['note'] ?: '-' !!}</p>
           </div>
+
 
 
           <!-- /.row -->
@@ -681,6 +623,7 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
       // ---- attachment viewer ----------------------------------------------
       if (!attachments.length) { return; }
 
+      var stage = document.getElementById('expenseAttachmentStage');
       var stageImage = document.getElementById('expenseAttachmentImage');
       var stageFrame = document.getElementById('expenseAttachmentFrame');
       var fallback = document.getElementById('expenseAttachmentFallback');
@@ -701,13 +644,35 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
       var MIN_ZOOM = 0.5;
       var MAX_ZOOM = 4;
 
-      function applyZoom() {
+      // 100% means "the whole page fits in the panel" - sizing by layout (not a css
+      // transform) so a zoomed-in image can actually be scrolled around
+      function sizeImage() {
         var current = attachments[index];
-        var zoomable = current.type === 'image';
-        stageImage.style.transform = 'scale(' + zoom + ')';
+        if (current.type !== 'image' || !stageImage.naturalWidth) { return; }
+
+        var styles = window.getComputedStyle(stage);
+        var availableWidth = stage.clientWidth
+          - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+        var availableHeight = stage.clientHeight
+          - parseFloat(styles.paddingTop) - parseFloat(styles.paddingBottom);
+
+        var fit = Math.min(
+          availableWidth / stageImage.naturalWidth,
+          availableHeight / stageImage.naturalHeight
+        );
+        if (!isFinite(fit) || fit <= 0) { fit = 1; }
+
+        stageImage.style.width = Math.max(1, Math.round(stageImage.naturalWidth * fit * zoom)) + 'px';
+        stageImage.style.height = 'auto';
+      }
+
+      function applyZoom() {
+        var zoomable = attachments[index].type === 'image';
         zoomLabel.textContent = Math.round(zoom * 100) + '%';
         zoomIn.disabled = !zoomable || zoom >= MAX_ZOOM;
         zoomOut.disabled = !zoomable || zoom <= MIN_ZOOM;
+        stage.classList.toggle('is-zoomed', zoomable && zoom > 1);
+        sizeImage();
       }
 
       function render() {
@@ -717,6 +682,7 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
         stageFrame.style.display = current.type === 'pdf' ? 'block' : 'none';
         fallback.style.display = current.type === 'file' ? 'flex' : 'none';
 
+        stageImage.style.width = '';
         stageImage.src = current.type === 'image' ? current.url : '';
         stageFrame.src = current.type === 'pdf' ? current.url : 'about:blank';
         fallbackName.textContent = current.name;
@@ -734,6 +700,11 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
         zoom = 1;
         applyZoom();
       }
+
+      // natural size is only known once the file has actually loaded
+      stageImage.addEventListener('load', sizeImage);
+      window.addEventListener('resize', sizeImage);
+      $('#expenseModal').on('shown.bs.modal', sizeImage);
 
       zoomIn.addEventListener('click', function () {
         zoom = Math.min(MAX_ZOOM, Math.round((zoom + 0.25) * 100) / 100);
@@ -862,6 +833,12 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
     }
 
     /* ---- attachment viewer ------------------------------------------- */
+    body.fk-shell .expense-show-attachment {
+      position: sticky;
+      top: 0;
+      align-self: flex-start;
+    }
+
     body.fk-shell .expense-attachment-card {
       display: flex;
       height: calc(100vh - 210px);
@@ -947,7 +924,8 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
     body.fk-shell .expense-attachment-stage {
       display: flex;
       flex: 1 1 auto;
-      align-items: flex-start;
+      min-height: 0;
+      align-items: center;
       justify-content: center;
       overflow: auto;
       padding: 14px;
@@ -956,12 +934,19 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
         rgba(4, 12, 32, .85);
     }
 
+    /* once zoomed past fit the image is bigger than the stage, so it must not be
+       centre-squashed - margin auto keeps both overflow edges reachable */
+    body.fk-shell .expense-attachment-stage.is-zoomed {
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+
     body.fk-shell .expense-attachment-stage img {
       display: block;
-      max-width: 100%;
+      max-width: none;
+      margin: auto;
       border-radius: 8px;
-      transform-origin: top center;
-      transition: transform .15s ease;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, .35);
     }
 
     body.fk-shell .expense-attachment-stage iframe {
@@ -1137,9 +1122,237 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
       text-align: center;
     }
 
+    /* ---- detail layout ------------------------------------------------ */
+    body.fk-shell .expense-show-toolbar {
+      display: flex;
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      border-bottom: 1px solid rgba(90, 130, 220, .18);
+    }
+
+    body.fk-shell .expense-show-toolbar .card-title {
+      flex: 0 0 auto;
+    }
+
+    body.fk-shell .expense-show-actions {
+      flex: 1 1 auto;
+    }
+
+    body.fk-shell .expense-show-popup .invoice {
+      padding: 0 !important;
+    }
+
+    body.fk-shell .expense-record-head {
+      display: flex;
+      margin-bottom: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    body.fk-shell .expense-record-head .expense-record-title {
+      margin: 0 !important;
+    }
+
+    body.fk-shell .expense-status-chip {
+      padding: 4px 11px;
+      border: 1px solid rgba(120, 160, 240, .35);
+      border-radius: 999px;
+      background: rgba(30, 60, 120, .5);
+      color: #d8e7ff;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .3px;
+    }
+
+    body.fk-shell .expense-status-chip.is-approve {
+      border-color: rgba(70, 200, 140, .45);
+      background: rgba(20, 80, 60, .55);
+      color: #8ff0c4;
+    }
+
+    body.fk-shell .expense-status-chip.is-reject {
+      border-color: rgba(240, 100, 110, .45);
+      background: rgba(95, 25, 40, .55);
+      color: #ffb0b8;
+    }
+
+    body.fk-shell .expense-status-chip.is-hold {
+      border-color: rgba(245, 190, 90, .45);
+      background: rgba(90, 65, 15, .55);
+      color: #ffd894;
+    }
+
+    body.fk-shell .expense-info-grid {
+      display: grid;
+      margin-bottom: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      border: 1px solid rgba(90, 130, 220, .2);
+      border-radius: 12px;
+      background: rgba(90, 130, 220, .2);
+      overflow: hidden;
+    }
+
+    body.fk-shell .expense-info-cell {
+      padding: 12px 14px;
+      background: rgba(9, 22, 52, .92);
+    }
+
+    body.fk-shell .expense-info-label {
+      display: block;
+      margin-bottom: 5px;
+      color: #8fa4d4 !important;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+    }
+
+    body.fk-shell .expense-info-value {
+      display: block;
+      color: #f2f6ff;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+
+    body.fk-shell .expense-info-value small {
+      display: block;
+      margin-top: 2px;
+      color: #93a6d2;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    body.fk-shell .expense-meta-panel {
+      display: grid;
+      margin-bottom: 14px;
+      padding: 14px 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 26px;
+      border: 1px solid rgba(90, 130, 220, .2);
+      border-radius: 12px;
+      background: rgba(7, 18, 44, .6);
+    }
+
+    body.fk-shell .expense-meta-row {
+      display: flex;
+      padding: 5px 0;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 14px;
+      border-bottom: 1px dashed rgba(90, 130, 220, .14);
+    }
+
+    body.fk-shell .expense-meta-col > .expense-meta-row:last-child {
+      border-bottom: 0;
+    }
+
+    body.fk-shell .expense-meta-row > span {
+      flex: 0 0 auto;
+      color: #8fa4d4;
+      font-size: 11px;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+    }
+
+    body.fk-shell .expense-meta-row > strong {
+      color: #eef3ff !important;
+      font-size: 12.5px;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    body.fk-shell .expense-meta-row > strong small {
+      display: block;
+      color: #8497c6;
+      font-size: 10.5px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    body.fk-shell .expense-meta-links {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    body.fk-shell .expense-meta-links a {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #7fb2ff !important;
+      font-size: 11.5px;
+    }
+
+    body.fk-shell .expense-meta-links a .material-icons {
+      font-size: 16px;
+    }
+
+    body.fk-shell .expense-km-table {
+      margin-bottom: 14px !important;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    body.fk-shell .expense-amount-grid {
+      display: grid;
+      margin-bottom: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    body.fk-shell .expense-amount-card {
+      padding: 13px 16px;
+      border: 1px solid rgba(90, 130, 220, .22);
+      border-left: 3px solid #4b7bd8;
+      border-radius: 12px;
+      background: rgba(9, 22, 52, .92);
+    }
+
+    body.fk-shell .expense-amount-card.is-approved {
+      border-left-color: #2fbf8f;
+    }
+
+    body.fk-shell .expense-amount-value {
+      display: block;
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    body.fk-shell .expense-note-panel {
+      padding: 12px 16px;
+      border: 1px solid rgba(90, 130, 220, .2);
+      border-radius: 12px;
+      background: rgba(7, 18, 44, .6);
+    }
+
+    body.fk-shell .expense-note-panel p {
+      margin: 0;
+      color: #dbe5fb !important;
+      font-size: 12.5px;
+      line-height: 1.55;
+    }
+
     @media (max-width: 991px) {
       body.fk-shell .expense-attachment-card {
         height: 60vh;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body.fk-shell .expense-info-grid,
+      body.fk-shell .expense-meta-panel,
+      body.fk-shell .expense-amount-grid {
+        grid-template-columns: minmax(0, 1fr);
       }
     }
   </style>
