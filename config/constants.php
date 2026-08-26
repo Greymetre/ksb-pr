@@ -12,15 +12,17 @@ return [
         'Post Graduction Course',
         'Other Course',
     ],
+    // grade titles are display labels only - the keys are what gets stored on
+    // users.payroll and expenses_types.payroll_id, so they must never change
     'pay_roll' => [
-        '1' => 'Grade 1',
-        '2' => 'Grade 2',
-        '3' => 'Grade 3',
-        '4' => 'Grade 4',
-        '5' => 'Grade 5',
-        '6' => 'Grade 6',
-        '7' => 'Grade 7',
-        '8' => 'Grade 8',
+        '1' => 'Directors, President & VP',
+        '2' => 'Sr. GM & GM',
+        '3' => 'DGM, AGM & Zonal Manager',
+        '4' => 'Sr. Manager & Manager (Sr. DM & DM)',
+        '5' => 'Dy. Manager & Asst. Manager (Dy. DM & Asst. DM)',
+        '6' => 'Sr. Executive & Executive',
+        '7' => 'Dy. Executive & Asst. Executive',
+        '8' => 'All Workers, Drivers, Peons',
     ],
     'tour_objectives' => [
         'Customer Visit',
