@@ -863,7 +863,7 @@ private function zoneSortOrder(?string $divisionName): int
                 | DIVISION TOTAL ROW → RED
                 |--------------------------------------------------------------------------
                 */
-                if (str_contains($cellValue, 'ZONE TOTAL')) {
+                if (stripos((string) $cellValue, 'ZONE TOTAL') !== false) {
 
                     $sheet->getStyle('A' . $row . ':R' . $row)
                         ->applyFromArray([

@@ -204,7 +204,7 @@
                             <!-- Designation -->
                             <div class="col-md-3">
                                 <label>Designation</label>
-                                <select class="form-control selectpicker" id="designation_id_asr" name="designation_id[]"
+                                <select class="selectpicker" id="designation_id_asr" name="designation_id[]"
                                     multiple
                                     data-style="select-with-transition"
                                     data-actions-box="true"
