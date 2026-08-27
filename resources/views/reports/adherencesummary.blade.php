@@ -204,8 +204,10 @@
                             <!-- Designation -->
                             <div class="col-md-3">
                                 <label>Designation</label>
-                                <select class="form-control selectpicker" id="designation_id_asr" name="designation_id"
+                                <select class="form-control selectpicker" id="designation_id_asr" name="designation_id[]"
+                                    multiple
                                     data-style="select-with-transition"
+                                    data-actions-box="true"
                                     title="Select Designation" required
                                     >
                                 </select>
@@ -353,7 +355,7 @@ $.get("{{ url('getDesignations') }}", function(data) {
     if (asrDesignationId) {
         $('#designation_id_retailer').val([asrDesignationId]);
         $('#designation_id_dealer').val(asrDesignationId);
-        $('#designation_id_asr').val(asrDesignationId);
+        $('#designation_id_asr').val([asrDesignationId]);
     }
 
     // Refresh bootstrap-select after dynamic options are inserted.
