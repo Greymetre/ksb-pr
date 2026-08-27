@@ -63,6 +63,7 @@ class CallLogController extends Controller
                 'started_at' => optional($log->started_at)->toIso8601String(),
                 'duration' => (int) $log->duration,
                 'connected' => $connected,
+                'remark' => $log->remark,
                 'recording_play_url' => $connected ? URL::temporarySignedRoute(
                     'api.call-recordings.play',
                     now()->addHour(),
