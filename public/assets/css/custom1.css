@@ -2166,6 +2166,65 @@ body.fk-shell .fk-export-report .bootstrap-select {
     width: 100% !important;
 }
 
+/* Multi-select filters (e.g. ASR Designation) grow with their chips instead of
+   inheriting the fixed 48px single-select height. */
+body.fk-shell .fk-export-report .select2-container--default .select2-selection--multiple {
+    height: auto !important;
+    min-height: 48px !important;
+    line-height: normal !important;
+    padding: 7px 10px !important;
+    display: block !important;
+}
+
+body.fk-shell .fk-export-report .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 6px;
+    line-height: normal !important;
+    padding: 0 !important;
+}
+
+body.fk-shell .fk-export-report .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin: 0 !important;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+    line-height: 1.2 !important;
+    font-size: 12px !important;
+}
+
+body.fk-shell .fk-export-report .select2-container--default .select2-selection--multiple .select2-selection__placeholder {
+    margin: 0 !important;
+    color: var(--fk-list-soft) !important;
+    line-height: 32px !important;
+    font-size: 13px !important;
+    font-weight: 300 !important;
+}
+
+body.fk-shell .fk-export-report .select2-container--default .select2-selection--multiple .select2-search--inline .select2-search__field {
+    height: 32px !important;
+    margin: 0 !important;
+    line-height: 32px !important;
+}
+
+body.fk-shell .fk-export-report .select2-container--default .select2-selection--multiple .select2-search--inline .select2-search__field::placeholder {
+    color: var(--fk-list-soft) !important;
+    font-size: 13px !important;
+    font-weight: 300 !important;
+    opacity: 1;
+}
+
+body.fk-shell .fk-export-report .fk-field-hint {
+    display: block;
+    margin-top: 6px;
+    color: var(--fk-list-soft) !important;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0;
+    line-height: 1.4;
+    text-transform: none;
+}
+
 body.fk-shell .fk-export-report .fk-report-card .fk-create-action {
     width: 180px !important;
     min-width: 180px !important;

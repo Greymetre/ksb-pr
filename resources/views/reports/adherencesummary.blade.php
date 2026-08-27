@@ -204,13 +204,13 @@
                             <!-- Designation -->
                             <div class="col-md-3">
                                 <label>Designation</label>
-                                <select class="form-control selectpicker" id="designation_id_asr" name="designation_id"
-                                    data-style="select-with-transition"
-                                    title="Select Designation" required
-                                    >
+                                <select class="form-control fk-designation-multi" id="designation_id_asr"
+                                    name="designation_id[]" multiple
+                                    data-placeholder="Select Designation">
                                 </select>
+                                <small class="fk-field-hint">Select one or more designations. Each designation is exported as its own report file.</small>
                             </div>
-                            
+
                         </div>    
                         <div class="row">
                             
@@ -255,6 +255,16 @@
             e.preventDefault(); // stop form submit
 
             alert('⚠️ Please select Start Date and End Date before downloading report');
+
+            return false;
+        }
+
+        let designations = $('#designation_id_asr').val() || [];
+
+        if ($('#asrCard').is(':visible') && designations.length === 0) {
+            e.preventDefault();
+
+            alert('⚠️ Please select at least one Designation before downloading report');
 
             return false;
         }
@@ -341,9 +351,7 @@ $.get("{{ url('getDesignations') }}", function(data) {
                                 ${item.designation_name}
                             </option>`;
 
-        asrOptions += `<option value="${item.id}" ${selected}>
-                            ${item.designation_name}
-                       </option>`;
+        asrOptions += `<option value="${item.id}" ${selected}>${$.trim(item.designation_name)}</option>`;
     });
 
     $('#designation_id_retailer').html(retailerOptions);
@@ -353,13 +361,15 @@ $.get("{{ url('getDesignations') }}", function(data) {
     if (asrDesignationId) {
         $('#designation_id_retailer').val([asrDesignationId]);
         $('#designation_id_dealer').val(asrDesignationId);
-        $('#designation_id_asr').val(asrDesignationId);
+        $('#designation_id_asr').val([asrDesignationId]);
     }
 
     // Refresh bootstrap-select after dynamic options are inserted.
     $('#designation_id_retailer').selectpicker('refresh');
     $('#designation_id_dealer').selectpicker('refresh');
-    $('#designation_id_asr').selectpicker('refresh');
+
+    // ASR designation is a select2 multi-select.
+    $('#designation_id_asr').trigger('change.select2');
 
     setTimeout(function () {
         $('#designation_id_dealer').trigger('change');
@@ -415,6 +425,13 @@ $(document).ready(function () {
     const urlParams = new URLSearchParams(window.location.search);
     const type = urlParams.get('type');
     loadReportUsers();
+
+    // ASR designation multi-select (select2, so it matches the other filters on this card).
+    $('#designation_id_asr').select2({
+        width: '100%',
+        placeholder: $('#designation_id_asr').data('placeholder') || 'Select Designation',
+        closeOnSelect: false
+    });
 
     if (type === 'retailer') {
         $('#retailerCard').show();

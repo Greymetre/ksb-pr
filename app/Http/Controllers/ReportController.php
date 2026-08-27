@@ -1395,11 +1395,89 @@ public function dealerProductivityExport(Request $request)
 
 public function counterVisitReportDownload(Request $request)
 {
-    // dd($request);
-    return Excel::download(
-        new CounterVisitReportExport($request), // ✅ pura request bhejo
-        'Asr_performance_report.xlsx'
-    );
+    $designationIds = array_values(array_unique(array_filter(
+        (array) $request->input('designation_id'),
+        function ($id) {
+            return $id !== null && $id !== '';
+        }
+    )));
+
+    // No designation filter, or a single one: keep the plain single-workbook download.
+    if (count($designationIds) <= 1) {
+        $suffix = count($designationIds)
+            ? '_' . $this->designationFileLabel($designationIds[0])
+            : '';
+
+        return Excel::download(
+            new CounterVisitReportExport($request), // ✅ pura request bhejo
+            'Asr_performance_report' . $suffix . '.xlsx'
+        );
+    }
+
+    // Multiple designations: build one separate workbook per designation and
+    // hand them back together as a zip.
+    $zipDir = storage_path('app/asr-reports');
+    if (!is_dir($zipDir)) {
+        mkdir($zipDir, 0775, true);
+    }
+
+    $zipPath = $zipDir . DIRECTORY_SEPARATOR . 'Asr_performance_report_' . date('Ymd_His') . '_' . uniqid() . '.zip';
+
+    $zip = new \ZipArchive();
+    if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+        return back()->withErrors(['Unable to prepare the report archive. Please try again.']);
+    }
+
+    $usedNames = [];
+
+    foreach ($designationIds as $designationId) {
+        $label = $this->designationFileLabel($designationId);
+
+        $fileName = 'Asr_performance_report_' . $label . '.xlsx';
+        if (isset($usedNames[$fileName])) {
+            $usedNames[$fileName]++;
+            $fileName = 'Asr_performance_report_' . $label . '_' . $usedNames[$fileName] . '.xlsx';
+        } else {
+            $usedNames[$fileName] = 1;
+        }
+
+        $designationRequest = new Request(array_merge(
+            $request->all(),
+            ['designation_id' => [$designationId]]
+        ));
+
+        $zip->addFromString(
+            $fileName,
+            Excel::raw(new CounterVisitReportExport($designationRequest), \Maatwebsite\Excel\Excel::XLSX)
+        );
+    }
+
+    $zip->close();
+
+    // Make sure nothing the writers echoed ends up prepended to the zip stream.
+    while (ob_get_level() > 0 && ob_get_length() !== false) {
+        ob_end_clean();
+    }
+
+    return response()
+        ->download($zipPath, 'Asr_performance_report_' . date('Y-m-d') . '.zip')
+        ->deleteFileAfterSend(true);
+}
+
+/**
+ * Filename-safe designation label used for the per-designation ASR reports.
+ */
+private function designationFileLabel($designationId)
+{
+    $name = Designation::where('id', $designationId)->value('designation_name');
+
+    if (empty($name)) {
+        $name = 'designation_' . $designationId;
+    }
+
+    $name = preg_replace('/[^A-Za-z0-9]+/', '_', $name);
+
+    return trim($name, '_') ?: ('designation_' . $designationId);
 }
 
 
