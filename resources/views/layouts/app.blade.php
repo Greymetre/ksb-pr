@@ -1682,7 +1682,7 @@
                         <li class="fk-menu-section"><span>Customers</span></li>
                         @if(auth()->user()->can(['lead_management_access']))
                         <li
-                            class="nav-link {{ request()->is('leads*') || request()->is('contacts*') ? 'active' : '' }}">
+                            class="nav-link {{ request()->is('leads*') || request()->is('contacts*') || request()->is('call-management*') ? 'active' : '' }}">
                             <a class="collapsed hoveradd" data-toggle="collapse" href="#leadManagementMenu"
                                 aria-expanded="false">
                                 <i class="material-icons icon">leaderboard</i>
@@ -1738,6 +1738,15 @@
                                             <i class="material-icons icon">diamond</i>
                                             <span>Visit Report</span>
                                             <div class="d-none mobile_hide">Visit Report</div>
+                                        </a>
+                                    </li>
+                                    @endif
+                                    @if(auth()->user()->can('call_management_access'))
+                                    <li class="nav-link-btn {{ request()->is('call-management*') ? 'active' : '' }}">
+                                        <a class="hoveradd2" href="{{ route('call-management.index') }}">
+                                            <i class="material-icons icon">headset_mic</i>
+                                            <span>Call Management</span>
+                                            <div class="d-none mobile_hide">Call Management</div>
                                         </a>
                                     </li>
                                     @endif

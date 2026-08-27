@@ -15,17 +15,17 @@
           <div class="card-icon">
             <i class="material-icons">perm_identity</i>
           </div>
-          <h4 class="card-title">Lead Call Logs
+          <h4 class="card-title">Call Management
             <span class="">
               <button class="btn btn-info mb-3 float-right" type="button" data-toggle="collapse" data-target="#filterSection" aria-expanded="false" aria-controls="filterSection">
                 <i class="material-icons">tune</i> Filters
               </button>
               <div class="collapse" id="filterSection">
-                <form method="GET" action="{{ URL::to('call-log-download') }}">
+                <form method="GET" action="{{ route('call-management.download') }}">
                   <div class="d-flex flex-wrap flex-row">
                     <div class="p-2" style="width:200px;">
-                      <select class="select2" name="executive_id" id="executive_id" data-style="select-with-transition" title="Select User">
-                        <option value="">Select User</option>
+                      <select class="select2" name="user_id" id="executive_id" data-style="select-with-transition" title="Select Agent">
+                        <option value="">All Agents</option>
                         @if(@isset($users ))
                         @foreach($users as $user)
                         <option value="{!! $user['id'] !!}" {{ old( 'executive_id') == $user->id ? 'selected' : '' }}>{!! $user['name'] !!}</option>
@@ -107,14 +107,16 @@
           <div class="table-responsive">
             <table id="getleadcalllogs" class="table table-striped- table-bordered table-hover table-checkable no-wrap">
               <thead class=" text-primary">
-                <th>User Name</th>
+                <th>Agent</th>
                 <th>Customer Name</th>
+                <th>Lead / Company</th>
                 <th>Contact Number</th>
                 <th>Date & Time</th>
                 <th>Call Duration</th>
                 <th>Call Status</th>
-                <th>Lead Status</th>
-                <th>Remark</th>
+                <th>Cost</th>
+                <th>Call UUID</th>
+                <th>Recording</th>
               </thead>
               <tbody>
               </tbody>
@@ -146,7 +148,7 @@
         ],
         "retrieve": true,
         ajax: {
-          url: "{{ route('lead-call-log') }}",
+          url: "{{ route('call-management.index') }}",
           data: function(d) {
             d.user_id = $('#executive_id').val(),
               d.start_date = $('#start_date').val(),
@@ -167,6 +169,12 @@
             data: 'user.name',
             name: 'user.name',
             "defaultContent": '',
+            orderable: false,
+          },
+          {
+            data: 'customer_name',
+            name: 'customer_name',
+            "defaultContent": '-',
             orderable: false,
           },
           {
@@ -200,18 +208,25 @@
             orderable: false
           },
           {
-            data: 'lead_status',
-            name: 'lead_status',
-            "defaultContent": 'Not Found',
+            data: 'cost',
+            name: 'cost',
+            "defaultContent": '-',
             orderable: false
           },
           {
-            data: 'remark',
-            name: 'remark',
-            "defaultContent": '',
+            data: 'call_uuid',
+            name: 'plivo_call_uuid',
+            "defaultContent": '-',
             orderable: false,
             searchable: false
           },
+          {
+            data: 'recording',
+            name: 'recording_url',
+            "defaultContent": '-',
+            orderable: false,
+            searchable: false
+          }
 
         ],
       });
@@ -238,7 +253,7 @@
       $(div).find('.card').fadeOut(100).fadeIn(200).addClass('active-card');
       $(div).find('.card-text').css('font-weight', '600');
       // Filter table data
-      table.column(5).search(status).draw();
+      table.column(6).search(status).draw();
     }
   </script>
 </x-app-layout>

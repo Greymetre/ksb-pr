@@ -8,6 +8,8 @@ use App\Models\CallLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -18,6 +20,7 @@ class LeadCallLogController extends Controller
      */
     public function index(Request $request)
     {
+        abort_if(Gate::denies('call_management_access'), 403, '403 Forbidden');
         $user_ids = getUsersReportingToAuth();
         $users = User::select('id', 'name')->where('active', 'Y');
 
@@ -49,8 +52,8 @@ class LeadCallLogController extends Controller
             if ($request->has('lead_id')) {
                 $query->where('lead_id', $request->lead_id);
             }
-            if (!empty($request->columns[5]['search']['value'])) {
-                $statusSearch = $request->columns[5]['search']['value'];
+            if (!empty($request->columns[6]['search']['value'])) {
+                $statusSearch = $request->columns[6]['search']['value'];
             
                 // Adjust this according to how your status is stored
                 if (strtolower($statusSearch) === 'connected') {
@@ -94,13 +97,38 @@ class LeadCallLogController extends Controller
                     return sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
                 })
                 ->addColumn('status', function ($row) {
-                    return ($row->status == 0) ? '<span class="badge badge-danger">No Response</span>' : '<span class="badge badge-success">Connected</span>';
+                    $connected = (int) $row->status === 1;
+                    $badge = $connected ? 'badge-success' : 'badge-danger';
+                    $label = $connected ? 'Connected' : 'No Response';
+                    $plivoStatus = $row->plivo_status ? ucwords(str_replace(['-', '_'], ' ', $row->plivo_status)) : '';
+                    return '<span class="badge '.$badge.'">'.$label.'</span>'
+                        .($plivoStatus ? '<div class="text-muted small mt-1">'.$plivoStatus.'</div>' : '');
+                })
+                ->addColumn('customer_name', function ($row) {
+                    return optional(optional($row->lead)->contacts->first())->name ?: '-';
+                })
+                ->addColumn('recording', function ($row) {
+                    if (!$row->recording_url) {
+                        return '<span class="text-muted">Processing / unavailable</span>';
+                    }
+                    return '<audio controls preload="none" style="width:220px;height:36px">'
+                        .'<source src="'.route('call-management.recording', $row).'" type="audio/mpeg">'
+                        .'Your browser does not support audio playback.'</n+                        .'audio>';
+                })
+                ->addColumn('call_uuid', function ($row) {
+                    if (!$row->plivo_call_uuid) {
+                        return '-';
+                    }
+                    return '<span class="d-inline-block text-truncate" style="max-width:150px" title="'.e($row->plivo_call_uuid).'">'.e($row->plivo_call_uuid).'</span>';
+                })
+                ->editColumn('cost', function ($row) {
+                    return $row->cost !== null ? number_format((float) $row->cost, 4) : '-';
                 })
                 ->addColumn('lead_status', function ($row) {
                     if (!$row->lead) return 'Not Found';
                     return $row->lead->status_is->status_name;
                 })
-                ->rawColumns(['started_at', 'duration', 'status'])
+                ->rawColumns(['started_at', 'duration', 'status', 'recording', 'call_uuid'])
                 ->with([
                     'summary' => [
                         'total' => $totalCalls,
@@ -117,6 +145,7 @@ class LeadCallLogController extends Controller
 
     public function download(Request $request)
     {
+        abort_if(Gate::denies('call_management_access'), 403, '403 Forbidden');
         $filename = 'Call Logs.xlsx';
         $user_ids = getUsersReportingToAuth();
 
@@ -146,7 +175,7 @@ class LeadCallLogController extends Controller
 
         $rows = [];
 
-        $headers = ['User Name', 'Customer Name', 'Contact No', 'Date & Time', 'Call Duration', 'Call Status', 'Lead Status', 'Remark'];
+        $headers = ['Agent', 'Customer', 'Lead', 'Contact No', 'Date & Time', 'Call Duration', 'Call Status', 'Plivo Status', 'Call UUID', 'Recording URL', 'Cost', 'Remark'];
 
         foreach ($call_logs as $call_log) {
             $seconds = (int) $call_log->duration;
@@ -157,13 +186,17 @@ class LeadCallLogController extends Controller
 
             $call_duration = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
             $rows[] = [
-                $call_log->user->name,
+                $call_log->user?->name ?? 'Not Found',
+                optional(optional($call_log->lead)->contacts->first())->name ?: 'Not Found',
                 $call_log->lead ? $call_log->lead->company_name : 'Not Found',
                 $call_log->number,
                 date('d/m/Y h:i A', strtotime($call_log->started_at)),
                 $call_duration,
                 $call_log->status == 0 ? 'No Response' : 'Connected',
-                $call_log->lead ? $call_log->lead->status_is?->status_name : 'Not Found',
+                $call_log->plivo_status,
+                $call_log->plivo_call_uuid,
+                $call_log->recording_url,
+                $call_log->cost,
                 '',
             ];
         }
@@ -173,6 +206,24 @@ class LeadCallLogController extends Controller
         return Excel::download($export, $filename);
 
 
-        return view('call_logs.download', compact('users'));
+    }
+
+    public function recording(CallLog $callLog)
+    {
+        abort_if(Gate::denies('call_management_access'), 403, '403 Forbidden');
+        abort_if(empty($callLog->recording_url), 404, 'Recording not available.');
+
+        $recording = Http::withBasicAuth(
+            config('services.plivo.auth_id'),
+            config('services.plivo.auth_token')
+        )->timeout(30)->get($callLog->recording_url);
+
+        abort_unless($recording->successful(), 502, 'Unable to load recording from Plivo.');
+
+        return response($recording->body(), 200, [
+            'Content-Type' => $recording->header('Content-Type') ?: 'audio/mpeg',
+            'Content-Disposition' => 'inline; filename="call-'.$callLog->id.'.mp3"',
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
     }
 }

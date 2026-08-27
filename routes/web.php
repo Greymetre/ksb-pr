@@ -1386,9 +1386,10 @@ Route::post('ajax/user-cities-by-district', [TourController::class, 'ajaxUserCit
     // Customer Custom Fields Routes
     Route::resource('customer-custom-fields', CustomerCustomFieldController::class);
 
-    //Lead call log routes
-    Route::any('lead-call-log', [LeadCallLogController::class, 'index'])->name('lead-call-log');
-    Route::any('call-log-download', [LeadCallLogController::class, 'download'])->name('lead-call-log-download');
+    // Call Management
+    Route::get('call-management', [LeadCallLogController::class, 'index'])->name('call-management.index');
+    Route::get('call-management/download', [LeadCallLogController::class, 'download'])->name('call-management.download');
+    Route::get('call-management/{callLog}/recording', [LeadCallLogController::class, 'recording'])->name('call-management.recording');
 
     //Process Management Routes
     Route::resource('customer_process', CustomerProcessController::class);
