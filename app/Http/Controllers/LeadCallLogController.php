@@ -100,9 +100,7 @@ class LeadCallLogController extends Controller
                     $connected = (int) $row->status === 1;
                     $badge = $connected ? 'badge-success' : 'badge-danger';
                     $label = $connected ? 'Connected' : 'No Response';
-                    $plivoStatus = $row->plivo_status ? ucwords(str_replace(['-', '_'], ' ', $row->plivo_status)) : '';
-                    return '<span class="badge '.$badge.'">'.$label.'</span>'
-                        .($plivoStatus ? '<div class="text-muted small mt-1">'.$plivoStatus.'</div>' : '');
+                    return '<span class="badge '.$badge.'">'.$label.'</span>';
                 })
                 ->addColumn('customer_name', function ($row) {
                     return optional(optional($row->lead)->contacts->first())->name ?: '-';
@@ -115,20 +113,11 @@ class LeadCallLogController extends Controller
                         .'<source src="'.route('call-management.recording', $row).'" type="audio/mpeg">'
                         .'Your browser does not support audio playback.</audio>';
                 })
-                ->addColumn('call_uuid', function ($row) {
-                    if (!$row->plivo_call_uuid) {
-                        return '-';
-                    }
-                    return '<span class="d-inline-block text-truncate" style="max-width:150px" title="'.e($row->plivo_call_uuid).'">'.e($row->plivo_call_uuid).'</span>';
-                })
-                ->editColumn('cost', function ($row) {
-                    return $row->cost !== null ? number_format((float) $row->cost, 4) : '-';
-                })
                 ->addColumn('lead_status', function ($row) {
                     if (!$row->lead) return 'Not Found';
                     return $row->lead->status_is->status_name;
                 })
-                ->rawColumns(['started_at', 'duration', 'status', 'recording', 'call_uuid'])
+                ->rawColumns(['started_at', 'duration', 'status', 'recording'])
                 ->with([
                     'summary' => [
                         'total' => $totalCalls,

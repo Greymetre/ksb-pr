@@ -7,6 +7,24 @@
     .active-card {
       transform: scale(1.06);
     }
+
+    #getleadcalllogs th {
+      padding: 16px 18px;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    #getleadcalllogs td {
+      padding: 14px 18px;
+      vertical-align: middle;
+    }
+
+    #getleadcalllogs .badge {
+      display: inline-block;
+      padding: 9px 16px;
+      border-radius: 20px;
+      letter-spacing: .06em;
+    }
   </style>
   <div class="row">
     <div class="col-md-12">
@@ -114,8 +132,6 @@
                 <th>Date & Time</th>
                 <th>Call Duration</th>
                 <th>Call Status</th>
-                <th>Cost</th>
-                <th>Call UUID</th>
                 <th>Recording</th>
               </thead>
               <tbody>
@@ -206,19 +222,6 @@
             name: 'status',
             "defaultContent": '',
             orderable: false
-          },
-          {
-            data: 'cost',
-            name: 'cost',
-            "defaultContent": '-',
-            orderable: false
-          },
-          {
-            data: 'call_uuid',
-            name: 'plivo_call_uuid',
-            "defaultContent": '-',
-            orderable: false,
-            searchable: false
           },
           {
             data: 'recording',
