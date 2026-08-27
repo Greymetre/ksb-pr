@@ -576,6 +576,20 @@
                                     </div>
                                 </div>
 
+                                <div class="col-md-6">
+                                    <div class="input_section">
+                                        <label class="col-form-label">Call Management</label>
+                                        <div class="form-group has-default bmd-form-group">
+                                            <input type="radio" name="call_management" value="1"
+                                                {{ old('call_management', $user->call_management ?? 0) == '1' ? 'checked' : '' }}>
+                                            <span class="yes_no">Yes</span>
+                                            <input type="radio" name="call_management" value="0"
+                                                {{ old('call_management', $user->call_management ?? 0) == '0' ? 'checked' : '' }}>
+                                            <span class="yes_no">No</span>
+                                        </div>
+                                    </div>
+                                </div>
+
 
                             </div>
                             <div class="row">

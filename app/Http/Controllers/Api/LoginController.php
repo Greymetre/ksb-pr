@@ -374,6 +374,7 @@ class LoginController extends Controller
             'roles'               => $user->roles->pluck('id')->toArray(),
             'user_type'           => $user->roles->pluck('name')->toArray(),
             'leave_balance'       => $user->leave_balance ?? 0,
+            'call_management'     => (bool) $user->call_management,
             // ... add other fields you need
         ];
 

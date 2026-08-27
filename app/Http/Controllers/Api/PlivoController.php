@@ -20,6 +20,7 @@ class PlivoController extends Controller
         ]);
 
         $user = $request->user();
+        abort_unless($user->call_management, 403, 'Plivo calling is not enabled for this user.');
         $lead = Lead::with('contacts')->findOrFail($validated['lead_id']);
         $agentNumber = $this->e164($user->mobile);
         $customerNumber = $this->e164(optional($lead->contacts->first())->phone_number);

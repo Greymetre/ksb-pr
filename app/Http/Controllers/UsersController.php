@@ -137,6 +137,7 @@ $latitude = null;
             'division_id' => isset($request['division_id']) ? $request['division_id'] : '',
             'reportingid' => isset($request['reportingid']) ? $request['reportingid'] : '',
             'show_attandance_report' => isset($request['show_attandance_report']) ? $request['show_attandance_report'] : 1,
+            'call_management' => $request->input('call_management', 0),
             'payroll' => isset($request['payroll']) ? $request['payroll'] : '',
             'warehouse_id' => isset($request['warehouse_id']) ? $request['warehouse_id'] : NULL,
             'customerid' => isset($request['customerid']) ? $request['customerid'] : NULL,
@@ -396,6 +397,7 @@ $latitude = null;
         $user->blood_group = isset($request['blood_group']) ? $request['blood_group'] : NULL;
         $user->personal_number = isset($request['personal_number']) ? $request['personal_number'] : NULL;
         $user->show_attandance_report = isset($request['show_attandance_report']) ? $request['show_attandance_report'] : '';
+        $user->call_management = $request->input('call_management', $user->call_management);
         $user->latitude  = $latitude;
     $user->longitude = $longitude;
         if ($request['password'] && !empty($request['password'])) {

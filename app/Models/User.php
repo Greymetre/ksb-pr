@@ -60,7 +60,7 @@ class User extends Authenticatable implements HasMedia
         'personal_number',
         'sales_type',
         'customerid',
-        'show_attandance_report','earned_leave_balance',
+        'show_attandance_report','call_management','earned_leave_balance',
     'casual_leave_balance',
     'sick_leave_balance',
     'date_of_joining',
@@ -107,6 +107,7 @@ class User extends Authenticatable implements HasMedia
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'call_management' => 'boolean',
     ];
 
     protected $guard_name = 'users';
