@@ -113,7 +113,7 @@ class LeadCallLogController extends Controller
                     }
                     return '<audio controls preload="none" style="width:220px;height:36px">'
                         .'<source src="'.route('call-management.recording', $row).'" type="audio/mpeg">'
-                        .'Your browser does not support audio playback.'</n+                        .'audio>';
+                        .'Your browser does not support audio playback.</audio>';
                 })
                 ->addColumn('call_uuid', function ($row) {
                     if (!$row->plivo_call_uuid) {
