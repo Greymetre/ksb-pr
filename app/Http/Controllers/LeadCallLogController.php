@@ -58,7 +58,7 @@ class LeadCallLogController extends Controller
                 // Adjust this according to how your status is stored
                 if (strtolower($statusSearch) === 'connected') {
                     $query->where('status', 1);
-                } elseif (strtolower($statusSearch) === 'no response') {
+                } elseif (in_array(strtolower($statusSearch), ['no response', 'not connected'], true)) {
                     $query->where('status', 0);
                 } else {
                     // Optional: fuzzy match for text
@@ -99,7 +99,7 @@ class LeadCallLogController extends Controller
                 ->addColumn('status', function ($row) {
                     $connected = (int) $row->status === 1;
                     $badge = $connected ? 'badge-success' : 'badge-danger';
-                    $label = $connected ? 'Connected' : 'No Response';
+                    $label = $connected ? 'Connected' : 'Not Connected';
                     return '<span class="badge '.$badge.'">'.$label.'</span>';
                 })
                 ->addColumn('customer_name', function ($row) {

@@ -84,10 +84,10 @@
                   </div>
                 </div>
               </div>
-              <div class="col-sm" onclick="filterByStatus('No Response', this)" style="cursor:pointer">
+              <div class="col-sm" onclick="filterByStatus('Not Connected', this)" style="cursor:pointer">
                 <div class="card text-center m-1 hover-effect">
                   <div class="card-body">
-                    <h4 class="card-text">No Response </h4>
+                    <h4 class="card-text">Not Connected</h4>
                     <h5 class="card-title" id="no_response"></h5>
                   </div>
                 </div>

@@ -126,9 +126,18 @@ class PlivoController extends Controller
             'plivo_b_leg_uuid' => $request->input('DialBLegUUID', $callLog->plivo_b_leg_uuid),
         ];
 
-        $duration = $request->input('DialBLegDuration', $request->input('Duration'));
+        $billDuration = $request->input('DialBLegBillDuration', $request->input('BillDuration'));
+        $duration = is_numeric($billDuration)
+            ? $billDuration
+            : $request->input('DialBLegDuration', $request->input('Duration'));
         if (is_numeric($duration)) {
             $updates['duration'] = (int) $duration;
+        }
+
+        $normalizedDialAction = strtolower((string) $dialAction);
+        if (in_array($normalizedDialAction, ['answer', 'connected'], true)
+            || (is_numeric($billDuration) && (int) $billDuration > 0)) {
+            $updates['status'] = 1;
         }
 
         $cost = $request->input('TotalCost', $request->input('CallCost'));
@@ -138,7 +147,7 @@ class PlivoController extends Controller
 
         if (in_array(strtolower((string) $status), ['completed', 'hangup', 'failed', 'busy', 'no-answer', 'timeout', 'cancel'], true)) {
             $updates['completed_at'] = now();
-            $updates['status'] = in_array(strtolower((string) $status), ['completed', 'hangup'], true) && (int) ($updates['duration'] ?? 0) > 0 ? 1 : 0;
+            $updates['status'] = ($updates['status'] ?? (int) $callLog->status) === 1 ? 1 : 0;
         }
 
         $callLog->update($updates);
