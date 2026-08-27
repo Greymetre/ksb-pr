@@ -107,6 +107,9 @@ Route::get('/exotel/get-recording', [ExotelApiController::class, 'getRecording']
 Route::match(['get', 'post'], '/plivo/answer', [PlivoController::class, 'answer']);
 Route::match(['get', 'post'], '/plivo/status', [PlivoController::class, 'status']);
 Route::match(['get', 'post'], '/plivo/recording', [PlivoController::class, 'recording']);
+Route::get('call-recordings/{callLog}', [CallLogController::class, 'playRecording'])
+    ->middleware('signed')
+    ->name('api.call-recordings.play');
 
 Route::post('/get-location-by-pincode', [CustomerApiController::class,'getLocationByPincode']);
 Route::get('/getAppVersion', [CustomerApiController::class,'getAppVersion']);
@@ -436,6 +439,7 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
     // Call logs routes
     Route::post('click-to-call', [PlivoController::class, 'makeCall']);
     Route::get('click-to-call/{callLog}/status', [PlivoController::class, 'callStatus']);
+    Route::get('my-call-history', [CallLogController::class, 'mobileHistory']);
     Route::post('add-call-logs', [CallLogController::class, 'store']);
     Route::get('get-call-logs', [CallLogController::class, 'index']);
     Route::get('get-last-call', [CallLogController::class, 'last_call']);

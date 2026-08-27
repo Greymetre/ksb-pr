@@ -10,9 +10,97 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\URL;
 
 class CallLogController extends Controller
 {
+    public function mobileHistory(Request $request)
+    {
+        abort_unless($request->user()->call_management, 403, 'Call history is not enabled for this user.');
+
+        $period = $request->input('period', 'weekly');
+        $query = CallLog::with(['lead:id,company_name', 'lead.contacts:id,lead_id,name,phone_number'])
+            ->where('user_id', $request->user()->id);
+
+        if ($period === 'today') {
+            $query->whereDate('started_at', today());
+        } elseif ($period === 'monthly') {
+            $query->where('started_at', '>=', now()->startOfMonth());
+        } else {
+            $query->where('started_at', '>=', now()->startOfWeek());
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('number', 'like', "%{$search}%")
+                    ->orWhereHas('lead', function ($leadQuery) use ($search) {
+                        $leadQuery->where('company_name', 'like', "%{$search}%")
+                            ->orWhereHas('contacts', function ($contactQuery) use ($search) {
+                                $contactQuery->where('name', 'like', "%{$search}%");
+                            });
+                    });
+            });
+        }
+
+        $summaryQuery = clone $query;
+        $attempts = (clone $summaryQuery)->count();
+        $connected = (clone $summaryQuery)->whereNotNull('recording_url')->where('recording_url', '!=', '')->count();
+        $duration = (clone $summaryQuery)->whereNotNull('recording_url')->where('recording_url', '!=', '')->sum('duration');
+        $logs = $query->latest('started_at')->paginate((int) $request->input('page_size', 30));
+
+        $items = $logs->getCollection()->map(function (CallLog $log) {
+            $contact = optional($log->lead)->contacts->first();
+            $connected = !empty($log->recording_url);
+
+            return [
+                'id' => $log->id,
+                'lead_id' => $log->lead_id,
+                'customer_name' => $contact?->name ?: $log->lead?->company_name ?: 'Unknown customer',
+                'company_name' => $log->lead?->company_name,
+                'number' => $log->number,
+                'started_at' => optional($log->started_at)->toIso8601String(),
+                'duration' => (int) $log->duration,
+                'connected' => $connected,
+                'recording_play_url' => $connected ? URL::temporarySignedRoute(
+                    'api.call-recordings.play',
+                    now()->addHour(),
+                    ['callLog' => $log->id]
+                ) : null,
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $items,
+            'summary' => [
+                'attempts' => $attempts,
+                'connected' => $connected,
+                'not_connected' => max(0, $attempts - $connected),
+                'duration' => (int) $duration,
+            ],
+        ]);
+    }
+
+    public function playRecording(CallLog $callLog)
+    {
+        abort_if(empty($callLog->recording_url), 404, 'Recording not available.');
+
+        $recording = Http::withBasicAuth(
+            config('services.plivo.auth_id'),
+            config('services.plivo.auth_token')
+        )->timeout(30)->get($callLog->recording_url);
+
+        abort_unless($recording->successful(), 502, 'Unable to load recording.');
+
+        return response($recording->body(), 200, [
+            'Content-Type' => $recording->header('Content-Type') ?: 'audio/mpeg',
+            'Content-Disposition' => 'inline; filename="call-'.$callLog->id.'.mp3"',
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
+    }
+
     /**
      * Store a new call log.
      */
