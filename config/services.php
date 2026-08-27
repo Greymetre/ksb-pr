@@ -2,6 +2,15 @@
 
 return [
 
+    'plivo' => [
+        'auth_id' => env('PLIVO_AUTH_ID'),
+        'auth_token' => env('PLIVO_AUTH_TOKEN'),
+        'from_number' => env('PLIVO_FROM_NUMBER'),
+        'answer_url' => env('PLIVO_ANSWER_URL'),
+        'status_url' => env('PLIVO_STATUS_URL'),
+        'recording_url' => env('PLIVO_RECORDING_URL'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

@@ -16,6 +16,23 @@ class CallLog extends Model
         'duration',
         'user_id',
         'status',
+        'plivo_status',
+        'plivo_call_uuid',
+        'plivo_b_leg_uuid',
+        'recording_url',
+        'recording_id',
+        'cost',
+        'answered_at',
+        'completed_at',
+        'webhook_token',
+    ];
+
+    protected $hidden = ['webhook_token'];
+
+    protected $casts = [
+        'started_at' => 'datetime',
+        'answered_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     /**

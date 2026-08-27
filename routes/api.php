@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\ServiceBillController;
 use App\Http\Controllers\Api\ComplaintAPICustomerController;
 use App\Http\Controllers\Api\ExotelApiController;
 use App\Http\Controllers\Api\LeadController;
+use App\Http\Controllers\Api\PlivoController;
 use App\Http\Controllers\Api\ServiceBillCustController;
 use App\Http\Controllers\Api\UserLatLongController;
 use App\Http\Controllers\Api\SecondaryCustomerController; // We'll create this
@@ -101,6 +102,11 @@ Route::any('emailExists', [CustomController::class, 'emailExists']);
 Route::post('/exotel/make-call', [ExotelApiController::class, 'makeCall']);
 Route::get('/exotel/call-details', [ExotelApiController::class, 'getCallDetails']);
 Route::get('/exotel/get-recording', [ExotelApiController::class, 'getRecording']);
+
+// Public Plivo webhooks. Each request is protected by a per-call token.
+Route::match(['get', 'post'], '/plivo/answer', [PlivoController::class, 'answer']);
+Route::match(['get', 'post'], '/plivo/status', [PlivoController::class, 'status']);
+Route::match(['get', 'post'], '/plivo/recording', [PlivoController::class, 'recording']);
 
 Route::post('/get-location-by-pincode', [CustomerApiController::class,'getLocationByPincode']);
 Route::get('/getAppVersion', [CustomerApiController::class,'getAppVersion']);
@@ -428,6 +434,7 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
     Route::any('leadGetCheckin', [LeadController::class, 'getCheckin']);
 
     // Call logs routes
+    Route::post('click-to-call', [PlivoController::class, 'makeCall']);
     Route::post('add-call-logs', [CallLogController::class, 'store']);
     Route::get('get-call-logs', [CallLogController::class, 'index']);
     Route::get('get-last-call', [CallLogController::class, 'last_call']);
