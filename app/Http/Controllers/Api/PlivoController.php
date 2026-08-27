@@ -54,6 +54,8 @@ class PlivoController extends Controller
                     'to' => $agentNumber,
                     'answer_url' => $this->webhookUrl('answer_url', 'api/plivo/answer').'?'.$query,
                     'answer_method' => 'POST',
+                    'ring_url' => $this->webhookUrl('status_url', 'api/plivo/status').'?'.$query,
+                    'ring_method' => 'POST',
                     'hangup_url' => $this->webhookUrl('status_url', 'api/plivo/status').'?'.$query,
                     'hangup_method' => 'POST',
                 ]);
@@ -141,6 +143,25 @@ class PlivoController extends Controller
         $callLog->update($updates);
 
         return response('OK', 200);
+    }
+
+    public function callStatus(Request $request, CallLog $callLog)
+    {
+        abort_unless(
+            (int) $callLog->user_id === (int) $request->user()->id || $request->user()->hasRole('superadmin'),
+            403,
+            'You cannot view this call.'
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $callLog->id,
+                'status' => $callLog->plivo_status,
+                'answered' => (bool) $callLog->answered_at,
+                'completed' => (bool) $callLog->completed_at,
+            ],
+        ]);
     }
 
     public function recording(Request $request)

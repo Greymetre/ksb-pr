@@ -435,6 +435,7 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
 
     // Call logs routes
     Route::post('click-to-call', [PlivoController::class, 'makeCall']);
+    Route::get('click-to-call/{callLog}/status', [PlivoController::class, 'callStatus']);
     Route::post('add-call-logs', [CallLogController::class, 'store']);
     Route::get('get-call-logs', [CallLogController::class, 'index']);
     Route::get('get-last-call', [CallLogController::class, 'last_call']);
