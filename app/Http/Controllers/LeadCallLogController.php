@@ -57,9 +57,15 @@ class LeadCallLogController extends Controller
             
                 // Adjust this according to how your status is stored
                 if (strtolower($statusSearch) === 'connected') {
-                    $query->where('status', 1);
+                    $query->where('status', 1)
+                        ->whereNotNull('recording_url')
+                        ->where('recording_url', '!=', '');
                 } elseif (in_array(strtolower($statusSearch), ['no response', 'not connected'], true)) {
-                    $query->where('status', 0);
+                    $query->where(function ($statusQuery) {
+                        $statusQuery->where('status', 0)
+                            ->orWhereNull('recording_url')
+                            ->orWhere('recording_url', '');
+                    });
                 } else {
                     // Optional: fuzzy match for text
                     $query->where('status', 'like', "%{$statusSearch}%");
@@ -69,9 +75,19 @@ class LeadCallLogController extends Controller
             $countsQuery = clone $query;
 
             $totalCalls = $countsQuery->count();
-            $connectedCalls = (clone $countsQuery)->where('status', 1)->count();
-            $noResponseCalls = (clone $countsQuery)->where('status', 0)->count();
-            $totalDurationSeconds = (clone $countsQuery)->sum('duration');
+            $connectedCalls = (clone $countsQuery)->where('status', 1)
+                ->whereNotNull('recording_url')
+                ->where('recording_url', '!=', '')
+                ->count();
+            $noResponseCalls = (clone $countsQuery)->where(function ($statusQuery) {
+                $statusQuery->where('status', 0)
+                    ->orWhereNull('recording_url')
+                    ->orWhere('recording_url', '');
+            })->count();
+            $totalDurationSeconds = (clone $countsQuery)
+                ->whereNotNull('recording_url')
+                ->where('recording_url', '!=', '')
+                ->sum('duration');
 
             // Convert seconds to HH:MM:SS
             $hours = floor($totalDurationSeconds / 3600);
@@ -97,7 +113,7 @@ class LeadCallLogController extends Controller
                     return sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
                 })
                 ->addColumn('status', function ($row) {
-                    $connected = (int) $row->status === 1;
+                    $connected = (int) $row->status === 1 && !empty($row->recording_url);
                     $badge = $connected ? 'badge-success' : 'badge-danger';
                     $label = $connected ? 'Connected' : 'Not Connected';
                     return '<span class="badge '.$badge.'">'.$label.'</span>';

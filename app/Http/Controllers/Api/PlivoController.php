@@ -134,12 +134,6 @@ class PlivoController extends Controller
             $updates['duration'] = (int) $duration;
         }
 
-        $normalizedDialAction = strtolower((string) $dialAction);
-        if (in_array($normalizedDialAction, ['answer', 'connected'], true)
-            || (is_numeric($billDuration) && (int) $billDuration > 0)) {
-            $updates['status'] = 1;
-        }
-
         $cost = $request->input('TotalCost', $request->input('CallCost'));
         if (is_numeric($cost)) {
             $updates['cost'] = $cost;
@@ -147,7 +141,6 @@ class PlivoController extends Controller
 
         if (in_array(strtolower((string) $status), ['completed', 'hangup', 'failed', 'busy', 'no-answer', 'timeout', 'cancel'], true)) {
             $updates['completed_at'] = now();
-            $updates['status'] = ($updates['status'] ?? (int) $callLog->status) === 1 ? 1 : 0;
         }
 
         $callLog->update($updates);
@@ -178,10 +171,12 @@ class PlivoController extends Controller
     {
         $callLog = $this->authorizedCallLog($request);
         $duration = $request->input('RecordingDuration');
+        $recordingUrl = $request->input('RecordUrl', $request->input('RecordingURL'));
         $callLog->update(array_filter([
-            'recording_url' => $request->input('RecordUrl', $request->input('RecordingURL')),
+            'recording_url' => $recordingUrl,
             'recording_id' => $request->input('RecordingID', $request->input('RecordingUUID')),
             'duration' => is_numeric($duration) && (int) $duration >= 0 ? (int) $duration : null,
+            'status' => $recordingUrl ? 1 : null,
         ], static fn ($value) => $value !== null && $value !== ''));
 
         return response('OK', 200);
