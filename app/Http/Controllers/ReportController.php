@@ -353,7 +353,12 @@ class ReportController extends Controller
                 // })
                 ->make(true);
         }
-        return view('reports.adherencesummary');
+        $designations = Designation::where('active', 'Y')
+            ->orderBy('designation_name')
+            ->select('id', 'designation_name')
+            ->get();
+
+        return view('reports.adherencesummary', compact('designations'));
     }
 
 

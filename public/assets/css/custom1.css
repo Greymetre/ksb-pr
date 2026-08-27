@@ -2169,11 +2169,22 @@ body.fk-shell .fk-export-report .bootstrap-select {
 /* Multi-select filters (e.g. ASR Designation) grow with their chips instead of
    inheriting the fixed 48px single-select height. */
 body.fk-shell .fk-export-report .select2-container--default .select2-selection--multiple {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
     height: auto !important;
     min-height: 48px !important;
     line-height: normal !important;
+    max-height: 96px !important;
     padding: 7px 10px !important;
     display: block !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+body.fk-shell .fk-export-report .select2-container {
+    box-sizing: border-box !important;
+    max-width: 100% !important;
 }
 
 body.fk-shell .fk-export-report .select2-container--default .select2-selection--multiple .select2-selection__rendered {

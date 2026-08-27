@@ -207,6 +207,9 @@
                                 <select class="form-control fk-designation-multi" id="designation_id_asr"
                                     name="designation_id[]" multiple
                                     data-placeholder="Select Designation">
+                                    @foreach(($designations ?? collect()) as $designation)
+                                        <option value="{{ $designation->id }}" {{ strtoupper(trim($designation->designation_name)) === 'ASR' ? 'selected' : '' }}>{{ trim($designation->designation_name) }}</option>
+                                    @endforeach
                                 </select>
                                 <small class="fk-field-hint">Select one or more designations. Each designation is exported as its own report file.</small>
                             </div>
@@ -322,17 +325,50 @@ $.get("{{ url('getBranches') }}", function(data) {
     $('#branch_id').html(options);
 });
 
+/**
+ * ASR Designation is a select2 multi-select. Its options are rendered server-side
+ * (see the markup above) so the widget never depends on an ajax round trip - an
+ * empty select is what left select2 showing "No results found".
+ */
+function buildAsrDesignationSelect() {
+    var $el = $('#designation_id_asr');
+
+    if (!$el.length || !$.fn.select2) {
+        return;
+    }
+
+    var selected = $el.val();
+
+    if ($el.hasClass('select2-hidden-accessible')) {
+        $el.select2('destroy');
+    }
+
+    // prop() is set explicitly so the widget is always built in multi-select mode.
+    $el.prop('multiple', true).select2({
+        width: '100%',
+        placeholder: $el.data('placeholder') || 'Select Designation',
+        closeOnSelect: false,
+        allowClear: false
+    });
+
+    if (selected && selected.length) {
+        $el.val(selected);
+    }
+
+    $el.trigger('change.select2');
+}
+
 // Designation
 $.get("{{ url('getDesignations') }}", function(data) {
 
     let retailerOptions = '';
     let dealerOptions = '';
-    let asrOptions = '';
     let asrDesignationId = '';
 
     data.forEach(item => {
 
-        let isAsr = $.trim(item.designation_name).toUpperCase() === 'ASR';
+        let name = $.trim(item.designation_name);
+        let isAsr = name.toUpperCase() === 'ASR';
         let selected = isAsr
             ? 'selected' 
             : '';
@@ -351,25 +387,30 @@ $.get("{{ url('getDesignations') }}", function(data) {
                                 ${item.designation_name}
                             </option>`;
 
-        asrOptions += `<option value="${item.id}" ${selected}>${$.trim(item.designation_name)}</option>`;
     });
 
+    // ASR designation options are rendered server-side in the markup above.
     $('#designation_id_retailer').html(retailerOptions);
     $('#designation_id_dealer').html(dealerOptions);
-    $('#designation_id_asr').html(asrOptions);
 
     if (asrDesignationId) {
         $('#designation_id_retailer').val([asrDesignationId]);
         $('#designation_id_dealer').val(asrDesignationId);
-        $('#designation_id_asr').val([asrDesignationId]);
     }
 
     // Refresh bootstrap-select after dynamic options are inserted.
-    $('#designation_id_retailer').selectpicker('refresh');
-    $('#designation_id_dealer').selectpicker('refresh');
-
-    // ASR designation is a select2 multi-select.
-    $('#designation_id_asr').trigger('change.select2');
+    // Guarded: this plugin loads late, so a missing plugin must not abort the rest.
+    try {
+        $('#designation_id_retailer').selectpicker('refresh');
+        $('#designation_id_dealer').selectpicker('refresh');
+    } catch (e) {
+        $(function () {
+            $('#designation_id_retailer').selectpicker('refresh');
+            $('#designation_id_dealer').selectpicker('refresh');
+            $('#designation_id_dealer').trigger('change');
+        });
+        return;
+    }
 
     setTimeout(function () {
         $('#designation_id_dealer').trigger('change');
@@ -426,13 +467,6 @@ $(document).ready(function () {
     const type = urlParams.get('type');
     loadReportUsers();
 
-    // ASR designation multi-select (select2, so it matches the other filters on this card).
-    $('#designation_id_asr').select2({
-        width: '100%',
-        placeholder: $('#designation_id_asr').data('placeholder') || 'Select Designation',
-        closeOnSelect: false
-    });
-
     if (type === 'retailer') {
         $('#retailerCard').show();
         $('#dealerCard').hide();
@@ -454,6 +488,9 @@ $(document).ready(function () {
         $('#dealerCard').hide();
         $('#asrCard').hide();
     }
+
+    // Built after the card is visible so select2 sizes itself against a laid-out column.
+    buildAsrDesignationSelect();
 
     function loadDealerEmployees() {
         $.ajax({
