@@ -929,7 +929,7 @@ private function zoneSortOrder(?string $divisionName): int
                 | SUBTOTAL ROW → YELLOW
                 |--------------------------------------------------------------------------
                 */
-                elseif (str_contains($cellValue, 'SUBTOTAL')) {
+                elseif (stripos((string) $cellValue, 'SUBTOTAL') !== false) {
 
                     $sheet->getStyle('A' . $row . ':R' . $row)
                         ->applyFromArray([
