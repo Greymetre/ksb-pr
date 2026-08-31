@@ -441,7 +441,7 @@ class ExpensesController extends Controller
         }
 
         // the geolocator link replays the expense date on the track activity map, so only
-        // offer it when that day still has a live location trail (they are purged after 15 days)
+        // offer it when that day still has a live location trail (they are purged after 45 days)
         $has_track_activity = UserLiveLocation::where('userid', $expense->user_id)
             ->whereDate('created_at', Carbon::parse($expense->date)->toDateString())
             ->whereNotNull('latitude')

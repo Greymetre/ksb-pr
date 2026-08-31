@@ -9,16 +9,16 @@ use Carbon\Carbon;
 class DeleteOldUserLiveLocations extends Command
 {
     protected $signature = 'locations:delete-old';
-    protected $description = 'Delete user live location records older than 15 days';
+    protected $description = 'Delete user live location records older than 45 days';
 
     public function handle()
     {
-        $cutoffDate = Carbon::now()->subDays(15);
+        $cutoffDate = Carbon::now()->subDays(45);
 
         $deleted = DB::table('user_live_locations')
             ->where('created_at', '<', $cutoffDate)
             ->delete();
 
-        $this->info("Deleted $deleted records older than 15 days from user_live_locations table.");
+        $this->info("Deleted $deleted records older than 45 days from user_live_locations table.");
     }
 }

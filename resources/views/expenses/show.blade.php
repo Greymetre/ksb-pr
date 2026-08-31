@@ -245,7 +245,7 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
           $city = \App\Models\City::find(optional($paln)->town);
           $trackDate = $expense->date ? \Carbon\Carbon::parse($expense->date)->format('Y-m-d') : null;
           $trackAvailable = $trackDate && ($has_track_activity ?? false);
-          $trackMessage = 'No track activity found for ' . ($trackDate ? \Carbon\Carbon::parse($trackDate)->format('d M Y') : 'this expense') . '. Live location data is only kept for the last 15 days.';
+          $trackMessage = 'No track activity found for ' . ($trackDate ? \Carbon\Carbon::parse($trackDate)->format('d M Y') : 'this expense') . '. Live location data is only kept for the last 45 days.';
           @endphp
 
           <div class="expense-record-head">
