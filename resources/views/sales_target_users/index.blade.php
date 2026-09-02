@@ -60,14 +60,14 @@
                       </select>
                     </div>
                     <div class="p-2" style="width:160px;">
-                      <select class="selectpicker" name="financial_year" id="financial_year" required data-style="select-with-transition" title="Year">
-                        <option value="" disabled selected>{!! trans('panel.sales_users.year') !!}</option>
+                      <select class="selectpicker" name="financial_year" id="financial_year" required data-style="select-with-transition" title="Financial Year">
+                        <option value="" disabled selected>Financial Year</option>
                         @foreach($years as $year)
                         @php
                         $startYear = $year - 1;
                         $endYear = $year;
                         @endphp
-                        <option value="{!!$startYear!!}-{!!$endYear!!}">{!! $startYear!!}</option>
+                        <option value="{!! $startYear !!}-{!! $endYear !!}">{!! $startYear !!}-{!! $endYear !!}</option>
                         @endforeach
                       </select>
                     </div>
