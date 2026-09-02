@@ -84,27 +84,26 @@ DB::raw('GROUP_CONCAT(year ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","M
         ]);
 
 
-        $data->where(function ($query) use ($f_year_array) {
-            $query->where(function ($query) use ($f_year_array) {
-                if ($this->month == '' && empty($this->month)) {
-                    $query->where(function ($query) use ($f_year_array) {
-                        $query->where('year', '=', $f_year_array[0])
-                            ->where('month', '>=', 'Apr');
-                    })->orWhere(function ($query) use ($f_year_array) {
-                        $query->where('year', '=', $f_year_array[0])
-                            ->where('month', '<=', 'Mar');
-                    });
-                } else {
-                    $query->where(function ($query) use ($f_year_array) {
-                        $query->where('year', '=', $f_year_array[0])
-                            ->where('month', '>=', $this->month);
-                    })->orWhere(function ($query) use ($f_year_array) {
-                        $query->where('year', '=', $f_year_array[0])
-                            ->where('month', '<=', $this->month);
-                    });
-                }
+        $financialYearMonths = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        if (empty($this->month)) {
+            $data->where(function ($query) use ($f_year_array, $financialYearMonths) {
+                $query->where(function ($query) use ($f_year_array, $financialYearMonths) {
+                    $query->where('year', $f_year_array[0])
+                        ->whereIn('month', $financialYearMonths);
+                })->orWhere(function ($query) use ($f_year_array) {
+                    $query->where('year', $f_year_array[1])
+                        ->whereIn('month', ['Jan', 'Feb', 'Mar']);
+                });
             });
-        });
+        } else {
+            $selectedMonthYear = in_array($this->month, ['Jan', 'Feb', 'Mar'], true)
+                ? $f_year_array[1]
+                : $f_year_array[0];
+
+            $data->where('year', $selectedMonthYear)
+                ->where('month', $this->month);
+        }
 
 
         if ($this->branch_id && $this->branch_id != '' && $this->branch_id != null) {
@@ -141,8 +140,6 @@ DB::raw('GROUP_CONCAT(year ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","M
 {
     $f_year_array = explode('-', $this->financial_year);
 
-    $startYear = $f_year_array[0];
-
     // ===============================
     // FIRST HEADER ROW
     // ===============================
@@ -158,26 +155,24 @@ DB::raw('GROUP_CONCAT(year ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","M
         'Sales Type'
     ];
 
-    // JAN → DEC
-
+    // APRIL → MARCH (FINANCIAL YEAR)
     $months = [
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December'
+        ['name' => 'April', 'year' => $f_year_array[0]],
+        ['name' => 'May', 'year' => $f_year_array[0]],
+        ['name' => 'June', 'year' => $f_year_array[0]],
+        ['name' => 'July', 'year' => $f_year_array[0]],
+        ['name' => 'August', 'year' => $f_year_array[0]],
+        ['name' => 'September', 'year' => $f_year_array[0]],
+        ['name' => 'October', 'year' => $f_year_array[0]],
+        ['name' => 'November', 'year' => $f_year_array[0]],
+        ['name' => 'December', 'year' => $f_year_array[0]],
+        ['name' => 'January', 'year' => $f_year_array[1]],
+        ['name' => 'February', 'year' => $f_year_array[1]],
+        ['name' => 'March', 'year' => $f_year_array[1]],
     ];
 
     foreach ($months as $month) {
-
-        $headings[] = $month . '/' . $startYear;
+        $headings[] = $month['name'] . '/' . $month['year'];
 
         // Remaining merged columns
         $headings[] = '';
@@ -295,13 +290,10 @@ public function map($data): array
     $years = explode(',', $data['years']);
 
     // ===============================
-    // MONTHS JAN → DEC
+    // MONTHS APR → MAR (FINANCIAL YEAR)
     // ===============================
 
     $months = [
-        'Jan',
-        'Feb',
-        'Mar',
         'Apr',
         'May',
         'Jun',
@@ -310,7 +302,10 @@ public function map($data): array
         'Sep',
         'Oct',
         'Nov',
-        'Dec'
+        'Dec',
+        'Jan',
+        'Feb',
+        'Mar'
     ];
 
     $startColumn = 8;
@@ -322,6 +317,10 @@ public function map($data): array
     $totalQtyAchievement = 0;
 
     foreach ($months as $monthIndex => $monthName) {
+
+        $monthYear = in_array($monthName, ['Jan', 'Feb', 'Mar'], true)
+            ? $f_year_array[1]
+            : $f_year_array[0];
 
         $baseIndex = $startColumn + ($monthIndex * 6);
 
@@ -339,7 +338,7 @@ public function map($data): array
 
             if (
                 $month == $monthName &&
-                $f_year_array[0] == $years[$key]
+                $monthYear == $years[$key]
             ) {
 
                 // ===============================
@@ -650,4 +649,3 @@ public function styles(Worksheet $sheet)
     return [];
 }
 }
-
