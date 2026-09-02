@@ -187,9 +187,9 @@ class SalesTargetUsersImport implements ToCollection
                 'branch_id' => $branchId,
                 'month' => $month,
                 'year' => $year,
+                'type' => $type,
             ],
             [
-                'type' => $type,
                 'target' => (float) $target,
             ]
         );
