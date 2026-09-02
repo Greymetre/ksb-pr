@@ -26,7 +26,7 @@ use App\Models\SalesTargetUsers;
 use App\Models\User;
 use Validator;
 
-class SalesTargetUsersImport implements ToCollection, WithValidation, WithHeadingRow, WithBatchInserts, WithChunkReading
+class SalesTargetUsersImport implements ToCollection
 {
     use Importable;
 
@@ -76,117 +76,123 @@ class SalesTargetUsersImport implements ToCollection, WithValidation, WithHeadin
 
     public function collection(Collection $rows)
     {
-        // dd($rows);
-        
-        foreach ($rows as $row) {
+        $rows = $rows->map(function ($row) {
+            return array_values($row instanceof Collection ? $row->toArray() : (array) $row);
+        })->values();
 
-        if (empty($row['user_id'])) continue;
+        if ($rows->isEmpty()) {
+            return;
+        }
 
-        $user_id  = $row['user_id'];
-        $branchId = $row['branch_id'];
-        $type     = $row['type'];
+        $firstHeading = strtolower(trim((string) ($rows[0][0] ?? '')));
 
-        $data = $row->toArray();
+        if (in_array($firstHeading, ['emp code', 'employee code'], true)) {
+            $this->importExportedReport($rows);
+            return;
+        }
 
-        $keys = array_keys($data);
-        $count = count($keys);
-
-        for ($i = 0; $i < $count; $i++) {
-
-    $key   = trim((string) $keys[$i]);
-    $value = $data[$keys[$i]];
-
-    if (in_array($key, ['user_id', 'branch_id', 'user_name', 'type'])) {
-        continue;
+        $this->importFlatTemplate($rows);
     }
 
-    $date = null;
+    private function importExportedReport(Collection $rows): void
+    {
+        $headings = $rows[0];
+        $monthColumns = [];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Case 1 : 0626
-    |--------------------------------------------------------------------------
-    */
-    if (preg_match('/^\d{4}$/', $key)) {
+        for ($column = 8; $column < count($headings); $column += 3) {
+            $heading = trim((string) ($headings[$column] ?? ''));
+            if (strtolower($heading) === 'total' || !preg_match('/^([A-Za-z]+)\/(\d{4})$/', $heading, $matches)) {
+                break;
+            }
 
-        $monthNo = substr($key, 0, 2);
-        $yearNo  = substr($key, 2, 2);
+            $monthColumns[$column] = [
+                'month' => Carbon::parse('1 ' . $matches[1])->format('M'),
+                'year' => $matches[2],
+            ];
+        }
 
-        $date = Carbon::createFromFormat('m y', "$monthNo $yearNo")
-            ->startOfMonth();
+        foreach ($rows->slice(2) as $row) {
+            $employeeCode = trim((string) ($row[0] ?? ''));
+            if ($employeeCode === '') {
+                continue;
+            }
 
-        $target   = (float) $value;
-        $quantity = 0;
+            $userId = User::where('employee_codes', $employeeCode)->value('id');
+            if (!$userId) {
+                continue;
+            }
 
-        if (isset($data[$key . '_qty'])) {
-            $quantity = (float) $data[$key . '_qty'];
+            $branchId = $row[4] ?? null;
+            $type = strtolower(trim((string) ($row[7] ?? '')));
+            if (!$branchId || !in_array($type, ['primary', 'secondary'], true)) {
+                continue;
+            }
+
+            foreach ($monthColumns as $column => $period) {
+                $target = $row[$column] ?? null;
+                if ($target === null || $target === '' || !is_numeric($target)) {
+                    continue;
+                }
+
+                $this->saveTarget($userId, $branchId, $type, $period['month'], $period['year'], $target);
+            }
         }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Case 2 : 0626_qty
-    |--------------------------------------------------------------------------
-    */
-    elseif (preg_match('/^(\d{4})_qty$/', $key, $matches)) {
+    private function importFlatTemplate(Collection $rows): void
+    {
+        $headings = array_map(function ($heading) {
+            return strtolower(trim(preg_replace('/[^a-zA-Z0-9]+/', '_', (string) $heading), '_'));
+        }, $rows[0]);
 
-        $monthYear = $matches[1];
+        $userColumn = array_search('user_id', $headings, true);
+        $branchColumn = array_search('branch_id', $headings, true);
+        $typeColumn = array_search('type', $headings, true);
 
-        $monthNo = substr($monthYear, 0, 2);
-        $yearNo  = substr($monthYear, 2, 2);
+        if ($userColumn === false || $branchColumn === false || $typeColumn === false) {
+            return;
+        }
 
-        $date = Carbon::createFromFormat('m y', "$monthNo $yearNo")
-            ->startOfMonth();
+        foreach ($rows->slice(1) as $row) {
+            $userId = $row[$userColumn] ?? null;
+            $branchId = $row[$branchColumn] ?? null;
+            $type = strtolower(trim((string) ($row[$typeColumn] ?? '')));
 
-        $quantity = (float) $value;
+            if (!$userId || !$branchId || !in_array($type, ['primary', 'secondary'], true)) {
+                continue;
+            }
 
-        $target = isset($data[$monthYear])
-            ? (float) $data[$monthYear]
-            : 0;
+            foreach ($headings as $column => $heading) {
+                if (!preg_match('/^(\d{2})_(\d{2}|\d{4})$/', $heading, $matches)) {
+                    continue;
+                }
+
+                $target = $row[$column] ?? null;
+                if ($target === null || $target === '' || !is_numeric($target)) {
+                    continue;
+                }
+
+                $year = strlen($matches[2]) === 2 ? '20' . $matches[2] : $matches[2];
+                $date = Carbon::createFromDate($year, (int) $matches[1], 1);
+                $this->saveTarget($userId, $branchId, $type, $date->format('M'), $date->format('Y'), $target);
+            }
+        }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Case 3 : Excel serial date
-    |--------------------------------------------------------------------------
-    */
-    elseif (is_numeric($key) && (int)$key > 40000) {
-
-        $date = Carbon::createFromTimestamp(
-            ((int)$key - 25569) * 86400
+    private function saveTarget($userId, $branchId, string $type, string $month, string $year, $target): void
+    {
+        SalesTargetUsers::updateOrCreate(
+            [
+                'user_id' => $userId,
+                'branch_id' => $branchId,
+                'month' => $month,
+                'year' => $year,
+            ],
+            [
+                'type' => $type,
+                'target' => (float) $target,
+            ]
         );
-
-        $target = (float) $value;
-
-        $quantity = isset($data[$key . '_qty'])
-            ? (float) $data[$key . '_qty']
-            : 0;
-    }
-
-    if (!$date) {
-        continue;
-    }
-
-    $month = $date->format('M');
-    $year  = $date->format('Y');
-
-    SalesTargetUsers::updateOrCreate(
-        [
-            'user_id'   => $user_id,
-            'branch_id' => $branchId,
-            'month'     => $month,
-            'year'      => $year,
-        ],
-        [
-            'type'            => $type,
-            'target'          => $target,
-            'qunatity_target' => $quantity,
-        ]
-    );
-}
-    
-    }
-    
     }
     public function rules(): array
     {

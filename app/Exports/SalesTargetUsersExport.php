@@ -72,11 +72,6 @@ DB::raw('GROUP_CONCAT(achievement ORDER BY year, FIELD(month,"Jan","Feb","Mar","
 
 DB::raw('GROUP_CONCAT(achievement_percent ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) as achievement_percents'),
 
-DB::raw('GROUP_CONCAT(COALESCE(qunatity_target,0) ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) as quantity_targets'),
-DB::raw('GROUP_CONCAT(COALESCE(qunatity_achievement,0) ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) as quantity_achievements'),
-
-DB::raw('GROUP_CONCAT(COALESCE(qunatity_achievement_percent,0) ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) as quantity_achievement_percents'),
-
 DB::raw('GROUP_CONCAT(year ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) as years'),
             DB::raw('user_id'),
             DB::raw('branch_id'),
@@ -177,17 +172,11 @@ DB::raw('GROUP_CONCAT(year ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","M
         // Remaining merged columns
         $headings[] = '';
         $headings[] = '';
-        $headings[] = '';
-        $headings[] = '';
-        $headings[] = '';
     }
 
     // TOTAL SECTION
 
     $headings[] = 'Total';
-    $headings[] = '';
-    $headings[] = '';
-    $headings[] = '';
     $headings[] = '';
     $headings[] = '';
     $headings[] = 'User Active';
@@ -214,10 +203,6 @@ DB::raw('GROUP_CONCAT(year ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","M
         $sub_headings[] = 'Tgt';
         $sub_headings[] = 'Ach';
         $sub_headings[] = 'Ach%';
-
-        $sub_headings[] = 'QTgt';
-        $sub_headings[] = 'QAch';
-        $sub_headings[] = 'QAch%';
     }
 
     // TOTAL SUB HEADINGS
@@ -225,10 +210,6 @@ DB::raw('GROUP_CONCAT(year ORDER BY year, FIELD(month,"Jan","Feb","Mar","Apr","M
     $sub_headings[] = 'Tgt';
     $sub_headings[] = 'Ach';
     $sub_headings[] = 'Ach%';
-
-    $sub_headings[] = 'QTgt';
-    $sub_headings[] = 'QAch';
-    $sub_headings[] = 'QAch%';
 
     $sub_headings[] = '';
 
@@ -284,9 +265,6 @@ public function map($data): array
     $data['targets'] = explode(',', $data['targets']);
     $data['achievements'] = explode(',', $data['achievements']);
     $data['achievement_percents'] = explode(',', $data['achievement_percents']);
-    $data['quantity_targets'] = explode(',', $data['quantity_targets']);
-    $data['quantity_achievements'] = explode(',', $data['quantity_achievements']);
-    $data['quantity_achievement_percents'] = explode(',', $data['quantity_achievement_percents']);
     $years = explode(',', $data['years']);
 
     // ===============================
@@ -313,26 +291,19 @@ public function map($data): array
     $totalTarget = 0;
     $totalAchievement = 0;
 
-    $totalQtyTarget = 0;
-    $totalQtyAchievement = 0;
-
     foreach ($months as $monthIndex => $monthName) {
 
         $monthYear = in_array($monthName, ['Jan', 'Feb', 'Mar'], true)
             ? $f_year_array[1]
             : $f_year_array[0];
 
-        $baseIndex = $startColumn + ($monthIndex * 6);
+        $baseIndex = $startColumn + ($monthIndex * 3);
 
         // DEFAULT EMPTY VALUES
 
         $response[$baseIndex] = '';
         $response[$baseIndex + 1] = '';
         $response[$baseIndex + 2] = '';
-
-        $response[$baseIndex + 3] = '';
-        $response[$baseIndex + 4] = '';
-        $response[$baseIndex + 5] = '';
 
         foreach ($data['months'] as $key => $month) {
 
@@ -413,43 +384,6 @@ public function map($data): array
                 }
 
                 // ===============================
-                // QTY TARGET
-                // ===============================
-
-                $response[$baseIndex + 3] =
-                    $data['quantity_targets'][$key] ?? '';
-
-                // ===============================
-                // QTY ACHIEVEMENT
-                // ===============================
-
-                $response[$baseIndex + 4] =
-                    $data['quantity_achievements'][$key] ?? '';
-
-                // ===============================
-                // QTY %
-                // ===============================
-
-                if (
-                    !empty($response[$baseIndex + 3]) &&
-                    $response[$baseIndex + 3] != 0
-                ) {
-
-                    $response[$baseIndex + 5] = number_format(
-                        (
-                            $response[$baseIndex + 4] * 100
-                        ) / $response[$baseIndex + 3],
-                        2,
-                        '.',
-                        ''
-                    );
-
-                } else {
-
-                    $response[$baseIndex + 5] = '';
-                }
-
-                // ===============================
                 // TOTALS
                 // ===============================
 
@@ -459,11 +393,6 @@ public function map($data): array
                 $totalAchievement +=
                     (float) ($response[$baseIndex + 1] ?? 0);
 
-                $totalQtyTarget +=
-                    (float) ($response[$baseIndex + 3] ?? 0);
-
-                $totalQtyAchievement +=
-                    (float) ($response[$baseIndex + 4] ?? 0);
             }
         }
     }
@@ -472,7 +401,7 @@ public function map($data): array
     // FINAL TOTALS
     // ===============================
 
-    $totalStart = $startColumn + (12 * 6);
+    $totalStart = $startColumn + (12 * 3);
 
     // VALUE TOTALS
 
@@ -498,33 +427,9 @@ public function map($data): array
             ) . '%'
             : '0.00%';
 
-    // QTY TOTALS
-
-    $response[$totalStart + 3] = number_format(
-        $totalQtyTarget,
-        2,
-        '.',
-        ''
-    );
-
-    $response[$totalStart + 4] = number_format(
-        $totalQtyAchievement,
-        2,
-        '.',
-        ''
-    );
-
-    $response[$totalStart + 5] =
-        $totalQtyTarget > 0
-            ? number_format(
-                ($totalQtyAchievement * 100) / $totalQtyTarget,
-                2
-            ) . '%'
-            : '0.00%';
-
     // USER ACTIVE
 
-    $response[$totalStart + 6] =
+    $response[$totalStart + 3] =
         $data['user']['active'] ?? '';
 
     $this->rowIndex++;
@@ -559,11 +464,11 @@ public function styles(Worksheet $sheet)
 
         $start = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startColumn);
 
-        $end = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startColumn + 5);
+        $end = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startColumn + 2);
 
         $sheet->mergeCells($start . '1:' . $end . '1');
 
-        $startColumn += 6;
+        $startColumn += 3;
     }
 
     // ===============================
@@ -572,7 +477,7 @@ public function styles(Worksheet $sheet)
 
     $totalStart = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startColumn);
 
-    $totalEnd = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startColumn + 5);
+    $totalEnd = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startColumn + 2);
 
     $sheet->mergeCells($totalStart . '1:' . $totalEnd . '1');
 
@@ -580,7 +485,7 @@ public function styles(Worksheet $sheet)
     // LAST COLUMN
     // ===============================
 
-    $lastColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startColumn + 6);
+    $lastColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startColumn + 3);
 
     $sheet->mergeCells($lastColumn . '1:' . $lastColumn . '2');
 

@@ -10,6 +10,7 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class SalesTargetUsersTemplate implements FromCollection,WithHeadings,ShouldAutoSize
 {
@@ -20,7 +21,18 @@ class SalesTargetUsersTemplate implements FromCollection,WithHeadings,ShouldAuto
 
     public function headings(): array
     {
-        return [['User Id', 'Branch Id', 'User Name', 'Type','01/26','01/26_qty','02/26','02/26_qty','03/26','03/26_qty','04/26','04/26_qty','05/26','05/26_qty','06/26','06/26_qty','07/26','07/26_qty','08/26','08/26_qty','09/26','09/26_qty','10/26','10/26_qty','11/26','11/26_qty','12/26','12/26_qty'],['','','','Add primary or secondary value only.please remove this row before upload.']];
+        $startYear = Carbon::now()->month >= 4 ? Carbon::now()->year : Carbon::now()->year - 1;
+        $headings = ['User Id', 'Branch Id', 'User Name', 'Type'];
+
+        for ($offset = 0; $offset < 12; $offset++) {
+            $date = Carbon::create($startYear, 4, 1)->addMonths($offset);
+            $headings[] = $date->format('m/y');
+        }
+
+        return [
+            $headings,
+            ['', '', '', 'Add primary or secondary value only. Please remove this row before upload.'],
+        ];
     }
 
 }
