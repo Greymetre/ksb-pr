@@ -3979,6 +3979,14 @@
             return action.indexOf('upload') !== -1 || !!form.querySelector('input[type="file"]');
         }
 
+        function isExportForm(form) {
+            if (!form || !form.matches || !form.matches('form')) return false;
+            const action = (form.getAttribute('action') || '').toLowerCase();
+            return action.indexOf('download') !== -1 ||
+                action.indexOf('export') !== -1 ||
+                !!form.querySelector('button[name*="export"], button[name*="download"]');
+        }
+
         function decorateFilterDrawer(drawer) {
             drawer.querySelectorAll('.fk-filter-drawer-body .p-2, .fk-filter-drawer-body .col, .fk-filter-drawer-body [class*="col-"], .fk-filter-drawer-body .d-flex > div, .fk-filter-drawer-body .row > div, .fk-filter-drawer-body .search').forEach(function(field) {
                 const control = field.querySelector('select, input, textarea');
@@ -4129,7 +4137,15 @@
                     });
                 } else if (source && source.matches && source.matches('form') && kind === 'export') {
                     button.addEventListener('click', function() {
-                        source.submit();
+                        const submitter = source.querySelector('button[type="submit"], button:not([type]), input[type="submit"]');
+                        if (typeof source.requestSubmit === 'function') {
+                            if (submitter) source.requestSubmit(submitter);
+                            else source.requestSubmit();
+                        } else if (submitter) {
+                            submitter.click();
+                        } else {
+                            source.submit();
+                        }
                     });
                 }
                 return button;
@@ -4157,9 +4173,14 @@
                     if (form.closest('.fk-preserve-list-action')) return;
                     if (isUploadForm(form)) {
                         appendHeaderTool('upload', makeToolButton('upload', form));
-                    } else if (isFilterForm(form) && !appended.has(form)) {
-                        drawerBody.appendChild(form);
-                        appended.add(form);
+                    } else {
+                        if (isExportForm(form)) {
+                            appendHeaderTool('export', makeToolButton('export', form));
+                        }
+                        if (isFilterForm(form) && !appended.has(form)) {
+                            drawerBody.appendChild(form);
+                            appended.add(form);
+                        }
                     }
                 });
                 collectFilterSection(container).forEach(function(section) {
