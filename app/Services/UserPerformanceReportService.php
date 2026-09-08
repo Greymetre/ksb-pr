@@ -13,7 +13,8 @@ class UserPerformanceReportService
 
     public function rows(array $filters): Collection
     {
-        $start = Carbon::parse($filters['start_date'] ?? now()->startOfWeek())->startOfDay();
+        // Rolling 8-day period, inclusive of today (today minus 7 days through today).
+        $start = Carbon::parse($filters['start_date'] ?? now()->subDays(7))->startOfDay();
         $end = Carbon::parse($filters['end_date'] ?? now())->endOfDay();
         $userIds = collect(getUsersReportingToAuth())->map(fn ($id) => (int) $id);
 
