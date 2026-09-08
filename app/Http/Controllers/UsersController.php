@@ -683,7 +683,7 @@ $user->save();
 
     public function user_performance_report(Request $request, UserPerformanceReportService $report)
     {
-        abort_if(Gate::denies('user_working_report'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        abort_if(Gate::denies('user_performance_report'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $filters = $request->validate([
             'start_date' => ['nullable', 'date'],
@@ -726,7 +726,7 @@ $user->save();
 
     public function user_performance_report_download(Request $request)
     {
-        abort_if(Gate::denies('user_working_report'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        abort_if(Gate::denies('user_performance_report'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $filters = $request->validate([
             'start_date' => ['required', 'date'], 'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'user_id' => ['nullable', 'integer'], 'designation_id' => ['nullable', 'integer'],

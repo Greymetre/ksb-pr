@@ -3263,7 +3263,7 @@
                                             </a>
                                         </li>
                                         @endif
-                                        @if(auth()->user()->can('user_working_report'))
+                                        @if(auth()->user()->can('user_performance_report'))
                                         <li class="nav-link-btn {{ request()->is('reports/user_performance*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('reports/user_performance') }}">
                                                 <i class="material-icons icon">assessment</i>
@@ -3271,6 +3271,8 @@
                                                 <div class="d-none mobile_hide">User Performance Report</div>
                                             </a>
                                         </li>
+                                        @endif
+                                        @if(auth()->user()->can('user_working_report'))
                                         <li
                                             class="nav-link-btn {{ request()->is('reports/reports_sale*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('reports/reports_sale') }}">
