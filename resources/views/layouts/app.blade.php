@@ -3196,7 +3196,7 @@
                                  @endif -->
                             @if(auth()->user()->can('reports_sale'))
                             <li
-                                class="nav-link-btn add_icon {{ request()->is('reports/reports_sale*') || request()->is('reports/fos_rating*') || request()->is('reports/primary_sales*') || request()->is('reports/secondary_sales*') || request()->is('reports/product_analysis_qty*') || request()->is('reports/product_analysis_branch*') || request()->is('reports/product_analysis_value*') || request()->is('reports/group_wise_analysis*') || request()->is('reports/asm_rating*') || request()->is('reports/ch_rating*') ? 'active' : '' }}">
+                                class="nav-link-btn add_icon {{ request()->is('reports/reports_sale*') || request()->is('reports/user_performance*') || request()->is('reports/fos_rating*') || request()->is('reports/primary_sales*') || request()->is('reports/secondary_sales*') || request()->is('reports/product_analysis_qty*') || request()->is('reports/product_analysis_branch*') || request()->is('reports/product_analysis_value*') || request()->is('reports/group_wise_analysis*') || request()->is('reports/asm_rating*') || request()->is('reports/ch_rating*') ? 'active' : '' }}">
                                 <a class="hoveradd" data-toggle="collapse" href="#salesReportsMenu"
                                     aria-expanded="false">
                                     <i class="material-icons icon">point_of_sale</i>
@@ -3264,6 +3264,13 @@
                                         </li>
                                         @endif
                                         @if(auth()->user()->can('user_working_report'))
+                                        <li class="nav-link-btn {{ request()->is('reports/user_performance*') ? 'active' : '' }}">
+                                            <a class="hoveradd2" href="{{ url('reports/user_performance') }}">
+                                                <i class="material-icons icon">assessment</i>
+                                                <span>User Performance Report</span>
+                                                <div class="d-none mobile_hide">User Performance Report</div>
+                                            </a>
+                                        </li>
                                         <li
                                             class="nav-link-btn {{ request()->is('reports/reports_sale*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('reports/reports_sale') }}">

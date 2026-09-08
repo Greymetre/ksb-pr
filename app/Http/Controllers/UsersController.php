@@ -48,6 +48,7 @@ use App\Models\UserEducation;
 use App\Models\UserPmsRemark;
 use App\Models\WareHouse;
 use App\Support\UserSessionInvalidator;
+use App\Services\UserPerformanceReportService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
 
@@ -677,6 +678,32 @@ $user->save();
         }
 
         return view('reports.reports_sale', compact('users', 'designations', 'divisions', 'branchs'));
+    }
+
+    public function user_performance_report(Request $request, UserPerformanceReportService $report)
+    {
+        abort_if(Gate::denies('user_working_report'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $filters = $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'user_id' => ['nullable', 'integer'],
+            'designation_id' => ['nullable', 'integer'],
+            'division_id' => ['nullable', 'integer'],
+            'branch_id' => ['nullable', 'integer'],
+        ]);
+
+        if ($request->ajax()) {
+            return Datatables::of($report->rows($filters))->addIndexColumn()->make(true);
+        }
+
+        $userIds = getUsersReportingToAuth();
+        $users = User::where('active', 'Y')->whereIn('id', $userIds)->orderBy('name')->get(['id', 'name']);
+        $designations = Designation::where('active', 'Y')->orderBy('designation_name')->get();
+        $divisions = Division::where('active', 'Y')->orderBy('division_name')->get();
+        $branchs = Branch::where('active', 'Y')->orderBy('branch_name')->get();
+
+        return view('reports.user_performance', compact('users', 'designations', 'divisions', 'branchs'));
     }
 
     public function user_sales_report_download(Request $request)

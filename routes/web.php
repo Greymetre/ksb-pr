@@ -1003,6 +1003,7 @@ Route::post('secondary-customers/toggle-active',
     Route::any('beatAdherenceDetailDownload', [ReportController::class, 'beatAdherenceDetailDownload']);
     Route::any('reports/attendancereport', [ReportController::class, 'attendancereport']);
     Route::any('reports/reports_sale', [UsersController::class, 'reports_sale']);
+    Route::any('reports/user_performance', [UsersController::class, 'user_performance_report']);
     Route::any('reports/fos_rating', [UsersController::class, 'fos_rating']);
     Route::any('reports/asm_rating', [UsersController::class, 'asm_rating']);
     Route::any('reports/ch_rating', [UsersController::class, 'ch_rating']);
