@@ -44,8 +44,12 @@ class UserPerformanceReportService
                 ->whereBetween('orders.order_date', [$start, $end])
                 ->whereExists(function ($query) {
                     $query->select(DB::raw(1))->from('customers')
+                        ->join('customer_types', 'customer_types.id', '=', 'customers.customertype')
                         ->whereColumn('customers.id', 'orders.buyer_id')
-                        ->where('customers.customertype', 2);
+                        ->where(function ($retailerType) {
+                            $retailerType->whereRaw('LOWER(TRIM(customer_types.type_name)) = ?', ['retailer'])
+                                ->orWhereRaw('LOWER(TRIM(customer_types.customertype_name)) = ?', ['retailer']);
+                        });
                 });
             $secondaryValue = (clone $retailerOrders)->sum('orders.sub_total');
 
