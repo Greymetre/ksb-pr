@@ -37,10 +37,28 @@ class UserPerformanceReportService
                 ->whereBetween('checkin_date', [$start, $end])
                 ->distinct()->count(DB::raw('COALESCE(entity_id, customer_id)'));
 
-            $orders = DB::table('orders')->whereNull('deleted_at')
-                ->where('executive_id', $user->id)->whereBetween('order_date', [$start, $end]);
-            $secondaryValue = (clone $orders)->sum('grand_total');
-            $orderCount = (clone $orders)->count();
+            // Secondary value is specifically the value of retailer orders.
+            $retailerOrders = DB::table('orders')->whereNull('orders.deleted_at')
+                ->where('orders.executive_id', $user->id)
+                ->whereBetween('orders.order_date', [$start, $end])
+                ->whereExists(function ($query) {
+                    $query->select(DB::raw(1))->from('customers')
+                        ->whereColumn('customers.id', 'orders.buyer_id')
+                        ->where('customers.customertype', 2);
+                });
+            $secondaryValue = (clone $retailerOrders)->sum('orders.grand_total');
+
+            // Primary Sales stores the employee code supplied in the primary-sales import.
+            $primaryOrders = DB::table('primary_sales')
+                ->whereBetween('invoice_date', [$start, $end])
+                ->where(function ($query) use ($user) {
+                    $query->where('emp_code', $user->employee_codes)
+                        ->orWhere(function ($fallback) use ($user) {
+                            $fallback->where(function ($blank) {
+                                $blank->whereNull('emp_code')->orWhere('emp_code', '');
+                            })->where('sales_person', $user->name);
+                        });
+                });
 
             $targetQuery = DB::table('salestargetusers')->where('user_id', $user->id)->where('type', 'primary');
             $months = collect();
@@ -68,7 +86,9 @@ class UserPerformanceReportService
                 'customers_visited' => $visited,
                 'adherence' => $visitTarget ? round($visited * 100 / $visitTarget, 1) : 0,
                 'new_counters' => DB::table('secondary_customers')->where('created_by', $user->id)->whereBetween('created_at', [$start, $end])->count(),
-                'cumulative_counters' => DB::table('secondary_customers')->where('employee_id', $user->id)->where('created_at', '<=', $end)->count(),
+                'cumulative_counters' => DB::table('secondary_customers')
+                    ->whereRaw("FIND_IN_SET(?, REPLACE(employee_id, ' ', ''))", [$user->id])
+                    ->where('created_at', '<=', $end)->count(),
                 'secondary_orders_value' => (float) $secondaryValue,
                 'primary_target' => (float) (clone $targetQuery)->sum('target'),
                 'primary_achievement' => (float) (clone $targetQuery)->sum('achievement'),
@@ -76,7 +96,7 @@ class UserPerformanceReportService
                 'payment_collection' => (float) $collection,
                 'total_payment_dues' => (float) $dues,
                 'new_dealers' => DB::table('dealer_appointments')->where('created_by', $user->id)->whereBetween('appointment_date', [$start, $end])->count(),
-                'orders_collected' => $orderCount,
+                'primary_orders_collected' => (clone $primaryOrders)->distinct()->count('invoiceno'),
                 'zone' => optional($user->getdivision)->division_name,
                 'branch' => optional($user->getbranch)->branch_name,
                 'designation' => optional($user->getdesignation)->designation_name,

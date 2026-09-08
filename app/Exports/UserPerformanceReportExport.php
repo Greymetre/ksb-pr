@@ -21,7 +21,7 @@ class UserPerformanceReportExport implements FromCollection, WithHeadings, Shoul
                 $row['visit_target'], $row['customers_visited'], $row['adherence'] . ' %', $row['new_counters'],
                 $row['cumulative_counters'], $row['secondary_orders_value'], $row['primary_target'],
                 $row['primary_achievement'], $row['overdue'], $row['payment_collection'],
-                $row['total_payment_dues'], $row['new_dealers'], $row['orders_collected'], $row['zone'],
+                $row['total_payment_dues'], $row['new_dealers'], $row['primary_orders_collected'], $row['zone'],
                 $row['branch'], $row['designation'], $row['reporting_manager'],
             ];
         });
@@ -30,10 +30,10 @@ class UserPerformanceReportExport implements FromCollection, WithHeadings, Shoul
     public function headings(): array
     {
         return [
-            'Employees Code', 'Employees Name', 'Daily Visit Target', 'Total Working Days', 'Total Visit Target',
-            'Total Customers Visited', 'Adherence %', 'New Counter Added', 'Total Cumulative Counter',
+            'Employees Code', 'Employees Name', 'Daily Visit Target', 'Total Working Days', 'Total Customer Visit',
+            'Total Customers Visited', 'Adherence %', 'New Counters Added', 'Total Cumulative Counter',
             'Secondary Orders (value)', 'Primary Target', 'Primary Achievement', 'Overdue', 'Payment Collection',
-            'Total Payment Dues', 'New Dealer Appointed', 'Orders Collected', 'ZONE', 'Branch', 'Designation',
+            'Total Payment Dues', 'New Dealer Appointed', 'Primary Orders Collected', 'ZONE', 'Branch', 'Designation',
             'Reporting Manager',
         ];
     }
