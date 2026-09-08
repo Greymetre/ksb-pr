@@ -700,6 +700,9 @@ $user->save();
                 ->select(['id', 'employee_codes', 'name', 'designation_id', 'division_id', 'branch_id', 'reportingid'])
                 ->with(['getdivision:id,division_name', 'getbranch:id,branch_name', 'getdesignation:id,designation_name', 'reportinginfo:id,name'])
                 ->where('active', 'Y')->whereIn('id', $userIds)
+                ->whereDoesntHave('getdivision', function ($query) {
+                    $query->whereRaw('LOWER(TRIM(division_name)) = ?', ['ho']);
+                })
                 ->when($filters['user_id'] ?? null, fn ($q, $id) => $q->where('id', $id))
                 ->when($filters['designation_id'] ?? null, fn ($q, $id) => $q->where('designation_id', $id))
                 ->when($filters['division_id'] ?? null, fn ($q, $id) => $q->where('division_id', $id))
@@ -709,7 +712,11 @@ $user->save();
         }
 
         $userIds = getUsersReportingToAuth();
-        $users = User::where('active', 'Y')->whereIn('id', $userIds)->orderBy('name')->get(['id', 'name']);
+        $users = User::where('active', 'Y')->whereIn('id', $userIds)
+            ->whereDoesntHave('getdivision', function ($query) {
+                $query->whereRaw('LOWER(TRIM(division_name)) = ?', ['ho']);
+            })
+            ->orderBy('name')->get(['id', 'name']);
         $designations = Designation::where('active', 'Y')->orderBy('designation_name')->get();
         $divisions = Division::where('active', 'Y')->orderBy('division_name')->get();
         $branchs = Branch::where('active', 'Y')->orderBy('branch_name')->get();

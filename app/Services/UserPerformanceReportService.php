@@ -21,6 +21,9 @@ class UserPerformanceReportService
         $users = User::with(['getdivision', 'getbranch', 'getdesignation', 'reportinginfo'])
             ->where('active', 'Y')
             ->whereIn('id', $userIds)
+            ->whereDoesntHave('getdivision', function ($query) {
+                $query->whereRaw('LOWER(TRIM(division_name)) = ?', ['ho']);
+            })
             ->when($filters['user_id'] ?? null, fn ($q, $id) => $q->where('id', $id))
             ->when($filters['designation_id'] ?? null, fn ($q, $id) => $q->where('designation_id', $id))
             ->when($filters['division_id'] ?? null, fn ($q, $id) => $q->where('division_id', $id))
