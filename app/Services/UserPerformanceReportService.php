@@ -85,10 +85,19 @@ class UserPerformanceReportService
                 'visit_target' => $visitTarget,
                 'customers_visited' => $visited,
                 'adherence' => $visitTarget ? round($visited * 100 / $visitTarget, 1) : 0,
-                'new_counters' => DB::table('customers')->whereNull('deleted_at')
-                    ->where('created_by', $user->id)->whereBetween('created_at', [$start, $end])->count(),
-                'cumulative_counters' => DB::table('customers')->whereNull('deleted_at')
-                    ->where('created_by', $user->id)->count(),
+                'new_counters' => DB::table('customers')->where('created_by', $user->id)
+                    ->whereBetween('created_at', [$start, $end])->count(),
+                // Match Customers List > Employee filter exactly: assigned executive,
+                // creator, or an assignment in employee_details.
+                'cumulative_counters' => DB::table('customers')->where(function ($query) use ($user) {
+                    $query->where('executive_id', $user->id)
+                        ->orWhere('created_by', $user->id)
+                        ->orWhereExists(function ($assignment) use ($user) {
+                            $assignment->select(DB::raw(1))->from('employee_details')
+                                ->whereColumn('employee_details.customer_id', 'customers.id')
+                                ->where('employee_details.user_id', $user->id);
+                        });
+                })->count(),
                 'secondary_orders_value' => (float) $secondaryValue,
                 'primary_target' => (float) (clone $targetQuery)->sum('target'),
                 'primary_achievement' => (float) (clone $targetQuery)->sum('achievement'),

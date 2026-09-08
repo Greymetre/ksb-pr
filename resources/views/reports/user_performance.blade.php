@@ -58,7 +58,11 @@ $(function () {
   function updateMeta(){var info=table.page.info(),total=info.recordsDisplay||0,pages=info.pages||1;$('#performance-count').text(total+' records');$('#performance-meta').text('Live directory · page '+((info.page||0)+1)+' of '+pages);}
   table.on('draw',updateMeta);
   $('#performance-filter-drawer .fk-filter-apply').on('click',function(){table.ajax.reload();});
-  $('#performance-filter-drawer .fk-filter-reset').on('click',function(){setTimeout(function(){table.ajax.reload();},0);});
+  $('#performance-filter-drawer .fk-filter-reset').on('click',function(){setTimeout(function(){
+    $('#start_date').val("{{now()->startOfWeek()->format('Y-m-d')}}");
+    $('#end_date').val("{{date('Y-m-d')}}");
+    table.ajax.reload();
+  },0);});
 });
 </script>
 </x-app-layout>
