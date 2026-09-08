@@ -34,6 +34,7 @@ use App\Models\UserCityAssign;
 use App\Imports\UserCityImport;
 use App\Exports\UserCityMapedExport;
 use App\Exports\UserSalesReportExport;
+use App\Exports\UserPerformanceReportExport;
 use App\Models\Branch;
 use App\Models\Customers;
 use App\Models\CustomerType;
@@ -694,7 +695,17 @@ $user->save();
         ]);
 
         if ($request->ajax()) {
-            return Datatables::of($report->rows($filters))->addIndexColumn()->make(true);
+            $userIds = getUsersReportingToAuth();
+            $query = User::query()
+                ->select(['id', 'employee_codes', 'name', 'designation_id', 'division_id', 'branch_id', 'reportingid'])
+                ->with(['getdivision:id,division_name', 'getbranch:id,branch_name', 'getdesignation:id,designation_name', 'reportinginfo:id,name'])
+                ->where('active', 'Y')->whereIn('id', $userIds)
+                ->when($filters['user_id'] ?? null, fn ($q, $id) => $q->where('id', $id))
+                ->when($filters['designation_id'] ?? null, fn ($q, $id) => $q->where('designation_id', $id))
+                ->when($filters['division_id'] ?? null, fn ($q, $id) => $q->where('division_id', $id))
+                ->when($filters['branch_id'] ?? null, fn ($q, $id) => $q->where('branch_id', $id));
+
+            return Datatables::eloquent($query)->addIndexColumn()->make(true);
         }
 
         $userIds = getUsersReportingToAuth();
@@ -704,6 +715,18 @@ $user->save();
         $branchs = Branch::where('active', 'Y')->orderBy('branch_name')->get();
 
         return view('reports.user_performance', compact('users', 'designations', 'divisions', 'branchs'));
+    }
+
+    public function user_performance_report_download(Request $request)
+    {
+        abort_if(Gate::denies('user_working_report'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        $filters = $request->validate([
+            'start_date' => ['required', 'date'], 'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'user_id' => ['nullable', 'integer'], 'designation_id' => ['nullable', 'integer'],
+            'division_id' => ['nullable', 'integer'], 'branch_id' => ['nullable', 'integer'],
+        ]);
+
+        return Excel::download(new UserPerformanceReportExport($filters), 'user_performance_report.xlsx');
     }
 
     public function user_sales_report_download(Request $request)
