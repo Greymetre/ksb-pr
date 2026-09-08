@@ -23,7 +23,7 @@
           <div class="p-2" data-label="Designation"><select name="designation_id" id="designation_id" class="form-control select2"><option value="">All Designations</option>@foreach($designations as $item)<option value="{{$item->id}}">{{$item->designation_name}}</option>@endforeach</select></div>
           <div class="p-2" data-label="Zone"><select name="division_id" id="division_id" class="form-control select2"><option value="">All Zones</option>@foreach($divisions as $item)<option value="{{$item->id}}">{{$item->division_name}}</option>@endforeach</select></div>
           <div class="p-2" data-label="Branch"><select name="branch_id" id="branch_id" class="form-control select2"><option value="">All Branches</option>@foreach($branchs as $item)<option value="{{$item->id}}">{{$item->branch_name}}</option>@endforeach</select></div>
-          <div class="p-2" data-label="Start Date"><input type="text" class="form-control datepicker" id="start_date" name="start_date" value="{{date('Y-m-01')}}" readonly></div>
+          <div class="p-2" data-label="Start Date"><input type="text" class="form-control datepicker" id="start_date" name="start_date" value="{{now()->startOfWeek()->format('Y-m-d')}}" readonly></div>
           <div class="p-2" data-label="End Date"><input type="text" class="form-control datepicker" id="end_date" name="end_date" value="{{date('Y-m-d')}}" readonly></div>
         </div>
       </form>

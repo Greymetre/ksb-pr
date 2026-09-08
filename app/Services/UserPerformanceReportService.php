@@ -13,7 +13,7 @@ class UserPerformanceReportService
 
     public function rows(array $filters): Collection
     {
-        $start = Carbon::parse($filters['start_date'] ?? now()->startOfMonth())->startOfDay();
+        $start = Carbon::parse($filters['start_date'] ?? now()->startOfWeek())->startOfDay();
         $end = Carbon::parse($filters['end_date'] ?? now())->endOfDay();
         $userIds = collect(getUsersReportingToAuth())->map(fn ($id) => (int) $id);
 
@@ -39,14 +39,14 @@ class UserPerformanceReportService
 
             // Secondary value is specifically the value of retailer orders.
             $retailerOrders = DB::table('orders')->whereNull('orders.deleted_at')
-                ->where('orders.executive_id', $user->id)
+                ->where('orders.created_by', $user->id)
                 ->whereBetween('orders.order_date', [$start, $end])
                 ->whereExists(function ($query) {
                     $query->select(DB::raw(1))->from('customers')
                         ->whereColumn('customers.id', 'orders.buyer_id')
                         ->where('customers.customertype', 2);
                 });
-            $secondaryValue = (clone $retailerOrders)->sum('orders.grand_total');
+            $secondaryValue = (clone $retailerOrders)->sum('orders.sub_total');
 
             // Primary Sales stores the employee code supplied in the primary-sales import.
             $primaryOrders = DB::table('primary_sales')
@@ -85,10 +85,10 @@ class UserPerformanceReportService
                 'visit_target' => $visitTarget,
                 'customers_visited' => $visited,
                 'adherence' => $visitTarget ? round($visited * 100 / $visitTarget, 1) : 0,
-                'new_counters' => DB::table('secondary_customers')->where('created_by', $user->id)->whereBetween('created_at', [$start, $end])->count(),
-                'cumulative_counters' => DB::table('secondary_customers')
-                    ->whereRaw("FIND_IN_SET(?, REPLACE(employee_id, ' ', ''))", [$user->id])
-                    ->where('created_at', '<=', $end)->count(),
+                'new_counters' => DB::table('customers')->whereNull('deleted_at')
+                    ->where('created_by', $user->id)->whereBetween('created_at', [$start, $end])->count(),
+                'cumulative_counters' => DB::table('customers')->whereNull('deleted_at')
+                    ->where('created_by', $user->id)->count(),
                 'secondary_orders_value' => (float) $secondaryValue,
                 'primary_target' => (float) (clone $targetQuery)->sum('target'),
                 'primary_achievement' => (float) (clone $targetQuery)->sum('achievement'),
