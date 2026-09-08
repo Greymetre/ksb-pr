@@ -33,7 +33,7 @@ class UserPerformanceReportExport implements FromCollection, WithHeadings, Shoul
             'Employees Code', 'Employees Name', 'Daily Visit Target', 'Total Working Days', 'Total Customer Visit',
             'Total Customers Visited', 'Adherence %', 'New Counters Added', 'Total Cumulative Counter',
             'Secondary Orders (value)', 'Primary Target', 'Primary Achievement', 'Overdue', 'Payment Collection',
-            'Total Payment Dues', 'New Dealer Appointed', 'Primary Orders Collected', 'ZONE', 'Branch', 'Designation',
+            'Total Payment Dues', 'New Dealer Appointed', 'Primary Orders Collected (Value)', 'ZONE', 'Branch', 'Designation',
             'Reporting Manager',
         ];
     }

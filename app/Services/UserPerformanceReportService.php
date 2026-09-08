@@ -56,15 +56,22 @@ class UserPerformanceReportService
                 });
             $secondaryValue = (clone $retailerOrders)->sum('orders.sub_total');
 
-            // Primary Sales stores the employee code supplied in the primary-sales import.
-            $primaryOrders = DB::table('primary_sales')
-                ->whereBetween('invoice_date', [$start, $end])
-                ->where(function ($query) use ($user) {
-                    $query->where('emp_code', $user->employee_codes)
-                        ->orWhere(function ($fallback) use ($user) {
-                            $fallback->where(function ($blank) {
-                                $blank->whereNull('emp_code')->orWhere('emp_code', '');
-                            })->where('sales_person', $user->name);
+            // Primary orders collected are orders taken from Dealers or Distributors.
+            $primaryOrders = DB::table('orders')->whereNull('orders.deleted_at')
+                ->where('orders.created_by', $user->id)
+                ->whereBetween('orders.order_date', [$start, $end])
+                ->whereExists(function ($query) {
+                    $query->select(DB::raw(1))->from('customers')
+                        ->join('customer_types', 'customer_types.id', '=', 'customers.customertype')
+                        ->whereColumn('customers.id', 'orders.buyer_id')
+                        ->where(function ($primaryType) {
+                            $primaryType->whereRaw(
+                                'LOWER(TRIM(customer_types.type_name)) IN (?, ?)',
+                                ['dealer', 'distributor']
+                            )->orWhereRaw(
+                                'LOWER(TRIM(customer_types.customertype_name)) IN (?, ?)',
+                                ['dealer', 'distributor']
+                            );
                         });
                 });
 
@@ -113,7 +120,7 @@ class UserPerformanceReportService
                 'payment_collection' => (float) $collection,
                 'total_payment_dues' => (float) $dues,
                 'new_dealers' => DB::table('dealer_appointments')->where('created_by', $user->id)->whereBetween('appointment_date', [$start, $end])->count(),
-                'primary_orders_collected' => (clone $primaryOrders)->distinct()->count('invoiceno'),
+                'primary_orders_collected' => (float) (clone $primaryOrders)->sum('orders.sub_total'),
                 'zone' => optional($user->getdivision)->division_name,
                 'branch' => optional($user->getbranch)->branch_name,
                 'designation' => optional($user->getdesignation)->designation_name,
