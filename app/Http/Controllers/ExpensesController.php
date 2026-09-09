@@ -431,13 +431,22 @@ class ExpensesController extends Controller
         if ($expense->distance_calculated) {
             $total_dis = (float) $expense->total_distance;
         } else {
-            $total_dis = $this->calculateExpenseDistance($expense);
+            try {
+                $total_dis = $this->calculateExpenseDistance($expense);
 
-            // Save today's current distance but keep it open for recalculation.
-            // Once the date has passed, save the final distance and close the cache.
-            $expense->total_distance = $total_dis;
-            $expense->distance_calculated = $isPastExpense;
-            $expense->save();
+                // Save today's current distance but keep it open for recalculation.
+                // Once the date has passed, save the final distance and close the cache.
+                $expense->total_distance = $total_dis;
+                $expense->distance_calculated = $isPastExpense;
+                $expense->save();
+            } catch (\Throwable $exception) {
+                // Distance is supplementary information. A temporary Maps failure or an
+                // unroutable coordinate must not prevent the expense popup from opening.
+                report($exception);
+                $total_dis = is_numeric($expense->total_distance)
+                    ? (float) $expense->total_distance
+                    : 0.0;
+            }
         }
 
         // the geolocator link replays the expense date on the track activity map, so only
