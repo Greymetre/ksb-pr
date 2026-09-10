@@ -14,6 +14,7 @@ class PromotionalActivity extends Model
         'distributor_share', 'remark', 'approval_status', 'created_by',
         'reporting_manager_id', 'approved_rejected_by', 'approved_rejected_at',
         'approval_remark',
+        'distributor_id', 'activity_photos', 'participants', 'completed_at',
     ];
 
     protected $casts = [
@@ -21,6 +22,9 @@ class PromotionalActivity extends Model
         'company_share' => 'decimal:2',
         'distributor_share' => 'decimal:2',
         'approved_rejected_at' => 'datetime',
+        'activity_photos' => 'array',
+        'participants' => 'array',
+        'completed_at' => 'datetime',
     ];
 
     public function activityType()
@@ -42,5 +46,10 @@ class PromotionalActivity extends Model
     {
         return $this->belongsToMany(PromotionalGift::class, 'promotional_activity_gifts')
             ->withPivot('quantity')->withTimestamps();
+    }
+
+    public function distributor()
+    {
+        return $this->belongsTo(MasterDistributor::class, 'distributor_id');
     }
 }

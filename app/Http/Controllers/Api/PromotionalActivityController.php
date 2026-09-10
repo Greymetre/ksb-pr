@@ -36,8 +36,10 @@ class PromotionalActivityController extends Controller
         $query = PromotionalActivity::with(['activityType:id,display_name,status_name', 'creator:id,name,reportingid', 'gifts:id,name']);
 
         if ($tab === 'details') {
-            $query->where('created_by', $user->id)
-                ->where('approval_status', 'approved');
+            if (!$user->hasRole('superadmin')) {
+                $query->where('created_by', $user->id);
+            }
+            $query->where('approval_status', 'completed');
         } else {
             $visibleUserIds = array_map('intval', getUsersReportingToAuth($user->id));
             // Approval workflow includes the authenticated user's own submissions
@@ -45,7 +47,7 @@ class PromotionalActivityController extends Controller
             $query->whereIn('created_by', array_values(array_unique(array_merge(
                 $visibleUserIds,
                 [(int) $user->id]
-            ))));
+            ))))->where('approval_status', '!=', 'completed');
         }
 
         $period = $request->input('period', 'mtd');
@@ -67,6 +69,7 @@ class PromotionalActivityController extends Controller
             'gifts' => $activity->gifts->map(fn ($gift) => [
                 'id' => $gift->id, 'name' => $gift->name, 'quantity' => (int) $gift->pivot->quantity,
             ])->values(),
+            'can_complete' => $activity->approval_status === 'approved' && (int) $activity->created_by === (int) $user->id,
         ])->values();
 
         return response()->json(['success' => true, 'data' => $activities]);
@@ -130,6 +133,7 @@ class PromotionalActivityController extends Controller
             'reportingManager:id,name,designation_id',
             'reportingManager.getdesignation:id,designation_name',
             'gifts:id,name',
+            'distributor:id,legal_name,trade_name,distributor_code',
         ]);
 
         $user = $request->user();
@@ -144,6 +148,8 @@ class PromotionalActivityController extends Controller
                 (int) $promotionalActivity->created_by !== (int) $user->id
                 && $this->isDirectManager($user, $promotionalActivity)
             ));
+        $canComplete = $promotionalActivity->approval_status === 'approved'
+            && ((int) $promotionalActivity->created_by === (int) $user->id || $user->hasRole('superadmin'));
 
         return response()->json(['success' => true, 'data' => [
             'id' => $promotionalActivity->id,
@@ -168,7 +174,46 @@ class PromotionalActivityController extends Controller
                 'quantity' => (int) $gift->pivot->quantity,
             ])->values(),
             'can_approve' => $canApprove,
+            'can_complete' => $canComplete,
+            'distributor' => $promotionalActivity->distributor,
+            'activity_photos' => collect($promotionalActivity->activity_photos ?: [])->map(fn ($path) => url('storage/'.$path))->values(),
+            'participants' => $promotionalActivity->participants ?: [],
         ]]);
+    }
+
+    public function complete(Request $request, PromotionalActivity $promotionalActivity)
+    {
+        $user = $request->user();
+        abort_unless((int) $promotionalActivity->created_by === (int) $user->id || $user->hasRole('superadmin'), 403);
+        abort_if($promotionalActivity->approval_status !== 'approved', 422, 'Only an approved activity can be completed.');
+
+        $participants = json_decode((string) $request->input('participants', '[]'), true);
+        $request->merge(['participants_data' => $participants]);
+        $validator = Validator::make($request->all(), [
+            'distributor_id' => 'required|integer|exists:master_distributors,id',
+            'photos' => 'required|array|min:1|max:3',
+            'photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+            'participants_data' => 'required|array|min:1|max:50',
+            'participants_data.*.name' => 'required|string|max:150',
+            'participants_data.*.mobile' => 'required|string|max:20',
+            'participants_data.*.address' => 'required|string|max:255',
+        ]);
+        if ($validator->fails()) return response()->json(['success' => false, 'message' => $validator->errors()], 422);
+
+        $photoPaths = [];
+        foreach ($request->file('photos', []) as $photo) {
+            $photoPaths[] = $photo->store('promotional-activities', 'public');
+        }
+
+        $promotionalActivity->update([
+            'distributor_id' => $request->distributor_id,
+            'activity_photos' => $photoPaths,
+            'participants' => array_values($participants),
+            'approval_status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Promotional activity completed successfully.']);
     }
 
     public function updateApproval(Request $request, PromotionalActivity $promotionalActivity)
