@@ -109,29 +109,9 @@ class CustomerApiController extends Controller
             }
     
             if ($isSuperAdmin) {
-                // Super Admin can see all, but can filter by specific user if for_user_id is passed
-                if ($request->filled('for_user_id')) {
-                    $targetUserId = (int) $request->for_user_id;
-    
-                    $targetUser = User::find($targetUserId);
-                    if (!$targetUser) {
-                        return response()->json([
-                            'status' => false,
-                            'message' => 'Requested user not found',
-                        ], 404);
-                    }
-    
-                    $query->where(function ($q) use ($targetUserId) {
-                        $id = (int) $targetUserId;
-                        $q->where('created_by', $id)
-                          ->orWhere('sales_executive_id', 'LIKE', "%\"{$id}\"%")
-                          ->orWhere('sales_executive_id', 'LIKE', "%{$id}%")
-                          ->orWhereRaw("JSON_CONTAINS(sales_executive_id, '\"{$id}\"')")
-                          ->orWhereRaw("JSON_SEARCH(sales_executive_id, 'one', '{$id}') IS NOT NULL");
-                    });
-                }
-                // Else: Superadmin sees ALL active distributors
-            } 
+                // Server-verified admin roles always see every active distributor.
+                // Client-supplied user filters must never reduce or expand this access rule.
+            }
             else {
 
                 // ────────────────────────────────────────────────
