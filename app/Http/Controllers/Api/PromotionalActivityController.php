@@ -46,8 +46,6 @@ class PromotionalActivityController extends Controller
             'tab' => ['nullable', Rule::in(['details', 'approval'])],
             'period' => ['nullable', Rule::in(['mtd', 'ytd'])],
             'activity_type_id' => 'nullable|integer',
-            'state_id' => 'nullable|integer',
-            'zone_id' => 'nullable|integer',
         ]);
         if ($validator->fails()) return response()->json(['success' => false, 'message' => $validator->errors()], 422);
 
@@ -73,28 +71,7 @@ class PromotionalActivityController extends Controller
         $period = $request->input('period', 'mtd');
         $query->whereDate('activity_date', '>=', $period === 'ytd' ? now()->startOfYear() : now()->startOfMonth());
         if ($request->filled('activity_type_id')) $query->where('activity_status_id', $request->activity_type_id);
-        if ($request->filled('zone_id')) {
-            $query->whereHas('creator', fn ($creator) => $creator->where('division_id', $request->zone_id));
-        }
-        if ($request->filled('state_id')) {
-            $query->whereHas('creator.cities.cityname', fn ($city) => $city->where('state_id', $request->state_id));
-        }
-
-        $activityModels = $query->latest('activity_date')->get();
-        $creatorIds = $activityModels->pluck('created_by')->unique()->values();
-        $zonesByUser = DB::table('users')
-            ->leftJoin('divisions', 'divisions.id', '=', 'users.division_id')
-            ->whereIn('users.id', $creatorIds)
-            ->select('users.id as user_id', 'divisions.id', 'divisions.division_name as name')
-            ->get()->keyBy('user_id');
-        $statesByUser = DB::table('user_city_assigns')
-            ->join('cities', 'cities.id', '=', 'user_city_assigns.city_id')
-            ->join('states', 'states.id', '=', 'cities.state_id')
-            ->whereIn('user_city_assigns.userid', $creatorIds)
-            ->select('user_city_assigns.userid as user_id', 'states.id', 'states.state_name as name')
-            ->get()->groupBy('user_id')->map(fn ($states) => $states->unique('id')->values());
-
-        $activities = $activityModels->map(fn ($activity) => [
+        $activities = $query->latest('activity_date')->get()->map(fn ($activity) => [
             'id' => $activity->id,
             'activity_type_id' => $activity->activity_status_id,
             'activity_type' => $activity->activityType->display_name ?? $activity->activityType->status_name ?? 'Promotional Activity',
@@ -106,8 +83,6 @@ class PromotionalActivityController extends Controller
             'remark' => $activity->remark,
             'approval_status' => $activity->approval_status,
             'created_by' => $activity->creator,
-            'zone' => $zonesByUser->get($activity->created_by),
-            'states' => $statesByUser->get($activity->created_by, collect())->values(),
             'gifts' => $activity->gifts->map(fn ($gift) => [
                 'id' => $gift->id, 'name' => $gift->name, 'quantity' => (int) $gift->pivot->quantity,
             ])->values(),

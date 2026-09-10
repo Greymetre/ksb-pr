@@ -87,6 +87,7 @@ use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\MarketIntelligencesFieldController;
 use App\Http\Controllers\MspActivityController;
 use App\Http\Controllers\PromotionalGiftController;
+use App\Http\Controllers\PromotionalActivityWebController;
 use App\Http\Controllers\PrimarySchemeController;
 use App\Http\Controllers\ResignationController;
 use App\Http\Controllers\SapStockController;
@@ -609,6 +610,8 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
 
     Route::resource('promotional-gifts', PromotionalGiftController::class)->except(['create', 'show']);
     Route::post('promotional-gifts/{promotionalGift}/active', [PromotionalGiftController::class, 'active'])->name('promotional-gifts.active');
+    Route::get('promotional-activities-crm', [PromotionalActivityWebController::class, 'index'])->name('promotional-activities-crm.index');
+    Route::get('promotional-activities-crm/export', [PromotionalActivityWebController::class, 'export'])->name('promotional-activities-crm.export');
 
     //Orders
     Route::resource('orders', OrderController::class);
