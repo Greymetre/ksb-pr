@@ -15,7 +15,7 @@ class PromotionalActivityWebController extends Controller
     private function authorizeAccess(): void
     {
         $user = auth()->user();
-        abort_if(!$user || (!$user->hasRole('superadmin') && !$user->can('marketing_access')), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        abort_if(!$user || (!$user->hasRole('superadmin') && !$user->can('promotional_activity_access')), Response::HTTP_FORBIDDEN, '403 Forbidden');
     }
 
     private function query(Request $request)
@@ -55,6 +55,7 @@ class PromotionalActivityWebController extends Controller
     public function export(Request $request)
     {
         $this->authorizeAccess();
+        abort_if(!auth()->user()->hasRole('superadmin') && !auth()->user()->can('promotional_activity_export'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         return Excel::download(new PromotionalActivityExport($this->query($request)), 'Promotional Activities.xlsx');
     }
 }

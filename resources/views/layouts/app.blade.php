@@ -2762,7 +2762,7 @@
                 </li>
                 @endif
                 <li class="fk-menu-section"><span>Growth</span></li>
-                @if(auth()->user()->hasRole('superadmin') || auth()->user()->can('marketing_access') || auth()->user()->can('promotional_gift_access'))
+                @if(auth()->user()->hasRole('superadmin') || auth()->user()->can('marketing_access') || auth()->user()->can('promotional_gift_access') || auth()->user()->can('promotional_activity_access'))
                 <li class="nav-link {{ request()->is('marketings*') || request()->is('msp_activity*') || request()->is('promotional-gifts*') || request()->is('promotional-activities-crm*') ? 'active' : '' }}">
                     <a class="{{ request()->is('marketings*') || request()->is('msp_activity*') || request()->is('promotional-gifts*') || request()->is('promotional-activities-crm*') ? '' : 'collapsed' }} hoveradd" data-toggle="collapse" href="#marketingMenu" aria-expanded="{{ request()->is('marketings*') || request()->is('msp_activity*') || request()->is('promotional-gifts*') || request()->is('promotional-activities-crm*') ? 'true' : 'false' }}">
                         <i class="material-icons icon">local_convenience_store</i>
@@ -2798,7 +2798,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->hasRole('superadmin') || auth()->user()->can('marketing_access'))
+                            @if(auth()->user()->hasRole('superadmin') || auth()->user()->can('promotional_activity_access'))
                             <li class="nav-link-btn {{ request()->is('promotional-activities-crm*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ route('promotional-activities-crm.index') }}">
                                     <i class="material-icons icon">campaign</i>
