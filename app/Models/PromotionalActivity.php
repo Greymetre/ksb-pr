@@ -33,6 +33,11 @@ class PromotionalActivity extends Model
         return $this->belongsTo(User::class, 'created_by')->select('id', 'name', 'reportingid');
     }
 
+    public function reportingManager()
+    {
+        return $this->belongsTo(User::class, 'reporting_manager_id')->select('id', 'name', 'designation_id');
+    }
+
     public function gifts()
     {
         return $this->belongsToMany(PromotionalGift::class, 'promotional_activity_gifts')

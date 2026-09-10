@@ -257,6 +257,7 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
     Route::get('/promotional-activity/gifts', [PromotionalGiftApiController::class, 'index']);
     Route::get('/promotional-activities', [PromotionalActivityController::class, 'index']);
     Route::post('/promotional-activities', [PromotionalActivityController::class, 'store']);
+    Route::get('/promotional-activities/{promotionalActivity}', [PromotionalActivityController::class, 'show']);
     Route::post('/promotional-activities/{promotionalActivity}/approval', [PromotionalActivityController::class, 'updateApproval']);
     Route::get('/sales/sales-summary', [AttendanceController::class, 'getTodayTeamSalesList']);
     Route::get('/sales/dealer-distributor-performance', [AttendanceController::class, 'getDealerDistributorSalesPerformance']);

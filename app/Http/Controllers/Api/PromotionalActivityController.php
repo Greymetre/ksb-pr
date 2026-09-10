@@ -13,6 +13,15 @@ use Illuminate\Validation\Rule;
 
 class PromotionalActivityController extends Controller
 {
+    private function isDirectManager($user, PromotionalActivity $activity): bool
+    {
+        if ($user->hasRole('superadmin')) return true;
+        $creator = $activity->creator;
+        if (!$creator) return false;
+        $managerIds = array_map('intval', array_filter(array_map('trim', explode(',', (string) $creator->reportingid))));
+        return in_array((int) $user->id, $managerIds, true);
+    }
+
     public function index(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -113,6 +122,55 @@ class PromotionalActivityController extends Controller
         return response()->json(['success' => true, 'message' => 'Promotional activity submitted for approval.', 'data' => ['id' => $activity->id, 'approval_status' => 'pending']], 201);
     }
 
+    public function show(Request $request, PromotionalActivity $promotionalActivity)
+    {
+        $promotionalActivity->load([
+            'activityType:id,display_name,status_name',
+            'creator:id,name,reportingid',
+            'reportingManager:id,name,designation_id',
+            'reportingManager.getdesignation:id,designation_name',
+            'gifts:id,name',
+        ]);
+
+        $user = $request->user();
+        $visibleUserIds = array_map('intval', getUsersReportingToAuth($user->id));
+        $canView = $user->hasRole('superadmin')
+            || (int) $promotionalActivity->created_by === (int) $user->id
+            || in_array((int) $promotionalActivity->created_by, $visibleUserIds, true);
+        abort_unless($canView, 403);
+
+        $canApprove = $promotionalActivity->approval_status === 'pending'
+            && ($user->hasRole('superadmin') || (
+                (int) $promotionalActivity->created_by !== (int) $user->id
+                && $this->isDirectManager($user, $promotionalActivity)
+            ));
+
+        return response()->json(['success' => true, 'data' => [
+            'id' => $promotionalActivity->id,
+            'activity_type' => $promotionalActivity->activityType->display_name ?? $promotionalActivity->activityType->status_name ?? 'Promotional Activity',
+            'activity_date' => $promotionalActivity->activity_date->format('Y-m-d'),
+            'location_name' => $promotionalActivity->location_name,
+            'remark' => $promotionalActivity->remark,
+            'approval_status' => $promotionalActivity->approval_status,
+            'approval_remark' => $promotionalActivity->approval_remark,
+            'company_share' => (float) $promotionalActivity->company_share,
+            'distributor_share' => (float) $promotionalActivity->distributor_share,
+            'total_amount' => (float) $promotionalActivity->company_share + (float) $promotionalActivity->distributor_share,
+            'creator' => $promotionalActivity->creator,
+            'reporting_manager' => $promotionalActivity->reportingManager ? [
+                'id' => $promotionalActivity->reportingManager->id,
+                'name' => $promotionalActivity->reportingManager->name,
+                'designation' => $promotionalActivity->reportingManager->getdesignation->designation_name ?? '',
+            ] : null,
+            'gifts' => $promotionalActivity->gifts->map(fn ($gift) => [
+                'id' => $gift->id,
+                'name' => $gift->name,
+                'quantity' => (int) $gift->pivot->quantity,
+            ])->values(),
+            'can_approve' => $canApprove,
+        ]]);
+    }
+
     public function updateApproval(Request $request, PromotionalActivity $promotionalActivity)
     {
         $validator = Validator::make($request->all(), [
@@ -121,8 +179,15 @@ class PromotionalActivityController extends Controller
         ]);
         if ($validator->fails()) return response()->json(['success' => false, 'message' => $validator->errors()], 422);
 
-        $visibleUserIds = array_map('intval', getUsersReportingToAuth($request->user()->id));
-        abort_unless(in_array((int) $promotionalActivity->created_by, $visibleUserIds, true) && (int) $promotionalActivity->created_by !== (int) $request->user()->id, 403);
+        $promotionalActivity->load('creator:id,name,reportingid');
+        $user = $request->user();
+        abort_unless(
+            $user->hasRole('superadmin') || (
+                (int) $promotionalActivity->created_by !== (int) $user->id
+                && $this->isDirectManager($user, $promotionalActivity)
+            ),
+            403
+        );
         abort_if($promotionalActivity->approval_status !== 'pending', 422, 'Activity has already been actioned.');
 
         $promotionalActivity->update([
