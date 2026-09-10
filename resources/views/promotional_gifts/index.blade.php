@@ -8,9 +8,9 @@
           <span class="btn-group header-frm-btn">
             @if(auth()->user()->hasRole('superadmin') || auth()->user()->can('promotional_gift_create'))
             <span class="next-btn">
-              <button type="button" class="btn btn-just-icon btn-theme" data-toggle="modal" data-target="#giftModal" id="createGift" title="Add Gift">
+              <a href="javascript:void(0)" class="btn btn-just-icon btn-theme fk-preserve-list-action" data-toggle="modal" data-target="#giftModal" data-fk-action-label="Add New Gift" id="createGift" title="Add Gift">
                 <i class="material-icons">add_circle</i>
-              </button>
+              </a>
             </span>
             @endif
           </span>
