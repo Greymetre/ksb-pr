@@ -245,7 +245,7 @@ class PromotionalActivityController extends Controller
         $participants = json_decode((string) $request->input('participants', '[]'), true);
         $request->merge(['participants_data' => $participants]);
         $validator = Validator::make($request->all(), [
-            'distributor_id' => 'required|integer|exists:master_distributors,id',
+            'distributor_id' => 'required|integer|exists:customers,id',
             'photos' => 'required|array|min:1|max:3',
             'photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
             'participants_data' => 'required|array|min:1|max:50',

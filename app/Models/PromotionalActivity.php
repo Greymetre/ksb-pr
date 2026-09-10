@@ -50,6 +50,6 @@ class PromotionalActivity extends Model
 
     public function distributor()
     {
-        return $this->belongsTo(MasterDistributor::class, 'distributor_id');
+        return $this->belongsTo(Customers::class, 'distributor_id');
     }
 }
