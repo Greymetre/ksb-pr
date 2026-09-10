@@ -23,6 +23,11 @@ return [
         '6' => 'Sr. Executive & Executive',
         '7' => 'Dy. Executive & Asst. Executive',
         '8' => 'All Workers, Drivers, Peons',
+        '9' => 'South DGM, AGM & Zonal Manager',
+        '10' => 'South Sr. Manager & Manager (Sr. DM & DM)',
+        '11' => 'South Dy. Manager & Asst. Manager (Dy. DM & Asst. DM)',
+        '12' => 'South Sr. Executive & Executive',
+        '13' => 'South Dy. Executive & Asst. Executive',
     ],
     'tour_objectives' => [
         'Customer Visit',
