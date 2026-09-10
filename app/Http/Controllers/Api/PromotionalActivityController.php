@@ -195,7 +195,7 @@ class PromotionalActivityController extends Controller
             'photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
             'participants_data' => 'required|array|min:1|max:50',
             'participants_data.*.name' => 'required|string|max:150',
-            'participants_data.*.mobile' => 'required|string|max:20',
+            'participants_data.*.mobile' => ['required', 'regex:/^[0-9]{10}$/'],
             'participants_data.*.address' => 'required|string|max:255',
         ]);
         if ($validator->fails()) return response()->json(['success' => false, 'message' => $validator->errors()], 422);
