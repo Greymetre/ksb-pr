@@ -27,10 +27,16 @@ class PromotionalActivityController extends Controller
         $query = PromotionalActivity::with(['activityType:id,display_name,status_name', 'creator:id,name,reportingid', 'gifts:id,name']);
 
         if ($tab === 'details') {
-            $query->where('created_by', $user->id);
+            $query->where('created_by', $user->id)
+                ->where('approval_status', 'approved');
         } else {
             $visibleUserIds = array_map('intval', getUsersReportingToAuth($user->id));
-            $query->whereIn('created_by', array_values(array_diff($visibleUserIds, [(int) $user->id])));
+            // Approval workflow includes the authenticated user's own submissions
+            // as well as submissions from everyone visible in their reporting hierarchy.
+            $query->whereIn('created_by', array_values(array_unique(array_merge(
+                $visibleUserIds,
+                [(int) $user->id]
+            ))));
         }
 
         $period = $request->input('period', 'mtd');
