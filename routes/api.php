@@ -48,6 +48,7 @@ use App\Http\Controllers\Api\MasterDistributorApiController;
 use App\Http\Controllers\Api\TourProgrammeApiController;
 use App\Http\Controllers\Api\CustomerApiController;
 use App\Http\Controllers\Api\PromotionalActivityStatusController;
+use App\Http\Controllers\Api\PromotionalGiftController as PromotionalGiftApiController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -252,6 +253,7 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
     Route::get('/attendance/today-summary', [AttendanceController::class, 'getTodayMyTeamAttendanceSummary']);
     Route::get('/attendance/promotional-activities-report', [AttendanceController::class, 'getPromotionalActivitiesReport']);
     Route::get('/promotional-activity/statuses', [PromotionalActivityStatusController::class, 'index']);
+    Route::get('/promotional-activity/gifts', [PromotionalGiftApiController::class, 'index']);
     Route::get('/sales/sales-summary', [AttendanceController::class, 'getTodayTeamSalesList']);
     Route::get('/sales/dealer-distributor-performance', [AttendanceController::class, 'getDealerDistributorSalesPerformance']);
     Route::get('/sales/retailer-sales-summary', [AttendanceController::class, 'getRetailerSalesSummary']);
