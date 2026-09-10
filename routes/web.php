@@ -86,6 +86,7 @@ use App\Http\Controllers\FieldKonnectAppSettings;
 use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\MarketIntelligencesFieldController;
 use App\Http\Controllers\MspActivityController;
+use App\Http\Controllers\PromotionalGiftController;
 use App\Http\Controllers\PrimarySchemeController;
 use App\Http\Controllers\ResignationController;
 use App\Http\Controllers\SapStockController;
@@ -605,6 +606,9 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     Route::any('msp_activity_template', [MspActivityController::class, 'msp_activity_template'])->name('msp_activity.template');
     Route::post('msp_activity/upload', [MspActivityController::class, 'msp_activity_upload'])->name('msp_activity.upload');
     Route::any('msp_activity/download', [MspActivityController::class, 'msp_activity_download'])->name('msp_activity.download');
+
+    Route::resource('promotional-gifts', PromotionalGiftController::class)->except(['create', 'show']);
+    Route::post('promotional-gifts/{promotionalGift}/active', [PromotionalGiftController::class, 'active'])->name('promotional-gifts.active');
 
     //Orders
     Route::resource('orders', OrderController::class);

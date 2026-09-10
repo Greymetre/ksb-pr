@@ -2762,14 +2762,14 @@
                 </li>
                 @endif
                 <li class="fk-menu-section"><span>Growth</span></li>
-                @if(auth()->user()->can('marketing_access'))
-                <li class="nav-link {{ request()->is('marketings*') ? 'active' : '' }}">
-                    <a class="collapsed hoveradd" data-toggle="collapse" href="#marketingMenu" aria-expanded="false">
+                @if(auth()->user()->can('marketing_access') || auth()->user()->can('promotional_gift_access'))
+                <li class="nav-link {{ request()->is('marketings*') || request()->is('msp_activity*') || request()->is('promotional-gifts*') ? 'active' : '' }}">
+                    <a class="{{ request()->is('marketings*') || request()->is('msp_activity*') || request()->is('promotional-gifts*') ? '' : 'collapsed' }} hoveradd" data-toggle="collapse" href="#marketingMenu" aria-expanded="{{ request()->is('marketings*') || request()->is('msp_activity*') || request()->is('promotional-gifts*') ? 'true' : 'false' }}">
                         <i class="material-icons icon">local_convenience_store</i>
                         <span>Marketing</span>
                         <div class="d-none mobile_hide"> Marketing</div>
                     </a>
-                    <div class="collapse" id="marketingMenu" style="">
+                    <div class="collapse {{ request()->is('marketings*') || request()->is('msp_activity*') || request()->is('promotional-gifts*') ? 'show' : '' }}" id="marketingMenu" style="">
                         <ul class="navd">
                             @if(auth()->user()->can('marketing_master_access'))
                             <li class="nav-link-btn {{ request()->is('marketings*') ? 'active' : '' }}">
@@ -2795,6 +2795,15 @@
                                     <i class="material-icons icon">celebration</i>
                                     <span>MSP Activity</span>
                                     <div class="d-none mobile_hide"> MSP Activity</div>
+                                </a>
+                            </li>
+                            @endif
+                            @if(auth()->user()->can('promotional_gift_access'))
+                            <li class="nav-link-btn {{ request()->is('promotional-gifts*') ? 'active' : '' }}">
+                                <a class="hoveradd2" href="{{ route('promotional-gifts.index') }}">
+                                    <i class="material-icons icon">redeem</i>
+                                    <span>Gift</span>
+                                    <div class="d-none mobile_hide"> Gift</div>
                                 </a>
                             </li>
                             @endif
