@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\PromotionalActivity;
 use App\Models\PromotionalGift;
+use App\Models\MasterDistributor;
 use App\Models\Status;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -73,6 +74,43 @@ class PromotionalActivityController extends Controller
         ])->values();
 
         return response()->json(['success' => true, 'data' => $activities]);
+    }
+
+    public function distributors(Request $request)
+    {
+        $request->validate(['activity_id' => 'required|integer|exists:promotional_activities,id']);
+        $activity = PromotionalActivity::findOrFail($request->activity_id);
+        $user = $request->user();
+        $visibleUserIds = array_map('intval', getUsersReportingToAuth($user->id));
+        abort_unless(
+            $user->hasRole('superadmin')
+            || (int) $activity->created_by === (int) $user->id
+            || in_array((int) $activity->created_by, $visibleUserIds, true),
+            403
+        );
+
+        $query = MasterDistributor::query()
+            ->select('id', 'legal_name', 'trade_name', 'distributor_code')
+            ->where(function ($statusQuery) {
+                $statusQuery->whereNull('business_status')
+                    ->orWhere('business_status', '')
+                    ->orWhereRaw('LOWER(TRIM(business_status)) != ?', ['inactive']);
+            });
+
+        if (!$user->hasRole('superadmin')) {
+            $creatorId = (int) $activity->created_by;
+            $query->where(function ($assigned) use ($creatorId) {
+                $assigned->where('created_by', $creatorId)
+                    ->orWhere('sales_executive_id', 'LIKE', '%"'.$creatorId.'"%')
+                    ->orWhere('sales_executive_id', 'LIKE', '%['.$creatorId.']%')
+                    ->orWhere('sales_executive_id', 'LIKE', '%,'.$creatorId.',%')
+                    ->orWhere('sales_executive_id', 'LIKE', '['.$creatorId.',%')
+                    ->orWhere('sales_executive_id', 'LIKE', '%,'.$creatorId.']')
+                    ->orWhere('sales_executive_id', (string) $creatorId);
+            });
+        }
+
+        return response()->json(['success' => true, 'data' => $query->orderBy('legal_name')->get()]);
     }
 
     public function store(Request $request)

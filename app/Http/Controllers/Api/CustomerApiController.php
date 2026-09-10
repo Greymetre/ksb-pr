@@ -69,7 +69,11 @@ class CustomerApiController extends Controller
                 'created_by',
                 'sales_executive_id'   // optional: you can remove if not needed in response
             )
-            ->where('business_status', '!=', 'Inactive');
+            ->where(function ($statusQuery) {
+                $statusQuery->whereNull('business_status')
+                    ->orWhere('business_status', '')
+                    ->orWhereRaw('LOWER(TRIM(business_status)) != ?', ['inactive']);
+            });
     
             // ────────────────────────────────────────────────
             // SUPERADMIN CHECK
