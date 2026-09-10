@@ -14,9 +14,26 @@ use Illuminate\Validation\Rule;
 
 class PromotionalActivityController extends Controller
 {
+    private function isSuperAdmin($user): bool
+    {
+        if (method_exists($user, 'hasRole') && $user->hasRole('superadmin')) {
+            return true;
+        }
+
+        if ($user->roles()->where('name', 'superadmin')->exists()) {
+            return true;
+        }
+
+        $userTypes = is_string($user->user_type)
+            ? (json_decode($user->user_type, true) ?: [$user->user_type])
+            : (array) $user->user_type;
+
+        return in_array('superadmin', $userTypes, true);
+    }
+
     private function isDirectManager($user, PromotionalActivity $activity): bool
     {
-        if ($user->hasRole('superadmin')) return true;
+        if ($this->isSuperAdmin($user)) return true;
         $creator = $activity->creator;
         if (!$creator) return false;
         $managerIds = array_map('intval', array_filter(array_map('trim', explode(',', (string) $creator->reportingid))));
@@ -83,29 +100,29 @@ class PromotionalActivityController extends Controller
         $user = $request->user();
         $visibleUserIds = array_map('intval', getUsersReportingToAuth($user->id));
         abort_unless(
-            $user->hasRole('superadmin')
+            $this->isSuperAdmin($user)
             || (int) $activity->created_by === (int) $user->id
             || in_array((int) $activity->created_by, $visibleUserIds, true),
             403
         );
 
+        $isSuperAdmin = $this->isSuperAdmin($user);
         $query = MasterDistributor::query()
-            ->select('id', 'legal_name', 'trade_name', 'distributor_code')
-            ->where(function ($statusQuery) {
+            ->select('id', 'legal_name', 'trade_name', 'distributor_code');
+
+        if (!$isSuperAdmin) {
+            $query->where(function ($statusQuery) {
                 $statusQuery->whereNull('business_status')
                     ->orWhere('business_status', '')
                     ->orWhereRaw('LOWER(TRIM(business_status)) != ?', ['inactive']);
             });
 
-        if (!$user->hasRole('superadmin')) {
             $creatorId = (int) $activity->created_by;
             $query->where(function ($assigned) use ($creatorId) {
                 $assigned->where('created_by', $creatorId)
-                    ->orWhere('sales_executive_id', 'LIKE', '%"'.$creatorId.'"%')
-                    ->orWhere('sales_executive_id', 'LIKE', '%['.$creatorId.']%')
-                    ->orWhere('sales_executive_id', 'LIKE', '%,'.$creatorId.',%')
-                    ->orWhere('sales_executive_id', 'LIKE', '['.$creatorId.',%')
-                    ->orWhere('sales_executive_id', 'LIKE', '%,'.$creatorId.']')
+                    ->orWhereJsonContains('sales_executive_id', $creatorId)
+                    ->orWhereJsonContains('sales_executive_id', (string) $creatorId)
+                    ->orWhereRaw("JSON_SEARCH(sales_executive_id, 'one', ?) IS NOT NULL", [(string) $creatorId])
                     ->orWhere('sales_executive_id', (string) $creatorId);
             });
         }
