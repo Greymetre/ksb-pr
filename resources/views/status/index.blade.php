@@ -155,6 +155,7 @@
                       <option value="Payment Status" {{ old( 'module' , (!empty($status->module))?($status->module):('') ) == 'Payment Status' ? 'selected' : '' }}>Payment Status</option>
                       <option value="Coupons" {{ old( 'module' , (!empty($status->module))?($status->module):('') ) == 'Coupons' ? 'selected' : '' }}>Coupons</option>
                       <option value="Campaign Status" {{ old( 'module' , (!empty($status->module))?($status->module):('') ) == 'Campaign Status' ? 'selected' : '' }}>Campaign Status</option>
+                      <option value="Promotional Activity" {{ old( 'module' , (!empty($status->module))?($status->module):('') ) == 'Promotional Activity' ? 'selected' : '' }}>Promotional Activity</option>
                     </select>
                   </div>
                   @if ($errors->has('module'))
