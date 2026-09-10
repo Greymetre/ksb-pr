@@ -233,6 +233,7 @@ class PromotionalActivityController extends Controller
             'distributor' => $promotionalActivity->distributor,
             'activity_photos' => collect($promotionalActivity->activity_photos ?: [])->map(fn ($path) => url('storage/'.$path))->values(),
             'participants' => $promotionalActivity->participants ?: [],
+            'execution_remark' => $promotionalActivity->execution_remark,
         ]]);
     }
 
@@ -252,6 +253,7 @@ class PromotionalActivityController extends Controller
             'participants_data.*.name' => 'required|string|max:150',
             'participants_data.*.mobile' => ['required', 'regex:/^[0-9]{10}$/'],
             'participants_data.*.address' => 'required|string|max:255',
+            'execution_remark' => 'nullable|string|max:1000',
         ]);
         if ($validator->fails()) return response()->json(['success' => false, 'message' => $validator->errors()], 422);
 
@@ -264,6 +266,7 @@ class PromotionalActivityController extends Controller
             'distributor_id' => $request->distributor_id,
             'activity_photos' => $photoPaths,
             'participants' => array_values($participants),
+            'execution_remark' => $request->input('execution_remark'),
             'approval_status' => 'completed',
             'completed_at' => now(),
         ]);

@@ -14,7 +14,7 @@ class PromotionalActivity extends Model
         'distributor_share', 'remark', 'approval_status', 'created_by',
         'reporting_manager_id', 'approved_rejected_by', 'approved_rejected_at',
         'approval_remark',
-        'distributor_id', 'activity_photos', 'participants', 'completed_at',
+        'distributor_id', 'activity_photos', 'participants', 'execution_remark', 'completed_at',
     ];
 
     protected $casts = [
