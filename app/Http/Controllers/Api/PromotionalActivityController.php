@@ -231,7 +231,7 @@ class PromotionalActivityController extends Controller
             'can_approve' => $canApprove,
             'can_complete' => $canComplete,
             'distributor' => $promotionalActivity->distributor,
-            'activity_photos' => collect($promotionalActivity->activity_photos ?: [])->map(fn ($path) => url('storage/'.$path))->values(),
+            'activity_photos' => collect($promotionalActivity->activity_photos ?: [])->values(),
             'participants' => $promotionalActivity->participants ?: [],
             'execution_remark' => $promotionalActivity->execution_remark,
         ]]);
