@@ -4,22 +4,28 @@ namespace App\Http\Controllers;
 
 use App\Models\PromotionalGift;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
 use Yajra\DataTables\Facades\DataTables;
 
 class PromotionalGiftController extends Controller
 {
+    private function canManage(string $permission): bool
+    {
+        $user = auth()->user();
+
+        return $user && ($user->hasRole('superadmin') || $user->can($permission));
+    }
+
     public function index(Request $request)
     {
-        abort_if(Gate::denies('promotional_gift_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        abort_if(!$this->canManage('promotional_gift_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         if ($request->ajax()) {
             return DataTables::of(PromotionalGift::with('creator')->latest())
                 ->addIndexColumn()
                 ->addColumn('status_toggle', function (PromotionalGift $gift) {
-                    if (auth()->user()->cannot('promotional_gift_active')) {
+                    if (!$this->canManage('promotional_gift_active')) {
                         return $gift->active === 'Y'
                             ? '<span class="badge badge-success">Active</span>'
                             : '<span class="badge badge-secondary">Inactive</span>';
@@ -32,10 +38,10 @@ class PromotionalGiftController extends Controller
                 })
                 ->addColumn('action', function (PromotionalGift $gift) {
                     $buttons = '';
-                    if (auth()->user()->can('promotional_gift_edit')) {
+                    if ($this->canManage('promotional_gift_edit')) {
                         $buttons .= '<button type="button" class="btn btn-theme btn-just-icon btn-sm editGift" data-id="'.$gift->id.'" title="Edit Gift"><i class="material-icons">edit</i></button>';
                     }
-                    if (auth()->user()->can('promotional_gift_delete')) {
+                    if ($this->canManage('promotional_gift_delete')) {
                         $buttons .= '<button type="button" class="btn btn-danger btn-just-icon btn-sm deleteGift" data-id="'.$gift->id.'" title="Delete Gift"><i class="material-icons">clear</i></button>';
                     }
                     return '<div class="btn-group btn-group-sm" role="group">'.$buttons.'</div>';
@@ -50,7 +56,7 @@ class PromotionalGiftController extends Controller
 
     public function store(Request $request)
     {
-        abort_if(Gate::denies('promotional_gift_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        abort_if(!$this->canManage('promotional_gift_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150', Rule::unique('promotional_gifts', 'name')],
@@ -67,14 +73,14 @@ class PromotionalGiftController extends Controller
 
     public function edit(PromotionalGift $promotionalGift)
     {
-        abort_if(Gate::denies('promotional_gift_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        abort_if(!$this->canManage('promotional_gift_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         return response()->json($promotionalGift);
     }
 
     public function update(Request $request, PromotionalGift $promotionalGift)
     {
-        abort_if(Gate::denies('promotional_gift_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        abort_if(!$this->canManage('promotional_gift_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150', Rule::unique('promotional_gifts', 'name')->ignore($promotionalGift->id)],
@@ -88,7 +94,7 @@ class PromotionalGiftController extends Controller
 
     public function destroy(PromotionalGift $promotionalGift)
     {
-        abort_if(Gate::denies('promotional_gift_delete'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        abort_if(!$this->canManage('promotional_gift_delete'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $promotionalGift->delete();
 
         return response()->json(['status' => 'success', 'message' => 'Gift deleted successfully.']);
@@ -96,7 +102,7 @@ class PromotionalGiftController extends Controller
 
     public function active(Request $request, PromotionalGift $promotionalGift)
     {
-        abort_if(Gate::denies('promotional_gift_active'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        abort_if(!$this->canManage('promotional_gift_active'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $promotionalGift->update([
             'active' => $promotionalGift->active === 'Y' ? 'N' : 'Y',
             'updated_by' => auth()->id(),

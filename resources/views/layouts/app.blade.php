@@ -2798,7 +2798,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('promotional_gift_access'))
+                            @if(auth()->user()->hasRole('superadmin') || auth()->user()->can('promotional_gift_access'))
                             <li class="nav-link-btn {{ request()->is('promotional-gifts*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ route('promotional-gifts.index') }}">
                                     <i class="material-icons icon">redeem</i>

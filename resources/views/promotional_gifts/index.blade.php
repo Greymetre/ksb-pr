@@ -6,7 +6,7 @@
         <div class="card-icon"><i class="material-icons">redeem</i></div>
         <h4 class="card-title">Gift List
           <span class="btn-group header-frm-btn">
-            @if(auth()->user()->can('promotional_gift_create'))
+            @if(auth()->user()->hasRole('superadmin') || auth()->user()->can('promotional_gift_create'))
             <span class="next-btn">
               <button type="button" class="btn btn-just-icon btn-theme" data-toggle="modal" data-target="#giftModal" id="createGift" title="Add Gift">
                 <i class="material-icons">add_circle</i>
