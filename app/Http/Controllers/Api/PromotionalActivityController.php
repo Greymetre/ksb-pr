@@ -188,7 +188,7 @@ class PromotionalActivityController extends Controller
             'reportingManager:id,name,designation_id',
             'reportingManager.getdesignation:id,designation_name',
             'gifts:id,name',
-            'distributor:id,legal_name,trade_name,distributor_code',
+            'distributor:id,name,customer_code,sap_code',
         ]);
 
         $user = $request->user();
