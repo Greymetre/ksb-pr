@@ -810,7 +810,7 @@ class ExpensesController extends Controller
 
     public function expensePdfDownload(Request $request)
     {
-        abort_unless(Auth::user()->can('expense_download'), 403, '403 Forbidden');
+        abort_unless(Auth::user()->can('expense_pdf_download'), 403, '403 Forbidden');
 
         $validated = $request->validate([
             'user_id' => ['nullable', 'integer', 'exists:users,id'],

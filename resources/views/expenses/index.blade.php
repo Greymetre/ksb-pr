@@ -110,7 +110,7 @@
                     <button class="btn btn-success btn-sm multiChange mr-1" data-status="1"  title="Approve">Approve</button>
                     <button class="btn btn-danger btn-sm multiChange mr-2" data-status="2" title="Reject">Reject</button>
                   </div>
-                   @if(auth()->user()->can(['expense_download']))
+                   @if(auth()->user()->can(['expense_pdf_download']))
                    <button type="button" class="btn btn-just-icon btn-theme fk-preserve-list-action" data-toggle="modal" data-target="#expensePdfModal" title="Download Expense PDF" aria-label="Download Expense PDF">
                      <i class="material-icons">picture_as_pdf</i>
                    </button>
@@ -232,7 +232,7 @@
      </div>
    </div>
 
-   @if(auth()->user()->can(['expense_download']))
+   @if(auth()->user()->can(['expense_pdf_download']))
    <div class="modal fade" id="expensePdfModal" tabindex="-1" role="dialog" aria-labelledby="expensePdfModalLabel" aria-hidden="true">
      <div class="modal-dialog" role="document">
        <form method="GET" action="{{ route('expenses.pdf.download') }}" class="modal-content">
