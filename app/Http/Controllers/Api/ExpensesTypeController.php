@@ -237,6 +237,10 @@ class ExpensesTypeController extends Controller
                     'expenses_type'  => "required",
                     'claim_amount'  => "required",
                     'date'  => "required",
+                    // Optional for backward compatibility with older app versions.
+                    'night_halt' => 'nullable|boolean',
+                    'from' => 'nullable|string|max:255',
+                    'to' => 'nullable|string|max:255',
                     'expense_file.*' => 'mimes:jpeg,jpg,png,pdf,doc,webp',
                 ]
             );
@@ -252,6 +256,9 @@ class ExpensesTypeController extends Controller
                 'expenses_type' => isset($request->expenses_type) ? $request->expenses_type : null,
                 'rate' => $this->resolveExpenseRate($request->expenses_type, $request->rate),
                 'date' => isset($request->date) ? $request->date : null,
+                'night_halt' => $request->has('night_halt') ? $request->boolean('night_halt') : null,
+                'from_location' => $request->input('from'),
+                'to_location' => $request->input('to'),
                 'claim_amount' => isset($request->claim_amount) ? $request->claim_amount : null,
                 'start_km' => isset($request->start_km) ? $request->start_km : null,
                 'stop_km' => isset($request->stop_km) ? $request->stop_km : null,
@@ -348,6 +355,9 @@ class ExpensesTypeController extends Controller
                         'rate' => $this->expenseRate($expense),
                         'user_id' => $expense->user_id ?? "",
                         'date' => date("d-m-Y", strtotime($expense->date)),
+                        'night_halt' => (int) $expense->night_halt,
+                        'from' => $expense->from_location ?? "",
+                        'to' => $expense->to_location ?? "",
                         'note' => $expense->note ?? "",
                         'start_km' => $expense->start_km ?? "",
                         'stop_km' => $expense->stop_km ?? "",
@@ -427,6 +437,9 @@ class ExpensesTypeController extends Controller
                 $datas['user_name'] = $expense->users->name ?? "";
                 $datas['employee_code'] = $expense->users->employee_codes ?? $expense->users->emp_code ?? "";
                 $datas['date'] = date("d-m-Y", strtotime($expense->date));
+                $datas['night_halt'] = (int) $expense->night_halt;
+                $datas['from'] = $expense->from_location ?? "";
+                $datas['to'] = $expense->to_location ?? "";
                 $datas['note'] = $expense->note ?? "";
                 $datas['start_km'] = $expense->start_km ?? "";
                 $datas['stop_km'] = $expense->stop_km ?? "";
@@ -491,6 +504,9 @@ class ExpensesTypeController extends Controller
                 [
                     'expense_id'  => 'required|exists:expenses,id',
                     'date' => 'nullable|date_format:Y-m-d|before_or_equal:today',
+                    'night_halt' => 'nullable|boolean',
+                    'from' => 'nullable|string|max:255',
+                    'to' => 'nullable|string|max:255',
                     'expense_file.*' => 'mimes:jpeg,jpg,png,pdf,doc,webp',
                 ]
             );
@@ -508,6 +524,9 @@ class ExpensesTypeController extends Controller
                 'expenses_type' => $expenseTypeId,
                 'rate' => $rate,
                 'date' => $request->filled('date') ? $request->input('date') : $expense_detail->date,
+                'night_halt' => $request->has('night_halt') ? $request->boolean('night_halt') : $expense_detail->night_halt,
+                'from_location' => $request->filled('from') ? $request->input('from') : $expense_detail->from_location,
+                'to_location' => $request->filled('to') ? $request->input('to') : $expense_detail->to_location,
                 'note' => isset($request['note']) ? $request['note'] : $expense_detail->note,
                 'start_km' => isset($request['start_km']) ? $request['start_km'] : $expense_detail->start_km,
                 'stop_km' => isset($request['stop_km']) ? $request['stop_km'] : $expense_detail->stop_km,
@@ -648,6 +667,9 @@ class ExpensesTypeController extends Controller
                         'rate' => $this->expenseRate($expense),
                         'user_id' => $expense->user_id ?? "",
                         'date' => date("d-m-Y", strtotime($expense->date)),
+                        'night_halt' => (int) $expense->night_halt,
+                        'from' => $expense->from_location ?? "",
+                        'to' => $expense->to_location ?? "",
                         'note' => $expense->note ?? "",
                         'start_km' => $expense->start_km ?? "",
                         'stop_km' => $expense->stop_km ?? "",

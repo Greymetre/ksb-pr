@@ -71,6 +71,29 @@
                 </div>
               </div>
 
+              <div class="col-md-6">
+                <div class="input_section">
+                  <label class="col-form-label">Night Halt<span class="text-danger"> *</span></label>
+                  <div class="form-group has-default bmd-form-group pt-2">
+                    <div class="form-check form-check-radio form-check-inline">
+                      <label class="form-check-label">
+                        <input class="form-check-input" type="radio" name="night_halt" value="1" {{ old('night_halt') === '1' ? 'checked' : '' }} required> Yes
+                        <span class="circle"><span class="check"></span></span>
+                      </label>
+                    </div>
+                    <div class="form-check form-check-radio form-check-inline">
+                      <label class="form-check-label">
+                        <input class="form-check-input" type="radio" name="night_halt" value="0" {{ old('night_halt') === '0' ? 'checked' : '' }} required> No
+                        <span class="circle"><span class="check"></span></span>
+                      </label>
+                    </div>
+                    @if($errors->has('night_halt'))
+                    <div class="invalid-feedback d-block">{{ $errors->first('night_halt') }}</div>
+                    @endif
+                  </div>
+                </div>
+              </div>
+
 
               <div class="col-md-6">
                 <div class="input_section">
@@ -196,6 +219,30 @@
                 </div>
               </div>
 
+              <div class="col-md-6">
+                <div class="input_section">
+                  <label class="col-form-label">From<span class="text-danger"> *</span></label>
+                  <div class="form-group has-default bmd-form-group">
+                    <input placeholder="Enter starting location" class="form-control {{ $errors->has('from') ? 'is-invalid' : '' }}" type="text" name="from" id="from" value="{{ old('from', '') }}" maxlength="255" required autocomplete="off">
+                    @if($errors->has('from'))
+                    <div class="invalid-feedback">{{ $errors->first('from') }}</div>
+                    @endif
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="input_section">
+                  <label class="col-form-label">To<span class="text-danger"> *</span></label>
+                  <div class="form-group has-default bmd-form-group">
+                    <input placeholder="Enter destination" class="form-control {{ $errors->has('to') ? 'is-invalid' : '' }}" type="text" name="to" id="to" value="{{ old('to', '') }}" maxlength="255" required autocomplete="off">
+                    @if($errors->has('to'))
+                    <div class="invalid-feedback">{{ $errors->first('to') }}</div>
+                    @endif
+                  </div>
+                </div>
+              </div>
+
          
               <div class="col-md-6">
                 <div class="input_section">
@@ -294,4 +341,4 @@ $(document).ready(function(){
 </script>
 
 <script src="{{ url('/').'/'.asset('assets/js/validation_expenses_type.js') }}"></script>
-</x-app-layout> 
+</x-app-layout>

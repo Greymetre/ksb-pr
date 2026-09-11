@@ -305,6 +305,9 @@ class ExpensesController extends Controller
             'user_id'          => 'required',
             'claim_amount'    => 'required',
             'date'            => 'required',
+            'night_halt'      => 'required|boolean',
+            'from'            => 'required|string|max:255',
+            'to'              => 'required|string|max:255',
         ];
 
 
@@ -319,6 +322,9 @@ class ExpensesController extends Controller
                     'rate' => $this->resolveExpenseRate($request->expenses_type, $request->rate),
                     'user_id' => $request->user_id ?? NULL,
                     'date' => $request->date ?? NULL,
+                    'night_halt' => $request->boolean('night_halt'),
+                    'from_location' => $request->from,
+                    'to_location' => $request->to,
                     'claim_amount' => $request->claim_amount ?? NULL,
                     'start_km' => $request->start_km ?? NULL,
                     'stop_km' => $request->stop_km ?? NULL,
@@ -361,6 +367,9 @@ class ExpensesController extends Controller
                         'rate' => $this->resolveExpenseRate($request->expenses_type, $request->rate),
                         'user_id' => $request->user_id ?? NULL,
                         'date' => $request->date ?? NULL,
+                        'night_halt' => $request->boolean('night_halt'),
+                        'from_location' => $request->from,
+                        'to_location' => $request->to,
                         'claim_amount' => $request->claim_amount ?? NULL,
                         'start_km' => $request->start_km ?? NULL,
                         'stop_km' => $request->stop_km ?? NULL,
@@ -539,6 +548,9 @@ class ExpensesController extends Controller
             'user_id'          => 'required',
             'claim_amount'    => 'required',
             'date'            => 'required',
+            'night_halt'      => 'required|boolean',
+            'from'            => 'required|string|max:255',
+            'to'              => 'required|string|max:255',
         ];
 
 
@@ -562,6 +574,9 @@ class ExpensesController extends Controller
                     'rate' => $rate,
                     'user_id' => $request->user_id ?? NULL,
                     'date' => $request->date ?? NULL,
+                    'night_halt' => $request->boolean('night_halt'),
+                    'from_location' => $request->from,
+                    'to_location' => $request->to,
                     'claim_amount' => $request->claim_amount ?? NULL,
                     'start_km' => $request->start_km ?? NULL,
                     'stop_km' => $request->stop_km ?? NULL,
@@ -580,6 +595,9 @@ class ExpensesController extends Controller
                     'rate' => $rate,
                     'user_id' => $request->user_id ?? NULL,
                     'date' => $request->date ?? NULL,
+                    'night_halt' => $request->boolean('night_halt'),
+                    'from_location' => $request->from,
+                    'to_location' => $request->to,
                     'claim_amount' => $request->claim_amount ?? NULL,
                     'start_km' => NULL,
                     'stop_km' => NULL,

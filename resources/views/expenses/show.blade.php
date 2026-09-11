@@ -373,6 +373,25 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
           </div>
           @endif
 
+          <div class="table-responsive">
+            <table class="table table-striped expense-km-table">
+              <thead>
+                <tr>
+                  <th>Night Halt</th>
+                  <th>From</th>
+                  <th>To</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{ $expense->night_halt ? 'Yes' : 'No' }}</td>
+                  <td>{{ $expense->from_location ?: '-' }}</td>
+                  <td>{{ $expense->to_location ?: '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
           <div class="expense-amount-grid">
             <div class="expense-amount-card">
               <span class="expense-info-label">Claim Amount</span>
