@@ -29,13 +29,16 @@ $expenseTypeWidth = $expenseTypes->count() ? min(13, max(6, 34 / $expenseTypes->
 @php
 $attendance = $attendanceByUserDate->get($userId . '|' . $date);
 $dayTotal = 0;
+$fromLocation = $dayExpenses->pluck('from_location')->filter()->first() ?: '-';
+$toLocation = $dayExpenses->pluck('to_location')->filter()->first() ?: '-';
+$nightHalt = $dayExpenses->contains(fn($expense) => (bool)$expense->night_halt) ? 'Yes' : 'No';
 $dayStatuses = $dayExpenses->pluck('checker_status')->map(fn($status) => (string)$status)->unique();
 $dayStatus = $dayStatuses->count() === 1 ? ($statusLabels[$dayStatuses->first()] ?? 'Pending') : 'Mixed';
 @endphp
 <tr>
 <td class="center">{{ \Carbon\Carbon::parse($date)->format('d-m-Y') }}</td>
-<td>{{ $attendance && $attendance->punchin_address ? $attendance->punchin_address : '-' }}</td><td>{{ $attendance && $attendance->punchout_address ? $attendance->punchout_address : '-' }}</td>
-<td class="center">{{ $attendance && $attendance->punchin_time ? date('h:i A', strtotime($attendance->punchin_time)) : '-' }}</td><td class="center">{{ $attendance && $attendance->punchout_time ? date('h:i A', strtotime($attendance->punchout_time)) : '-' }}</td><td class="center">-</td>
+<td>{{ $fromLocation }}</td><td>{{ $toLocation }}</td>
+<td class="center">{{ $attendance && $attendance->punchin_time ? date('h:i A', strtotime($attendance->punchin_time)) : '-' }}</td><td class="center">{{ $attendance && $attendance->punchout_time ? date('h:i A', strtotime($attendance->punchout_time)) : '-' }}</td><td class="center">{{ $nightHalt }}</td>
 @foreach($expenseTypes as $type)
 @php
 $amount = $dayExpenses->whereIn('expenses_type', $type['ids'])->sum(fn($expense) => $expense->approve_amount !== null ? (float)$expense->approve_amount : (float)$expense->claim_amount);
