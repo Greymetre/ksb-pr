@@ -1101,6 +1101,7 @@ Route::post('ajax/user-cities-by-district', [TourController::class, 'ajaxUserCit
     Route::post('expenses-checked-by-reporting', [ExpensesController::class, 'changeStatus']);
     Route::post('expenses-uncheck', [ExpensesController::class, 'uncheckStatus']);
     Route::any('expenses-download', [ExpensesController::class, 'expenseDownload'])->name('expenses.download');
+    Route::get('expenses-pdf-download', [ExpensesController::class, 'expensePdfDownload'])->name('expenses.pdf.download');
     Route::post('rejectExpense', [ExpensesController::class, 'rejectExpense'])->name('rejectExpense');
     Route::post('approveExpense', [ExpensesController::class, 'approveExpense'])->name('approveExpense');
     Route::post('getexpenseType', [ExpensesController::class, 'getexpenseType'])->name('getexpenseType');

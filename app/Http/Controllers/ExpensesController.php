@@ -24,6 +24,7 @@ use App\Models\CheckIn;
 use App\Models\Customers;
 use App\Models\TourProgramme;
 use App\Models\UserLiveLocation;
+use PDF;
 
 class ExpensesController extends Controller
 {
@@ -229,6 +230,18 @@ class ExpensesController extends Controller
 
         $pay_rolls = Config('constants.pay_roll');
 
+        $expensePdfUsers = User::query()
+            ->where('active', 'Y')
+            ->whereDoesntHave('roles', function ($query) {
+                $query->where('id', 29);
+            })
+            ->when(!$this->canAccessAllExpenses(), function ($query) use ($userids) {
+                $query->whereIn('id', $userids);
+            })
+            ->select('id', 'name', 'employee_codes')
+            ->orderBy('name')
+            ->get();
+
         return $dataTable->render('expenses.index', compact(
             'branches',
             'pay_rolls',
@@ -238,7 +251,8 @@ class ExpensesController extends Controller
             'reject_count',
             'checked_count',
             'reporting_checked_count',
-            'hold_count'
+            'hold_count',
+            'expensePdfUsers'
         ));
     }
 
@@ -792,6 +806,58 @@ class ExpensesController extends Controller
         ], $data);
 
         return Excel::download($export, $filename);
+    }
+
+    public function expensePdfDownload(Request $request)
+    {
+        abort_unless(Auth::user()->can('expense_download'), 403, '403 Forbidden');
+
+        $validated = $request->validate([
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+        ]);
+
+        $accessibleUserIds = $this->canAccessAllExpenses()
+            ? null
+            : array_map('intval', getUsersReportingToAuth());
+
+        if (!empty($validated['user_id']) && $accessibleUserIds !== null) {
+            abort_unless(in_array((int) $validated['user_id'], $accessibleUserIds, true), 403, '403 Forbidden');
+        }
+
+        $expenses = Expenses::with(['expense_type', 'users.getdesignation', 'users.getbranch'])
+            ->when($accessibleUserIds !== null, function ($query) use ($accessibleUserIds) {
+                $query->whereIn('user_id', $accessibleUserIds);
+            })
+            ->when(!empty($validated['user_id']), function ($query) use ($validated) {
+                $query->where('user_id', $validated['user_id']);
+            })
+            ->whereBetween('date', [$validated['start_date'], $validated['end_date']])
+            ->orderBy('date')
+            ->orderBy('user_id')
+            ->get();
+
+        $statusLabels = [
+            '0' => 'Pending',
+            '1' => 'Approved',
+            '2' => 'Rejected',
+            '3' => 'Checked',
+            '4' => 'Checked By Reporting',
+            '5' => 'Hold',
+        ];
+
+        $pdf = PDF::loadView('expenses.pdf', [
+            'expenses' => $expenses,
+            'startDate' => Carbon::parse($validated['start_date']),
+            'endDate' => Carbon::parse($validated['end_date']),
+            'selectedUser' => !empty($validated['user_id']) ? User::find($validated['user_id']) : null,
+            'statusLabels' => $statusLabels,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download(
+            'expense-report-' . $validated['start_date'] . '-to-' . $validated['end_date'] . '.pdf'
+        );
     }
 
 

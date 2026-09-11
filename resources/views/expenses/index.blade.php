@@ -110,6 +110,11 @@
                     <button class="btn btn-success btn-sm multiChange mr-1" data-status="1"  title="Approve">Approve</button>
                     <button class="btn btn-danger btn-sm multiChange mr-2" data-status="2" title="Reject">Reject</button>
                   </div>
+                   @if(auth()->user()->can(['expense_download']))
+                   <button type="button" class="btn btn-just-icon btn-theme" data-toggle="modal" data-target="#expensePdfModal" title="Download Expense PDF">
+                     <i class="material-icons">picture_as_pdf</i>
+                   </button>
+                   @endif
                    @if(auth()->user()->can(['expenses_create']))
                    <a href="{{ route('expenses.create') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.add') !!} {!! trans('panel.expenses.title_singular') !!}"><i class="material-icons">add_circle</i></a>
                    @endif
@@ -226,6 +231,48 @@
        </div>
      </div>
    </div>
+
+   @if(auth()->user()->can(['expense_download']))
+   <div class="modal fade" id="expensePdfModal" tabindex="-1" role="dialog" aria-labelledby="expensePdfModalLabel" aria-hidden="true">
+     <div class="modal-dialog" role="document">
+       <form method="GET" action="{{ route('expenses.pdf.download') }}" class="modal-content">
+         <div class="modal-header">
+           <h5 class="modal-title" id="expensePdfModalLabel">Download Expense PDF</h5>
+           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+         </div>
+         <div class="modal-body">
+           <div class="form-group">
+             <label for="pdf_user_id">Employee</label>
+             <select name="user_id" id="pdf_user_id" class="form-control" style="width: 100%;">
+               <option value="">All Employees</option>
+               @foreach($expensePdfUsers as $pdfUser)
+                 <option value="{{ $pdfUser->id }}">{{ $pdfUser->employee_codes ? '(' . $pdfUser->employee_codes . ') ' : '' }}{{ $pdfUser->name }}</option>
+               @endforeach
+             </select>
+           </div>
+           <div class="row">
+             <div class="col-md-6">
+               <div class="form-group">
+                 <label for="pdf_start_date">Start Date <span class="text-danger">*</span></label>
+                 <input type="date" name="start_date" id="pdf_start_date" class="form-control" required>
+               </div>
+             </div>
+             <div class="col-md-6">
+               <div class="form-group">
+                 <label for="pdf_end_date">End Date <span class="text-danger">*</span></label>
+                 <input type="date" name="end_date" id="pdf_end_date" class="form-control" required>
+               </div>
+             </div>
+           </div>
+         </div>
+         <div class="modal-footer">
+           <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+           <button type="submit" class="btn btn-theme"><i class="material-icons">picture_as_pdf</i> Download PDF</button>
+         </div>
+       </form>
+     </div>
+   </div>
+   @endif
 
    <!-- Bootstrap Modal -->
 
@@ -439,6 +486,21 @@
      var multiCheck = "{{ url('checkExpenses')}}";
      var multiReject = "{{ url('rejectExpenses')}}";
      var token = $("meta[name='csrf-token']").attr("content");
+
+     $('#expensePdfModal').on('shown.bs.modal', function () {
+       var modal = $(this);
+       if (!$('#pdf_user_id').hasClass('select2-hidden-accessible')) {
+         $('#pdf_user_id').select2({
+           dropdownParent: modal,
+           placeholder: 'Select Employee',
+           allowClear: true
+         });
+       }
+     });
+
+     $('#pdf_start_date, #pdf_end_date').on('change', function () {
+       $('#pdf_end_date').attr('min', $('#pdf_start_date').val());
+     });
 
      (function moveExpenseFiltersInline() {
        var target = document.getElementById('expenseInlineFilters');
