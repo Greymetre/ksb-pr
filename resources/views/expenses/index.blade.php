@@ -111,7 +111,7 @@
                     <button class="btn btn-danger btn-sm multiChange mr-2" data-status="2" title="Reject">Reject</button>
                   </div>
                    @if(auth()->user()->can(['expense_download']))
-                   <button type="button" class="btn btn-just-icon btn-theme" data-toggle="modal" data-target="#expensePdfModal" title="Download Expense PDF">
+                   <button type="button" class="btn btn-just-icon btn-theme fk-preserve-list-action" data-toggle="modal" data-target="#expensePdfModal" title="Download Expense PDF" aria-label="Download Expense PDF">
                      <i class="material-icons">picture_as_pdf</i>
                    </button>
                    @endif
