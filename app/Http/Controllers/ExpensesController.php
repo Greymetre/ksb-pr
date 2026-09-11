@@ -826,7 +826,7 @@ class ExpensesController extends Controller
             abort_unless(in_array((int) $validated['user_id'], $accessibleUserIds, true), 403, '403 Forbidden');
         }
 
-        $expenses = Expenses::with(['expense_type', 'users.getdesignation', 'users.getbranch'])
+        $expenses = Expenses::with(['expense_type', 'users.getdesignation', 'users.getbranch', 'users.getdivision', 'users.getdepartment'])
             ->when($accessibleUserIds !== null, function ($query) use ($accessibleUserIds) {
                 $query->whereIn('user_id', $accessibleUserIds);
             })
@@ -837,6 +837,16 @@ class ExpensesController extends Controller
             ->orderBy('date')
             ->orderBy('user_id')
             ->get();
+
+        $expenseTypes = ExpensesType::select('id', 'name')->orderBy('id')->get();
+        $attendanceByUserDate = Attendance::query()
+            ->whereIn('user_id', $expenses->pluck('user_id')->unique())
+            ->whereBetween('punchin_date', [$validated['start_date'], $validated['end_date']])
+            ->orderBy('punchin_time')
+            ->get()
+            ->keyBy(function ($attendance) {
+                return $attendance->user_id . '|' . Carbon::parse($attendance->punchin_date)->toDateString();
+            });
 
         $statusLabels = [
             '0' => 'Pending',
@@ -849,8 +859,11 @@ class ExpensesController extends Controller
 
         $pdf = PDF::loadView('expenses.pdf', [
             'expenses' => $expenses,
+            'expenseTypes' => $expenseTypes,
+            'attendanceByUserDate' => $attendanceByUserDate,
             'startDate' => Carbon::parse($validated['start_date']),
             'endDate' => Carbon::parse($validated['end_date']),
+            'submissionDate' => Carbon::now(),
             'selectedUser' => !empty($validated['user_id']) ? User::find($validated['user_id']) : null,
             'statusLabels' => $statusLabels,
         ])->setPaper('a4', 'landscape');
