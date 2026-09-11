@@ -423,7 +423,7 @@ $('body').on('click', '.activeRecord', function () {
                 $('.alert').addClass("alert-danger");
             }
             $('.message').append(data.message);
-            oTable.draw();
+            oTable.draw(false);
         },
     });
 });
@@ -451,7 +451,7 @@ $('body').on('click', '.delete', function () {
                 $('.alert').addClass("alert-danger");
             }
             $('.message').append(data.message);
-            oTable.draw();
+            oTable.draw(false);
         },
     });
 });
@@ -528,7 +528,7 @@ function disableButton() {
                 // }, 3000);
                 $('#approve_expense').modal('hide');
                 $('#expenseModal').modal('hide');
-                oTable.draw();
+                oTable.draw(false);
 
             } else {
                 $('.alert').addClass("alert-danger");
@@ -536,7 +536,7 @@ function disableButton() {
                 //   location.reload();
                 // }, 3000);
                 $('#approve_expense').modal('hide');
-                oTable.draw();
+                oTable.draw(false);
             }
             $('.message').append(response.message);
         },
@@ -572,14 +572,14 @@ function disableButtonreject() {
                 // }, 3000);
                 $('#reject_expense').modal('hide');
                 $('#expenseModal').modal('hide');
-                oTable.draw();
+                oTable.draw(false);
             } else {
                 $('.alert').addClass("alert-danger");
                 // setTimeout(function() {
                 //   location.reload();
                 // }, 3000);
                 $('#reject_expense').modal('hide');
-                oTable.draw();
+                oTable.draw(false);
             }
             $('.message').append(response.message);
         },
@@ -610,7 +610,7 @@ $('body').on('click', '.unchecked_status', function () {
                     //   location.reload();
                     // }, 3000);
                     $('#expenseModal').modal('hide');
-                    oTable.draw();
+                    oTable.draw(false);
 
                 } else {
                     $('.alert').addClass("alert-danger");
@@ -618,7 +618,7 @@ $('body').on('click', '.unchecked_status', function () {
                     //   location.reload();
                     // }, 3000);
                     $('#expenseModal').modal('hide');
-                    oTable.draw();
+                    oTable.draw(false);
                 }
                 $('.message').append(data.message);
 
@@ -654,7 +654,7 @@ $('body').on('click', '.checked_by_reporting_status', function () {
                     //   location.reload();
                     // }, 3000);
                     $('#expenseModal').modal('hide');
-                    oTable.draw();
+                    oTable.draw(false);
 
                 } else {
                     $('.alert').addClass("alert-danger");
@@ -662,7 +662,7 @@ $('body').on('click', '.checked_by_reporting_status', function () {
                     //   location.reload();
                     // }, 3000);
                     $('#expenseModal').modal('hide');
-                    oTable.draw();
+                    oTable.draw(false);
                 }
                 $('.message').append(data.message);
 
@@ -697,7 +697,7 @@ $('body').on('click', '.approve_status', function () {
                     //   location.reload();
                     // }, 3000);
                     $('#expenseModal').modal('hide');
-                    oTable.draw();
+                    oTable.draw(false);
 
                 } else {
                     $('.alert').addClass("alert-danger");
@@ -705,7 +705,7 @@ $('body').on('click', '.approve_status', function () {
                     //   location.reload();
                     // }, 3000);
                     $('#expenseModal').modal('hide');
-                    oTable.draw();
+                    oTable.draw(false);
                 }
                 $('.message').append(data.message);
 
@@ -741,7 +741,7 @@ $('body').on('click', '.hold_status', function () {
                     //   location.reload();
                     // }, 3000);
                     $('#expenseModal').modal('hide');
-                    oTable.draw();
+                    oTable.draw(false);
 
                 } else {
                     $('.alert').addClass("alert-danger");
@@ -749,7 +749,7 @@ $('body').on('click', '.hold_status', function () {
                     //   location.reload();
                     // }, 3000);
                     $('#expenseModal').modal('hide');
-                    oTable.draw();
+                    oTable.draw(false);
                 }
                 $('.message').append(data.message);
 
