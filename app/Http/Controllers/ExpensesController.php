@@ -838,7 +838,25 @@ class ExpensesController extends Controller
             ->orderBy('user_id')
             ->get();
 
-        $expenseTypes = ExpensesType::select('id', 'name')->orderBy('id')->get();
+        // Only render expense types present in the selected report. The master contains
+        // payroll-specific variants, so showing every row creates dozens of empty columns.
+        $expenseTypes = ExpensesType::query()
+            ->whereIn('id', $expenses->pluck('expenses_type')->filter()->unique())
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->groupBy(function ($type) {
+                return trim((string) $type->name);
+            })
+            ->map(function ($types, $name) {
+                return [
+                    'name' => $name,
+                    'ids' => $types->pluck('id')->map(function ($id) {
+                        return (int) $id;
+                    })->all(),
+                ];
+            })
+            ->values();
         $attendanceByUserDate = Attendance::query()
             ->whereIn('user_id', $expenses->pluck('user_id')->unique())
             ->whereBetween('punchin_date', [$validated['start_date'], $validated['end_date']])
