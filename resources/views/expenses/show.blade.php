@@ -373,23 +373,19 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
           </div>
           @endif
 
-          <div class="table-responsive">
-            <table class="table table-striped expense-km-table">
-              <thead>
-                <tr>
-                  <th>Night Halt</th>
-                  <th>From</th>
-                  <th>To</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>{{ $expense->night_halt ? 'Yes' : 'No' }}</td>
-                  <td>{{ $expense->from_location ?: '-' }}</td>
-                  <td>{{ $expense->to_location ?: '-' }}</td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="expense-travel-grid">
+            <div class="expense-travel-item">
+              <span class="expense-info-label">Night Halt</span>
+              <strong>{{ $expense->night_halt ? 'Yes' : 'No' }}</strong>
+            </div>
+            <div class="expense-travel-item">
+              <span class="expense-info-label">From</span>
+              <strong>{{ $expense->from_location ?: '-' }}</strong>
+            </div>
+            <div class="expense-travel-item">
+              <span class="expense-info-label">To</span>
+              <strong>{{ $expense->to_location ?: '-' }}</strong>
+            </div>
           </div>
 
           <div class="expense-amount-grid">
@@ -1318,6 +1314,51 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
       margin-bottom: 14px !important;
       border-radius: 12px;
       overflow: hidden;
+    }
+
+    body.fk-shell .expense-travel-grid {
+      display: grid;
+      margin-bottom: 14px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid rgba(90, 130, 220, .22);
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(9, 22, 52, .72);
+    }
+
+    body.fk-shell .expense-travel-item {
+      min-width: 0;
+      padding: 13px 16px;
+      border-right: 1px solid rgba(90, 130, 220, .22);
+    }
+
+    body.fk-shell .expense-travel-item:last-child {
+      border-right: 0;
+    }
+
+    body.fk-shell .expense-travel-item strong {
+      display: block;
+      margin-top: 9px;
+      color: #cbd9ff;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 767px) {
+      body.fk-shell .expense-travel-grid {
+        grid-template-columns: 1fr;
+      }
+
+      body.fk-shell .expense-travel-item {
+        border-right: 0;
+        border-bottom: 1px solid rgba(90, 130, 220, .22);
+      }
+
+      body.fk-shell .expense-travel-item:last-child {
+        border-bottom: 0;
+      }
     }
 
     body.fk-shell .expense-amount-grid {

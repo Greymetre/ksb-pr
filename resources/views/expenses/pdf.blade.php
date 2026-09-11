@@ -7,7 +7,9 @@
 @forelse($groupedReports as $userId => $userExpenses)
 @php
 $user = $userExpenses->first()->users;
-$dailyExpenses = $userExpenses->groupBy(fn($expense) => \Carbon\Carbon::parse($expense->date)->toDateString());
+$dailyExpenses = $userExpenses->groupBy(function ($expense) {
+    return \Carbon\Carbon::parse($expense->date)->toDateString() . '|' . ((bool)$expense->night_halt ? '1' : '0');
+});
 $typeTotals = [];
 foreach ($expenseTypes as $type) $typeTotals[$type['name']] = 0;
 $grandTotal = 0;
@@ -25,13 +27,15 @@ $expenseTypeWidth = $expenseTypes->count() ? min(13, max(6, 34 / $expenseTypes->
 @foreach($expenseTypes as $type)<th style="width:{{ $expenseTypeWidth }}%">{{ $type['name'] }}</th>@endforeach
 <th style="width:7%">Total</th><th style="width:7%">Status</th>
 </tr></thead><tbody>
-@foreach($dailyExpenses as $date => $dayExpenses)
+@foreach($dailyExpenses as $dateNightHalt => $dayExpenses)
 @php
+$dateParts = explode('|', $dateNightHalt, 2);
+$date = $dateParts[0];
 $attendance = $attendanceByUserDate->get($userId . '|' . $date);
 $dayTotal = 0;
 $fromLocation = $dayExpenses->pluck('from_location')->filter()->first() ?: '-';
 $toLocation = $dayExpenses->pluck('to_location')->filter()->first() ?: '-';
-$nightHalt = $dayExpenses->contains(fn($expense) => (bool)$expense->night_halt) ? 'Yes' : 'No';
+$nightHalt = ($dateParts[1] ?? '0') === '1' ? 'Yes' : 'No';
 $dayStatuses = $dayExpenses->pluck('checker_status')->map(fn($status) => (string)$status)->unique();
 $dayStatus = $dayStatuses->count() === 1 ? ($statusLabels[$dayStatuses->first()] ?? 'Pending') : 'Mixed';
 @endphp
