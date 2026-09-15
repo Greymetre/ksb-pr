@@ -37,7 +37,9 @@ class ComplaintApiController extends Controller
         $dealers = Customers::with('customeraddress')
             ->whereIn('id', $customerIds)
             ->where('active', 'Y')
-            ->whereHas('customertypes', fn ($query) => $query->whereRaw('LOWER(type_name) = ?', ['dealer']))
+            ->whereHas('customertypes', fn ($query) => $query
+                ->whereRaw('LOWER(TRIM(type_name)) = ?', ['dealer'])
+                ->whereRaw('LOWER(TRIM(customertype_name)) = ?', ['dealer']))
             ->orderBy('name')->get()
             ->map(function ($dealer) {
                 $address = $dealer->customeraddress;
@@ -82,7 +84,9 @@ class ComplaintApiController extends Controller
             ->where('customer_id', $validated['dealer_id'])
             ->where(fn ($query) => $query->whereNull('active')->orWhere('active', 'Y'))->exists();
         $isDealer = Customers::whereKey($validated['dealer_id'])
-            ->whereHas('customertypes', fn ($query) => $query->whereRaw('LOWER(type_name) = ?', ['dealer']))
+            ->whereHas('customertypes', fn ($query) => $query
+                ->whereRaw('LOWER(TRIM(type_name)) = ?', ['dealer'])
+                ->whereRaw('LOWER(TRIM(customertype_name)) = ?', ['dealer']))
             ->exists();
         abort_unless($isAssigned && $isDealer, 403, 'The selected dealer is not available in your reporting hierarchy.');
 
