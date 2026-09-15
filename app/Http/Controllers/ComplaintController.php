@@ -105,6 +105,8 @@ class ComplaintController extends Controller
             'received_through' => $complaint->complaint_recieve_via,
             'status' => $statusNames[(int) $complaint->complaint_status] ?? 'Open',
             'detail_url' => route('complaints.show', $complaint->id),
+            'edit_url' => Auth::user()->can('complaint_edit') && (int) $complaint->complaint_status === 0 ? route('complaints.edit', $complaint->id) : null,
+            'delete_url' => Auth::user()->can('complaint_delete') ? route('complaints.destroy', $complaint->id) : null,
         ]);
         return response()->json(['data' => $items, 'counts' => $counts, 'current_page' => $page->currentPage(), 'last_page' => $page->lastPage()]);
     }
@@ -679,20 +681,17 @@ class ComplaintController extends Controller
      */
     public function edit(Complaint $complaint)
     {
-        $this->complaint = $complaint;
-        $assign_users = User::with(['roles' => function ($query) {
-                $query->with('permissions');
-            }])->select('id', 'name')
-            ->get();
-        $end_users = EndUser::where('status' , 1)->select('id' , 'customer_name' , 'customer_number')->get();
-        $service_centers = Customers::where('customertype', '4')->select('id', 'name')->get();
-        $branchs = Branch::where('active', 'Y')->select('id', 'branch_name', 'branch_code')->get();
-        $pincodes = Pincode::where('active', 'Y')->select('id', 'pincode')->get();
-        $divisions = Division::where('active', 'Y')->select('id', 'division_name')->get();
-        $complaint_types = ComplaintType::where('active', 'Y')->select('id', 'name')->get();
-        $products = Product::where('active', 'Y')->select('product_name', 'id')->get();
-        $states = State::where('active', 'Y')->select('id', 'state_name')->get();
-        return view('complaint.create', compact('assign_users', 'service_centers', 'branchs', 'pincodes', 'divisions', 'complaint_types', 'products', 'states' , 'end_users'))->with('complaints', $this->complaint);
+        abort_unless(Auth::user()->can('complaint_edit'), 403);
+        abort_unless((int) $complaint->complaint_status === 0, 422, 'Only open complaints can be edited.');
+        $visibleUserIds = array_values(array_unique(array_merge(getUsersReportingToAuth(auth()->id()), [auth()->id()])));
+        $customerIds = EmployeeDetail::whereIn('user_id', $visibleUserIds)->where(fn ($query) => $query->whereNull('active')->orWhere('active', 'Y'))->distinct()->pluck('customer_id');
+        $dealers = Customers::with('customeraddress')->whereIn('id', $customerIds)->where('active', 'Y')->whereHas('customertypes', fn ($query) => $query->whereRaw('LOWER(TRIM(type_name)) = ?', ['dealer'])->whereRaw('LOWER(TRIM(customertype_name)) = ?', ['dealer']))->orderBy('name')->get();
+        $categories = Category::where('active', 'Y')->orderBy('ranking')->orderBy('category_name')->get(['id', 'category_name']);
+        $receivedThrough = Status::where('active', 'Y')->where('module', 'Complaint Received Through')->orderBy('display_name')->get();
+        $complaint->form_category_id = $complaint->product_category_id ?: Category::where('category_name', $complaint->category)->value('id');
+        $complaint->form_received_id = $complaint->complaint_received_through_id ?: Status::where('module', 'Complaint Received Through')->where(fn ($query) => $query->where('display_name', $complaint->complaint_recieve_via)->orWhere('status_name', $complaint->complaint_recieve_via))->value('id');
+        $exampleComplaintNumber = $complaint->complaint_number;
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber'))->with('complaints', $complaint);
     }
 
     /**
@@ -704,21 +703,18 @@ class ComplaintController extends Controller
      */
     public function update(Request $request, Complaint $complaint)
     {
-        if ($request->file('files') && count($request->file('files')) > 0) {
-            foreach ($request->file('files') as $file) {
-                $customname = time() . '.' . $file->getClientOriginalExtension();
-                $complaint->addMedia($file)
-                    ->usingFileName($customname)
-                    ->toMediaCollection('complaint_attach');
-            }
-        }
-        $request['complaint_date'] = $request->complaint_date ? cretaDate($request->complaint_date) : NULL;
-        $request['company_sale_bill_date'] = $request->company_sale_bill_date ? cretaDate($request->company_sale_bill_date) : NULL;
-        $request['customer_bill_date'] =  $request->customer_bill_date ? cretaDate($request->customer_bill_date) : NULL;
-        $complaint->update($request->all());
-        $newComplaintNumber = $complaint->complaint_number;
-
-        return Redirect::to('complaints')->with('message_success', 'Complaint Update Successfully and the complaint number is <span title="Copy" id="copyText">' . $newComplaintNumber . '</span>');
+        abort_unless(Auth::user()->can('complaint_edit'), 403);
+        abort_unless((int) $complaint->complaint_status === 0, 422, 'Only open complaints can be edited.');
+        $validated = $request->validate(['dealer_id'=>'required|integer|exists:customers,id','alternate_number'=>['nullable','regex:/^[0-9]{10}$/'],'end_user_name'=>'nullable|string|max:150','end_user_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'technician_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'product_category_id'=>'required|integer|exists:categories,id','product_size'=>'nullable|string|max:50','size_unit'=>'required|in:MM,Inch','batch_no_dom'=>'nullable|string|max:100','description'=>'required|string|max:5000','complaint_received_through_id'=>'required|integer|exists:statuses,id','attachment'=>'nullable|file|mimes:jpg,jpeg,png,heic,heif,webp,pdf|max:20480']);
+        $category = Category::findOrFail($validated['product_category_id']);
+        $received = Status::whereKey($validated['complaint_received_through_id'])->where('module','Complaint Received Through')->where('active','Y')->firstOrFail();
+        $endUserId = $complaint->end_user_id;
+        if (!empty($validated['end_user_name']) || !empty($validated['end_user_mobile'])) { $endUser = !empty($validated['end_user_mobile']) ? EndUser::updateOrCreate(['customer_number'=>$validated['end_user_mobile']],['customer_name'=>$validated['end_user_name']??'']) : EndUser::create(['customer_name'=>$validated['end_user_name']]); $endUserId=$endUser->id; }
+        $data=['party_name'=>$validated['dealer_id'],'end_user_id'=>$endUserId,'category'=>$category->category_name,'specification'=>trim(($validated['product_size']??'').' '.$validated['size_unit']),'product_no'=>$validated['batch_no_dom']??null,'service_centre_remark'=>$validated['technician_mobile']??null,'remark'=>$validated['alternate_number']??null,'description'=>$validated['description'],'complaint_recieve_via'=>$received->display_name?:$received->status_name];
+        $columns=array_flip(Schema::getColumnListing('complaints')); foreach(['dealer_id','alternate_number','end_user_name','end_user_mobile','technician_mobile','product_category_id','product_size','size_unit','batch_no_dom','complaint_received_through_id'] as $column) if(isset($columns[$column])) $data[$column]=$validated[$column]??null;
+        $complaint->forceFill($data)->save();
+        if($request->hasFile('attachment')){$file=$request->file('attachment');$name='complaint-'.$complaint->id.'-'.now()->format('YmdHis').'.'.strtolower($file->getClientOriginalExtension()?:'jpg');File::ensureDirectoryExists(public_path('uploads/complaints'),0755,true);$file->move(public_path('uploads/complaints'),$name);if(isset($columns['attachment_path']))$complaint->forceFill(['attachment_path'=>'uploads/complaints/'.$name])->save();}
+        return Redirect::to('complaints')->with('message_success','Complaint updated successfully.');
     }
 
     /**
@@ -729,7 +725,11 @@ class ComplaintController extends Controller
      */
     public function destroy(Complaint $complaint)
     {
-        //
+        abort_unless(Auth::user()->can('complaint_delete'), 403);
+        foreach(glob(public_path('uploads/complaints/complaint-'.$complaint->id.'-*'))?:[] as $file) File::delete($file);
+        $complaint->clearMediaCollection('complaint_attach');
+        $complaint->delete();
+        return response()->json(['status'=>'success','message'=>'Complaint deleted successfully.']);
     }
 
     public function getComplaintNumber()
