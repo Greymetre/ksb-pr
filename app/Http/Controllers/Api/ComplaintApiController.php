@@ -39,6 +39,13 @@ class ComplaintApiController extends Controller
         $dealer = $complaint->party;
         $address = $dealer?->customeraddress;
         $attachmentPath = Schema::hasColumn('complaints', 'attachment_path') ? $complaint->attachment_path : null;
+        if (!$attachmentPath) {
+            $localAttachments = glob(public_path('uploads/complaints/complaint-' . $complaint->id . '-*')) ?: [];
+            usort($localAttachments, fn ($left, $right) => filemtime($right) <=> filemtime($left));
+            if (!empty($localAttachments)) {
+                $attachmentPath = 'uploads/complaints/' . basename($localAttachments[0]);
+            }
+        }
 
         return response()->json(['status' => 'success', 'data' => [
             'id' => $complaint->id,
