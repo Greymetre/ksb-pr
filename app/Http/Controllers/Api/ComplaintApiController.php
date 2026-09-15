@@ -41,7 +41,7 @@ class ComplaintApiController extends Controller
                 'assign_users:id,name',
             ])
             ->where('created_by', $request->user()->id)
-            ->where('created_by_device', 'mobile_app')
+            ->where('created_by_device', 'user')
             ->latest('id')
             ->get()
             ->map(function ($complaint) use ($statusNames) {
@@ -162,7 +162,7 @@ class ComplaintApiController extends Controller
                 'description' => $validated['description'],
                 'complaint_recieve_via' => $receivedThrough->display_name ?: $receivedThrough->status_name,
                 'complaint_status' => 0,
-                'created_by_device' => 'mobile_app',
+                'created_by_device' => 'user',
                 'created_by' => $request->user()->id,
             ]);
 
