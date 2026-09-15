@@ -196,15 +196,35 @@ class ComplaintApiController extends Controller
                 }
             }
 
-            $complaint = Complaint::forceCreate($data);
-
-            if ($request->hasFile('attachment')) {
-                $complaint->addMediaFromRequest('attachment')->toMediaCollection('complaint_attach');
-            }
-            return $complaint;
+            return Complaint::forceCreate($data);
         });
 
-        return response()->json(['status' => 'success', 'message' => 'Complaint created successfully.', 'data' => $complaint], 201);
+        $attachmentWarning = null;
+        if ($request->hasFile('attachment')) {
+            try {
+                $file = $request->file('attachment');
+                $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'jpg');
+                $safeFileName = 'complaint-' . $complaint->id . '-' . now()->format('YmdHis') . '.' . $extension;
+                $complaint->addMedia($file)
+                    ->usingFileName($safeFileName)
+                    ->toMediaCollection('complaint_attach');
+            } catch (\Throwable $attachmentException) {
+                $attachmentReference = (string) Str::uuid();
+                Log::error('Mobile complaint attachment upload failed', [
+                    'reference' => $attachmentReference,
+                    'complaint_id' => $complaint->id,
+                    'exception' => $attachmentException,
+                ]);
+                $attachmentWarning = 'Complaint created, but attachment upload failed. Reference: ' . $attachmentReference;
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Complaint created successfully.',
+            'warning' => $attachmentWarning,
+            'data' => $complaint->fresh(),
+        ], 201);
         } catch (\Throwable $exception) {
             $reference = (string) Str::uuid();
             Log::error('Mobile complaint creation failed', [
