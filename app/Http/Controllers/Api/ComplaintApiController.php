@@ -67,6 +67,7 @@ class ComplaintApiController extends Controller
             'received_through' => $complaint->complaint_recieve_via,
             'assignee' => $complaint->assign_users?->name,
             'attachment_url' => $attachmentPath ? asset($attachmentPath) : null,
+            'attachment_path' => $attachmentPath,
         ]]);
     }
 
