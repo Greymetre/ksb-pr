@@ -58,7 +58,7 @@ class ComplaintController extends Controller
         abort_if(Gate::denies('complaint_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $creatorIds = Complaint::whereNotNull('created_by')->distinct()->pluck('created_by');
         $creators = User::whereIn('id', $creatorIds)->where('active', 'Y')->orderBy('name')->get(['id', 'name']);
-        return view('complaint.index_mobile_v2', compact('creators'));
+        return view('complaint.index_mobile_v3', compact('creators'));
     }
 
     private function crmComplaintQuery(Request $request)
