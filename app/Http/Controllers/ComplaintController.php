@@ -23,6 +23,8 @@ use App\Models\ServiceBill;
 use App\Models\State;
 use App\Models\User;
 use App\Models\WarrantyActivation;
+use App\Models\EmployeeDetail;
+use App\Models\Status;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Gate;
@@ -33,6 +35,8 @@ use DataTables;
 use Carbon\Carbon;
 use Auth;
 use App\Http\Controllers\AjaxController;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 
 class ComplaintController extends Controller
 {
@@ -522,29 +526,18 @@ class ComplaintController extends Controller
      */
     public function create(Request $request)
     {
-        $serial_number = $request->serial_number ?? '';
-        $newComplaintNumber = $this->getComplaintNumber();
+        $visibleUserIds = array_values(array_unique(array_merge(getUsersReportingToAuth(auth()->id()), [auth()->id()])));
+        $customerIds = EmployeeDetail::whereIn('user_id', $visibleUserIds)
+            ->where(fn ($query) => $query->whereNull('active')->orWhere('active', 'Y'))->distinct()->pluck('customer_id');
+        $dealers = Customers::with('customeraddress')->whereIn('id', $customerIds)->where('active', 'Y')
+            ->whereHas('customertypes', fn ($query) => $query->whereRaw('LOWER(TRIM(type_name)) = ?', ['dealer'])->whereRaw('LOWER(TRIM(customertype_name)) = ?', ['dealer']))
+            ->orderBy('name')->get();
+        $categories = Category::where('active', 'Y')->orderBy('ranking')->orderBy('category_name')->get(['id', 'category_name']);
+        $receivedThrough = Status::where('active', 'Y')->where('module', 'Complaint Received Through')->orderBy('display_name')->get();
+        $today = now();
+        $exampleComplaintNumber = '27/' . $today->format('md') . '/001';
 
-        $assign_users = User::with(['roles' => function ($query) {
-            $query->with('permissions');
-        }])
-        ->select('id', 'name', 'employee_codes')
-        ->get();
-
-        $end_users = EndUser::where('status' , 1)->select('id' , 'customer_name' , 'customer_number')->get();
-
-
-        $service_centers = Customers::where('customertype', '4')->select('id', 'name', 'customer_code')->get();
-        $branchs = Branch::where('active', 'Y')->select('id', 'branch_name', 'branch_code')->get();
-        $pincodes = Pincode::where('active', 'Y')->select('id', 'pincode')->get();
-        $divisions = Division::where('active', 'Y')->select('id', 'division_name')->get();
-        $complaint_types = ComplaintType::where('active', 'Y')->select('id', 'name')->get();
-        $products = Product::where('active', 'Y')->select('product_name', 'id')->get();
-        if (isset($request->serial_no) && !empty($request->serial_no)) {
-            $this->complaint['serail_number'] = $request->serial_no;
-        }
-        $states = State::where('active', 'Y')->select('id', 'state_name')->get();
-        return view('complaint.create', compact('serial_number','assign_users', 'service_centers', 'branchs', 'pincodes', 'divisions', 'complaint_types', 'newComplaintNumber', 'products', 'states' , 'end_users'))->with('complaints', $this->complaint);
+        return view('complaint.create', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber'))->with('complaints', $this->complaint);
     }
 
     /**
@@ -555,100 +548,42 @@ class ComplaintController extends Controller
      */
     public function store(Request $request)
     {
-        $rules = [
-            'customer_number'    => 'required',
-            'customer_state'          => 'required',
-            'customer_district'    => 'required',
-            'customer_city'            => 'required',
-        ];
-
-
-        $validator = Validator::make($request->all(), $rules);
-        if ($validator->passes()) {
-            $Cstate = State::where('id', $request->customer_state)->first();
-            $Cdistrict = District::where('id', $request->customer_district)->first();
-            $Ccity = City::where('id', $request->customer_city)->first();
-            
-            $end_user = EndUser::updateOrCreate(['customer_number' => $request->customer_number ?? ''], [
-                'customer_name' => $request->customer_name ?? '',
-                'customer_number' => $request->customer_number ?? '',
-                'customer_email' => $request->customer_email ?? '',
-                'customer_address' => $request->customer_address ?? '',
-                'customer_place' => $request->customer_place ?? '',
-                'customer_pindcode' => $request->customer_pindcode ?? '',
-                'customer_country' => $request->customer_country ?? '',
-                'customer_state' => $Cstate->state_name ?? '',
-                'customer_district' => $Cdistrict->district_name ?? '',
-                'customer_city' => $Ccity->city_name ?? '',
-                'state_id' => $request->customer_state ?? '',
-                'district_id' => $request->customer_district ?? '',
-                'city_id' => $request->customer_city ?? '',
-            ]);
-            $request->end_user_id = $end_user->id;
-
-            $check_warranty = WarrantyActivation::with('customer', 'media')->where('product_serail_number', $request->product_serail_number)->first();
-
-            $newComplaintNumber = $this->getComplaintNumber();
-            $complaint = Complaint::create([
-                'complaint_number' => $newComplaintNumber,
-                'complaint_date' => $request->complaint_date ? cretaDate($request->complaint_date)  : NULL,
-                'claim_amount' => $request->claim_amount ?? NULL,
-                'seller' => $request->seller ?? NULL,
-                'end_user_id' => $request->end_user_id ?? NULL,
-                'party_name' => $request->party_name ?? NULL,
-                'product_laying' => $request->product_laying ?? NULL,
-                'service_center' => $request->service_center ?? NULL,
-                'assign_user' => $request->assign_user ?? NULL,
-                'product_id' => $request->product_id ?? NULL,
-                'product_serail_number' => $request->product_serail_number ?? NULL,
-                'product_code' => $request->product_code ?? NULL,
-                'product_name' => $request->product_name ?? NULL,
-                'category' => $request->category ?? NULL,
-                'specification' => $request->specification ?? NULL,
-                'product_no' => $request->product_no ?? NULL,
-                'phase' => $request->phase ?? NULL,
-                'seller_branch' => $request->seller_branch ?? NULL,
-                'purchased_branch' => $request->purchased_branch ?? NULL,
-                'product_group' => $request->product_group ?? NULL,
-                'company_sale_bill_no' => $request->company_sale_bill_no ?? NULL,
-                'company_sale_bill_date' => $request->company_sale_bill_date ? cretaDate($request->company_sale_bill_date)  : NULL,
-                'customer_bill_date' => $request->customer_bill_date ? cretaDate($request->customer_bill_date) : NULL,
-                'customer_bill_no' => $request->customer_bill_no ?? NULL,
-                'company_bill_date_month' => $request->company_bill_date_month ?? NULL,
-                'under_warranty' => $request->under_warranty ?? NULL,
-                'service_type' => $request->service_type ?? NULL,
-                'customer_bill_date_month' => $request->customer_bill_date_month ?? NULL,
-                'warranty_bill' => $request->warranty_bill ?? NULL,
-                'fault_type' => $request->fault_type ?? NULL,
-                'service_centre_remark' => $request->service_centre_remark ?? NULL,
-                'complaint_status' => $request->complaint_status ?? 1,
-                'remark' => $request->remark ?? NULL,
-                'division' => $request->division ?? NULL,
-                'register_by' => $request->register_by ?? NULL,
-                'complaint_type' => $request->complaint_type ?? NULL,
-                'description' => $request->description ?? NULL,
-                'created_by_device' => 'user',
-                'created_by' => auth()->user()->id,
-                'complaint_recieve_via' => $request->complaint_recieve_via ?? Null,
-            ]);
-            if ($request->file('files') && count($request->file('files')) > 0) {
-                foreach ($request->file('files') as $file) {
-                    $customname = time() . '.' . $file->getClientOriginalExtension();
-                    $complaint->addMedia($file)
-                        ->usingFileName($customname)
-                        ->toMediaCollection('complaint_attach');
-                }
-            
-            }
-            // $this->sendMsgToCustomer($complaint , $type=1);
-            // if(isset($complaint->service_center)){
-            //     $this->sendMsgToServiceCenter($complaint);
-            // }
-
-            return Redirect::to('complaints')->with('message_success', 'Complaint Store Successfully and the complaint number is <span title="Copy" id="copyText">' . $newComplaintNumber . '</span>');
-        }else {
-            return redirect()->back()->withErrors($validator)->withInput();
+        $validated = $request->validate([
+            'dealer_id' => 'required|integer|exists:customers,id', 'complaint_date' => 'required|date',
+            'alternate_number' => ['nullable', 'regex:/^[0-9]{10}$/'], 'end_user_name' => 'nullable|string|max:150',
+            'end_user_mobile' => ['nullable', 'regex:/^[0-9]{10}$/'], 'technician_mobile' => ['nullable', 'regex:/^[0-9]{10}$/'],
+            'product_category_id' => 'required|integer|exists:categories,id', 'product_size' => 'nullable|string|max:50',
+            'size_unit' => 'required|in:MM,Inch', 'batch_no_dom' => 'nullable|string|max:100',
+            'description' => 'required|string|max:5000', 'complaint_received_through_id' => 'required|integer|exists:statuses,id',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,heic,heif,webp,pdf|max:20480',
+        ]);
+        $category = Category::findOrFail($validated['product_category_id']);
+        $received = Status::whereKey($validated['complaint_received_through_id'])->where('module', 'Complaint Received Through')->where('active', 'Y')->firstOrFail();
+        $endUserId = null;
+        if (!empty($validated['end_user_name']) || !empty($validated['end_user_mobile'])) {
+            $endUser = !empty($validated['end_user_mobile']) ? EndUser::updateOrCreate(['customer_number' => $validated['end_user_mobile']], ['customer_name' => $validated['end_user_name'] ?? '']) : EndUser::create(['customer_name' => $validated['end_user_name']]);
+            $endUserId = $endUser->id;
         }
+        $complaint = DB::transaction(function () use ($validated, $category, $received, $endUserId) {
+            $date = Carbon::parse($validated['complaint_date']); $prefix = '27/' . $date->format('md') . '/';
+            $latest = Complaint::where('complaint_number', 'like', $prefix . '%')->lockForUpdate()->orderByDesc('id')->value('complaint_number');
+            $parts = $latest ? explode('/', $latest) : []; $sequence = $latest ? ((int) end($parts) + 1) : 1;
+            $data = ['complaint_number' => $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT), 'complaint_date' => $date->toDateString(),
+                'party_name' => $validated['dealer_id'], 'end_user_id' => $endUserId, 'category' => $category->category_name,
+                'specification' => trim(($validated['product_size'] ?? '') . ' ' . $validated['size_unit']), 'product_no' => $validated['batch_no_dom'] ?? null,
+                'service_centre_remark' => $validated['technician_mobile'] ?? null, 'remark' => $validated['alternate_number'] ?? null,
+                'description' => $validated['description'], 'complaint_recieve_via' => $received->display_name ?: $received->status_name,
+                'complaint_status' => 0, 'created_by_device' => 'user', 'created_by' => auth()->id()];
+            foreach (['dealer_id', 'alternate_number', 'end_user_name', 'end_user_mobile', 'technician_mobile', 'product_category_id', 'product_size', 'size_unit', 'batch_no_dom', 'complaint_received_through_id'] as $column) if (Schema::hasColumn('complaints', $column)) $data[$column] = $validated[$column] ?? null;
+            return Complaint::forceCreate($data);
+        });
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment'); $extension = strtolower($file->getClientOriginalExtension() ?: 'jpg');
+            $fileName = 'complaint-' . $complaint->id . '-' . now()->format('YmdHis') . '.' . $extension;
+            File::ensureDirectoryExists(public_path('uploads/complaints'), 0755, true); $file->move(public_path('uploads/complaints'), $fileName);
+            if (Schema::hasColumn('complaints', 'attachment_path')) $complaint->forceFill(['attachment_path' => 'uploads/complaints/' . $fileName])->save();
+        }
+        return Redirect::to('complaints')->with('message_success', 'Complaint created successfully. Complaint number: ' . $complaint->complaint_number);
     }
 
     /**
