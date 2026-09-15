@@ -25,6 +25,42 @@ use Illuminate\Support\Facades\DB;
 class ComplaintApiController extends Controller
 {
 
+    public function mobile_list(Request $request)
+    {
+        $statusNames = [
+            0 => 'Open',
+            1 => 'Pending',
+            2 => 'Work Done',
+            3 => 'Complete',
+            4 => 'Closed',
+            5 => 'Cancelled',
+        ];
+
+        $complaints = Complaint::with([
+                'party:id,name,first_name,last_name',
+                'assign_users:id,name',
+            ])
+            ->where('created_by', $request->user()->id)
+            ->where('created_by_device', 'mobile_app')
+            ->latest('id')
+            ->get()
+            ->map(function ($complaint) use ($statusNames) {
+                $dealer = $complaint->party;
+                return [
+                    'id' => $complaint->id,
+                    'complaint_number' => $complaint->complaint_number,
+                    'complaint_date' => $complaint->complaint_date,
+                    'dealer_name' => $dealer?->name ?: trim(($dealer?->first_name ?? '') . ' ' . ($dealer?->last_name ?? '')),
+                    'category' => $complaint->category,
+                    'assignee' => $complaint->assign_users?->name,
+                    'status' => $statusNames[(int) $complaint->complaint_status] ?? 'Open',
+                    'status_code' => (int) $complaint->complaint_status,
+                ];
+            })->values();
+
+        return response()->json(['status' => 'success', 'data' => $complaints]);
+    }
+
     public function create_options(Request $request)
     {
         $visibleUserIds = getUsersReportingToAuth($request->user()->id);
