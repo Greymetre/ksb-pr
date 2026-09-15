@@ -10,6 +10,7 @@ use App\Models\City;
 use App\Models\Complaint;
 use App\Models\ComplaintTimeline;
 use App\Models\ComplaintType;
+use App\Models\ComplaintOfficeAction;
 use App\Models\ComplaintWorkDone;
 use App\Models\Customers;
 use App\Models\District;
@@ -598,7 +599,9 @@ class ComplaintController extends Controller
 
         $editData = [];
         $currentAttachments = collect();
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'currentAttachments'))->with('complaints', $this->complaint);
+        $visitReport = null;
+        $officeActionEnabled = false;
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'currentAttachments', 'visitReport', 'officeActionEnabled'))->with('complaints', $this->complaint);
     }
 
     /**
@@ -695,13 +698,94 @@ class ComplaintController extends Controller
         foreach ($complaint->getMedia('complaint_attach') as $media) {
             $attachments->push(['url' => $media->getFullUrl(), 'type' => $media->mime_type === 'application/pdf' ? 'pdf' : 'image', 'name' => $media->file_name, 'label' => strtoupper(pathinfo($media->file_name, PATHINFO_EXTENSION) ?: 'FILE')]);
         }
-        $path = $complaint->attachment_path;
-        if ($path && file_exists(public_path($path))) {
-            $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-            $type = $extension === 'pdf' ? 'pdf' : (in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif']) ? 'image' : 'file');
-            $attachments->push(['url' => asset($path), 'type' => $type, 'name' => basename($path), 'label' => strtoupper($extension ?: 'FILE')]);
+        if ($uploaded = $this->fileAttachment($complaint->attachment_path)) {
+            $attachments->push($uploaded);
         }
         return $attachments;
+    }
+
+    /**
+     * A file stored under public/ described the same way as a media library item.
+     */
+    private function fileAttachment($path)
+    {
+        if (!$path || !file_exists(public_path($path))) {
+            return null;
+        }
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $type = $extension === 'pdf' ? 'pdf' : (in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif']) ? 'image' : 'file');
+        return ['url' => asset($path), 'type' => $type, 'name' => basename($path), 'label' => strtoupper($extension ?: 'FILE')];
+    }
+
+    /**
+     * Office action row of a complaint, or null when the feature table is not migrated yet.
+     */
+    private function complaintOfficeAction(Complaint $complaint)
+    {
+        return $complaint->exists && Schema::hasTable('complaint_office_actions') ? $complaint->office_action : null;
+    }
+
+    /**
+     * Validation rules for the office action part of the complaint form.
+     * Quantity, visit report and replacement quantity only matter when their answer is "Yes";
+     * a visit report already on file counts, so it is not asked for again.
+     */
+    private function officeActionRules(Request $request, Complaint $complaint)
+    {
+        $hasVisitReport = (bool) optional($this->complaintOfficeAction($complaint))->visit_report_path;
+        return [
+            'material_provided' => 'nullable|in:Yes,No',
+            'quantity_provided' => 'nullable|string|max:50|required_if:material_provided,Yes',
+            'service_engineer_provided' => 'nullable|in:Yes,No',
+            'visit_report' => [$hasVisitReport || $request->input('service_engineer_provided') !== 'Yes' ? 'nullable' : 'required', 'file', 'mimes:jpg,jpeg,png,heic,heif,webp,pdf', 'max:20480'],
+            'replacement' => 'nullable|in:Yes,No',
+            'replacement_quantity' => 'nullable|string|max:50|required_if:replacement,Yes',
+            'corrective_action' => 'nullable|string|max:5000',
+            'preventive_action' => 'nullable|string|max:5000',
+            'points_discussed' => 'nullable|string|max:5000',
+            'customer_care_name' => 'nullable|string|max:150',
+            'department_head_name' => 'nullable|string|max:150',
+            'manager_name' => 'nullable|string|max:150',
+            'final_decision' => 'nullable|string|max:5000',
+        ];
+    }
+
+    /**
+     * Office action fields posted from the complaint form, stored against the complaint.
+     */
+    private function saveOfficeAction(Request $request, Complaint $complaint, array $validated)
+    {
+        if (!Schema::hasTable('complaint_office_actions')) {
+            return;
+        }
+        $officeAction = $complaint->office_action;
+        $data = [
+            'material_provided' => $validated['material_provided'] ?? null,
+            'quantity_provided' => ($validated['material_provided'] ?? null) === 'Yes' ? ($validated['quantity_provided'] ?? null) : null,
+            'service_engineer_provided' => $validated['service_engineer_provided'] ?? null,
+            'replacement' => $validated['replacement'] ?? null,
+            'replacement_quantity' => ($validated['replacement'] ?? null) === 'Yes' ? ($validated['replacement_quantity'] ?? null) : null,
+            'corrective_action' => $validated['corrective_action'] ?? null,
+            'preventive_action' => $validated['preventive_action'] ?? null,
+            'points_discussed' => $validated['points_discussed'] ?? null,
+            'customer_care_name' => $validated['customer_care_name'] ?? null,
+            'department_head_name' => $validated['department_head_name'] ?? null,
+            'manager_name' => $validated['manager_name'] ?? null,
+            'final_decision' => $validated['final_decision'] ?? null,
+            'updated_by' => auth()->id(),
+        ];
+        if ($request->hasFile('visit_report')) {
+            $file = $request->file('visit_report');
+            $name = 'visit-report-' . $complaint->id . '-' . now()->format('YmdHis') . '.' . strtolower($file->getClientOriginalExtension() ?: 'jpg');
+            File::ensureDirectoryExists(public_path('uploads/complaints/visit-reports'), 0755, true);
+            $file->move(public_path('uploads/complaints/visit-reports'), $name);
+            if ($officeAction && $officeAction->visit_report_path) File::delete(public_path($officeAction->visit_report_path));
+            $data['visit_report_path'] = 'uploads/complaints/visit-reports/' . $name;
+        } elseif ($data['service_engineer_provided'] !== 'Yes' && $officeAction && $officeAction->visit_report_path) {
+            File::delete(public_path($officeAction->visit_report_path));
+            $data['visit_report_path'] = null;
+        }
+        ComplaintOfficeAction::updateOrCreate(['complaint_id' => $complaint->id], $data);
     }
 
     public function edit(Complaint $complaint)
@@ -729,8 +813,14 @@ class ComplaintController extends Controller
             'description' => $complaint->description,
             'complaint_received_through_id' => $complaint->form_received_id,
         ];
+        $officeAction = $this->complaintOfficeAction($complaint);
+        foreach (['material_provided', 'quantity_provided', 'service_engineer_provided', 'replacement', 'replacement_quantity', 'corrective_action', 'preventive_action', 'points_discussed', 'customer_care_name', 'department_head_name', 'manager_name', 'final_decision'] as $field) {
+            $editData[$field] = optional($officeAction)->{$field};
+        }
+        $visitReport = $this->fileAttachment(optional($officeAction)->visit_report_path);
+        $officeActionEnabled = Schema::hasTable('complaint_office_actions');
         $currentAttachments = $this->complaintAttachments($complaint);
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'currentAttachments'))->with('complaints', $complaint);
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'currentAttachments', 'visitReport', 'officeActionEnabled'))->with('complaints', $complaint);
     }
 
     /**
@@ -744,7 +834,7 @@ class ComplaintController extends Controller
     {
         abort_unless(Auth::user()->can('complaint_edit'), 403);
         abort_unless((int) $complaint->complaint_status === 0, 422, 'Only open complaints can be edited.');
-        $validated = $request->validate(['dealer_id'=>'required|integer|exists:customers,id','alternate_number'=>['nullable','regex:/^[0-9]{10}$/'],'end_user_name'=>'nullable|string|max:150','end_user_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'technician_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'product_category_id'=>'required|integer|exists:categories,id','product_size'=>'nullable|string|max:50','size_unit'=>'required|in:MM,Inch','batch_no_dom'=>'nullable|string|max:100','description'=>'required|string|max:5000','complaint_received_through_id'=>'required|integer|exists:statuses,id','attachment'=>'nullable|file|mimes:jpg,jpeg,png,heic,heif,webp,pdf|max:20480']);
+        $validated = $request->validate(['dealer_id'=>'required|integer|exists:customers,id','alternate_number'=>['nullable','regex:/^[0-9]{10}$/'],'end_user_name'=>'nullable|string|max:150','end_user_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'technician_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'product_category_id'=>'required|integer|exists:categories,id','product_size'=>'nullable|string|max:50','size_unit'=>'required|in:MM,Inch','batch_no_dom'=>'nullable|string|max:100','description'=>'required|string|max:5000','complaint_received_through_id'=>'required|integer|exists:statuses,id','attachment'=>'nullable|file|mimes:jpg,jpeg,png,heic,heif,webp,pdf|max:20480'] + $this->officeActionRules($request, $complaint));
         $category = Category::findOrFail($validated['product_category_id']);
         $received = Status::whereKey($validated['complaint_received_through_id'])->where('module','Complaint Received Through')->where('active','Y')->firstOrFail();
         $endUserId = $complaint->end_user_id;
@@ -753,6 +843,7 @@ class ComplaintController extends Controller
         $columns=array_flip(Schema::getColumnListing('complaints')); foreach(['dealer_id','alternate_number','end_user_name','end_user_mobile','technician_mobile','product_category_id','product_size','size_unit','batch_no_dom','complaint_received_through_id'] as $column) if(isset($columns[$column])) $data[$column]=$validated[$column]??null;
         $complaint->forceFill($data)->save();
         if($request->hasFile('attachment')){$file=$request->file('attachment');$name='complaint-'.$complaint->id.'-'.now()->format('YmdHis').'.'.strtolower($file->getClientOriginalExtension()?:'jpg');File::ensureDirectoryExists(public_path('uploads/complaints'),0755,true);$file->move(public_path('uploads/complaints'),$name);if(isset($columns['attachment_path']))$complaint->forceFill(['attachment_path'=>'uploads/complaints/'.$name])->save();}
+        $this->saveOfficeAction($request, $complaint, $validated);
         return Redirect::to('complaints')->with('message_success','Complaint updated successfully.');
     }
 

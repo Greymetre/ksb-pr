@@ -77,6 +77,11 @@ class Complaint extends Model implements HasMedia
         return $this->hasMany('App\Models\ComplaintWorkDone', 'complaint_id', 'id');
     }
 
+    public function office_action()
+    {
+        return $this->hasOne(ComplaintOfficeAction::class, 'complaint_id', 'id');
+    }
+
     public function complaint_time_line(){
         return $this->hasMany('App\Models\ComplaintTimeline', 'complaint_id', 'id');
     }

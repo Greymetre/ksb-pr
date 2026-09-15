@@ -65,6 +65,7 @@ class ComplaintApiController extends Controller
         $address = $dealer?->customeraddress;
         $latestOfficeAction = ComplaintWorkDone::where('complaint_id', $complaint->id)->latest()->first();
         $officeActionUser = $latestOfficeAction?->done_by ? User::find($latestOfficeAction->done_by) : null;
+        $officeAction = Schema::hasTable('complaint_office_actions') ? $complaint->office_action : null;
         $absoluteAttachmentPath = $this->localMobileAttachmentPath($complaint);
         $attachmentPath = $absoluteAttachmentPath ? 'uploads/complaints/' . basename($absoluteAttachmentPath) : null;
 
@@ -97,6 +98,19 @@ class ComplaintApiController extends Controller
             'attachment_path' => $attachmentPath,
             'has_attachment' => (bool) $absoluteAttachmentPath,
             'office_action' => [
+                'material_provided' => $officeAction?->material_provided,
+                'quantity_provided' => $officeAction?->quantity_provided,
+                'service_engineer_provided' => $officeAction?->service_engineer_provided,
+                'visit_report' => $officeAction?->visit_report_path ? asset($officeAction->visit_report_path) : null,
+                'replacement' => $officeAction?->replacement,
+                'replacement_quantity' => $officeAction?->replacement_quantity,
+                'corrective_action' => $officeAction?->corrective_action,
+                'preventive_action' => $officeAction?->preventive_action,
+                'points_discussed' => $officeAction?->points_discussed,
+                'customer_care_name' => $officeAction?->customer_care_name,
+                'department_head_name' => $officeAction?->department_head_name,
+                'manager_name' => $officeAction?->manager_name,
+                'final_decision' => $officeAction?->final_decision,
                 'done_by' => $officeActionUser?->name,
                 'remark' => $latestOfficeAction?->remark,
                 'status' => $statusNames[(int) $complaint->complaint_status] ?? 'Open',
