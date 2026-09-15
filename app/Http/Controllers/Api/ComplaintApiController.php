@@ -24,6 +24,7 @@ use App\Models\EndUser;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 class ComplaintApiController extends Controller
@@ -200,14 +201,22 @@ class ComplaintApiController extends Controller
         });
 
         $attachmentWarning = null;
+        $attachmentUrl = null;
         if ($request->hasFile('attachment')) {
             try {
                 $file = $request->file('attachment');
                 $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'jpg');
                 $safeFileName = 'complaint-' . $complaint->id . '-' . now()->format('YmdHis') . '.' . $extension;
-                $complaint->addMedia($file)
-                    ->usingFileName($safeFileName)
-                    ->toMediaCollection('complaint_attach');
+                $relativeDirectory = 'uploads/complaints';
+                $absoluteDirectory = public_path($relativeDirectory);
+                File::ensureDirectoryExists($absoluteDirectory, 0755, true);
+                $file->move($absoluteDirectory, $safeFileName);
+                $relativePath = $relativeDirectory . '/' . $safeFileName;
+                $attachmentUrl = asset($relativePath);
+
+                if (Schema::hasColumn('complaints', 'attachment_path')) {
+                    $complaint->forceFill(['attachment_path' => $relativePath])->save();
+                }
             } catch (\Throwable $attachmentException) {
                 $attachmentReference = (string) Str::uuid();
                 Log::error('Mobile complaint attachment upload failed', [
@@ -223,6 +232,7 @@ class ComplaintApiController extends Controller
             'status' => 'success',
             'message' => 'Complaint created successfully.',
             'warning' => $attachmentWarning,
+            'attachment_url' => $attachmentUrl,
             'data' => $complaint->fresh(),
         ], 201);
         } catch (\Throwable $exception) {
