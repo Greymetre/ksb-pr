@@ -537,7 +537,7 @@ class ComplaintController extends Controller
         $today = now();
         $exampleComplaintNumber = '27/' . $today->format('md') . '/001';
 
-        return view('complaint.create', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber'))->with('complaints', $this->complaint);
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber'))->with('complaints', $this->complaint);
     }
 
     /**
