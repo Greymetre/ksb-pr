@@ -598,10 +598,11 @@ class ComplaintController extends Controller
         $exampleComplaintNumber = '27/' . $today->format('md') . '/001';
 
         $editData = [];
+        $complaintDate = now()->toDateString();
         $currentAttachments = collect();
         $visitReport = null;
         $officeActionEnabled = false;
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'currentAttachments', 'visitReport', 'officeActionEnabled'))->with('complaints', $this->complaint);
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled'))->with('complaints', $this->complaint);
     }
 
     /**
@@ -696,7 +697,12 @@ class ComplaintController extends Controller
             return $attachments;
         }
         foreach ($complaint->getMedia('complaint_attach') as $media) {
-            $attachments->push(['url' => $media->getFullUrl(), 'type' => $media->mime_type === 'application/pdf' ? 'pdf' : 'image', 'name' => $media->file_name, 'label' => strtoupper(pathinfo($media->file_name, PATHINFO_EXTENSION) ?: 'FILE')]);
+            // Legacy rows can point at a disk or file that no longer resolves; skip those instead of failing the page.
+            $url = rescue(fn () => $media->getFullUrl(), null, false);
+            if (!$url) {
+                continue;
+            }
+            $attachments->push(['url' => $url, 'type' => $media->mime_type === 'application/pdf' ? 'pdf' : 'image', 'name' => $media->file_name, 'label' => strtoupper(pathinfo($media->file_name, PATHINFO_EXTENSION) ?: 'FILE')]);
         }
         if ($uploaded = $this->fileAttachment($complaint->attachment_path)) {
             $attachments->push($uploaded);
@@ -800,6 +806,7 @@ class ComplaintController extends Controller
         $complaint->form_category_id = $complaint->product_category_id ?: Category::where('category_name', $complaint->category)->value('id');
         $complaint->form_received_id = $complaint->complaint_received_through_id ?: Status::where('module', 'Complaint Received Through')->where(fn ($query) => $query->where('display_name', $complaint->complaint_recieve_via)->orWhere('status_name', $complaint->complaint_recieve_via))->value('id');
         $exampleComplaintNumber = $complaint->complaint_number;
+        $complaintDate = rescue(fn () => Carbon::parse($complaint->getRawOriginal('complaint_date'))->format('Y-m-d'), now()->toDateString(), false);
         $editData = [
             'dealer_id' => $complaint->party_name,
             'alternate_number' => $complaint->alternate_number ?: $complaint->remark,
@@ -820,7 +827,7 @@ class ComplaintController extends Controller
         $visitReport = $this->fileAttachment(optional($officeAction)->visit_report_path);
         $officeActionEnabled = Schema::hasTable('complaint_office_actions');
         $currentAttachments = $this->complaintAttachments($complaint);
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'currentAttachments', 'visitReport', 'officeActionEnabled'))->with('complaints', $complaint);
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled'))->with('complaints', $complaint);
     }
 
     /**
