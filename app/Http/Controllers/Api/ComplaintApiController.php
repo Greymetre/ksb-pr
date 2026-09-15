@@ -20,7 +20,11 @@ use Carbon\Carbon;
 use App\Models\Branch;
 use App\Models\EmployeeDetail;
 use App\Models\Status;
+use App\Models\EndUser;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class ComplaintApiController extends Controller
 {
@@ -119,7 +123,7 @@ class ComplaintApiController extends Controller
             'batch_no_dom' => 'nullable|string|max:100',
             'description' => 'required|string|max:5000',
             'complaint_received_through_id' => 'required|integer|exists:statuses,id',
-            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,heic,heif,webp,pdf|max:20480',
         ]);
 
         $visibleUserIds = getUsersReportingToAuth($request->user()->id);
@@ -136,35 +140,63 @@ class ComplaintApiController extends Controller
             ->exists();
         abort_unless($isAssigned && $isDealer, 403, 'The selected dealer is not available in your reporting hierarchy.');
 
+        try {
         $complaint = DB::transaction(function () use ($request, $validated) {
             $date = Carbon::parse($validated['complaint_date'] ?? now());
             $prefix = '27/' . $date->format('md') . '/';
             $latest = Complaint::where('complaint_number', 'like', $prefix . '%')->lockForUpdate()->orderByDesc('id')->value('complaint_number');
-            $sequence = $latest ? ((int) last(explode('/', $latest)) + 1) : 1;
+            $parts = $latest ? explode('/', $latest) : [];
+            $sequence = $latest ? ((int) end($parts) + 1) : 1;
             $category = Category::findOrFail($validated['product_category_id']);
             $receivedThrough = Status::whereKey($validated['complaint_received_through_id'])
                 ->where('active', 'Y')->where('module', 'Complaint Received Through')->firstOrFail();
 
-            $complaint = Complaint::forceCreate([
+            $endUserId = null;
+            if (!empty($validated['end_user_name']) || !empty($validated['end_user_mobile'])) {
+                $endUser = !empty($validated['end_user_mobile'])
+                    ? EndUser::updateOrCreate(
+                        ['customer_number' => $validated['end_user_mobile']],
+                        ['customer_name' => $validated['end_user_name'] ?? '']
+                    )
+                    : EndUser::create(['customer_name' => $validated['end_user_name']]);
+                $endUserId = $endUser->id;
+            }
+
+            $data = [
                 'complaint_number' => $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT),
                 'complaint_date' => $date->toDateString(),
-                'dealer_id' => $validated['dealer_id'],
                 'party_name' => $validated['dealer_id'],
-                'alternate_number' => $validated['alternate_number'] ?? null,
-                'end_user_name' => $validated['end_user_name'] ?? null,
-                'end_user_mobile' => $validated['end_user_mobile'] ?? null,
-                'technician_mobile' => $validated['technician_mobile'] ?? null,
-                'product_category_id' => $category->id,
+                'end_user_id' => $endUserId,
                 'category' => $category->category_name,
-                'product_size' => $validated['product_size'] ?? null,
-                'size_unit' => $validated['size_unit'] ?? null,
-                'batch_no_dom' => $validated['batch_no_dom'] ?? null,
+                'specification' => trim(($validated['product_size'] ?? '') . ' ' . ($validated['size_unit'] ?? '')),
+                'product_no' => $validated['batch_no_dom'] ?? null,
+                'service_centre_remark' => $validated['technician_mobile'] ?? null,
+                'remark' => $validated['alternate_number'] ?? null,
                 'description' => $validated['description'],
                 'complaint_recieve_via' => $receivedThrough->display_name ?: $receivedThrough->status_name,
                 'complaint_status' => 0,
                 'created_by_device' => 'user',
                 'created_by' => $request->user()->id,
-            ]);
+            ];
+
+            $optionalFields = [
+                'dealer_id' => $validated['dealer_id'],
+                'alternate_number' => $validated['alternate_number'] ?? null,
+                'end_user_name' => $validated['end_user_name'] ?? null,
+                'end_user_mobile' => $validated['end_user_mobile'] ?? null,
+                'technician_mobile' => $validated['technician_mobile'] ?? null,
+                'product_category_id' => $category->id,
+                'product_size' => $validated['product_size'] ?? null,
+                'size_unit' => $validated['size_unit'] ?? null,
+                'batch_no_dom' => $validated['batch_no_dom'] ?? null,
+            ];
+            foreach ($optionalFields as $column => $value) {
+                if (Schema::hasColumn('complaints', $column)) {
+                    $data[$column] = $value;
+                }
+            }
+
+            $complaint = Complaint::forceCreate($data);
 
             if ($request->hasFile('attachment')) {
                 $complaint->addMediaFromRequest('attachment')->toMediaCollection('complaint_attach');
@@ -173,6 +205,19 @@ class ComplaintApiController extends Controller
         });
 
         return response()->json(['status' => 'success', 'message' => 'Complaint created successfully.', 'data' => $complaint], 201);
+        } catch (\Throwable $exception) {
+            $reference = (string) Str::uuid();
+            Log::error('Mobile complaint creation failed', [
+                'reference' => $reference,
+                'user_id' => $request->user()?->id,
+                'dealer_id' => $validated['dealer_id'] ?? null,
+                'exception' => $exception,
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Complaint could not be created. Reference: ' . $reference,
+            ], 500);
+        }
     }
 
     public function __construct()
