@@ -19,6 +19,7 @@ use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 use App\Models\Branch;
 use App\Models\EmployeeDetail;
+use App\Models\Status;
 use Illuminate\Support\Facades\DB;
 
 class ComplaintApiController extends Controller
@@ -55,7 +56,16 @@ class ComplaintApiController extends Controller
             ->get(['id', 'category_name'])
             ->map(fn ($category) => ['id' => $category->id, 'name' => $category->category_name])->values();
 
-        return response()->json(['status' => 'success', 'data' => compact('dealers', 'categories')]);
+        $receivedThrough = Status::where('active', 'Y')
+            ->where('module', 'Complaint Received Through')
+            ->orderBy('display_name')
+            ->get(['id', 'status_name', 'display_name'])
+            ->map(fn ($status) => [
+                'id' => $status->id,
+                'name' => $status->display_name ?: $status->status_name,
+            ])->values();
+
+        return response()->json(['status' => 'success', 'data' => compact('dealers', 'categories', 'receivedThrough')]);
     }
 
     public function mobile_store(Request $request)
@@ -72,7 +82,7 @@ class ComplaintApiController extends Controller
             'size_unit' => 'nullable|in:MM,Inch',
             'batch_no_dom' => 'nullable|string|max:100',
             'description' => 'required|string|max:5000',
-            'complaint_received_through' => 'nullable|in:Mobile App,Phone Call,Dealer Visit',
+            'complaint_received_through_id' => 'required|integer|exists:statuses,id',
             'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
         ]);
 
@@ -96,6 +106,8 @@ class ComplaintApiController extends Controller
             $latest = Complaint::where('complaint_number', 'like', $prefix . '%')->lockForUpdate()->orderByDesc('id')->value('complaint_number');
             $sequence = $latest ? ((int) last(explode('/', $latest)) + 1) : 1;
             $category = Category::findOrFail($validated['product_category_id']);
+            $receivedThrough = Status::whereKey($validated['complaint_received_through_id'])
+                ->where('active', 'Y')->where('module', 'Complaint Received Through')->firstOrFail();
 
             $complaint = Complaint::forceCreate([
                 'complaint_number' => $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT),
@@ -112,7 +124,7 @@ class ComplaintApiController extends Controller
                 'size_unit' => $validated['size_unit'] ?? null,
                 'batch_no_dom' => $validated['batch_no_dom'] ?? null,
                 'description' => $validated['description'],
-                'complaint_recieve_via' => $validated['complaint_received_through'] ?? 'Mobile App',
+                'complaint_recieve_via' => $receivedThrough->display_name ?: $receivedThrough->status_name,
                 'complaint_status' => 0,
                 'created_by_device' => 'mobile_app',
                 'created_by' => $request->user()->id,

@@ -80,6 +80,7 @@
                         <option value="Campaign Status" {{ old( 'module' , (!empty($status->module))?($status->module):('') ) == 'Campaign Status' ? 'selected' : '' }}>Campaign Status</option>
                         <option value="Payment Status" {{ old( 'module' , (!empty($status->module))?($status->module):('') ) == 'Payment Status' ? 'selected' : '' }}>Payment Status</option>
                         <option value="Promotional Activity" {{ old( 'module' , (!empty($status->module))?($status->module):('') ) == 'Promotional Activity' ? 'selected' : '' }}>Promotional Activity</option>
+                        <option value="Complaint Received Through" {{ old( 'module' , (!empty($status->module))?($status->module):('') ) == 'Complaint Received Through' ? 'selected' : '' }}>Complaint Received Through</option>
                     </select>
                     @if ($errors->has('module'))
                     <div class="error col-lg-12"><p class="text-danger">{{ $errors->first('module') }}</p></div>
