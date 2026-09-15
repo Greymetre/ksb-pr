@@ -520,24 +520,10 @@
                 <!-- Product Photo -->
                 <div class="col-md-4">
                     <label>Product Photo</label>
-                    @php
-                        $attachments = collect();
-                        if ($complaint->exists) {
-                            foreach ($complaint->getMedia('complaint_attach') as $media) {
-                                $attachments->push(['url' => $media->getFullUrl(), 'type' => $media->mime_type == 'application/pdf' ? 'pdf' : 'image', 'label' => $media->file_name]);
-                            }
-                            $uploadedPath = $complaint->attachment_path;
-                            if ($uploadedPath && file_exists(public_path($uploadedPath))) {
-                                $extension = strtolower(pathinfo($uploadedPath, PATHINFO_EXTENSION));
-                                $type = $extension === 'pdf' ? 'pdf' : (in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif']) ? 'image' : 'file');
-                                $attachments->push(['url' => asset($uploadedPath), 'type' => $type, 'label' => strtoupper($extension ?: 'FILE')]);
-                            }
-                        }
-                    @endphp
                     <div class="d-flex flex-wrap align-items-center all-attach">
                         @if($attachments->count() > 0)
                             @foreach($attachments as $attachment)
-                                <a href="{{ $attachment['url'] }}" target="_blank" class="m-1" title="{{ $attachment['label'] }}">
+                                <a href="{{ $attachment['url'] }}" target="_blank" class="m-1" title="{{ $attachment['name'] }}">
                                     @if($attachment['type'] === 'file')
                                         <span class="d-inline-flex align-items-center justify-content-center rounded border bg-light" style="width:80px;height:80px;font-weight:600;">{{ $attachment['label'] }}</span>
                                     @else

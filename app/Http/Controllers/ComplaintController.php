@@ -597,7 +597,8 @@ class ComplaintController extends Controller
         $exampleComplaintNumber = '27/' . $today->format('md') . '/001';
 
         $editData = [];
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData'))->with('complaints', $this->complaint);
+        $currentAttachments = collect();
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'currentAttachments'))->with('complaints', $this->complaint);
     }
 
     /**
@@ -671,7 +672,8 @@ class ComplaintController extends Controller
             'sale_bill_date' => $complaint->customer_bill_date
         ]));
         $response = $result->getData(true);
-        return view('complaint.show', compact('complaint', 'timelines', 'assign_users', 'service_centers', 'work_done', 'service_bill', 'complete_complaint', 'close_complaint' , 'response'));
+        $attachments = $this->complaintAttachments($complaint);
+        return view('complaint.show', compact('complaint', 'timelines', 'assign_users', 'service_centers', 'work_done', 'service_bill', 'complete_complaint', 'close_complaint' , 'response' , 'attachments'));
     }
 
     /**
@@ -680,6 +682,28 @@ class ComplaintController extends Controller
      * @param  \App\Models\Complaint  $complaint
      * @return \Illuminate\Http\Response
      */
+    /**
+     * Files attached to a complaint, from the media library (old flow)
+     * and from the uploads folder path stored on the complaint (mobile flow).
+     */
+    private function complaintAttachments(Complaint $complaint)
+    {
+        $attachments = collect();
+        if (!$complaint->exists) {
+            return $attachments;
+        }
+        foreach ($complaint->getMedia('complaint_attach') as $media) {
+            $attachments->push(['url' => $media->getFullUrl(), 'type' => $media->mime_type === 'application/pdf' ? 'pdf' : 'image', 'name' => $media->file_name, 'label' => strtoupper(pathinfo($media->file_name, PATHINFO_EXTENSION) ?: 'FILE')]);
+        }
+        $path = $complaint->attachment_path;
+        if ($path && file_exists(public_path($path))) {
+            $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            $type = $extension === 'pdf' ? 'pdf' : (in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif']) ? 'image' : 'file');
+            $attachments->push(['url' => asset($path), 'type' => $type, 'name' => basename($path), 'label' => strtoupper($extension ?: 'FILE')]);
+        }
+        return $attachments;
+    }
+
     public function edit(Complaint $complaint)
     {
         abort_unless(Auth::user()->can('complaint_edit'), 403);
@@ -705,7 +729,8 @@ class ComplaintController extends Controller
             'description' => $complaint->description,
             'complaint_received_through_id' => $complaint->form_received_id,
         ];
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData'))->with('complaints', $complaint);
+        $currentAttachments = $this->complaintAttachments($complaint);
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'currentAttachments'))->with('complaints', $complaint);
     }
 
     /**
