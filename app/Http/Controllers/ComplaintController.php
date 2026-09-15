@@ -596,7 +596,8 @@ class ComplaintController extends Controller
         $today = now();
         $exampleComplaintNumber = '27/' . $today->format('md') . '/001';
 
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber'))->with('complaints', $this->complaint);
+        $editData = [];
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData'))->with('complaints', $this->complaint);
     }
 
     /**
@@ -691,7 +692,20 @@ class ComplaintController extends Controller
         $complaint->form_category_id = $complaint->product_category_id ?: Category::where('category_name', $complaint->category)->value('id');
         $complaint->form_received_id = $complaint->complaint_received_through_id ?: Status::where('module', 'Complaint Received Through')->where(fn ($query) => $query->where('display_name', $complaint->complaint_recieve_via)->orWhere('status_name', $complaint->complaint_recieve_via))->value('id');
         $exampleComplaintNumber = $complaint->complaint_number;
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber'))->with('complaints', $complaint);
+        $editData = [
+            'dealer_id' => $complaint->party_name,
+            'alternate_number' => $complaint->alternate_number ?: $complaint->remark,
+            'end_user_name' => $complaint->end_user_name ?: optional($complaint->customer)->customer_name,
+            'end_user_mobile' => $complaint->end_user_mobile ?: optional($complaint->customer)->customer_number,
+            'technician_mobile' => $complaint->technician_mobile ?: $complaint->service_centre_remark,
+            'product_category_id' => $complaint->form_category_id,
+            'product_size' => $complaint->product_size ?: trim(preg_replace('/\s+(MM|Inch)$/i', '', $complaint->specification ?? '')),
+            'size_unit' => $complaint->size_unit ?: (stripos($complaint->specification ?? '', 'inch') !== false ? 'Inch' : 'MM'),
+            'batch_no_dom' => $complaint->batch_no_dom ?: $complaint->product_no,
+            'description' => $complaint->description,
+            'complaint_received_through_id' => $complaint->form_received_id,
+        ];
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData'))->with('complaints', $complaint);
     }
 
     /**
