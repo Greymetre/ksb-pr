@@ -44,6 +44,7 @@ class ComplaintApiController extends Controller
         $complaints = Complaint::with([
                 'party:id,name,first_name,last_name',
                 'assign_users:id,name',
+                'customer:id,customer_name',
             ])
             ->where('created_by', $request->user()->id)
             ->where('created_by_device', 'user')
@@ -57,7 +58,9 @@ class ComplaintApiController extends Controller
                     'complaint_date' => $complaint->complaint_date,
                     'dealer_name' => $dealer?->name ?: trim(($dealer?->first_name ?? '') . ' ' . ($dealer?->last_name ?? '')),
                     'category' => $complaint->category,
-                    'assignee' => $complaint->assign_users?->name,
+                    'assignee' => $complaint->assign_users?->name
+                        ?: $complaint->end_user_name
+                        ?: $complaint->customer?->customer_name,
                     'status' => $statusNames[(int) $complaint->complaint_status] ?? 'Open',
                     'status_code' => (int) $complaint->complaint_status,
                 ];
