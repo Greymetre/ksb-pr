@@ -1234,6 +1234,7 @@ Route::post('ajax/user-cities-by-district', [TourController::class, 'ajaxUserCit
 
     // Complaint Route
     Route::get('complaints-mobile-list', [ComplaintController::class, 'crmMobileList'])->name('complaints.mobile-list');
+    Route::get('complaints-mobile-export', [ComplaintController::class, 'crmMobileExport'])->name('complaints.mobile-export');
     Route::resource('complaints', ComplaintController::class);
     Route::post('getComplaints', [ComplaintController::class, 'getComplaints'])->name('getComplaints');
     Route::post('complaint-attach-delete', [ComplaintController::class, 'deleteAttachment'])->name('deleteAttachment');

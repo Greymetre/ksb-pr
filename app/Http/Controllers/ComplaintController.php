@@ -56,18 +56,34 @@ class ComplaintController extends Controller
     public function index(ComplaintDataTable $dataTable, Request $request)
     {
         abort_if(Gate::denies('complaint_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-        return view('complaint.index_mobile');
+        $creatorIds = Complaint::whereNotNull('created_by')->distinct()->pluck('created_by');
+        $creators = User::whereIn('id', $creatorIds)->where('active', 'Y')->orderBy('name')->get(['id', 'name']);
+        return view('complaint.index_mobile_v2', compact('creators'));
+    }
+
+    private function crmComplaintQuery(Request $request)
+    {
+        $query = Complaint::query();
+        if (!Auth::user()->hasAnyRole(['superadmin', 'Sub_Admin', 'Service Admin', 'CRM_Support'])) {
+            $query->where(fn ($scope) => $scope->where('assign_user', Auth::id())->orWhere('created_by', Auth::id()));
+        }
+        if ($request->filled('created_by')) $query->where('created_by', $request->created_by);
+        if ($request->filled('date_from')) $query->whereDate('complaint_date', '>=', $request->date_from);
+        if ($request->filled('date_to')) $query->whereDate('complaint_date', '<=', $request->date_to);
+        if ($search = trim((string) $request->get('search'))) {
+            $query->where(function ($scope) use ($search) {
+                $scope->where('complaint_number', 'like', "%{$search}%")->orWhere('category', 'like', "%{$search}%")
+                    ->orWhereHas('party', fn ($party) => $party->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('customer', fn ($customer) => $customer->where('customer_name', 'like', "%{$search}%"));
+            });
+        }
+        return $query;
     }
 
     public function crmMobileList(Request $request)
     {
         abort_if(Gate::denies('complaint_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-        $base = Complaint::query();
-        if (!Auth::user()->hasAnyRole(['superadmin', 'Sub_Admin', 'Service Admin', 'CRM_Support'])) {
-            $base->where(function ($query) {
-                $query->where('assign_user', Auth::id())->orWhere('created_by', Auth::id());
-            });
-        }
+        $base = $this->crmComplaintQuery($request);
         $counts = [
             'all' => (clone $base)->count(), 'open' => (clone $base)->where('complaint_status', 0)->count(),
             'reject' => (clone $base)->where('complaint_status', 5)->count(),
@@ -77,13 +93,6 @@ class ComplaintController extends Controller
         if ($filter === 'open') $base->where('complaint_status', 0);
         elseif ($filter === 'reject') $base->where('complaint_status', 5);
         elseif ($filter === 'resolve') $base->whereIn('complaint_status', [3, 4]);
-        if ($search = trim((string) $request->get('search'))) {
-            $base->where(function ($query) use ($search) {
-                $query->where('complaint_number', 'like', "%{$search}%")->orWhere('category', 'like', "%{$search}%")
-                    ->orWhereHas('party', fn ($party) => $party->where('name', 'like', "%{$search}%"))
-                    ->orWhereHas('customer', fn ($customer) => $customer->where('customer_name', 'like', "%{$search}%"));
-            });
-        }
         $statusNames = [0 => 'Open', 1 => 'Pending', 2 => 'Work Done', 3 => 'Complete', 4 => 'Closed', 5 => 'Cancelled'];
         $page = $base->with(['party:id,name,first_name,last_name', 'customer:id,customer_name,customer_number'])->latest('id')->paginate(25);
         $items = collect($page->items())->map(fn ($complaint) => [
@@ -98,6 +107,28 @@ class ComplaintController extends Controller
             'detail_url' => route('complaints.show', $complaint->id),
         ]);
         return response()->json(['data' => $items, 'counts' => $counts, 'current_page' => $page->currentPage(), 'last_page' => $page->lastPage()]);
+    }
+
+    public function crmMobileExport(Request $request)
+    {
+        abort_if(Gate::denies('complaint_download'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        $query = $this->crmComplaintQuery($request);
+        $filter = strtolower($request->get('filter', 'all'));
+        if ($filter === 'open') $query->where('complaint_status', 0);
+        elseif ($filter === 'reject') $query->where('complaint_status', 5);
+        elseif ($filter === 'resolve') $query->whereIn('complaint_status', [3, 4]);
+        $statusNames = [0 => 'Open', 1 => 'Pending', 2 => 'Work Done', 3 => 'Complete', 4 => 'Closed', 5 => 'Cancelled'];
+        return response()->streamDownload(function () use ($query, $statusNames) {
+            $output = fopen('php://output', 'w');
+            fputcsv($output, ['Date', 'Complaint No.', 'Dealer', 'End User', 'Mobile', 'Category', 'Size', 'Batch/DOM', 'Nature', 'Received Through', 'Status']);
+            $query->with(['party:id,name,first_name,last_name', 'customer:id,customer_name,customer_number'])->chunkById(500, function ($complaints) use ($output, $statusNames) {
+                foreach ($complaints as $complaint) {
+                    $dealer = $complaint->party?->name ?: trim(($complaint->party?->first_name ?? '') . ' ' . ($complaint->party?->last_name ?? ''));
+                    fputcsv($output, [$complaint->complaint_date, $complaint->complaint_number, $dealer, $complaint->end_user_name ?: $complaint->customer?->customer_name, $complaint->end_user_mobile ?: $complaint->customer?->customer_number, $complaint->category, $complaint->product_size ?: $complaint->specification, $complaint->batch_no_dom ?: $complaint->product_no, $complaint->description, $complaint->complaint_recieve_via, $statusNames[(int) $complaint->complaint_status] ?? 'Open']);
+                }
+            }, 'id');
+            fclose($output);
+        }, 'complaints-' . now()->format('Y-m-d-His') . '.csv', ['Content-Type' => 'text/csv']);
     }
 
     public function getComplaints(ComplaintDataTable $dataTable, Request $request){
