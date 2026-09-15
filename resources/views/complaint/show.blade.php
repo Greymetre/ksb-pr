@@ -705,6 +705,8 @@
                 @php $status_is = 'Closed'; @endphp
                 @elseif($timeline->status == '5')
                 @php $status_is = 'Canceled'; @endphp
+                @elseif($timeline->status == '6')
+                @php $status_is = 'In Review'; @endphp
                 @elseif($timeline->status == '587')
                 @php $status_is = 'Message'; @endphp
                 @else

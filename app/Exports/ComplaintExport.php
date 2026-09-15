@@ -326,6 +326,8 @@ class ComplaintExport implements FromCollection, WithHeadings, ShouldAutoSize, W
             $status = 'Closed';
         }elseif($data->complaint_status == '5'){
             $status = 'Cancel';
+        }elseif($data->complaint_status == '6'){
+            $status = 'In Review';
         }
 
 

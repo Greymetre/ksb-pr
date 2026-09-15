@@ -57,7 +57,7 @@ class ComplaintApiController extends Controller
 
     public function mobile_detail(Request $request, $id)
     {
-        $statusNames = [0 => 'Open', 1 => 'Pending', 2 => 'Work Done', 3 => 'Complete', 4 => 'Closed', 5 => 'Cancelled'];
+        $statusNames = [0 => 'Open', 1 => 'Pending', 2 => 'Work Done', 3 => 'Complete', 4 => 'Closed', 5 => 'Cancelled', 6 => 'In Review'];
         $complaint = Complaint::with(['party.customeraddress', 'customer', 'assign_users:id,name'])
             ->where('created_by', $request->user()->id)
             ->findOrFail($id);
@@ -183,6 +183,7 @@ class ComplaintApiController extends Controller
             3 => 'Complete',
             4 => 'Closed',
             5 => 'Cancelled',
+            6 => 'In Review',
         ];
 
         $complaints = Complaint::with([
