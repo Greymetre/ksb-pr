@@ -30,6 +30,39 @@ use Illuminate\Support\Str;
 class ComplaintApiController extends Controller
 {
 
+    public function mobile_detail(Request $request, $id)
+    {
+        $statusNames = [0 => 'Open', 1 => 'Pending', 2 => 'Work Done', 3 => 'Complete', 4 => 'Closed', 5 => 'Cancelled'];
+        $complaint = Complaint::with(['party.customeraddress', 'customer', 'assign_users:id,name'])
+            ->where('created_by', $request->user()->id)
+            ->findOrFail($id);
+        $dealer = $complaint->party;
+        $address = $dealer?->customeraddress;
+        $attachmentPath = Schema::hasColumn('complaints', 'attachment_path') ? $complaint->attachment_path : null;
+
+        return response()->json(['status' => 'success', 'data' => [
+            'id' => $complaint->id,
+            'complaint_number' => $complaint->complaint_number,
+            'complaint_date' => $complaint->complaint_date,
+            'status' => $statusNames[(int) $complaint->complaint_status] ?? 'Open',
+            'dealer_name' => $dealer?->name ?: trim(($dealer?->first_name ?? '') . ' ' . ($dealer?->last_name ?? '')),
+            'dealer_address' => $address ? collect([$address->address1, $address->address2, $address->landmark, $address->locality, $address->zipcode])->filter()->implode(', ') : null,
+            'dealer_contact' => $dealer?->mobile ?: $dealer?->contact_number,
+            'alternate_number' => $complaint->alternate_number ?: $complaint->remark,
+            'end_user_name' => $complaint->end_user_name ?: $complaint->customer?->customer_name,
+            'end_user_mobile' => $complaint->end_user_mobile ?: $complaint->customer?->customer_number,
+            'technician_mobile' => $complaint->technician_mobile ?: $complaint->service_centre_remark,
+            'category' => $complaint->category,
+            'product_size' => $complaint->product_size ?: $complaint->specification,
+            'size_unit' => $complaint->size_unit,
+            'batch_no_dom' => $complaint->batch_no_dom ?: $complaint->product_no,
+            'description' => $complaint->description,
+            'received_through' => $complaint->complaint_recieve_via,
+            'assignee' => $complaint->assign_users?->name,
+            'attachment_url' => $attachmentPath ? asset($attachmentPath) : null,
+        ]]);
+    }
+
     public function mobile_list(Request $request)
     {
         $statusNames = [
