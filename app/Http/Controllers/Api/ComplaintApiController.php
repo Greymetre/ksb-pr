@@ -63,6 +63,8 @@ class ComplaintApiController extends Controller
             ->findOrFail($id);
         $dealer = $complaint->party;
         $address = $dealer?->customeraddress;
+        $latestOfficeAction = ComplaintWorkDone::where('complaint_id', $complaint->id)->latest()->first();
+        $officeActionUser = $latestOfficeAction?->done_by ? User::find($latestOfficeAction->done_by) : null;
         $absoluteAttachmentPath = $this->localMobileAttachmentPath($complaint);
         $attachmentPath = $absoluteAttachmentPath ? 'uploads/complaints/' . basename($absoluteAttachmentPath) : null;
 
@@ -94,6 +96,11 @@ class ComplaintApiController extends Controller
             'attachment_url' => $attachmentPath ? asset($attachmentPath) : null,
             'attachment_path' => $attachmentPath,
             'has_attachment' => (bool) $absoluteAttachmentPath,
+            'office_action' => [
+                'done_by' => $officeActionUser?->name,
+                'remark' => $latestOfficeAction?->remark,
+                'status' => $statusNames[(int) $complaint->complaint_status] ?? 'Open',
+            ],
         ]]);
     }
 
