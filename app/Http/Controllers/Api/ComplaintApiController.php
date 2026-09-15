@@ -30,6 +30,31 @@ use Illuminate\Support\Str;
 class ComplaintApiController extends Controller
 {
 
+    private function localMobileAttachmentPath(Complaint $complaint): ?string
+    {
+        $relativePath = Schema::hasColumn('complaints', 'attachment_path') ? $complaint->attachment_path : null;
+        if ($relativePath && File::exists(public_path($relativePath))) {
+            return public_path($relativePath);
+        }
+
+        $matches = glob(public_path('uploads/complaints/complaint-' . $complaint->id . '-*')) ?: [];
+        usort($matches, fn ($left, $right) => filemtime($right) <=> filemtime($left));
+
+        return !empty($matches) && File::exists($matches[0]) ? $matches[0] : null;
+    }
+
+    public function mobile_attachment(Request $request, $id)
+    {
+        $complaint = Complaint::where('created_by', $request->user()->id)->findOrFail($id);
+        $absolutePath = $this->localMobileAttachmentPath($complaint);
+        abort_unless($absolutePath, 404, 'Attachment not found.');
+
+        return response()->file($absolutePath, [
+            'Cache-Control' => 'private, max-age=3600',
+            'Content-Disposition' => 'inline; filename="' . basename($absolutePath) . '"',
+        ]);
+    }
+
     public function mobile_detail(Request $request, $id)
     {
         $statusNames = [0 => 'Open', 1 => 'Pending', 2 => 'Work Done', 3 => 'Complete', 4 => 'Closed', 5 => 'Cancelled'];
@@ -38,14 +63,8 @@ class ComplaintApiController extends Controller
             ->findOrFail($id);
         $dealer = $complaint->party;
         $address = $dealer?->customeraddress;
-        $attachmentPath = Schema::hasColumn('complaints', 'attachment_path') ? $complaint->attachment_path : null;
-        if (!$attachmentPath) {
-            $localAttachments = glob(public_path('uploads/complaints/complaint-' . $complaint->id . '-*')) ?: [];
-            usort($localAttachments, fn ($left, $right) => filemtime($right) <=> filemtime($left));
-            if (!empty($localAttachments)) {
-                $attachmentPath = 'uploads/complaints/' . basename($localAttachments[0]);
-            }
-        }
+        $absoluteAttachmentPath = $this->localMobileAttachmentPath($complaint);
+        $attachmentPath = $absoluteAttachmentPath ? 'uploads/complaints/' . basename($absoluteAttachmentPath) : null;
 
         return response()->json(['status' => 'success', 'data' => [
             'id' => $complaint->id,
@@ -68,6 +87,7 @@ class ComplaintApiController extends Controller
             'assignee' => $complaint->assign_users?->name,
             'attachment_url' => $attachmentPath ? asset($attachmentPath) : null,
             'attachment_path' => $attachmentPath,
+            'has_attachment' => (bool) $absoluteAttachmentPath,
         ]]);
     }
 
