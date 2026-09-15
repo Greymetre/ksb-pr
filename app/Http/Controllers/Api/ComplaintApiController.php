@@ -26,12 +26,19 @@ class ComplaintApiController extends Controller
 
     public function create_options(Request $request)
     {
-        $customerIds = EmployeeDetail::where('user_id', $request->user()->id)
+        $visibleUserIds = getUsersReportingToAuth($request->user()->id);
+        $visibleUserIds[] = $request->user()->id;
+        $visibleUserIds = array_values(array_unique($visibleUserIds));
+
+        $customerIds = EmployeeDetail::whereIn('user_id', $visibleUserIds)
             ->where(fn ($query) => $query->whereNull('active')->orWhere('active', 'Y'))
-            ->pluck('customer_id');
+            ->distinct()->pluck('customer_id');
 
         $dealers = Customers::with('customeraddress')
-            ->whereIn('id', $customerIds)->where('active', 'Y')->orderBy('name')->get()
+            ->whereIn('id', $customerIds)
+            ->where('active', 'Y')
+            ->whereHas('customertypes', fn ($query) => $query->whereRaw('LOWER(type_name) = ?', ['dealer']))
+            ->orderBy('name')->get()
             ->map(function ($dealer) {
                 $address = $dealer->customeraddress;
                 return [
@@ -67,10 +74,17 @@ class ComplaintApiController extends Controller
             'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
         ]);
 
-        $isAssigned = EmployeeDetail::where('user_id', $request->user()->id)
+        $visibleUserIds = getUsersReportingToAuth($request->user()->id);
+        $visibleUserIds[] = $request->user()->id;
+        $visibleUserIds = array_values(array_unique($visibleUserIds));
+
+        $isAssigned = EmployeeDetail::whereIn('user_id', $visibleUserIds)
             ->where('customer_id', $validated['dealer_id'])
             ->where(fn ($query) => $query->whereNull('active')->orWhere('active', 'Y'))->exists();
-        abort_unless($isAssigned, 403, 'The selected dealer is not assigned to you.');
+        $isDealer = Customers::whereKey($validated['dealer_id'])
+            ->whereHas('customertypes', fn ($query) => $query->whereRaw('LOWER(type_name) = ?', ['dealer']))
+            ->exists();
+        abort_unless($isAssigned && $isDealer, 403, 'The selected dealer is not available in your reporting hierarchy.');
 
         $complaint = DB::transaction(function () use ($request, $validated) {
             $date = Carbon::parse($validated['complaint_date'] ?? now());
