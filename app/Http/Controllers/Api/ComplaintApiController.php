@@ -71,6 +71,8 @@ class ComplaintApiController extends Controller
             'complaint_number' => $complaint->complaint_number,
             'complaint_date' => $complaint->complaint_date,
             'status' => $statusNames[(int) $complaint->complaint_status] ?? 'Open',
+            'can_edit' => (int) $complaint->complaint_status === 0 && (int) $complaint->created_by === (int) $request->user()->id,
+            'dealer_id' => $complaint->party_name,
             'dealer_name' => $dealer?->name ?: trim(($dealer?->first_name ?? '') . ' ' . ($dealer?->last_name ?? '')),
             'dealer_address' => $address ? collect([$address->address1, $address->address2, $address->landmark, $address->locality, $address->zipcode])->filter()->implode(', ') : null,
             'dealer_contact' => $dealer?->mobile ?: $dealer?->contact_number,
@@ -79,16 +81,76 @@ class ComplaintApiController extends Controller
             'end_user_mobile' => $complaint->end_user_mobile ?: $complaint->customer?->customer_number,
             'technician_mobile' => $complaint->technician_mobile ?: $complaint->service_centre_remark,
             'category' => $complaint->category,
+            'product_category_id' => $complaint->product_category_id ?: Category::where('category_name', $complaint->category)->value('id'),
             'product_size' => $complaint->product_size ?: $complaint->specification,
             'size_unit' => $complaint->size_unit,
             'batch_no_dom' => $complaint->batch_no_dom ?: $complaint->product_no,
             'description' => $complaint->description,
             'received_through' => $complaint->complaint_recieve_via,
+            'complaint_received_through_id' => $complaint->complaint_received_through_id ?: Status::where('module', 'Complaint Received Through')->where(function ($query) use ($complaint) {
+                $query->where('display_name', $complaint->complaint_recieve_via)->orWhere('status_name', $complaint->complaint_recieve_via);
+            })->value('id'),
             'assignee' => $complaint->assign_users?->name,
             'attachment_url' => $attachmentPath ? asset($attachmentPath) : null,
             'attachment_path' => $attachmentPath,
             'has_attachment' => (bool) $absoluteAttachmentPath,
         ]]);
+    }
+
+    public function mobile_update(Request $request, $id)
+    {
+        $complaint = Complaint::where('created_by', $request->user()->id)->findOrFail($id);
+        abort_unless((int) $complaint->complaint_status === 0, 422, 'Only open complaints can be edited.');
+
+        $validated = $request->validate([
+            'dealer_id' => 'required|integer|exists:customers,id',
+            'alternate_number' => ['nullable', 'regex:/^[0-9]{10}$/'],
+            'end_user_name' => 'nullable|string|max:150',
+            'end_user_mobile' => ['nullable', 'regex:/^[0-9]{10}$/'],
+            'technician_mobile' => ['nullable', 'regex:/^[0-9]{10}$/'],
+            'product_category_id' => 'required|integer|exists:categories,id',
+            'product_size' => 'nullable|string|max:50',
+            'size_unit' => 'nullable|in:MM,Inch',
+            'batch_no_dom' => 'nullable|string|max:100',
+            'description' => 'required|string|max:5000',
+            'complaint_received_through_id' => 'required|integer|exists:statuses,id',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,heic,heif,webp|max:20480',
+        ]);
+
+        $category = Category::findOrFail($validated['product_category_id']);
+        $receivedThrough = Status::whereKey($validated['complaint_received_through_id'])->where('active', 'Y')->where('module', 'Complaint Received Through')->firstOrFail();
+        $endUserId = $complaint->end_user_id;
+        if (!empty($validated['end_user_name']) || !empty($validated['end_user_mobile'])) {
+            $endUser = !empty($validated['end_user_mobile'])
+                ? EndUser::updateOrCreate(['customer_number' => $validated['end_user_mobile']], ['customer_name' => $validated['end_user_name'] ?? ''])
+                : EndUser::create(['customer_name' => $validated['end_user_name']]);
+            $endUserId = $endUser->id;
+        }
+
+        $data = [
+            'party_name' => $validated['dealer_id'], 'end_user_id' => $endUserId,
+            'category' => $category->category_name,
+            'specification' => trim(($validated['product_size'] ?? '') . ' ' . ($validated['size_unit'] ?? '')),
+            'product_no' => $validated['batch_no_dom'] ?? null,
+            'service_centre_remark' => $validated['technician_mobile'] ?? null,
+            'remark' => $validated['alternate_number'] ?? null, 'description' => $validated['description'],
+            'complaint_recieve_via' => $receivedThrough->display_name ?: $receivedThrough->status_name,
+        ];
+        foreach (['dealer_id', 'alternate_number', 'end_user_name', 'end_user_mobile', 'technician_mobile', 'product_category_id', 'product_size', 'size_unit', 'batch_no_dom', 'complaint_received_through_id'] as $column) {
+            if (Schema::hasColumn('complaints', $column)) $data[$column] = $validated[$column] ?? null;
+        }
+        $complaint->forceFill($data)->save();
+
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'jpg');
+            $fileName = 'complaint-' . $complaint->id . '-' . now()->format('YmdHis') . '.' . $extension;
+            File::ensureDirectoryExists(public_path('uploads/complaints'), 0755, true);
+            $file->move(public_path('uploads/complaints'), $fileName);
+            if (Schema::hasColumn('complaints', 'attachment_path')) $complaint->forceFill(['attachment_path' => 'uploads/complaints/' . $fileName])->save();
+        }
+
+        return response()->json(['status' => 'success', 'message' => 'Complaint updated successfully.', 'data' => $complaint->fresh()]);
     }
 
     public function mobile_list(Request $request)

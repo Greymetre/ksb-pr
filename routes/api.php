@@ -410,6 +410,7 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
     Route::get('complaint/mobile-detail/{id}', [ComplaintApiController::class, 'mobile_detail']);
     Route::get('complaint/mobile-attachment/{id}', [ComplaintApiController::class, 'mobile_attachment']);
     Route::post('complaint/mobile-store', [ComplaintApiController::class, 'mobile_store']);
+    Route::post('complaint/mobile-update/{id}', [ComplaintApiController::class, 'mobile_update']);
     Route::get('complaint/{id}/get-notes', [ComplaintApiController::class, 'getNotes']);
 
     // Service bill Api's routes
