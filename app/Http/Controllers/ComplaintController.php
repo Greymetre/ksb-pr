@@ -56,22 +56,48 @@ class ComplaintController extends Controller
     public function index(ComplaintDataTable $dataTable, Request $request)
     {
         abort_if(Gate::denies('complaint_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-        $assign_users_ids = Complaint::whereNotNull('assign_user')->pluck('assign_user')->toArray();
-        $roleNames = ["Service Eng", "Service Admin"];
+        return view('complaint.index_mobile');
+    }
 
-        $assign_users = User::whereIn('id', $assign_users_ids)
-            ->whereHas('roles', function ($query) use ($roleNames) {
-                $query->whereIn('name', $roleNames);
-            })
-            ->with(['roles.permissions']) // Eager load roles and permissions
-            ->select('id', 'name', 'employee_codes')
-            ->get();
-        $service_centers_id = Complaint::pluck('service_center');
-        $service_centers  = Customers::whereIn('id' , $service_centers_id)->get();
-        $complaint_types =  ComplaintType::where('active' , 'Y')->select('id' , 'name')->get();
-        $categories = Category::where('active' , 'Y')->select('id' , 'category_name')->get();
-        return view('complaint.index' , compact('service_centers' , 'assign_users' , 'complaint_types' , 'categories'));
-        // return $dataTable->render('complaint.index');
+    public function crmMobileList(Request $request)
+    {
+        abort_if(Gate::denies('complaint_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        $base = Complaint::query();
+        if (!Auth::user()->hasAnyRole(['superadmin', 'Sub_Admin', 'Service Admin', 'CRM_Support'])) {
+            $base->where(function ($query) {
+                $query->where('assign_user', Auth::id())->orWhere('created_by', Auth::id());
+            });
+        }
+        $counts = [
+            'all' => (clone $base)->count(), 'open' => (clone $base)->where('complaint_status', 0)->count(),
+            'reject' => (clone $base)->where('complaint_status', 5)->count(),
+            'resolve' => (clone $base)->whereIn('complaint_status', [3, 4])->count(),
+        ];
+        $filter = strtolower($request->get('filter', 'all'));
+        if ($filter === 'open') $base->where('complaint_status', 0);
+        elseif ($filter === 'reject') $base->where('complaint_status', 5);
+        elseif ($filter === 'resolve') $base->whereIn('complaint_status', [3, 4]);
+        if ($search = trim((string) $request->get('search'))) {
+            $base->where(function ($query) use ($search) {
+                $query->where('complaint_number', 'like', "%{$search}%")->orWhere('category', 'like', "%{$search}%")
+                    ->orWhereHas('party', fn ($party) => $party->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('customer', fn ($customer) => $customer->where('customer_name', 'like', "%{$search}%"));
+            });
+        }
+        $statusNames = [0 => 'Open', 1 => 'Pending', 2 => 'Work Done', 3 => 'Complete', 4 => 'Closed', 5 => 'Cancelled'];
+        $page = $base->with(['party:id,name,first_name,last_name', 'customer:id,customer_name,customer_number'])->latest('id')->paginate(25);
+        $items = collect($page->items())->map(fn ($complaint) => [
+            'id' => $complaint->id, 'date' => $complaint->complaint_date, 'number' => $complaint->complaint_number,
+            'dealer' => $complaint->party?->name ?: trim(($complaint->party?->first_name ?? '') . ' ' . ($complaint->party?->last_name ?? '')),
+            'end_user' => $complaint->end_user_name ?: $complaint->customer?->customer_name,
+            'mobile' => $complaint->end_user_mobile ?: $complaint->customer?->customer_number,
+            'category' => $complaint->category, 'size' => $complaint->product_size ?: $complaint->specification,
+            'batch' => $complaint->batch_no_dom ?: $complaint->product_no, 'description' => $complaint->description,
+            'received_through' => $complaint->complaint_recieve_via,
+            'status' => $statusNames[(int) $complaint->complaint_status] ?? 'Open',
+            'detail_url' => route('complaints.show', $complaint->id),
+        ]);
+        return response()->json(['data' => $items, 'counts' => $counts, 'current_page' => $page->currentPage(), 'last_page' => $page->lastPage()]);
     }
 
     public function getComplaints(ComplaintDataTable $dataTable, Request $request){
@@ -574,7 +600,8 @@ class ComplaintController extends Controller
                 'service_centre_remark' => $validated['technician_mobile'] ?? null, 'remark' => $validated['alternate_number'] ?? null,
                 'description' => $validated['description'], 'complaint_recieve_via' => $received->display_name ?: $received->status_name,
                 'complaint_status' => 0, 'created_by_device' => 'user', 'created_by' => auth()->id()];
-            foreach (['dealer_id', 'alternate_number', 'end_user_name', 'end_user_mobile', 'technician_mobile', 'product_category_id', 'product_size', 'size_unit', 'batch_no_dom', 'complaint_received_through_id'] as $column) if (Schema::hasColumn('complaints', $column)) $data[$column] = $validated[$column] ?? null;
+            $complaintColumns = array_flip(Schema::getColumnListing('complaints'));
+            foreach (['dealer_id', 'alternate_number', 'end_user_name', 'end_user_mobile', 'technician_mobile', 'product_category_id', 'product_size', 'size_unit', 'batch_no_dom', 'complaint_received_through_id'] as $column) if (isset($complaintColumns[$column])) $data[$column] = $validated[$column] ?? null;
             return Complaint::forceCreate($data);
         });
         if ($request->hasFile('attachment')) {
