@@ -604,7 +604,8 @@ class ComplaintController extends Controller
         $currentAttachments = collect();
         $visitReport = null;
         $officeActionEnabled = false;
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled'))->with('complaints', $this->complaint);
+        $canReview = false;
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'canReview'))->with('complaints', $this->complaint);
     }
 
     /**
@@ -726,6 +727,14 @@ class ComplaintController extends Controller
     }
 
     /**
+     * Reviewing is the office side sign-off: approve/reject per authorised person and the final call.
+     */
+    private function canReviewComplaints()
+    {
+        return Auth::user()->can('complaint_review');
+    }
+
+    /**
      * Office action row of a complaint, or null when the feature table is not migrated yet.
      */
     private function complaintOfficeAction(Complaint $complaint)
@@ -755,6 +764,9 @@ class ComplaintController extends Controller
             'department_head_name' => 'nullable|string|max:150',
             'manager_name' => 'nullable|string|max:150',
             'final_decision' => 'nullable|string|max:5000',
+            'department_head_decision' => 'nullable|in:Approved,Rejected',
+            'manager_decision' => 'nullable|in:Approved,Rejected',
+            'review_decision' => 'nullable|in:Resolve,Reject',
         ];
     }
 
@@ -783,6 +795,15 @@ class ComplaintController extends Controller
             'final_decision' => $validated['final_decision'] ?? null,
             'updated_by' => auth()->id(),
         ];
+        if ($this->canReviewComplaints() && Schema::hasColumn('complaint_office_actions', 'review_decision')) {
+            $data['department_head_decision'] = $validated['department_head_decision'] ?? null;
+            $data['manager_decision'] = $validated['manager_decision'] ?? null;
+            if (!empty($validated['review_decision'])) {
+                $data['review_decision'] = $validated['review_decision'];
+                $data['reviewed_by'] = auth()->id();
+                $data['reviewed_at'] = now();
+            }
+        }
         if ($request->hasFile('visit_report')) {
             $file = $request->file('visit_report');
             $name = 'visit-report-' . $complaint->id . '-' . now()->format('YmdHis') . '.' . strtolower($file->getClientOriginalExtension() ?: 'jpg');
@@ -795,7 +816,7 @@ class ComplaintController extends Controller
             $data['visit_report_path'] = null;
         }
         ComplaintOfficeAction::updateOrCreate(['complaint_id' => $complaint->id], $data);
-        return collect($data)->except('updated_by')->filter(fn ($value) => $value !== null && $value !== '')->isNotEmpty();
+        return collect($data)->except(['updated_by', 'reviewed_by', 'reviewed_at'])->filter(fn ($value) => $value !== null && $value !== '')->isNotEmpty();
     }
 
     public function edit(Complaint $complaint)
@@ -825,13 +846,14 @@ class ComplaintController extends Controller
             'complaint_received_through_id' => $complaint->form_received_id,
         ];
         $officeAction = $this->complaintOfficeAction($complaint);
-        foreach (['material_provided', 'quantity_provided', 'service_engineer_provided', 'replacement', 'replacement_quantity', 'corrective_action', 'preventive_action', 'points_discussed', 'customer_care_name', 'department_head_name', 'manager_name', 'final_decision'] as $field) {
+        foreach (['material_provided', 'quantity_provided', 'service_engineer_provided', 'replacement', 'replacement_quantity', 'corrective_action', 'preventive_action', 'points_discussed', 'customer_care_name', 'department_head_name', 'department_head_decision', 'manager_name', 'manager_decision', 'final_decision'] as $field) {
             $editData[$field] = optional($officeAction)->{$field};
         }
         $visitReport = $this->fileAttachment(optional($officeAction)->visit_report_path);
         $officeActionEnabled = Schema::hasTable('complaint_office_actions');
+        $canReview = $this->canReviewComplaints() && (int) $complaint->complaint_status === 6 && Schema::hasColumn('complaint_office_actions', 'review_decision');
         $currentAttachments = $this->complaintAttachments($complaint);
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled'))->with('complaints', $complaint);
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'canReview'))->with('complaints', $complaint);
     }
 
     /**
@@ -855,7 +877,14 @@ class ComplaintController extends Controller
         $complaint->forceFill($data)->save();
         if($request->hasFile('attachment')){$file=$request->file('attachment');$name='complaint-'.$complaint->id.'-'.now()->format('YmdHis').'.'.strtolower($file->getClientOriginalExtension()?:'jpg');File::ensureDirectoryExists(public_path('uploads/complaints'),0755,true);$file->move(public_path('uploads/complaints'),$name);if(isset($columns['attachment_path']))$complaint->forceFill(['attachment_path'=>'uploads/complaints/'.$name])->save();}
         $message = 'Complaint updated successfully.';
-        if ($this->saveOfficeAction($request, $complaint, $validated) && (int) $complaint->complaint_status === 0) {
+        $officeActionRecorded = $this->saveOfficeAction($request, $complaint, $validated);
+        $reviewDecision = $this->canReviewComplaints() ? ($validated['review_decision'] ?? null) : null;
+        if ($reviewDecision && (int) $complaint->complaint_status === 6) {
+            $status = $reviewDecision === 'Resolve' ? 3 : 5;
+            $complaint->forceFill(['complaint_status' => $status])->save();
+            ComplaintTimeline::create(['complaint_id' => $complaint->id, 'created_by' => auth()->id(), 'status' => (string) $status, 'remark' => $validated['final_decision'] ?? null]);
+            $message = $reviewDecision === 'Resolve' ? 'Complaint resolved successfully.' : 'Complaint rejected successfully.';
+        } elseif ($officeActionRecorded && (int) $complaint->complaint_status === 0) {
             $complaint->forceFill(['complaint_status' => 6])->save();
             ComplaintTimeline::create(['complaint_id' => $complaint->id, 'created_by' => auth()->id(), 'status' => '6']);
             $message = 'Office action saved. Complaint moved to In Review.';

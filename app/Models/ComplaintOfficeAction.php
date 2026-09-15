@@ -12,7 +12,8 @@ class ComplaintOfficeAction extends Model
     protected $fillable = [
         'complaint_id', 'material_provided', 'quantity_provided', 'service_engineer_provided', 'visit_report_path',
         'replacement', 'replacement_quantity', 'corrective_action', 'preventive_action', 'points_discussed',
-        'customer_care_name', 'department_head_name', 'manager_name', 'final_decision', 'updated_by',
+        'customer_care_name', 'department_head_name', 'department_head_decision', 'manager_name', 'manager_decision',
+        'final_decision', 'review_decision', 'reviewed_by', 'reviewed_at', 'updated_by',
     ];
 
     public function complaint()
