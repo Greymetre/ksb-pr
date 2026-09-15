@@ -19,9 +19,95 @@ use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 use App\Models\Branch;
 use App\Models\EmployeeDetail;
+use Illuminate\Support\Facades\DB;
 
 class ComplaintApiController extends Controller
 {
+
+    public function create_options(Request $request)
+    {
+        $customerIds = EmployeeDetail::where('user_id', $request->user()->id)
+            ->where(fn ($query) => $query->whereNull('active')->orWhere('active', 'Y'))
+            ->pluck('customer_id');
+
+        $dealers = Customers::with('customeraddress')
+            ->whereIn('id', $customerIds)->where('active', 'Y')->orderBy('name')->get()
+            ->map(function ($dealer) {
+                $address = $dealer->customeraddress;
+                return [
+                    'id' => $dealer->id,
+                    'name' => $dealer->name ?: trim($dealer->first_name . ' ' . $dealer->last_name),
+                    'address' => $address ? collect([$address->address1, $address->address2, $address->landmark, $address->locality, $address->zipcode])->filter()->implode(', ') : '',
+                    'contact' => $dealer->mobile ?: $dealer->contact_number,
+                ];
+            })->values();
+
+        $categories = Category::where('active', 'Y')->orderBy('ranking')->orderBy('category_name')
+            ->get(['id', 'category_name'])
+            ->map(fn ($category) => ['id' => $category->id, 'name' => $category->category_name])->values();
+
+        return response()->json(['status' => 'success', 'data' => compact('dealers', 'categories')]);
+    }
+
+    public function mobile_store(Request $request)
+    {
+        $validated = $request->validate([
+            'dealer_id' => 'required|integer|exists:customers,id',
+            'complaint_date' => 'nullable|date',
+            'alternate_number' => ['nullable', 'regex:/^[0-9]{10}$/'],
+            'end_user_name' => 'nullable|string|max:150',
+            'end_user_mobile' => ['nullable', 'regex:/^[0-9]{10}$/'],
+            'technician_mobile' => ['nullable', 'regex:/^[0-9]{10}$/'],
+            'product_category_id' => 'required|integer|exists:categories,id',
+            'product_size' => 'nullable|string|max:50',
+            'size_unit' => 'nullable|in:MM,Inch',
+            'batch_no_dom' => 'nullable|string|max:100',
+            'description' => 'required|string|max:5000',
+            'complaint_received_through' => 'nullable|in:Mobile App,Phone Call,Dealer Visit',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+        ]);
+
+        $isAssigned = EmployeeDetail::where('user_id', $request->user()->id)
+            ->where('customer_id', $validated['dealer_id'])
+            ->where(fn ($query) => $query->whereNull('active')->orWhere('active', 'Y'))->exists();
+        abort_unless($isAssigned, 403, 'The selected dealer is not assigned to you.');
+
+        $complaint = DB::transaction(function () use ($request, $validated) {
+            $date = Carbon::parse($validated['complaint_date'] ?? now());
+            $prefix = '27/' . $date->format('md') . '/';
+            $latest = Complaint::where('complaint_number', 'like', $prefix . '%')->lockForUpdate()->orderByDesc('id')->value('complaint_number');
+            $sequence = $latest ? ((int) last(explode('/', $latest)) + 1) : 1;
+            $category = Category::findOrFail($validated['product_category_id']);
+
+            $complaint = Complaint::forceCreate([
+                'complaint_number' => $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT),
+                'complaint_date' => $date->toDateString(),
+                'dealer_id' => $validated['dealer_id'],
+                'party_name' => $validated['dealer_id'],
+                'alternate_number' => $validated['alternate_number'] ?? null,
+                'end_user_name' => $validated['end_user_name'] ?? null,
+                'end_user_mobile' => $validated['end_user_mobile'] ?? null,
+                'technician_mobile' => $validated['technician_mobile'] ?? null,
+                'product_category_id' => $category->id,
+                'category' => $category->category_name,
+                'product_size' => $validated['product_size'] ?? null,
+                'size_unit' => $validated['size_unit'] ?? null,
+                'batch_no_dom' => $validated['batch_no_dom'] ?? null,
+                'description' => $validated['description'],
+                'complaint_recieve_via' => $validated['complaint_received_through'] ?? 'Mobile App',
+                'complaint_status' => 0,
+                'created_by_device' => 'mobile_app',
+                'created_by' => $request->user()->id,
+            ]);
+
+            if ($request->hasFile('attachment')) {
+                $complaint->addMediaFromRequest('attachment')->toMediaCollection('complaint_attach');
+            }
+            return $complaint;
+        });
+
+        return response()->json(['status' => 'success', 'message' => 'Complaint created successfully.', 'data' => $complaint], 201);
+    }
 
     public function __construct()
     {
