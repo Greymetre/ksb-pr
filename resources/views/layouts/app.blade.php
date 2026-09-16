@@ -2013,7 +2013,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('stock_access'))
+                                    @if(false && auth()->user()->can('stock_access'))
                                     <li class="nav-link-btn {{ request()->is('stock*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('stock') }}">
                                             <i class="material-icons icon">donut_small</i>
@@ -2022,7 +2022,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('sap_stock_access'))
+                                    @if(false && auth()->user()->can('sap_stock_access'))
                                     <li class="nav-link-btn {{ request()->is('sap_stock*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('sap_stock') }}">
                                             <i class="material-icons icon">donut_small</i>
@@ -2031,7 +2031,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('opening_stock_view'))
+                                    @if(false && auth()->user()->can('opening_stock_view'))
                                     <li class="nav-link-btn {{ request()->is('opening-stocks*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('opening-stocks') }}">
                                             <i class="material-icons icon">donut_small</i>
@@ -2040,7 +2040,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('branch_opening_qty_view'))
+                                    @if(false && auth()->user()->can('branch_opening_qty_view'))
                                     <li class="nav-link-btn {{ request()->is('opening-quantity*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('opening-quantity') }}">
                                             <i class="material-icons icon">donut_small</i>
