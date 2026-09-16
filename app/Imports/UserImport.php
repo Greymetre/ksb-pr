@@ -149,11 +149,17 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                     $userData['password_string'] = $password;
                 }
 
+                $active = $this->parseStatus($row['status'] ?? null);
+                if ($active !== null) {
+                    $userData['active'] = $active;
+                }
+
+                $wasActive = User::where('id', '=', $row['id'])->value('active');
                 User::where('id', '=', $row['id'])->update($userData);
                 $user = User::find($row['id']);
                 $user->roles()->sync(explode(',', $row['role_ids']));
 
-                if ($password !== '') {
+                if ($password !== '' || ($active === 'N' && $wasActive !== 'N')) {
                     UserSessionInvalidator::invalidate($user);
                 }
 
@@ -277,7 +283,7 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
                 $last_name = (strpos($name, ' ') === false) ? '' : preg_replace('#.*\s([\w-]*)$#', '$1', $name);
                 $first_name = trim(preg_replace('#' . preg_quote($last_name, '#') . '#', '', $name));
                 $userData = [
-                    'active' => 'Y',
+                    'active' => $this->parseStatus($row['status'] ?? null) ?? 'Y',
                     'name' => !empty($name) ? ucfirst(strtolower($name)) : '',
                     'first_name' => !empty($first_name) ? ucfirst(strtolower($first_name)) : '',
                     'last_name' => !empty($last_name) ? ucfirst(strtolower($last_name)) : '',
@@ -455,7 +461,29 @@ class UserImport implements ToCollection, WithValidation, WithHeadingRow, WithBa
             'password' => array_merge(['required_without:*.id'], strongPasswordRules(null, false)),
             'casual_leave_cl_balance' => 'nullable|numeric|min:0',
             'comp_off_balance' => 'nullable|numeric|min:0',
+            'status' => ['nullable', function ($attribute, $value, $fail) {
+                if ($this->parseStatus($value) === null && trim((string) $value) !== '') {
+                    $fail('Status must be Active or Inactive.');
+                }
+            }],
         ];
+    }
+
+    /**
+     * Map the Status column (Active/Inactive or Y/N) to the users.active flag; null when blank or unrecognised.
+     */
+    private function parseStatus($value): ?string
+    {
+        $value = strtoupper(trim((string) $value));
+
+        if (in_array($value, ['ACTIVE', 'Y', 'YES', '1'], true)) {
+            return 'Y';
+        }
+        if (in_array($value, ['INACTIVE', 'N', 'NO', '0'], true)) {
+            return 'N';
+        }
+
+        return null;
     }
 
     public function batchSize(): int

@@ -67,6 +67,7 @@ class UserTemplate implements FromCollection,WithHeadings,ShouldAutoSize
             'sales_type',
             'casual_leave_cl_balance',
             'comp_off_balance',
+            'status',
             
         ];
     }
