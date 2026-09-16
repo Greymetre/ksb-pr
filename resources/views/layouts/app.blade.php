@@ -1778,7 +1778,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can(['customer_balance_confirmation_upload']))
+                                    @if(false && auth()->user()->can(['customer_balance_confirmation_upload']))
                                     <li class="nav-link-btn {{ request()->is('customer_balance*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('customer_balance') }}">
                                             <i class="material-icons icon">balance</i>
@@ -1805,7 +1805,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('firmtype_access'))
+                                    @if(false && auth()->user()->can('firmtype_access'))
                                     <li class="nav-link-btn {{ request()->is('firmtype*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('firmtype') }}">
                                             <i class="material-icons icon">bubble_chart</i>
@@ -1825,7 +1825,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('survey_access'))
+                                    @if(false && auth()->user()->can('survey_access'))
                                     <li class="nav-link-btn {{ request()->is('customers-survey*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('customers-survey') }}">
                                             <i class="material-icons icon">sentiment_satisfied</i>
@@ -1834,7 +1834,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('field_access'))
+                                    @if(false && auth()->user()->can('field_access'))
                                     <li class="nav-link-btn {{ request()->is('fields*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('fields') }}">
                                             <i class="material-icons icon">text_rotation_angleup</i>
@@ -1843,7 +1843,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('market_intelligence_access'))
+                                    @if(false && auth()->user()->can('market_intelligence_access'))
                                     <li
                                         class="nav-link-btn {{ request()->is('market_intelligences*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('market_intelligences') }}">
@@ -1853,7 +1853,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('dealer_appointment'))
+                                    @if(false && auth()->user()->can('dealer_appointment'))
                                     <li class="nav-link-btn {{ request()->is('dealer-appointment*') ? 'active' : '' }}">
                                         <a class="nav-link hoveradd2" href="{{ url('dealer-appointments') }}">
                                             <i class="material-icons icon">pending_actions</i>
