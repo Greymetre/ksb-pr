@@ -114,9 +114,13 @@ class ComplaintController extends Controller
                 6 => 'review',
                 default => 'pending',
             },
-            'status_url' => Auth::user()->can('complaint_edit') && (int) $complaint->complaint_status === 0
-                ? route('complaints.edit', ['complaint' => $complaint->id, 'office_action' => 1])
-                : null,
+            'status_url' => match (true) {
+                Auth::user()->can('complaint_edit') && (int) $complaint->complaint_status === 0
+                    => route('complaints.edit', ['complaint' => $complaint->id, 'office_action' => 1]),
+                Auth::user()->can('complaint_review') && (int) $complaint->complaint_status === 6
+                    => route('complaints.edit', ['complaint' => $complaint->id, 'review_action' => 1]),
+                default => null,
+            },
             'detail_url' => route('complaints.show', $complaint->id),
             'edit_url' => Auth::user()->can('complaint_edit') && in_array((int) $complaint->complaint_status, [0, 6], true) ? route('complaints.edit', $complaint->id) : null,
             'delete_url' => Auth::user()->can('complaint_delete') ? route('complaints.destroy', $complaint->id) : null,
@@ -615,8 +619,10 @@ class ComplaintController extends Controller
         $visitReport = null;
         $officeActionEnabled = false;
         $officeActionMode = false;
+        $reviewActionMode = false;
+        $officeActionEditable = false;
         $canReview = false;
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'officeActionMode', 'canReview'))->with('complaints', $this->complaint);
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'officeActionMode', 'reviewActionMode', 'officeActionEditable', 'canReview'))->with('complaints', $this->complaint);
     }
 
     /**
@@ -832,7 +838,8 @@ class ComplaintController extends Controller
 
     public function edit(Complaint $complaint)
     {
-        abort_unless(Auth::user()->can('complaint_edit'), 403);
+        $requestedReviewAction = request()->boolean('review_action');
+        abort_unless($requestedReviewAction ? $this->canReviewComplaints() : Auth::user()->can('complaint_edit'), 403);
         abort_unless(in_array((int) $complaint->complaint_status, [0, 6], true), 422, 'Only open or in review complaints can be edited.');
         $visibleUserIds = array_values(array_unique(array_merge(getUsersReportingToAuth(auth()->id()), [auth()->id()])));
         $customerIds = EmployeeDetail::whereIn('user_id', $visibleUserIds)->where(fn ($query) => $query->whereNull('active')->orWhere('active', 'Y'))->distinct()->pluck('customer_id');
@@ -863,9 +870,11 @@ class ComplaintController extends Controller
         $visitReport = $this->fileAttachment(optional($officeAction)->visit_report_path);
         $officeActionEnabled = Schema::hasTable('complaint_office_actions');
         $officeActionMode = request()->boolean('office_action') && (int) $complaint->complaint_status === 0;
-        $canReview = $this->canReviewComplaints() && (int) $complaint->complaint_status === 6 && Schema::hasColumn('complaint_office_actions', 'review_decision');
+        $reviewActionMode = request()->boolean('review_action') && (int) $complaint->complaint_status === 6;
+        $officeActionEditable = $officeActionMode || ((int) $complaint->complaint_status === 6 && !$reviewActionMode);
+        $canReview = $this->canReviewComplaints() && $reviewActionMode && Schema::hasColumn('complaint_office_actions', 'review_decision');
         $currentAttachments = $this->complaintAttachments($complaint);
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'officeActionMode', 'canReview'))->with('complaints', $complaint);
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'officeActionMode', 'reviewActionMode', 'officeActionEditable', 'canReview'))->with('complaints', $complaint);
     }
 
     /**
@@ -877,7 +886,7 @@ class ComplaintController extends Controller
      */
     public function update(Request $request, Complaint $complaint)
     {
-        abort_unless(Auth::user()->can('complaint_edit'), 403);
+        abort_unless($request->boolean('review_action_mode') ? $this->canReviewComplaints() : Auth::user()->can('complaint_edit'), 403);
         abort_unless(in_array((int) $complaint->complaint_status, [0, 6], true), 422, 'Only open or in review complaints can be edited.');
         if ($request->boolean('office_action_mode')) {
             abort_unless((int) $complaint->complaint_status === 0, 422, 'Office action can only be submitted for an open complaint.');
@@ -888,7 +897,32 @@ class ComplaintController extends Controller
             ComplaintTimeline::create(['complaint_id' => $complaint->id, 'created_by' => auth()->id(), 'status' => '6']);
             return Redirect::to('complaints')->with('message_success', 'Office action submitted. Complaint moved to In Review.');
         }
-        $validated = $request->validate(['dealer_id'=>'required|integer|exists:customers,id','alternate_number'=>['nullable','regex:/^[0-9]{10}$/'],'end_user_name'=>'nullable|string|max:150','end_user_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'technician_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'product_category_id'=>'required|integer|exists:categories,id','product_size'=>'nullable|string|max:50','size_unit'=>'required|in:MM,Inch','batch_no_dom'=>'nullable|string|max:100','description'=>'required|string|max:5000','complaint_received_through_id'=>'required|integer|exists:statuses,id','attachment'=>'nullable|file|mimes:jpg,jpeg,png,heic,heif,webp,pdf|max:20480']);
+        if ($request->boolean('review_action_mode')) {
+            abort_unless($this->canReviewComplaints() && (int) $complaint->complaint_status === 6, 403);
+            $validated = $request->validate([
+                'department_head_decision' => 'nullable|in:Approved,Rejected',
+                'manager_decision' => 'nullable|in:Approved,Rejected',
+                'final_decision' => 'nullable|string|max:5000',
+                'review_decision' => 'required|in:Resolve,Reject',
+            ]);
+            $officeAction = $this->complaintOfficeAction($complaint) ?: new ComplaintOfficeAction(['complaint_id' => $complaint->id]);
+            $officeAction->forceFill([
+                'department_head_decision' => $validated['department_head_decision'] ?? null,
+                'manager_decision' => $validated['manager_decision'] ?? null,
+                'final_decision' => $validated['final_decision'] ?? null,
+                'review_decision' => $validated['review_decision'],
+                'reviewed_by' => auth()->id(),
+                'reviewed_at' => now(),
+                'updated_by' => auth()->id(),
+            ])->save();
+            $status = $validated['review_decision'] === 'Resolve' ? 3 : 5;
+            $complaint->forceFill(['complaint_status' => $status])->save();
+            ComplaintTimeline::create(['complaint_id' => $complaint->id, 'created_by' => auth()->id(), 'status' => (string) $status, 'remark' => $validated['final_decision'] ?? null]);
+            return Redirect::to('complaints')->with('message_success', $status === 3 ? 'Complaint completed successfully.' : 'Complaint rejected successfully.');
+        }
+        $complaintRules = ['dealer_id'=>'required|integer|exists:customers,id','alternate_number'=>['nullable','regex:/^[0-9]{10}$/'],'end_user_name'=>'nullable|string|max:150','end_user_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'technician_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'product_category_id'=>'required|integer|exists:categories,id','product_size'=>'nullable|string|max:50','size_unit'=>'required|in:MM,Inch','batch_no_dom'=>'nullable|string|max:100','description'=>'required|string|max:5000','complaint_received_through_id'=>'required|integer|exists:statuses,id','attachment'=>'nullable|file|mimes:jpg,jpeg,png,heic,heif,webp,pdf|max:20480'];
+        $validated = $request->validate($complaintRules + ((int) $complaint->complaint_status === 6 ? $this->officeActionRules($request, $complaint) : []));
+        unset($validated['department_head_decision'], $validated['manager_decision'], $validated['review_decision']);
         $category = Category::findOrFail($validated['product_category_id']);
         $received = Status::whereKey($validated['complaint_received_through_id'])->where('module','Complaint Received Through')->where('active','Y')->firstOrFail();
         $endUserId = $complaint->end_user_id;
@@ -897,6 +931,7 @@ class ComplaintController extends Controller
         $columns=array_flip(Schema::getColumnListing('complaints')); foreach(['dealer_id','alternate_number','end_user_name','end_user_mobile','technician_mobile','product_category_id','product_size','size_unit','batch_no_dom','complaint_received_through_id'] as $column) if(isset($columns[$column])) $data[$column]=$validated[$column]??null;
         $complaint->forceFill($data)->save();
         if($request->hasFile('attachment')){$file=$request->file('attachment');$name='complaint-'.$complaint->id.'-'.now()->format('YmdHis').'.'.strtolower($file->getClientOriginalExtension()?:'jpg');File::ensureDirectoryExists(public_path('uploads/complaints'),0755,true);$file->move(public_path('uploads/complaints'),$name);if(isset($columns['attachment_path']))$complaint->forceFill(['attachment_path'=>'uploads/complaints/'.$name])->save();}
+        if ((int) $complaint->complaint_status === 6) $this->saveOfficeAction($request, $complaint, $validated);
         return Redirect::to('complaints')->with('message_success', 'Complaint updated successfully.');
     }
 
