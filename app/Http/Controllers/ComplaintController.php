@@ -119,6 +119,8 @@ class ComplaintController extends Controller
                     => route('complaints.edit', ['complaint' => $complaint->id, 'office_action' => 1]),
                 Auth::user()->can('complaint_review') && (int) $complaint->complaint_status === 6
                     => route('complaints.edit', ['complaint' => $complaint->id, 'review_action' => 1]),
+                Auth::user()->can('complaint_view') && in_array((int) $complaint->complaint_status, [3, 4], true)
+                    => route('complaints.edit', ['complaint' => $complaint->id, 'view_action' => 1]),
                 default => null,
             },
             'detail_url' => route('complaints.show', $complaint->id),
@@ -620,9 +622,10 @@ class ComplaintController extends Controller
         $officeActionEnabled = false;
         $officeActionMode = false;
         $reviewActionMode = false;
+        $viewActionMode = false;
         $officeActionEditable = false;
         $canReview = false;
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'officeActionMode', 'reviewActionMode', 'officeActionEditable', 'canReview'))->with('complaints', $this->complaint);
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'officeActionMode', 'reviewActionMode', 'viewActionMode', 'officeActionEditable', 'canReview'))->with('complaints', $this->complaint);
     }
 
     /**
@@ -839,8 +842,9 @@ class ComplaintController extends Controller
     public function edit(Complaint $complaint)
     {
         $requestedReviewAction = request()->boolean('review_action');
-        abort_unless($requestedReviewAction ? $this->canReviewComplaints() : Auth::user()->can('complaint_edit'), 403);
-        abort_unless(in_array((int) $complaint->complaint_status, [0, 6], true), 422, 'Only open or in review complaints can be edited.');
+        $requestedViewAction = request()->boolean('view_action');
+        abort_unless($requestedViewAction ? Auth::user()->can('complaint_view') : ($requestedReviewAction ? $this->canReviewComplaints() : Auth::user()->can('complaint_edit')), 403);
+        abort_unless($requestedViewAction ? in_array((int) $complaint->complaint_status, [3, 4], true) : in_array((int) $complaint->complaint_status, [0, 6], true), 422, 'This complaint is not available for the requested action.');
         $visibleUserIds = array_values(array_unique(array_merge(getUsersReportingToAuth(auth()->id()), [auth()->id()])));
         $customerIds = EmployeeDetail::whereIn('user_id', $visibleUserIds)->where(fn ($query) => $query->whereNull('active')->orWhere('active', 'Y'))->distinct()->pluck('customer_id');
         $dealers = Customers::with('customeraddress')->whereIn('id', $customerIds)->where('active', 'Y')->whereHas('customertypes', fn ($query) => $query->whereRaw('LOWER(TRIM(type_name)) = ?', ['dealer'])->whereRaw('LOWER(TRIM(customertype_name)) = ?', ['dealer']))->orderBy('name')->get();
@@ -864,17 +868,18 @@ class ComplaintController extends Controller
             'complaint_received_through_id' => $complaint->form_received_id,
         ];
         $officeAction = $this->complaintOfficeAction($complaint);
-        foreach (['material_provided', 'quantity_provided', 'service_engineer_provided', 'replacement', 'replacement_quantity', 'corrective_action', 'preventive_action', 'points_discussed', 'customer_care_name', 'department_head_name', 'department_head_decision', 'manager_name', 'manager_decision', 'final_decision'] as $field) {
+        foreach (['material_provided', 'quantity_provided', 'service_engineer_provided', 'replacement', 'replacement_quantity', 'corrective_action', 'preventive_action', 'points_discussed', 'customer_care_name', 'department_head_name', 'department_head_decision', 'manager_name', 'manager_decision', 'final_decision', 'review_decision'] as $field) {
             $editData[$field] = optional($officeAction)->{$field};
         }
         $visitReport = $this->fileAttachment(optional($officeAction)->visit_report_path);
         $officeActionEnabled = Schema::hasTable('complaint_office_actions');
         $officeActionMode = request()->boolean('office_action') && (int) $complaint->complaint_status === 0;
         $reviewActionMode = request()->boolean('review_action') && (int) $complaint->complaint_status === 6;
+        $viewActionMode = request()->boolean('view_action') && in_array((int) $complaint->complaint_status, [3, 4], true);
         $officeActionEditable = $officeActionMode || ((int) $complaint->complaint_status === 6 && !$reviewActionMode);
         $canReview = $this->canReviewComplaints() && $reviewActionMode && Schema::hasColumn('complaint_office_actions', 'review_decision');
         $currentAttachments = $this->complaintAttachments($complaint);
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'officeActionMode', 'reviewActionMode', 'officeActionEditable', 'canReview'))->with('complaints', $complaint);
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'officeActionMode', 'reviewActionMode', 'viewActionMode', 'officeActionEditable', 'canReview'))->with('complaints', $complaint);
     }
 
     /**
