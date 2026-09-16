@@ -2243,7 +2243,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('appraisal_pms'))
+                                    @if(false && auth()->user()->can('appraisal_pms'))
                                     <li class="nav-link-btn {{ request()->is('appraisal*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('appraisal/index') }}">
                                             <i class="material-icons icon">verified_user</i>
@@ -2252,7 +2252,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('sales_weightage'))
+                                    @if(false && auth()->user()->can('sales_weightage'))
                                     <li class="nav-link-btn {{ request()->is('sales_weightage*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('sales_weightage') }}">
                                             <i class="material-icons icon">checkroom</i>
@@ -2497,7 +2497,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('estimate_access'))
+                                    @if(false && auth()->user()->can('estimate_access'))
                                     <li class="nav-link-btn {{ request()->is('estimate*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('estimate') }}">
                                             <i class="material-icons icon">request_quote</i>
@@ -2506,7 +2506,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('invoice_access'))
+                                    @if(false && auth()->user()->can('invoice_access'))
                                     <li class="nav-link-btn {{ request()->is('tax_invoice*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('tax_invoice') }}">
                                             <i class="material-icons icon">receipt_long</i>
@@ -2515,7 +2515,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('payments_access'))
+                                    @if(false && auth()->user()->can('payments_access'))
                                     <li class="nav-link-btn add_icon">
                                         <a class="hoveradd" data-toggle="collapse" href="#paymentManu"
                                             aria-expanded="false">
@@ -2565,7 +2565,7 @@
                     </a>
                     <div class="collapse" id="serviceMenu" style="">
                         <ul class="navd">
-                            @if(auth()->user()->can('serial_number_transaction'))
+                            @if(false && auth()->user()->can('serial_number_transaction'))
                             <li
                                 class="nav-link-btn {{ request()->is('services/serial_number_transaction*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('services/serial_number_transaction') }}">
@@ -2576,7 +2576,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('serial_number_history'))
+                            @if(false && auth()->user()->can('serial_number_history'))
                             <li
                                 class="nav-link-btn {{ request()->is('services/serial_number_history*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('services/serial_number_history') }}">
@@ -2587,7 +2587,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('complaint_type_access'))
+                            @if(false && auth()->user()->can('complaint_type_access'))
                             <li class="nav-link-btn {{ request()->is('complaint-type*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('complaint-type') }}">
                                     <i class="material-icons icon">mark_email_read</i>
@@ -2606,7 +2606,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('service_bill_access'))
+                            @if(false && auth()->user()->can('service_bill_access'))
                             <li class="nav-link-btn {{ request()->is('service_bills*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('service_bills') }}">
                                     <i class="material-icons icon">account_balance_wallet</i>
@@ -2615,7 +2615,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('service_bill_type_access'))
+                            @if(false && auth()->user()->can('service_bill_type_access'))
                             <li
                                 class="nav-link-btn {{ request()->is('service-bills-complaints-type*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('service-bills-complaints-type') }}">
@@ -2625,7 +2625,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('claim_generation_access'))
+                            @if(false && auth()->user()->can('claim_generation_access'))
                             <li class="nav-link-btn {{ request()->is('claim-generation*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('claim-generation') }}">
                                     <i class="material-icons icon">account_balance_wallet</i>
@@ -2634,7 +2634,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('services_product_access'))
+                            @if(false && auth()->user()->can('services_product_access'))
                             <li class="nav-link-btn add_icon {{ request()->is('service-charge*') ? 'active' : '' }}">
                                 <a class="collapsed hoveradd" data-toggle="collapse" href="#serviceProductMenu"
                                     aria-expanded="false">
@@ -2688,7 +2688,7 @@
                                 </div>
                             </li>
                             @endif
-                            @if(auth()->user()->can('warranty_activation_access'))
+                            @if(false && auth()->user()->can('warranty_activation_access'))
                             <li class="nav-link-btn {{ request()->is('warranty_activation*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('warranty_activation') }}">
                                     <i class="material-icons icon">history</i>
