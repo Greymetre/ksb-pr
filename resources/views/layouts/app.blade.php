@@ -2767,12 +2767,12 @@
                 <li class="nav-link {{ request()->is('marketings*') || request()->is('msp_activity*') || request()->is('promotional-gifts*') || request()->is('promotional-activities-crm*') ? 'active' : '' }}">
                     <a class="{{ request()->is('marketings*') || request()->is('msp_activity*') || request()->is('promotional-gifts*') || request()->is('promotional-activities-crm*') ? '' : 'collapsed' }} hoveradd" data-toggle="collapse" href="#marketingMenu" aria-expanded="{{ request()->is('marketings*') || request()->is('msp_activity*') || request()->is('promotional-gifts*') || request()->is('promotional-activities-crm*') ? 'true' : 'false' }}">
                         <i class="material-icons icon">local_convenience_store</i>
-                        <span>Marketing</span>
-                        <div class="d-none mobile_hide"> Marketing</div>
+                        <span>Marketing Management</span>
+                        <div class="d-none mobile_hide"> Marketing Management</div>
                     </a>
                     <div class="collapse {{ request()->is('marketings*') || request()->is('msp_activity*') || request()->is('promotional-gifts*') || request()->is('promotional-activities-crm*') ? 'show' : '' }}" id="marketingMenu" style="">
                         <ul class="navd">
-                            @if(auth()->user()->can('marketing_master_access'))
+                            @if(false && auth()->user()->can('marketing_master_access'))
                             <li class="nav-link-btn {{ request()->is('marketings*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('marketings') }}">
                                     <i class="material-icons icon">add_business</i>
@@ -2781,7 +2781,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('marketing_new_dealer_access'))
+                            @if(false && auth()->user()->can('marketing_new_dealer_access'))
                             <li class="nav-link-btn {{ request()->is('marketings_new_dealer*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('marketings_new_dealer') }}">
                                     <i class="material-icons icon">flaky</i>
@@ -2790,7 +2790,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('msp_activity_access'))
+                            @if(false && auth()->user()->can('msp_activity_access'))
                             <li class="nav-link-btn {{ request()->is('msp_activity*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('msp_activity') }}">
                                     <i class="material-icons icon">celebration</i>
@@ -2851,7 +2851,7 @@
                         </div>
                         </li> -->
                 @endif
-                @if(auth()->user()->can('scheme_access'))
+                @if(false && auth()->user()->can('scheme_access'))
                 <li
                     class="nav-link {{ request()->is('schemes*') || request()->is('transaction_history*') || request()->is('gifts*') || request()->is('gift-categories*') || request()->is('gift-subcategories*') || request()->is('gift-model*') || request()->is('gift-brands*') || request()->is('redemptions*') || request()->is('damage_entries*') || request()->is('mobile_user_login*') || request()->is('customer-kyc*') ? 'active' : '' }}">
                     <a class="collapsed hoveradd" data-toggle="collapse" href="#schemesMenu" aria-expanded="false">
@@ -2994,7 +2994,7 @@
                                  </a>
                                  </li> -->
                             @endif
-                            @if(auth()->user()->can('power_bi_setting_access'))
+                            @if(false && auth()->user()->can('power_bi_setting_access'))
                             <li class="nav-link-btn {{request()->is('power_bi_setting*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('power_bi_setting') }}">
                                     <i class="material-icons icon">analytics</i>
@@ -3004,7 +3004,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('invoice_setting_access'))
+                            @if(false && auth()->user()->can('invoice_setting_access'))
                             <li class="nav-link-btn {{request()->is('invoice_setting*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('invoice_setting') }}">
                                     <i class="material-icons icon">settings</i>
@@ -3014,7 +3014,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('loyalty_app_setting_access'))
+                            @if(false && auth()->user()->can('loyalty_app_setting_access'))
                             <li class="nav-link-btn {{request()->is('loyalty-app-setting*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('loyalty-app-setting') }}">
                                     <i class="material-icons icon">manage_accounts</i>
@@ -3136,7 +3136,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('checkin_access'))
+                            @if(false && auth()->user()->can('checkin_access'))
                             <li class="nav-link-btn {{ request()->is('checkin*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('checkin') }}">
                                     <i class="material-icons icon">assignment_turned_in</i>
@@ -3145,7 +3145,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('visitreport_access'))
+                            @if(false && auth()->user()->can('visitreport_access'))
                             <li class="nav-link-btn {{ request()->is('visitreports*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('visitreports') }}">
                                     <i class="material-icons icon">summarize</i>
@@ -3163,7 +3163,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('visitreport_access'))
+                            @if(false && auth()->user()->can('visitreport_access'))
                             <li class="nav-link-btn {{ request()->is('retailers*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('mastervisitreport') }}">
                                     <i class="material-icons icon">store</i>
@@ -3172,7 +3172,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('adherence_report'))
+                            @if(false && auth()->user()->can('adherence_report'))
                             <li class="nav-link-btn {{ request()->is('reports/beatadherence*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('reports/beatadherence') }}">
                                     <i class="material-icons icon">vrpano</i>
@@ -3181,7 +3181,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('summary_report'))
+                            @if(false && auth()->user()->can('summary_report'))
                             <li class="nav-link-btn {{ request()->is('reports/adherencesummary*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('reports/adherencesummary') }}">
                                     <i class="material-icons icon">summarize</i>
@@ -3273,7 +3273,7 @@
                                             </a>
                                         </li>
                                         @endif
-                                        @if(auth()->user()->can('ASR_report_Download'))
+                                        @if(false && auth()->user()->can('ASR_report_Download'))
                                         <li class="nav-link-btn {{ request()->is('reports/adherencesummary*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('reports/adherencesummary?type=asr') }}">
                                                 <i class="material-icons icon">summarize</i>
@@ -3291,7 +3291,7 @@
                                             </a>
                                         </li>
                                         @endif
-                                        @if(auth()->user()->can('user_working_report'))
+                                        @if(false && auth()->user()->can('user_working_report'))
                                         <li
                                             class="nav-link-btn {{ request()->is('reports/reports_sale*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('reports/reports_sale') }}">
@@ -3301,7 +3301,7 @@
                                             </a>
                                         </li>
                                         @endif
-                                        @if(auth()->user()->can('fos_rating_report'))
+                                        @if(false && auth()->user()->can('fos_rating_report'))
                                         <li
                                             class="nav-link-btn {{ request()->is('reports/fos_rating*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('reports/fos_rating') }}">
@@ -3350,7 +3350,7 @@
                                             </a>
                                         </li>
                                         @endif
-                                        @if(auth()->user()->can('product_analysis_branch_access'))
+                                        @if(false && auth()->user()->can('product_analysis_branch_access'))
                                         <li
                                             class="nav-link-btn {{ request()->is('reports/product_analysis_branch*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('reports/product_analysis_branch') }}">
@@ -3360,7 +3360,7 @@
                                             </a>
                                         </li>
                                         @endif
-                                        @if(auth()->user()->can('product_analysis_qty_access'))
+                                        @if(false && auth()->user()->can('product_analysis_qty_access'))
                                         <li
                                             class="nav-link-btn {{ request()->is('reports/product_analysis_qty*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('reports/product_analysis_qty') }}">
@@ -3370,7 +3370,7 @@
                                             </a>
                                         </li>
                                         @endif
-                                        @if(auth()->user()->can('product_analysis_value_access'))
+                                        @if(false && auth()->user()->can('product_analysis_value_access'))
                                         <li
                                             class="nav-link-btn {{ request()->is('reports/product_analysis_value*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('reports/product_analysis_value') }}">
@@ -3380,7 +3380,7 @@
                                             </a>
                                         </li>
                                         @endif
-                                        @if(auth()->user()->can('group_wise_analysis_access'))
+                                        @if(false && auth()->user()->can('group_wise_analysis_access'))
                                         <li
                                             class="nav-link-btn {{ request()->is('reports/group_wise_analysis*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('reports/group_wise_analysis') }}">
@@ -3390,7 +3390,7 @@
                                             </a>
                                         </li>
                                         @endif
-                                        @if(auth()->user()->can('per_employee_costing_access'))
+                                        @if(false && auth()->user()->can('per_employee_costing_access'))
                                         <li
                                             class="nav-link-btn {{ request()->is('reports/per_employee_costing*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('reports/per_employee_costing') }}">
@@ -3430,7 +3430,7 @@
                                             </a>
                                         </li>
                                         @endif
-                                        @if(auth()->user()->can('user_incentive_access'))
+                                        @if(false && auth()->user()->can('user_incentive_access'))
                                         <li
                                             class="nav-link-btn {{ request()->is('reports/user_incentive*') ? 'active' : '' }}">
                                             <a class="hoveradd2" href="{{ url('reports/user_incentive') }}">
@@ -3571,7 +3571,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if(auth()->user()->can('calling_report'))
+                            @if(false && auth()->user()->can('calling_report'))
                             <li class="nav-link-btn ">
                                 <a class="hoveradd2" href="{{ url('notes') }}">
                                     <i class="material-icons icon">dialpad</i>
@@ -3580,6 +3580,7 @@
                                 </a>
                             </li>
                             @endif
+                            @if(false)
                             <li class="nav-link-btn {{ request()->is('reports/marketIntelligence*') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ url('reports/marketIntelligence') }}">
                                     <i class="material-icons icon">nature_people</i>
@@ -3587,12 +3588,13 @@
                                     <div class="d-none mobile_hide"> Market Intelligence</div>
                                 </a>
                             </li>
+                            @endif
                         </ul>
                     </div>
                 </li>
                 </li>
                 @endif
-                @if(auth()->user()->can('loyalty_report_access'))
+                @if(false && auth()->user()->can('loyalty_report_access'))
                 <li class="nav-link-btn add_icon ">
                     <a class="hoveradd" data-toggle="collapse" href="#loyaltyMenu" aria-expanded="false">
                         <i class="material-icons icon">loyalty</i>
