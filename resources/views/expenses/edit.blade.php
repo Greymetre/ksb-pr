@@ -234,7 +234,7 @@
                                     @foreach(['1' => 'Yes', '0' => 'No'] as $value => $label)
                                     <div class="form-check form-check-radio form-check-inline">
                                         <label class="form-check-label">
-                                            <input class="form-check-input" type="radio" name="night_halt" value="{{ $value }}" {{ (string) old('night_halt', isset($expense->night_halt) ? (int) $expense->night_halt : '') === $value ? 'checked' : '' }} required> {{ $label }}
+                                            <input class="form-check-input" type="radio" name="night_halt" value="{{ $value }}" {{ (string) old('night_halt', is_null($expense->night_halt) ? 0 : (int) $expense->night_halt) === $value ? 'checked' : '' }} required> {{ $label }}
                                             <span class="circle"><span class="check"></span></span>
                                         </label>
                                     </div>
