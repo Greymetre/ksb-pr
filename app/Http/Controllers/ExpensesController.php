@@ -305,9 +305,9 @@ class ExpensesController extends Controller
             'user_id'          => 'required',
             'claim_amount'    => 'required',
             'date'            => 'required',
-            'night_halt'      => 'required|boolean',
-            'from'            => 'required|string|max:255',
-            'to'              => 'required|string|max:255',
+            'night_halt'      => 'nullable|boolean',
+            'from'            => 'nullable|string|max:255',
+            'to'              => 'nullable|string|max:255',
         ];
 
 
@@ -548,9 +548,9 @@ class ExpensesController extends Controller
             'user_id'          => 'required',
             'claim_amount'    => 'required',
             'date'            => 'required',
-            'night_halt'      => 'required|boolean',
-            'from'            => 'required|string|max:255',
-            'to'              => 'required|string|max:255',
+            'night_halt'      => 'nullable|boolean',
+            'from'            => 'nullable|string|max:255',
+            'to'              => 'nullable|string|max:255',
         ];
 
 

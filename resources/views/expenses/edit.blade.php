@@ -229,12 +229,12 @@
 
                         <div class="col-md-6">
                             <div class="input_section">
-                                <label class="col-form-label">Night Halt<span class="text-danger"> *</span></label>
+                                <label class="col-form-label">Night Halt</label>
                                 <div class="form-group has-default bmd-form-group pt-2">
                                     @foreach(['1' => 'Yes', '0' => 'No'] as $value => $label)
                                     <div class="form-check form-check-radio form-check-inline">
                                         <label class="form-check-label">
-                                            <input class="form-check-input" type="radio" name="night_halt" value="{{ $value }}" {{ (string) old('night_halt', is_null($expense->night_halt) ? 0 : (int) $expense->night_halt) === $value ? 'checked' : '' }} required> {{ $label }}
+                                            <input class="form-check-input" type="radio" name="night_halt" value="{{ $value }}" {{ (string) old('night_halt', is_null($expense->night_halt) ? 0 : (int) $expense->night_halt) === $value ? 'checked' : '' }}> {{ $label }}
                                             <span class="circle"><span class="check"></span></span>
                                         </label>
                                     </div>
@@ -248,9 +248,9 @@
 
                         <div class="col-md-6">
                             <div class="input_section">
-                                <label class="col-form-label">From<span class="text-danger"> *</span></label>
+                                <label class="col-form-label">From</label>
                                 <div class="form-group has-default bmd-form-group">
-                                    <input placeholder="Enter starting location" class="form-control {{ $errors->has('from') ? 'is-invalid' : '' }}" type="text" name="from" id="from" value="{{ old('from', $expense->from_location ?? '') }}" maxlength="255" required autocomplete="off">
+                                    <input placeholder="Enter starting location" class="form-control {{ $errors->has('from') ? 'is-invalid' : '' }}" type="text" name="from" id="from" value="{{ old('from', $expense->from_location ?? '') }}" maxlength="255" autocomplete="off">
                                     @if($errors->has('from'))
                                     <div class="invalid-feedback">{{ $errors->first('from') }}</div>
                                     @endif
@@ -260,9 +260,9 @@
 
                         <div class="col-md-6">
                             <div class="input_section">
-                                <label class="col-form-label">To<span class="text-danger"> *</span></label>
+                                <label class="col-form-label">To</label>
                                 <div class="form-group has-default bmd-form-group">
-                                    <input placeholder="Enter destination" class="form-control {{ $errors->has('to') ? 'is-invalid' : '' }}" type="text" name="to" id="to" value="{{ old('to', $expense->to_location ?? '') }}" maxlength="255" required autocomplete="off">
+                                    <input placeholder="Enter destination" class="form-control {{ $errors->has('to') ? 'is-invalid' : '' }}" type="text" name="to" id="to" value="{{ old('to', $expense->to_location ?? '') }}" maxlength="255" autocomplete="off">
                                     @if($errors->has('to'))
                                     <div class="invalid-feedback">{{ $errors->first('to') }}</div>
                                     @endif
