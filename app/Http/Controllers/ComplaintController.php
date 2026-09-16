@@ -96,7 +96,7 @@ class ComplaintController extends Controller
         elseif ($filter === 'review') $base->where('complaint_status', 6);
         elseif ($filter === 'reject') $base->where('complaint_status', 5);
         elseif ($filter === 'resolve') $base->whereIn('complaint_status', [3, 4]);
-        $statusNames = [0 => 'Open', 1 => 'Pending', 2 => 'Work Done', 3 => 'Complete', 4 => 'Closed', 5 => 'Cancelled', 6 => 'In Review'];
+        $statusNames = [0 => 'Open', 1 => 'Pending', 2 => 'Work Done', 3 => 'Complete', 4 => 'Closed', 5 => 'Reject', 6 => 'In Review'];
         $page = $base->with(['party:id,name,first_name,last_name', 'customer:id,customer_name,customer_number'])->latest('id')->paginate(25);
         $items = collect($page->items())->map(fn ($complaint) => [
             'id' => $complaint->id, 'date' => $complaint->complaint_date, 'number' => $complaint->complaint_number,
@@ -107,6 +107,16 @@ class ComplaintController extends Controller
             'batch' => $complaint->batch_no_dom ?: $complaint->product_no, 'description' => $complaint->description,
             'received_through' => $complaint->complaint_recieve_via,
             'status' => $statusNames[(int) $complaint->complaint_status] ?? 'Open',
+            'status_key' => match ((int) $complaint->complaint_status) {
+                0 => 'open',
+                5 => 'reject',
+                3, 4 => 'complete',
+                6 => 'review',
+                default => 'pending',
+            },
+            'status_url' => Auth::user()->can('complaint_edit') && (int) $complaint->complaint_status === 0
+                ? route('complaints.edit', ['complaint' => $complaint->id, 'office_action' => 1])
+                : null,
             'detail_url' => route('complaints.show', $complaint->id),
             'edit_url' => Auth::user()->can('complaint_edit') && in_array((int) $complaint->complaint_status, [0, 6], true) ? route('complaints.edit', $complaint->id) : null,
             'delete_url' => Auth::user()->can('complaint_delete') ? route('complaints.destroy', $complaint->id) : null,
@@ -122,7 +132,7 @@ class ComplaintController extends Controller
         if ($filter === 'open') $query->where('complaint_status', 0);
         elseif ($filter === 'reject') $query->where('complaint_status', 5);
         elseif ($filter === 'resolve') $query->whereIn('complaint_status', [3, 4]);
-        $statusNames = [0 => 'Open', 1 => 'Pending', 2 => 'Work Done', 3 => 'Complete', 4 => 'Closed', 5 => 'Cancelled', 6 => 'In Review'];
+        $statusNames = [0 => 'Open', 1 => 'Pending', 2 => 'Work Done', 3 => 'Complete', 4 => 'Closed', 5 => 'Reject', 6 => 'In Review'];
         return response()->streamDownload(function () use ($query, $statusNames) {
             $output = fopen('php://output', 'w');
             fputcsv($output, ['Date', 'Complaint No.', 'Dealer', 'End User', 'Mobile', 'Category', 'Size', 'Batch/DOM', 'Nature', 'Received Through', 'Status']);
@@ -604,8 +614,9 @@ class ComplaintController extends Controller
         $currentAttachments = collect();
         $visitReport = null;
         $officeActionEnabled = false;
+        $officeActionMode = false;
         $canReview = false;
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'canReview'))->with('complaints', $this->complaint);
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'officeActionMode', 'canReview'))->with('complaints', $this->complaint);
     }
 
     /**
@@ -851,9 +862,10 @@ class ComplaintController extends Controller
         }
         $visitReport = $this->fileAttachment(optional($officeAction)->visit_report_path);
         $officeActionEnabled = Schema::hasTable('complaint_office_actions');
+        $officeActionMode = request()->boolean('office_action') && (int) $complaint->complaint_status === 0;
         $canReview = $this->canReviewComplaints() && (int) $complaint->complaint_status === 6 && Schema::hasColumn('complaint_office_actions', 'review_decision');
         $currentAttachments = $this->complaintAttachments($complaint);
-        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'canReview'))->with('complaints', $complaint);
+        return view('complaint.create_mobile', compact('dealers', 'categories', 'receivedThrough', 'exampleComplaintNumber', 'editData', 'complaintDate', 'currentAttachments', 'visitReport', 'officeActionEnabled', 'officeActionMode', 'canReview'))->with('complaints', $complaint);
     }
 
     /**
@@ -867,6 +879,15 @@ class ComplaintController extends Controller
     {
         abort_unless(Auth::user()->can('complaint_edit'), 403);
         abort_unless(in_array((int) $complaint->complaint_status, [0, 6], true), 422, 'Only open or in review complaints can be edited.');
+        if ($request->boolean('office_action_mode')) {
+            abort_unless((int) $complaint->complaint_status === 0, 422, 'Office action can only be submitted for an open complaint.');
+            $validated = $request->validate($this->officeActionRules($request, $complaint));
+            unset($validated['department_head_decision'], $validated['manager_decision'], $validated['review_decision']);
+            $this->saveOfficeAction($request, $complaint, $validated);
+            $complaint->forceFill(['complaint_status' => 6])->save();
+            ComplaintTimeline::create(['complaint_id' => $complaint->id, 'created_by' => auth()->id(), 'status' => '6']);
+            return Redirect::to('complaints')->with('message_success', 'Office action submitted. Complaint moved to In Review.');
+        }
         $validated = $request->validate(['dealer_id'=>'required|integer|exists:customers,id','alternate_number'=>['nullable','regex:/^[0-9]{10}$/'],'end_user_name'=>'nullable|string|max:150','end_user_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'technician_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'product_category_id'=>'required|integer|exists:categories,id','product_size'=>'nullable|string|max:50','size_unit'=>'required|in:MM,Inch','batch_no_dom'=>'nullable|string|max:100','description'=>'required|string|max:5000','complaint_received_through_id'=>'required|integer|exists:statuses,id','attachment'=>'nullable|file|mimes:jpg,jpeg,png,heic,heif,webp,pdf|max:20480']);
         $category = Category::findOrFail($validated['product_category_id']);
         $received = Status::whereKey($validated['complaint_received_through_id'])->where('module','Complaint Received Through')->where('active','Y')->firstOrFail();
