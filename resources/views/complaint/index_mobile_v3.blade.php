@@ -15,6 +15,20 @@
 .status-filter[data-filter="review"].btn-info{background:#1d4ed8!important;color:#fff!important}
 .status-filter[data-filter="resolve"].btn-info{background:#15803d!important;color:#fff!important}
 .status-filter[data-filter="reject"].btn-info{background:#b91c1c!important;color:#fff!important}
+/* Complaint filter drawer: even spacing and equal-height controls so labels don't collide with fields */
+#complaintFilterDrawer .fk-filter-drawer-body{display:flex;flex-direction:column;gap:20px;padding:22px 20px}
+#complaintFilterDrawer .fk-filter-field{display:flex;flex-direction:column;margin:0}
+#complaintFilterDrawer .fk-filter-field label{margin:0 0 8px;line-height:1.3}
+#complaintFilterDrawer .fk-filter-control,
+#complaintFilterDrawer .select2-container--default .select2-selection--single{height:48px!important;min-height:48px!important;padding:0 14px!important;display:flex!important;align-items:center!important}
+#complaintFilterDrawer .select2-container{display:block;position:relative;z-index:auto!important}
+#complaintFilterDrawer .select2-container--default .select2-selection--single .select2-selection__rendered{padding:0 24px 0 0!important;line-height:46px!important;font-size:14px!important;color:var(--fk-list-text)!important}
+#complaintFilterDrawer .select2-container--default .select2-selection--single .select2-selection__arrow{top:0!important;right:12px!important;height:46px!important}
+#complaintFilterDrawer input[type="date"]{line-height:46px}
+#complaintFilterDrawer input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.7;cursor:pointer}
+#complaintFilterDrawer .fk-filter-drawer-tools{display:block;padding:14px 20px}
+#complaintFilterDrawer .fk-filter-drawer-tools .btn{width:100%}
+#complaintFilterDrawer .fk-filter-drawer-foot{grid-template-columns:120px 1fr;padding:14px 20px 18px}
 </style>
 <section class="fk-manual-listing complaint-directory">
 <div class="fk-list-page-head"><div class="fk-list-heading-block"><div class="fk-list-breadcrumb"><span>Services Management</span><span>&rsaquo;</span><span class="fk-current">Complaints</span></div><div class="fk-list-title-row"><h1 class="fk-list-title">Complaint List</h1><span class="fk-list-count is-visible" id="recordCount">0 records</span></div></div><div class="fk-list-actions"><div class="fk-list-search" id="complaintSearch"><button class="fk-list-search-toggle" id="searchToggle" type="button" aria-label="Open search"><span class="material-icons">search</span></button><input id="search" class="fk-list-search-input" placeholder="Search complaint, dealer or category"></div><button class="btn fk-filter-trigger" type="button" data-filter-target="#complaintFilterDrawer"><span class="material-icons">tune</span><span>Filters</span></button><a href="{{route('complaints.create')}}" class="btn fk-create-action"><span class="material-icons">add_circle</span><span>Add New Complaint</span></a></div></div>
