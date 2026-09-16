@@ -867,7 +867,7 @@ class ComplaintController extends Controller
     {
         abort_unless(Auth::user()->can('complaint_edit'), 403);
         abort_unless(in_array((int) $complaint->complaint_status, [0, 6], true), 422, 'Only open or in review complaints can be edited.');
-        $validated = $request->validate(['dealer_id'=>'required|integer|exists:customers,id','alternate_number'=>['nullable','regex:/^[0-9]{10}$/'],'end_user_name'=>'nullable|string|max:150','end_user_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'technician_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'product_category_id'=>'required|integer|exists:categories,id','product_size'=>'nullable|string|max:50','size_unit'=>'required|in:MM,Inch','batch_no_dom'=>'nullable|string|max:100','description'=>'required|string|max:5000','complaint_received_through_id'=>'required|integer|exists:statuses,id','attachment'=>'nullable|file|mimes:jpg,jpeg,png,heic,heif,webp,pdf|max:20480'] + $this->officeActionRules($request, $complaint));
+        $validated = $request->validate(['dealer_id'=>'required|integer|exists:customers,id','alternate_number'=>['nullable','regex:/^[0-9]{10}$/'],'end_user_name'=>'nullable|string|max:150','end_user_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'technician_mobile'=>['nullable','regex:/^[0-9]{10}$/'],'product_category_id'=>'required|integer|exists:categories,id','product_size'=>'nullable|string|max:50','size_unit'=>'required|in:MM,Inch','batch_no_dom'=>'nullable|string|max:100','description'=>'required|string|max:5000','complaint_received_through_id'=>'required|integer|exists:statuses,id','attachment'=>'nullable|file|mimes:jpg,jpeg,png,heic,heif,webp,pdf|max:20480']);
         $category = Category::findOrFail($validated['product_category_id']);
         $received = Status::whereKey($validated['complaint_received_through_id'])->where('module','Complaint Received Through')->where('active','Y')->firstOrFail();
         $endUserId = $complaint->end_user_id;
@@ -876,20 +876,7 @@ class ComplaintController extends Controller
         $columns=array_flip(Schema::getColumnListing('complaints')); foreach(['dealer_id','alternate_number','end_user_name','end_user_mobile','technician_mobile','product_category_id','product_size','size_unit','batch_no_dom','complaint_received_through_id'] as $column) if(isset($columns[$column])) $data[$column]=$validated[$column]??null;
         $complaint->forceFill($data)->save();
         if($request->hasFile('attachment')){$file=$request->file('attachment');$name='complaint-'.$complaint->id.'-'.now()->format('YmdHis').'.'.strtolower($file->getClientOriginalExtension()?:'jpg');File::ensureDirectoryExists(public_path('uploads/complaints'),0755,true);$file->move(public_path('uploads/complaints'),$name);if(isset($columns['attachment_path']))$complaint->forceFill(['attachment_path'=>'uploads/complaints/'.$name])->save();}
-        $message = 'Complaint updated successfully.';
-        $officeActionRecorded = $this->saveOfficeAction($request, $complaint, $validated);
-        $reviewDecision = $this->canReviewComplaints() ? ($validated['review_decision'] ?? null) : null;
-        if ($reviewDecision && (int) $complaint->complaint_status === 6) {
-            $status = $reviewDecision === 'Resolve' ? 3 : 5;
-            $complaint->forceFill(['complaint_status' => $status])->save();
-            ComplaintTimeline::create(['complaint_id' => $complaint->id, 'created_by' => auth()->id(), 'status' => (string) $status, 'remark' => $validated['final_decision'] ?? null]);
-            $message = $reviewDecision === 'Resolve' ? 'Complaint resolved successfully.' : 'Complaint rejected successfully.';
-        } elseif ($officeActionRecorded && (int) $complaint->complaint_status === 0) {
-            $complaint->forceFill(['complaint_status' => 6])->save();
-            ComplaintTimeline::create(['complaint_id' => $complaint->id, 'created_by' => auth()->id(), 'status' => '6']);
-            $message = 'Office action saved. Complaint moved to In Review.';
-        }
-        return Redirect::to('complaints')->with('message_success', $message);
+        return Redirect::to('complaints')->with('message_success', 'Complaint updated successfully.');
     }
 
     /**
