@@ -1680,7 +1680,8 @@
                         </li>
                         @endif
                         <li class="fk-menu-section"><span>Customers</span></li>
-                        @if(auth()->user()->can(['lead_management_access']))
+                        {{-- Lead Management menu hidden for all users --}}
+                        @if(false && auth()->user()->can(['lead_management_access']))
                         <li
                             class="nav-link {{ request()->is('leads*') || request()->is('contacts*') || request()->is('call-management*') ? 'active' : '' }}">
                             <a class="collapsed hoveradd" data-toggle="collapse" href="#leadManagementMenu"
