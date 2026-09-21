@@ -47,6 +47,11 @@ return [
         'virtual_number' => env('EXOTEL_VIRTUAL_NUMBER'),
     ],
 
+    'sap' => [
+        'api_key' => env('SAP_API_KEY'),
+        'enforce' => env('SAP_API_KEY_ENFORCE', false),
+    ],
+
     'google' => [
         'maps_api_key' => 'AIzaSyAVSDwHbKULnZa93kYpYINTqX4eaWy9q18',
     ],
