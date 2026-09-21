@@ -2974,6 +2974,16 @@
                     </div>
                 </li>
                 @endif
+                @if(auth()->user()->can('odoo_sync_access'))
+                <li class="fk-menu-section"><span>Integrations</span></li>
+                <li class="nav-link hide_icon {{ request()->is('odoo-sync*') ? 'active' : '' }}">
+                    <a class="collapsed hoveradd" href="{{ route('odoo_sync.index') }}">
+                        <i class="material-icons icon">sync_alt</i>
+                        <span>Odoo Sync</span>
+                        <div class="d-none mobile_hide"> Odoo Sync</div>
+                    </a>
+                </li>
+                @endif
                 <li class="fk-menu-section"><span>Operations</span></li>
                 @if(auth()->user()->can('status_access'))
                 <li

@@ -91,6 +91,7 @@ use App\Http\Controllers\PromotionalActivityWebController;
 use App\Http\Controllers\PrimarySchemeController;
 use App\Http\Controllers\ResignationController;
 use App\Http\Controllers\SapStockController;
+use App\Http\Controllers\OdooSyncController;
 use App\Http\Controllers\WareHouseController;
 use App\Http\Controllers\PlannedSOPController;
 use App\Http\Controllers\ClaimGenerationController;
@@ -387,6 +388,12 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
 
     //SAP Stock Routs
     Route::any('sap_stock', [SapStockController::class, 'index'])->name('sap_stock.index');
+
+    //Odoo Sync Routs (odoo-integration-docs/README.md)
+    Route::get('odoo-sync', [OdooSyncController::class, 'index'])->name('odoo_sync.index');
+    Route::get('odoo-sync/logs', [OdooSyncController::class, 'logs'])->name('odoo_sync.logs');
+    Route::get('odoo-sync/test-prices', [OdooSyncController::class, 'testPrices'])->name('odoo_sync.test_prices');
+    Route::get('odoo-sync/live-prices', [OdooSyncController::class, 'livePrices'])->name('odoo_sync.live_prices');
 
     //End User Routs
     Route::resource('end_user', EndUserController::class);

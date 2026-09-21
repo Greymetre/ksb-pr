@@ -49,6 +49,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Odoo developer login has no dashboard access; land on the Odoo Sync page
+        if (auth()->user()->hasRole('odoo') && !auth()->user()->can('dashboard_access')) {
+            return redirect()->route('odoo_sync.index');
+        }
+
         return redirect()->intended(RouteServiceProvider::HOME);
     }
 

@@ -156,6 +156,16 @@ Example: `GET /party-prices?party_code=D100245&page=1&page_size=100`
 
 The response has `data` (rows with `party_id`/`product_id`; null means not linked yet) and `pagination` (`page`, `page_size`, `total_records`, `total_pages`, `has_next`).
 
+## 3a. See your data in the FieldKonnect CRM
+
+You get a CRM login (URL, email/mobile and password) from the FieldKonnect team. After logging in you land on **Odoo Sync**, which shows:
+
+- **Request Logs:** every request you sent, with its correlation ID, counts and the exact errors of failed or skipped records.
+- **Test Prices / Live Prices:** what is stored, and which FieldKonnect party and product each `party_code` / `product_code` matched. **Not linked** means the code was not found in FieldKonnect.
+- **API keys:** your keys' mode (TEST/LIVE) and when each was last used.
+
+This login can only open the Odoo Sync page.
+
 ## 4. Errors
 
 ```json
