@@ -15,6 +15,14 @@ use Illuminate\Support\Facades\DB;
 */
 class OdooSyncController extends Controller
 {
+    // odoo_sync_logs.entity => label. Add a line per new Odoo module.
+    private const MODULES = [
+        'party_prices' => 'Party Wise Pricing',
+    ];
+
+    /**
+     * Sync Overview: API keys and request logs of every Odoo module.
+     */
     public function index()
     {
         abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
@@ -28,13 +36,31 @@ class OdooSyncController extends Controller
 
         $counts = [
             'logs' => DB::table('odoo_sync_logs')->count(),
-            'test' => DB::table(PartyPriceSync::tableFor('test'))->count(),
-            'live' => DB::table(PartyPriceSync::tableFor('live'))->count(),
-            'test_unlinked' => DB::table(PartyPriceSync::tableFor('test'))->where(fn ($q) => $q->whereNull('party_id')->orWhereNull('product_id'))->count(),
+            'requests_today' => DB::table('odoo_sync_logs')->where('created_at', '>=', Carbon::today())->count(),
             'failed_today' => DB::table('odoo_sync_logs')->where('created_at', '>=', Carbon::today())->sum('failed_count'),
         ];
 
         return view('odoo_sync.index', compact('clients', 'counts', 'lastRequest'));
+    }
+
+    /**
+     * Party Wise Pricing: prices stored with the test key and with the live key.
+     */
+    public function partyPrices()
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $unlinked = fn ($mode) => DB::table(PartyPriceSync::tableFor($mode))->where(fn ($q) => $q->whereNull('party_id')->orWhereNull('product_id'))->count();
+
+        $counts = [
+            'test' => DB::table(PartyPriceSync::tableFor('test'))->count(),
+            'test_unlinked' => $unlinked('test'),
+            'live' => DB::table(PartyPriceSync::tableFor('live'))->count(),
+            'live_unlinked' => $unlinked('live'),
+            'last_received' => DB::table('odoo_sync_logs')->where('entity', 'party_prices')->max('created_at'),
+        ];
+
+        return view('odoo_sync.party_prices', compact('counts'));
     }
 
     public function logs()
@@ -51,6 +77,7 @@ class OdooSyncController extends Controller
                 return '<span class="os-method os-method-' . strtolower(e($row->method)) . '">' . e($row->method) . '</span>'
                     . '<span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->correlation_id) . '">' . e($row->correlation_id) . '</span>';
             })
+            ->addColumn('module', fn ($row) => '<span class="os-strong">' . e(self::MODULES[$row->entity] ?? $row->entity) . '</span>')
             ->addColumn('client', fn ($row) => '<div class="os-strong">' . e($row->client_name ?? 'Deleted key') . '</div>' . $this->modePill($row->mode))
             ->addColumn('result', function ($row) {
                 $chip = fn ($label, $value, $tone) => '<span class="os-count' . ($value > 0 ? ' os-count-' . $tone : '') . '"><b>' . (int) $value . '</b> ' . $label . '</span>';
@@ -75,7 +102,7 @@ class OdooSyncController extends Controller
                 return '<button type="button" class="os-link-btn os-view-errors" data-correlation="' . e($row->correlation_id) . '" data-errors="' . e($pretty) . '">'
                     . '<span class="material-icons">error_outline</span>View ' . count($errors) . '</button>';
             })
-            ->rawColumns(['created_at', 'request', 'client', 'result', 'status_code', 'errors'])
+            ->rawColumns(['created_at', 'request', 'module', 'client', 'result', 'status_code', 'errors'])
             ->make(true);
     }
 

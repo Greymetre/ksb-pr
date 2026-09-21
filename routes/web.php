@@ -392,6 +392,7 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     //Odoo Sync Routs (odoo-integration-docs/README.md)
     Route::get('odoo-sync', [OdooSyncController::class, 'index'])->name('odoo_sync.index');
     Route::get('odoo-sync/logs', [OdooSyncController::class, 'logs'])->name('odoo_sync.logs');
+    Route::get('odoo-sync/party-prices', [OdooSyncController::class, 'partyPrices'])->name('odoo_sync.party_prices');
     Route::get('odoo-sync/test-prices', [OdooSyncController::class, 'testPrices'])->name('odoo_sync.test_prices');
     Route::get('odoo-sync/live-prices', [OdooSyncController::class, 'livePrices'])->name('odoo_sync.live_prices');
 

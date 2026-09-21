@@ -2976,12 +2976,32 @@
                 @endif
                 @if(auth()->user()->can('odoo_sync_access'))
                 <li class="fk-menu-section"><span>Integrations</span></li>
-                <li class="nav-link hide_icon {{ request()->is('odoo-sync*') ? 'active' : '' }}">
-                    <a class="collapsed hoveradd" href="{{ route('odoo_sync.index') }}">
+                <li class="nav-link {{ request()->is('odoo-sync*') ? 'active' : '' }}">
+                    <a class="{{ request()->is('odoo-sync*') ? '' : 'collapsed' }} hoveradd" data-toggle="collapse" href="#odooSyncMenu"
+                        aria-expanded="{{ request()->is('odoo-sync*') ? 'true' : 'false' }}">
                         <i class="material-icons icon">sync_alt</i>
-                        <span>Odoo Sync</span>
+                        <span> Odoo Sync</span>
                         <div class="d-none mobile_hide"> Odoo Sync</div>
                     </a>
+                    <div class="collapse {{ request()->is('odoo-sync*') ? 'show' : '' }}" id="odooSyncMenu">
+                        <ul class="navd">
+                            {{-- Add one item here per Odoo module (products, categories, invoices...) --}}
+                            <li class="nav-link-btn {{ request()->routeIs('odoo_sync.index') ? 'active' : '' }}">
+                                <a class="hoveradd2" href="{{ route('odoo_sync.index') }}">
+                                    <i class="material-icons icon">monitor_heart</i>
+                                    <span>Sync Overview</span>
+                                    <div class="d-none mobile_hide">Sync Overview</div>
+                                </a>
+                            </li>
+                            <li class="nav-link-btn {{ request()->routeIs('odoo_sync.party_prices') ? 'active' : '' }}">
+                                <a class="hoveradd2" href="{{ route('odoo_sync.party_prices') }}">
+                                    <i class="material-icons icon">sell</i>
+                                    <span>Party Wise Pricing</span>
+                                    <div class="d-none mobile_hide">Party Wise Pricing</div>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
                 @endif
                 <li class="fk-menu-section"><span>Operations</span></li>
