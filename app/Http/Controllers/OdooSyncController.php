@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Odoo\PartyPriceSync;
+use Carbon\Carbon;
 use Gate;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -23,14 +24,17 @@ class OdooSyncController extends Controller
             ->orderBy('id')
             ->get();
 
+        $lastRequest = DB::table('odoo_sync_logs')->orderByDesc('id')->first(['created_at', 'status_code', 'failed_count']);
+
         $counts = [
+            'logs' => DB::table('odoo_sync_logs')->count(),
             'test' => DB::table(PartyPriceSync::tableFor('test'))->count(),
             'live' => DB::table(PartyPriceSync::tableFor('live'))->count(),
             'test_unlinked' => DB::table(PartyPriceSync::tableFor('test'))->where(fn ($q) => $q->whereNull('party_id')->orWhereNull('product_id'))->count(),
-            'last_request' => DB::table('odoo_sync_logs')->max('created_at'),
+            'failed_today' => DB::table('odoo_sync_logs')->where('created_at', '>=', Carbon::today())->sum('failed_count'),
         ];
 
-        return view('odoo_sync.index', compact('clients', 'counts'));
+        return view('odoo_sync.index', compact('clients', 'counts', 'lastRequest'));
     }
 
     public function logs()
@@ -42,20 +46,36 @@ class OdooSyncController extends Controller
             ->select('l.*', 'k.name as client_name');
 
         return datatables()->query($query)
-            ->editColumn('created_at', fn ($row) => $row->created_at ? showdatetimeformat($row->created_at) : '')
-            ->editColumn('mode', fn ($row) => $this->modeBadge($row->mode))
+            ->editColumn('created_at', fn ($row) => $this->dateTimeCell($row->created_at))
+            ->addColumn('request', function ($row) {
+                return '<span class="os-method os-method-' . strtolower(e($row->method)) . '">' . e($row->method) . '</span>'
+                    . '<span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->correlation_id) . '">' . e($row->correlation_id) . '</span>';
+            })
+            ->addColumn('client', fn ($row) => '<div class="os-strong">' . e($row->client_name ?? 'Deleted key') . '</div>' . $this->modePill($row->mode))
+            ->addColumn('result', function ($row) {
+                $chip = fn ($label, $value, $tone) => '<span class="os-count' . ($value > 0 ? ' os-count-' . $tone : '') . '"><b>' . (int) $value . '</b> ' . $label . '</span>';
+                return '<div class="os-counts">'
+                    . $chip('received', $row->received_count, 'neutral')
+                    . $chip('created', $row->created_count, 'success')
+                    . $chip('updated', $row->updated_count, 'info')
+                    . $chip('skipped', $row->skipped_count, 'warning')
+                    . $chip('failed', $row->failed_count, 'danger')
+                    . '</div>';
+            })
             ->editColumn('status_code', function ($row) {
-                $class = $row->status_code < 300 ? 'badge-success' : 'badge-danger';
-                return '<span class="badge ' . $class . '">' . (int) $row->status_code . '</span>';
+                $tone = $row->status_code < 300 ? 'success' : ($row->status_code < 500 ? 'warning' : 'danger');
+                return '<span class="os-pill os-pill-' . $tone . '">' . (int) $row->status_code . '</span>';
             })
             ->editColumn('errors', function ($row) {
-                if (!$row->errors) {
-                    return '';
+                $errors = $row->errors ? json_decode($row->errors, true) : null;
+                if (!$errors) {
+                    return '<span class="os-muted">—</span>';
                 }
-                $pretty = json_encode(json_decode($row->errors), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-                return '<pre style="max-height:160px;max-width:420px;overflow:auto;white-space:pre-wrap;margin:0">' . e($pretty) . '</pre>';
+                $pretty = json_encode($errors, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                return '<button type="button" class="os-link-btn os-view-errors" data-correlation="' . e($row->correlation_id) . '" data-errors="' . e($pretty) . '">'
+                    . '<span class="material-icons">error_outline</span>View ' . count($errors) . '</button>';
             })
-            ->rawColumns(['mode', 'status_code', 'errors'])
+            ->rawColumns(['created_at', 'request', 'client', 'result', 'status_code', 'errors'])
             ->make(true);
     }
 
@@ -82,7 +102,7 @@ class OdooSyncController extends Controller
             })
             ->leftJoin('products as pr', 'pr.id', '=', 'pp.product_id')
             ->select(
-                'pp.id', 'pp.external_id', 'pp.price_list_code', 'pp.party_code', 'pp.party_type', 'pp.party_id',
+                'pp.id', 'pp.external_id', 'pp.price_list_code', 'pp.price_list_name', 'pp.party_code', 'pp.party_type', 'pp.party_id',
                 'pp.product_code', 'pp.product_id', 'pp.currency_code', 'pp.base_price', 'pp.party_price',
                 'pp.discount_percent', 'pp.tax_inclusive', 'pp.minimum_quantity', 'pp.maximum_quantity', 'pp.uom_code',
                 'pp.valid_from', 'pp.valid_to', 'pp.priority', 'pp.active', 'pp.is_deleted', 'pp.odoo_updated_at', 'pp.updated_at',
@@ -91,35 +111,72 @@ class OdooSyncController extends Controller
             );
 
         return datatables()->query($query)
-            ->editColumn('party_name', function ($row) {
-                if (!$row->party_id) {
-                    return '<span class="badge badge-warning">Not linked</span>';
-                }
+            ->editColumn('external_id', fn ($row) => '<span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->external_id) . '">' . e($row->external_id) . '</span>')
+            ->addColumn('party', function ($row) {
                 $type = $row->party_type === 'master_distributor' ? 'Distributor' : 'Customer';
-                return e($row->party_name) . '<br><small class="text-muted">' . $type . ' #' . (int) $row->party_id . '</small>';
+                $linked = $row->party_id
+                    ? '<div class="os-sub">' . e($row->party_name) . ' <span class="os-tag">' . $type . '</span></div>'
+                    : '<div class="os-sub"><span class="os-pill os-pill-warning os-pill-sm">Not linked</span></div>';
+                return '<div class="os-mono os-strong">' . e($row->party_code) . '</div>' . $linked;
             })
-            ->editColumn('product_name', function ($row) {
-                if (!$row->product_id) {
-                    return '<span class="badge badge-warning">Not linked</span>';
-                }
-                return e($row->product_name) . '<br><small class="text-muted">#' . (int) $row->product_id . '</small>';
+            ->addColumn('product', function ($row) {
+                $linked = $row->product_id
+                    ? '<div class="os-sub">' . e($row->product_name) . '</div>'
+                    : '<div class="os-sub"><span class="os-pill os-pill-warning os-pill-sm">Not linked</span></div>';
+                return '<div class="os-mono os-strong">' . e($row->product_code) . '</div>' . $linked;
             })
-            ->addColumn('quantity_slab', fn ($row) => (float) $row->minimum_quantity . ' - ' . ($row->maximum_quantity === null ? 'No max' : (float) $row->maximum_quantity))
-            ->addColumn('validity', fn ($row) => e($row->valid_from) . '<br>to ' . ($row->valid_to ? e($row->valid_to) : 'Open-ended'))
-            ->editColumn('tax_inclusive', fn ($row) => $row->tax_inclusive ? 'Yes' : 'No')
-            ->editColumn('active', function ($row) {
+            ->editColumn('price_list_code', fn ($row) => '<div class="os-strong">' . e($row->price_list_code) . '</div>'
+                . ($row->price_list_name ? '<div class="os-sub">' . e($row->price_list_name) . '</div>' : ''))
+            ->addColumn('price', function ($row) {
+                $discount = $row->discount_percent !== null ? ' · ' . rtrim(rtrim(number_format($row->discount_percent, 2), '0'), '.') . '% off' : '';
+                return '<div class="os-price">' . $this->money($row->party_price, $row->currency_code) . '</div>'
+                    . '<div class="os-sub">Base ' . $this->money($row->base_price, $row->currency_code) . $discount . '</div>'
+                    . '<div class="os-sub">' . ($row->tax_inclusive ? 'Incl. tax' : 'Excl. tax') . '</div>';
+            })
+            ->addColumn('slab', function ($row) {
+                $min = $this->qty($row->minimum_quantity);
+                $range = $row->maximum_quantity === null ? $min . '+' : $min . ' – ' . $this->qty($row->maximum_quantity);
+                return '<div class="os-strong">' . $range . '</div><div class="os-sub">' . e($row->uom_code) . '</div>';
+            })
+            ->addColumn('validity', function ($row) {
+                $to = $row->valid_to ? Carbon::parse($row->valid_to)->format('d M Y') : 'Open-ended';
+                return '<div class="os-strong">' . Carbon::parse($row->valid_from)->format('d M Y') . '</div><div class="os-sub">to ' . $to . '</div>';
+            })
+            ->addColumn('status', function ($row) {
                 if ($row->is_deleted) {
-                    return '<span class="badge badge-danger">Deleted</span>';
+                    return '<span class="os-pill os-pill-danger">Deleted</span>';
                 }
-                return $row->active ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-secondary">Inactive</span>';
+                return $row->active ? '<span class="os-pill os-pill-success">Active</span>' : '<span class="os-pill os-pill-neutral">Inactive</span>';
             })
-            ->editColumn('updated_at', fn ($row) => $row->updated_at ? showdatetimeformat($row->updated_at) : '')
-            ->rawColumns(['party_name', 'product_name', 'validity', 'active'])
+            ->editColumn('updated_at', fn ($row) => $this->dateTimeCell($row->updated_at))
+            ->rawColumns(['external_id', 'party', 'product', 'price_list_code', 'price', 'slab', 'validity', 'status', 'updated_at'])
             ->make(true);
     }
 
-    private function modeBadge(string $mode): string
+    private function modePill(?string $mode): string
     {
-        return $mode === 'live' ? '<span class="badge badge-danger">LIVE</span>' : '<span class="badge badge-info">TEST</span>';
+        return $mode === 'live'
+            ? '<span class="os-pill os-pill-live os-pill-sm">Live</span>'
+            : '<span class="os-pill os-pill-test os-pill-sm">Test</span>';
+    }
+
+    private function dateTimeCell($value): string
+    {
+        if (!$value) {
+            return '';
+        }
+        $date = Carbon::parse($value);
+        return '<div class="os-strong">' . $date->format('d M Y') . '</div><div class="os-sub">' . $date->format('h:i:s A') . '</div>';
+    }
+
+    private function money($amount, ?string $currency): string
+    {
+        $symbol = strtoupper((string) $currency) === 'INR' ? '₹' : e($currency) . ' ';
+        return $symbol . number_format((float) $amount, 2);
+    }
+
+    private function qty($value): string
+    {
+        return rtrim(rtrim(number_format((float) $value, 4, '.', ''), '0'), '.');
     }
 }
