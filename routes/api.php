@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\TourPlanController;
 use App\Http\Controllers\Api\TransactionHistoryController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\SapStockController;
+use App\Http\Controllers\Api\Odoo\PartyPriceController as OdooPartyPriceController;
 use App\Http\Controllers\Api\MspActivityController;
 use App\Http\Controllers\Api\ComplaintApiController;
 use App\Http\Controllers\Api\ServiceBillController;
@@ -97,6 +98,12 @@ Route::get('get-field-connet-version', [DashboardController::class, 'getVersion'
 Route::middleware('sap.key')->group(function () {
     Route::any('insert_sap_stock', [SapStockController::class, 'insertSapStock']);
     Route::any('insert_sap_sell', [SapStockController::class, 'insertSapSell']);
+});
+
+// Odoo -> FieldKonnect push integration (odoo-integration-docs/README.md)
+Route::prefix('v1/odoo')->middleware('odoo.key')->group(function () {
+    Route::post('party-prices', [OdooPartyPriceController::class, 'store']);
+    Route::get('party-prices', [OdooPartyPriceController::class, 'index']);
 });
 Route::get('master-distributors/supervisors', [MasterDistributorApiController::class, 'getSupervisors']);
 Route::get('master-distributors/contact-personss', [MasterDistributorApiController::class, 'contactPersonList']);

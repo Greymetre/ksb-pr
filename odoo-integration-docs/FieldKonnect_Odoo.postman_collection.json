@@ -1,0 +1,254 @@
+{
+  "info": {
+    "name": "FieldKonnect - Odoo Party Prices",
+    "description": "Odoo -> FieldKonnect party-wise pricing. Set collection variables base_url and api_key. Spec: odoo-integration-docs/party-prices-api.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://<fieldkonnect-domain>/api/v1/odoo"
+    },
+    {
+      "key": "api_key",
+      "value": "odk_test_xxx"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Create one price",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/party-prices",
+        "description": "Expected: status created",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.pricelist.item:9001\",\n      \"price_list_code\": \"DIST-WEST-2026\",\n      \"price_list_name\": \"Distributor West 2026\",\n      \"party_external_id\": \"res.partner:8421\",\n      \"party_code\": \"D100245\",\n      \"product_external_id\": \"product.product:15580\",\n      \"product_code\": \"PUMP-5HP-001\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 22000.0,\n      \"party_price\": 20500.0,\n      \"discount_percent\": null,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"NOS\",\n      \"valid_from\": \"2026-09-01T00:00:00Z\",\n      \"valid_to\": null,\n      \"priority\": 10,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"updated_at\": \"2026-09-21T10:20:00Z\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "2. Update price (newer updated_at)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/party-prices",
+        "description": "Expected: status updated",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.pricelist.item:9001\",\n      \"price_list_code\": \"DIST-WEST-2026\",\n      \"price_list_name\": \"Distributor West 2026\",\n      \"party_external_id\": \"res.partner:8421\",\n      \"party_code\": \"D100245\",\n      \"product_external_id\": \"product.product:15580\",\n      \"product_code\": \"PUMP-5HP-001\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 22000.0,\n      \"party_price\": 20000.0,\n      \"discount_percent\": null,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"NOS\",\n      \"valid_from\": \"2026-09-01T00:00:00Z\",\n      \"valid_to\": null,\n      \"priority\": 10,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"updated_at\": \"2026-09-21T11:00:00Z\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "3. Stale update (older updated_at)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/party-prices",
+        "description": "Expected: status skipped",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.pricelist.item:9001\",\n      \"price_list_code\": \"DIST-WEST-2026\",\n      \"price_list_name\": \"Distributor West 2026\",\n      \"party_external_id\": \"res.partner:8421\",\n      \"party_code\": \"D100245\",\n      \"product_external_id\": \"product.product:15580\",\n      \"product_code\": \"PUMP-5HP-001\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 22000.0,\n      \"party_price\": 19000.0,\n      \"discount_percent\": null,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"NOS\",\n      \"valid_from\": \"2026-09-01T00:00:00Z\",\n      \"valid_to\": null,\n      \"priority\": 10,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"updated_at\": \"2026-09-20T09:00:00Z\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "4. Mixed batch (one invalid)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/party-prices",
+        "description": "Expected: first created, second failed (party_price required)",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.pricelist.item:9002\",\n      \"price_list_code\": \"DIST-WEST-2026\",\n      \"price_list_name\": \"Distributor West 2026\",\n      \"party_external_id\": \"res.partner:8421\",\n      \"party_code\": \"D100245\",\n      \"product_external_id\": \"product.product:15580\",\n      \"product_code\": \"PUMP-5HP-001\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 22000.0,\n      \"party_price\": 21000.0,\n      \"discount_percent\": null,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 10,\n      \"maximum_quantity\": 50,\n      \"uom_code\": \"NOS\",\n      \"valid_from\": \"2026-09-01T00:00:00Z\",\n      \"valid_to\": null,\n      \"priority\": 10,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"updated_at\": \"2026-09-21T10:20:00Z\"\n    },\n    {\n      \"external_id\": \"product.pricelist.item:9003\",\n      \"price_list_code\": \"DIST-WEST-2026\",\n      \"price_list_name\": \"Distributor West 2026\",\n      \"party_external_id\": \"res.partner:8421\",\n      \"party_code\": \"D100245\",\n      \"product_external_id\": \"product.product:15580\",\n      \"product_code\": \"PUMP-5HP-001\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 22000.0,\n      \"discount_percent\": null,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"NOS\",\n      \"valid_from\": \"2026-09-01T00:00:00Z\",\n      \"valid_to\": null,\n      \"priority\": 10,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"updated_at\": \"2026-09-21T10:20:00Z\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "5. Deactivate price",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/party-prices",
+        "description": "Expected: status updated, GET shows active 0",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.pricelist.item:9001\",\n      \"price_list_code\": \"DIST-WEST-2026\",\n      \"price_list_name\": \"Distributor West 2026\",\n      \"party_external_id\": \"res.partner:8421\",\n      \"party_code\": \"D100245\",\n      \"product_external_id\": \"product.product:15580\",\n      \"product_code\": \"PUMP-5HP-001\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 22000.0,\n      \"party_price\": 20000.0,\n      \"discount_percent\": null,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"NOS\",\n      \"valid_from\": \"2026-09-01T00:00:00Z\",\n      \"valid_to\": null,\n      \"priority\": 10,\n      \"active\": false,\n      \"is_deleted\": false,\n      \"updated_at\": \"2026-09-21T12:00:00Z\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "6. Read back by party",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/party-prices?party_code=D100245&page=1&page_size=100",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "party-prices"
+          ],
+          "query": [
+            {
+              "key": "party_code",
+              "value": "D100245"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "page_size",
+              "value": "100"
+            }
+          ]
+        },
+        "description": "Lists stored prices for the key's environment"
+      }
+    },
+    {
+      "name": "7. Read back one record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/party-prices?external_id=product.pricelist.item:9001",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "party-prices"
+          ],
+          "query": [
+            {
+              "key": "external_id",
+              "value": "product.pricelist.item:9001"
+            }
+          ]
+        },
+        "description": "Single record"
+      }
+    }
+  ]
+}
