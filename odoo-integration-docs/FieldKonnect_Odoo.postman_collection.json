@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "FieldKonnect - Odoo Party Prices",
-    "description": "Odoo -> FieldKonnect party-wise pricing. Set collection variables base_url and api_key. Spec: odoo-integration-docs/party-prices-api.md",
+    "description": "Odoo -> FieldKonnect party-wise pricing, built on the real record Odoo returns from product.pricelist.get_customer_product_price. Set base_url and api_key (test key = odk_test_...). Run folder 1 in order. Spec: odoo-integration-docs/party-prices-api.md",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -12,243 +12,886 @@
     {
       "key": "api_key",
       "value": "odk_test_xxx"
+    },
+    {
+      "key": "odoo_url",
+      "value": "https://techultra-duke-pipes-stage-37576517.dev.odoo.com"
+    },
+    {
+      "key": "odoo_db",
+      "value": "techultra-duke-pipes-stage-37576517"
+    },
+    {
+      "key": "odoo_login",
+      "value": "fieldkonnect_API_user"
+    },
+    {
+      "key": "odoo_dev_key",
+      "value": "<odoo dev_key>"
+    },
+    {
+      "key": "odoo_session_id",
+      "value": "<odoo session_id>"
     }
   ],
   "item": [
     {
-      "name": "1. Create one price",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-API-Key",
-            "value": "{{api_key}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Accept",
-            "value": "application/json"
-          }
-        ],
-        "url": "{{base_url}}/party-prices",
-        "description": "Expected: status created",
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.pricelist.item:9001\",\n      \"price_list_code\": \"DIST-WEST-2026\",\n      \"price_list_name\": \"Distributor West 2026\",\n      \"party_external_id\": \"res.partner:8421\",\n      \"party_code\": \"D100245\",\n      \"product_external_id\": \"product.product:15580\",\n      \"product_code\": \"PUMP-5HP-001\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 22000.0,\n      \"party_price\": 20500.0,\n      \"discount_percent\": null,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"NOS\",\n      \"valid_from\": \"2026-09-01T00:00:00Z\",\n      \"valid_to\": null,\n      \"priority\": 10,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"updated_at\": \"2026-09-21T10:20:00Z\"\n    }\n  ]\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "2. Update price (newer updated_at)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-API-Key",
-            "value": "{{api_key}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Accept",
-            "value": "application/json"
-          }
-        ],
-        "url": "{{base_url}}/party-prices",
-        "description": "Expected: status updated",
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.pricelist.item:9001\",\n      \"price_list_code\": \"DIST-WEST-2026\",\n      \"price_list_name\": \"Distributor West 2026\",\n      \"party_external_id\": \"res.partner:8421\",\n      \"party_code\": \"D100245\",\n      \"product_external_id\": \"product.product:15580\",\n      \"product_code\": \"PUMP-5HP-001\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 22000.0,\n      \"party_price\": 20000.0,\n      \"discount_percent\": null,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"NOS\",\n      \"valid_from\": \"2026-09-01T00:00:00Z\",\n      \"valid_to\": null,\n      \"priority\": 10,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"updated_at\": \"2026-09-21T11:00:00Z\"\n    }\n  ]\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "3. Stale update (older updated_at)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-API-Key",
-            "value": "{{api_key}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Accept",
-            "value": "application/json"
-          }
-        ],
-        "url": "{{base_url}}/party-prices",
-        "description": "Expected: status skipped",
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.pricelist.item:9001\",\n      \"price_list_code\": \"DIST-WEST-2026\",\n      \"price_list_name\": \"Distributor West 2026\",\n      \"party_external_id\": \"res.partner:8421\",\n      \"party_code\": \"D100245\",\n      \"product_external_id\": \"product.product:15580\",\n      \"product_code\": \"PUMP-5HP-001\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 22000.0,\n      \"party_price\": 19000.0,\n      \"discount_percent\": null,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"NOS\",\n      \"valid_from\": \"2026-09-01T00:00:00Z\",\n      \"valid_to\": null,\n      \"priority\": 10,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"updated_at\": \"2026-09-20T09:00:00Z\"\n    }\n  ]\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "4. Mixed batch (one invalid)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-API-Key",
-            "value": "{{api_key}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Accept",
-            "value": "application/json"
-          }
-        ],
-        "url": "{{base_url}}/party-prices",
-        "description": "Expected: first created, second failed (party_price required)",
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.pricelist.item:9002\",\n      \"price_list_code\": \"DIST-WEST-2026\",\n      \"price_list_name\": \"Distributor West 2026\",\n      \"party_external_id\": \"res.partner:8421\",\n      \"party_code\": \"D100245\",\n      \"product_external_id\": \"product.product:15580\",\n      \"product_code\": \"PUMP-5HP-001\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 22000.0,\n      \"party_price\": 21000.0,\n      \"discount_percent\": null,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 10,\n      \"maximum_quantity\": 50,\n      \"uom_code\": \"NOS\",\n      \"valid_from\": \"2026-09-01T00:00:00Z\",\n      \"valid_to\": null,\n      \"priority\": 10,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"updated_at\": \"2026-09-21T10:20:00Z\"\n    },\n    {\n      \"external_id\": \"product.pricelist.item:9003\",\n      \"price_list_code\": \"DIST-WEST-2026\",\n      \"price_list_name\": \"Distributor West 2026\",\n      \"party_external_id\": \"res.partner:8421\",\n      \"party_code\": \"D100245\",\n      \"product_external_id\": \"product.product:15580\",\n      \"product_code\": \"PUMP-5HP-001\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 22000.0,\n      \"discount_percent\": null,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"NOS\",\n      \"valid_from\": \"2026-09-01T00:00:00Z\",\n      \"valid_to\": null,\n      \"priority\": 10,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"updated_at\": \"2026-09-21T10:20:00Z\"\n    }\n  ]\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "5. Deactivate price",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-API-Key",
-            "value": "{{api_key}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Accept",
-            "value": "application/json"
-          }
-        ],
-        "url": "{{base_url}}/party-prices",
-        "description": "Expected: status updated, GET shows active 0",
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.pricelist.item:9001\",\n      \"price_list_code\": \"DIST-WEST-2026\",\n      \"price_list_name\": \"Distributor West 2026\",\n      \"party_external_id\": \"res.partner:8421\",\n      \"party_code\": \"D100245\",\n      \"product_external_id\": \"product.product:15580\",\n      \"product_code\": \"PUMP-5HP-001\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 22000.0,\n      \"party_price\": 20000.0,\n      \"discount_percent\": null,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"NOS\",\n      \"valid_from\": \"2026-09-01T00:00:00Z\",\n      \"valid_to\": null,\n      \"priority\": 10,\n      \"active\": false,\n      \"is_deleted\": false,\n      \"updated_at\": \"2026-09-21T12:00:00Z\"\n    }\n  ]\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "6. Read back by party",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "X-API-Key",
-            "value": "{{api_key}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Accept",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{base_url}}/party-prices?party_code=D100245&page=1&page_size=100",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "party-prices"
-          ],
-          "query": [
-            {
-              "key": "party_code",
-              "value": "D100245"
+      "name": "0. Odoo source (fetch from Odoo)",
+      "description": "Odoo's own JSON-RPC endpoint, as shared by the Odoo developer. Use it to see the exact records Odoo will push. Fill odoo_session_id and odoo_dev_key in collection variables (do not commit real values).",
+      "item": [
+        {
+          "name": "Odoo - get_customer_product_price",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "session_id={{odoo_session_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{odoo_url}}/json-call",
+              "host": [
+                "{{odoo_url}}"
+              ],
+              "path": [
+                "json-call"
+              ]
             },
-            {
-              "key": "page",
-              "value": "1"
-            },
-            {
-              "key": "page_size",
-              "value": "100"
+            "description": "Returns result.data[] in the same shape FieldKonnect accepts in POST /party-prices records[].",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"params\": {\n    \"authenticate\": [\n      {\n        \"db\": \"{{odoo_db}}\",\n        \"login\": \"{{odoo_login}}\",\n        \"dev_key\": \"{{odoo_dev_key}}\"\n      }\n    ],\n    \"model\": \"product.pricelist\",\n    \"method\": \"get_customer_product_price\",\n    \"args\": [\n      {\n        \"customer_name\": \"4C Consulting\",\n        \"sku\": \"Delivery_007\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
-          ]
-        },
-        "description": "Lists stored prices for the key's environment"
-      }
+          }
+        }
+      ]
     },
     {
-      "name": "7. Read back one record",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "X-API-Key",
-            "value": "{{api_key}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Accept",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{base_url}}/party-prices?external_id=product.pricelist.item:9001",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "party-prices"
-          ],
-          "query": [
+      "name": "1. Push to FieldKonnect (POST /party-prices)",
+      "item": [
+        {
+          "name": "1. Create - Odoo sample record as-is",
+          "event": [
             {
-              "key": "external_id",
-              "value": "product.pricelist.item:9001"
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('saved', () => pm.expect(['created','updated']).to.include(pm.response.json().results[0].status));"
+                ]
+              }
             }
-          ]
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ]
+            },
+            "description": "result.data[0] from Odoo pasted unchanged into records[]. Expected: created (first time) or updated (re-run). Extra field created_at is accepted and kept in raw_payload. Warnings appear if party_code / product_code do not match FieldKonnect.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.product:7\",\n      \"company_code\": \"Duke Pipes Private Limited\",\n      \"price_list_code\": \"PL_1\",\n      \"price_list_name\": \"Default\",\n      \"party_external_id\": \"res.partner:5629\",\n      \"party_code\": \"24AAACZ2487K1ZZ\",\n      \"product_external_id\": \"product.product:7\",\n      \"product_code\": \"Delivery_007\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 0,\n      \"party_price\": 0,\n      \"discount_percent\": 0,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"Units\",\n      \"valid_from\": \"2026-05-25T06:52:55Z\",\n      \"valid_to\": null,\n      \"priority\": 0,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"created_at\": \"2026-05-25T06:52:55Z\",\n      \"updated_at\": \"2026-07-27T07:01:53Z\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         },
-        "description": "Single record"
-      }
+        {
+          "name": "2. Re-send same record (no duplicate)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('results[0].status = updated', () => pm.expect(pm.response.json().results[0].status).to.eql('updated'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ]
+            },
+            "description": "Same external_id + company_code + updated_at. Expected: updated, still one row in GET.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.product:7\",\n      \"company_code\": \"Duke Pipes Private Limited\",\n      \"price_list_code\": \"PL_1\",\n      \"price_list_name\": \"Default\",\n      \"party_external_id\": \"res.partner:5629\",\n      \"party_code\": \"24AAACZ2487K1ZZ\",\n      \"product_external_id\": \"product.product:7\",\n      \"product_code\": \"Delivery_007\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 0,\n      \"party_price\": 0,\n      \"discount_percent\": 0,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"Units\",\n      \"valid_from\": \"2026-05-25T06:52:55Z\",\n      \"valid_to\": null,\n      \"priority\": 0,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"created_at\": \"2026-05-25T06:52:55Z\",\n      \"updated_at\": \"2026-07-27T07:01:53Z\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "3. Price change (newer updated_at)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('results[0].status = updated', () => pm.expect(pm.response.json().results[0].status).to.eql('updated'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ]
+            },
+            "description": "party_price changed with a fresher updated_at. Expected: updated; GET shows 950.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.product:7\",\n      \"company_code\": \"Duke Pipes Private Limited\",\n      \"price_list_code\": \"PL_1\",\n      \"price_list_name\": \"Default\",\n      \"party_external_id\": \"res.partner:5629\",\n      \"party_code\": \"24AAACZ2487K1ZZ\",\n      \"product_external_id\": \"product.product:7\",\n      \"product_code\": \"Delivery_007\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 1000,\n      \"party_price\": 950,\n      \"discount_percent\": 5,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"Units\",\n      \"valid_from\": \"2026-05-25T06:52:55Z\",\n      \"valid_to\": null,\n      \"priority\": 0,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"created_at\": \"2026-05-25T06:52:55Z\",\n      \"updated_at\": \"2026-09-22T06:00:00Z\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "4. Stale update (older updated_at)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('results[0].status = skipped', () => pm.expect(pm.response.json().results[0].status).to.eql('skipped'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ]
+            },
+            "description": "updated_at older than stored one. Expected: skipped (run after #3).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.product:7\",\n      \"company_code\": \"Duke Pipes Private Limited\",\n      \"price_list_code\": \"PL_1\",\n      \"price_list_name\": \"Default\",\n      \"party_external_id\": \"res.partner:5629\",\n      \"party_code\": \"24AAACZ2487K1ZZ\",\n      \"product_external_id\": \"product.product:7\",\n      \"product_code\": \"Delivery_007\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 0,\n      \"party_price\": 10,\n      \"discount_percent\": 0,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"Units\",\n      \"valid_from\": \"2026-05-25T06:52:55Z\",\n      \"valid_to\": null,\n      \"priority\": 0,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"created_at\": \"2026-05-25T06:52:55Z\",\n      \"updated_at\": \"2026-07-01T00:00:00Z\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "5. Mixed batch (one invalid)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('second failed', () => pm.expect(pm.response.json().results[1].status).to.eql('failed'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ]
+            },
+            "description": "Second record has no party_price. Expected: HTTP 200, first created/updated, second failed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.product:7-slab-2\",\n      \"company_code\": \"Duke Pipes Private Limited\",\n      \"price_list_code\": \"PL_1\",\n      \"price_list_name\": \"Default\",\n      \"party_external_id\": \"res.partner:5629\",\n      \"party_code\": \"24AAACZ2487K1ZZ\",\n      \"product_external_id\": \"product.product:7\",\n      \"product_code\": \"Delivery_007\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 1000,\n      \"party_price\": 900,\n      \"discount_percent\": 10,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 10,\n      \"maximum_quantity\": 50,\n      \"uom_code\": \"Units\",\n      \"valid_from\": \"2026-05-25T06:52:55Z\",\n      \"valid_to\": null,\n      \"priority\": 0,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"created_at\": \"2026-05-25T06:52:55Z\",\n      \"updated_at\": \"2026-09-22T06:00:00Z\"\n    },\n    {\n      \"external_id\": \"product.product:7-bad\",\n      \"company_code\": \"Duke Pipes Private Limited\",\n      \"price_list_code\": \"PL_1\",\n      \"price_list_name\": \"Default\",\n      \"party_external_id\": \"res.partner:5629\",\n      \"party_code\": \"24AAACZ2487K1ZZ\",\n      \"product_external_id\": \"product.product:7\",\n      \"product_code\": \"Delivery_007\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 0,\n      \"discount_percent\": 0,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"Units\",\n      \"valid_from\": \"2026-05-25T06:52:55Z\",\n      \"valid_to\": null,\n      \"priority\": 0,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"created_at\": \"2026-05-25T06:52:55Z\",\n      \"updated_at\": \"2026-09-22T06:00:00Z\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "6. Quantity slabs (two records, same party + product)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('no failures', () => pm.expect(pm.response.json().summary.failed).to.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ]
+            },
+            "description": "1-9 units and 10+ units for the same party/product. Needs a distinct external_id per slab.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.product:7-slab-1\",\n      \"company_code\": \"Duke Pipes Private Limited\",\n      \"price_list_code\": \"PL_1\",\n      \"price_list_name\": \"Default\",\n      \"party_external_id\": \"res.partner:5629\",\n      \"party_code\": \"24AAACZ2487K1ZZ\",\n      \"product_external_id\": \"product.product:7\",\n      \"product_code\": \"Delivery_007\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 1000,\n      \"party_price\": 950,\n      \"discount_percent\": 5,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": 9,\n      \"uom_code\": \"Units\",\n      \"valid_from\": \"2026-05-25T06:52:55Z\",\n      \"valid_to\": null,\n      \"priority\": 0,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"created_at\": \"2026-05-25T06:52:55Z\",\n      \"updated_at\": \"2026-09-22T06:10:00Z\"\n    },\n    {\n      \"external_id\": \"product.product:7-slab-2\",\n      \"company_code\": \"Duke Pipes Private Limited\",\n      \"price_list_code\": \"PL_1\",\n      \"price_list_name\": \"Default\",\n      \"party_external_id\": \"res.partner:5629\",\n      \"party_code\": \"24AAACZ2487K1ZZ\",\n      \"product_external_id\": \"product.product:7\",\n      \"product_code\": \"Delivery_007\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 1000,\n      \"party_price\": 900,\n      \"discount_percent\": 10,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 10,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"Units\",\n      \"valid_from\": \"2026-05-25T06:52:55Z\",\n      \"valid_to\": null,\n      \"priority\": 0,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"created_at\": \"2026-05-25T06:52:55Z\",\n      \"updated_at\": \"2026-09-22T06:10:00Z\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "7. Deactivate price",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('results[0].status = updated', () => pm.expect(pm.response.json().results[0].status).to.eql('updated'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ]
+            },
+            "description": "active: false with newer updated_at. Expected: updated; GET shows active 0.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.product:7\",\n      \"company_code\": \"Duke Pipes Private Limited\",\n      \"price_list_code\": \"PL_1\",\n      \"price_list_name\": \"Default\",\n      \"party_external_id\": \"res.partner:5629\",\n      \"party_code\": \"24AAACZ2487K1ZZ\",\n      \"product_external_id\": \"product.product:7\",\n      \"product_code\": \"Delivery_007\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 1000,\n      \"party_price\": 950,\n      \"discount_percent\": 5,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"Units\",\n      \"valid_from\": \"2026-05-25T06:52:55Z\",\n      \"valid_to\": null,\n      \"priority\": 0,\n      \"active\": false,\n      \"is_deleted\": false,\n      \"created_at\": \"2026-05-25T06:52:55Z\",\n      \"updated_at\": \"2026-09-22T07:00:00Z\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "8. Soft delete price",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('results[0].status = updated', () => pm.expect(pm.response.json().results[0].status).to.eql('updated'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ]
+            },
+            "description": "is_deleted: true with newer updated_at. Expected: updated; row kept with is_deleted 1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.product:7\",\n      \"company_code\": \"Duke Pipes Private Limited\",\n      \"price_list_code\": \"PL_1\",\n      \"price_list_name\": \"Default\",\n      \"party_external_id\": \"res.partner:5629\",\n      \"party_code\": \"24AAACZ2487K1ZZ\",\n      \"product_external_id\": \"product.product:7\",\n      \"product_code\": \"Delivery_007\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 1000,\n      \"party_price\": 950,\n      \"discount_percent\": 5,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"Units\",\n      \"valid_from\": \"2026-05-25T06:52:55Z\",\n      \"valid_to\": null,\n      \"priority\": 0,\n      \"active\": false,\n      \"is_deleted\": true,\n      \"created_at\": \"2026-05-25T06:52:55Z\",\n      \"updated_at\": \"2026-09-22T08:00:00Z\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "9. Invalid validity (valid_to before valid_from)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 422', () => pm.response.to.have.status(422));",
+                  "pm.test('results[0].status = failed', () => pm.expect(pm.response.json().results[0].status).to.eql('failed'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ]
+            },
+            "description": "Expected: HTTP 422, failed on valid_to.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.product:7-bad-dates\",\n      \"company_code\": \"Duke Pipes Private Limited\",\n      \"price_list_code\": \"PL_1\",\n      \"price_list_name\": \"Default\",\n      \"party_external_id\": \"res.partner:5629\",\n      \"party_code\": \"24AAACZ2487K1ZZ\",\n      \"product_external_id\": \"product.product:7\",\n      \"product_code\": \"Delivery_007\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 0,\n      \"party_price\": 0,\n      \"discount_percent\": 0,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"Units\",\n      \"valid_from\": \"2026-05-25T06:52:55Z\",\n      \"valid_to\": \"2026-01-01T00:00:00Z\",\n      \"priority\": 0,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"created_at\": \"2026-05-25T06:52:55Z\",\n      \"updated_at\": \"2026-09-22T06:00:00Z\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "10. Empty records (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ]
+            },
+            "description": "Expected: HTTP 400 VALIDATION_ERROR.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "11. Wrong API key (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "odk_test_wrong"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ]
+            },
+            "description": "Expected: HTTP 401 UNAUTHORIZED.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"external_id\": \"product.product:7\",\n      \"company_code\": \"Duke Pipes Private Limited\",\n      \"price_list_code\": \"PL_1\",\n      \"price_list_name\": \"Default\",\n      \"party_external_id\": \"res.partner:5629\",\n      \"party_code\": \"24AAACZ2487K1ZZ\",\n      \"product_external_id\": \"product.product:7\",\n      \"product_code\": \"Delivery_007\",\n      \"currency_code\": \"INR\",\n      \"base_price\": 0,\n      \"party_price\": 0,\n      \"discount_percent\": 0,\n      \"tax_inclusive\": false,\n      \"minimum_quantity\": 1,\n      \"maximum_quantity\": null,\n      \"uom_code\": \"Units\",\n      \"valid_from\": \"2026-05-25T06:52:55Z\",\n      \"valid_to\": null,\n      \"priority\": 0,\n      \"active\": true,\n      \"is_deleted\": false,\n      \"created_at\": \"2026-05-25T06:52:55Z\",\n      \"updated_at\": \"2026-07-27T07:01:53Z\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Read back (GET /party-prices)",
+      "item": [
+        {
+          "name": "Read back by party_code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices?party_code=24AAACZ2487K1ZZ&page=1&page_size=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ],
+              "query": [
+                {
+                  "key": "party_code",
+                  "value": "24AAACZ2487K1ZZ"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "All prices stored for this party in the key's mode."
+          }
+        },
+        {
+          "name": "Read back one record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices?external_id=product.product:7",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ],
+              "query": [
+                {
+                  "key": "external_id",
+                  "value": "product.product:7"
+                }
+              ]
+            },
+            "description": "Single record by external_id."
+          }
+        },
+        {
+          "name": "Read back by product_code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices?product_code=Delivery_007",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ],
+              "query": [
+                {
+                  "key": "product_code",
+                  "value": "Delivery_007"
+                }
+              ]
+            },
+            "description": "All parties' prices for one product."
+          }
+        },
+        {
+          "name": "Read back by price_list_code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/party-prices?price_list_code=PL_1&page=1&page_size=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "party-prices"
+              ],
+              "query": [
+                {
+                  "key": "price_list_code",
+                  "value": "PL_1"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "All prices of one pricelist."
+          }
+        }
+      ]
     }
   ]
 }
