@@ -563,6 +563,13 @@ public function attendanceSummaryDownload(Request $request)
             }
 
             if ($attendance) {
+                // Attendance rejected by the reporting manager → Absent.
+                if ((int) $attendance->attendance_status === 2) {
+                    $row[] = 'A';
+                    $totals['a']++;
+                    continue;
+                }
+
                 $workingType = $attendance->working_type ?? '';
                 $workingTypes = array_map('trim', explode(',', $workingType));
 
