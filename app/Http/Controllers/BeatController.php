@@ -1379,6 +1379,13 @@ break;
         ->selectRaw('created_by, COALESCE(SUM(grand_total), 0) as total')
         ->groupBy('created_by')
         ->pluck('total', 'created_by');
+      $todayPunchIns = Attendance::whereIn('user_id', $accessibleUserIds)
+        ->whereDate('punchin_date', Carbon::today())
+        ->whereNotNull('punchin_latitude')
+        ->whereNotNull('punchin_longitude')
+        ->orderBy('id')
+        ->get()
+        ->keyBy('user_id');
       $todayPlans = BeatSchedule::with('beats')
         ->whereIn('user_id', $accessibleUserIds)
         ->whereDate('beat_date', Carbon::today())
@@ -1386,10 +1393,25 @@ break;
         ->groupBy('user_id');
 
       $locations = $users->values()
-        ->map(function ($user) use ($latestLocations, $todayLocations, $todayVisits, $todayOrders, $todayPlans) {
+        ->map(function ($user) use ($latestLocations, $todayLocations, $todayVisits, $todayOrders, $todayPlans, $todayPunchIns) {
           $location = $latestLocations->get($user->id);
           $reportedAt = $location?->created_at ? Carbon::parse($location->created_at) : null;
           $status = !$location ? 'GPS Off' : (($reportedAt && $reportedAt->diffInMinutes(Carbon::now()) <= 15) ? 'Online' : 'Offline');
+
+          // No live GPS ping yet today: fall back to today's punch-in location so a
+          // punched-in user is still placed on the map instead of showing GPS Off.
+          $punchIn = $todayPunchIns->get($user->id);
+          $punchInCoordinates = !$location && $punchIn ? $this->punchInCoordinates($punchIn) : null;
+          if ($punchInCoordinates) {
+            $reportedAt = Carbon::parse(Carbon::parse($punchIn->punchin_date)->toDateString() . ' ' . ($punchIn->punchin_time ?: '00:00:00'));
+            $location = (object) [
+              'latitude' => $punchInCoordinates[0],
+              'longitude' => $punchInCoordinates[1],
+              'address' => $punchIn->punchin_address,
+              'time' => $reportedAt->format('h:i A'),
+            ];
+            $status = empty($punchIn->punchout_time) ? 'Online' : 'Offline';
+          }
           $distance = 0;
           $points = $todayLocations->get($user->id, collect())->values();
           for ($index = 1; $index < $points->count(); $index++) {
@@ -1430,6 +1452,38 @@ break;
       return response()->json(['status' => true, 'locations' => $locations]);
     }
 
+    /**
+     * Return [latitude, longitude] of an attendance punch-in, or null when unusable.
+     */
+    private function punchInCoordinates($attendance)
+    {
+      if (!is_numeric($attendance->punchin_latitude) || !is_numeric($attendance->punchin_longitude)) {
+        return null;
+      }
+
+      $latitude = (float) $attendance->punchin_latitude;
+      $longitude = (float) $attendance->punchin_longitude;
+
+      // The mobile punch-in API stores request latitude in punchin_longitude and
+      // request longitude in punchin_latitude. Reverse that mapping for App records.
+      if (strcasecmp((string) $attendance->punchin_from, 'App') === 0) {
+        [$latitude, $longitude] = [$longitude, $latitude];
+      } else {
+        $directIsIndia = $latitude >= 6 && $latitude <= 38 && $longitude >= 68 && $longitude <= 98;
+        $swappedIsIndia = $longitude >= 6 && $longitude <= 38 && $latitude >= 68 && $latitude <= 98;
+        if (!$directIsIndia && $swappedIsIndia) {
+          [$latitude, $longitude] = [$longitude, $latitude];
+        }
+      }
+
+      if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180 ||
+          (abs($latitude) < 0.000001 && abs($longitude) < 0.000001)) {
+        return null;
+      }
+
+      return [$latitude, $longitude];
+    }
+
     public function punchInLocator()
     {
       $accessibleUserIds = getUsersReportingToAuth();
@@ -1442,29 +1496,11 @@ break;
         ->get()
         ->map(function ($attendance) {
           $user = $attendance->users;
-          if (!is_numeric($attendance->punchin_latitude) || !is_numeric($attendance->punchin_longitude)) {
+          $coordinates = $this->punchInCoordinates($attendance);
+          if (!$coordinates) {
             return null;
           }
-
-          $latitude = (float) $attendance->punchin_latitude;
-          $longitude = (float) $attendance->punchin_longitude;
-
-          // The mobile punch-in API stores request latitude in punchin_longitude and
-          // request longitude in punchin_latitude. Reverse that mapping for App records.
-          if (strcasecmp((string) $attendance->punchin_from, 'App') === 0) {
-            [$latitude, $longitude] = [$longitude, $latitude];
-          } else {
-            $directIsIndia = $latitude >= 6 && $latitude <= 38 && $longitude >= 68 && $longitude <= 98;
-            $swappedIsIndia = $longitude >= 6 && $longitude <= 38 && $latitude >= 68 && $latitude <= 98;
-            if (!$directIsIndia && $swappedIsIndia) {
-              [$latitude, $longitude] = [$longitude, $latitude];
-            }
-          }
-
-          if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180 ||
-              (abs($latitude) < 0.000001 && abs($longitude) < 0.000001)) {
-            return null;
-          }
+          [$latitude, $longitude] = $coordinates;
 
           return [
             'attendance_id' => $attendance->id,
