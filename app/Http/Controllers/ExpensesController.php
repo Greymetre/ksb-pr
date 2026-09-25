@@ -1261,7 +1261,38 @@ class ExpensesController extends Controller
                 ];
             }
 
-            return view('map.track', compact('coordinates', 'visits', 'selectedDate'));
+            // Punch in / punch out of the day, shown as their own highlighted pins.
+            $punches = [];
+            $attendance = Attendance::where('user_id', $request->user_id)
+                ->whereDate('punchin_date', $selectedDate)
+                ->orderBy('id', 'asc')
+                ->first();
+            if ($attendance) {
+                // The mobile punch-in API stores latitude/longitude in swapped columns.
+                $punchIn = $this->attendancePoint(
+                    $attendance->punchin_latitude,
+                    $attendance->punchin_longitude,
+                    strcasecmp((string) $attendance->punchin_from, 'App') === 0
+                );
+                if ($punchIn) {
+                    $punches[] = $punchIn + [
+                        'type' => 'punch_in',
+                        'time' => $attendance->punchin_time ? date('g:i A', strtotime($attendance->punchin_time)) : '-',
+                        'address' => $attendance->punchin_address ?: '',
+                    ];
+                }
+
+                $punchOut = $this->attendancePoint($attendance->punchout_latitude, $attendance->punchout_longitude, false);
+                if ($punchOut) {
+                    $punches[] = $punchOut + [
+                        'type' => 'punch_out',
+                        'time' => $attendance->punchout_time ? date('g:i A', strtotime($attendance->punchout_time)) : '-',
+                        'address' => $attendance->punchout_address ?: '',
+                    ];
+                }
+            }
+
+            return view('map.track', compact('coordinates', 'visits', 'punches', 'selectedDate'));
 
         } else {
             $rules = [
@@ -1356,6 +1387,36 @@ $checks = CheckIn::where('user_id', $request->user_id)
     /**
      * check_in.time_interval is stored as an H:i:s duration. Present it as "1h 05m".
      */
+    /**
+     * Normalise an attendance lat/long pair; returns null when it is unusable.
+     */
+    private function attendancePoint($latitude, $longitude, $swapped)
+    {
+        if (!is_numeric($latitude) || !is_numeric($longitude)) {
+            return null;
+        }
+
+        $latitude = (float) $latitude;
+        $longitude = (float) $longitude;
+
+        if ($swapped) {
+            [$latitude, $longitude] = [$longitude, $latitude];
+        } else {
+            $directIsIndia = $latitude >= 6 && $latitude <= 38 && $longitude >= 68 && $longitude <= 98;
+            $swappedIsIndia = $longitude >= 6 && $longitude <= 38 && $latitude >= 68 && $latitude <= 98;
+            if (!$directIsIndia && $swappedIsIndia) {
+                [$latitude, $longitude] = [$longitude, $latitude];
+            }
+        }
+
+        if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180 ||
+            (abs($latitude) < 0.000001 && abs($longitude) < 0.000001)) {
+            return null;
+        }
+
+        return ['latitude' => $latitude, 'longitude' => $longitude];
+    }
+
     private function formatVisitDuration($interval)
     {
         if (empty($interval)) {

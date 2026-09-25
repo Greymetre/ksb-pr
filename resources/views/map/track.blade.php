@@ -111,6 +111,7 @@
     <script>
         const locations = @json($coordinates);
         const visits = @json($visits ?? []);
+        const punches = @json($punches ?? []);
 
         function isValidPoint(lat, lng) {
             return lat !== null && lat !== '' && lng !== null && lng !== '' &&
@@ -124,14 +125,16 @@
         function initMap() {
             const validVisits = visits.filter(v => isValidPoint(v.latitude, v.longitude));
 
-            if (!locations.length && !validVisits.length) {
+            if (!locations.length && !validVisits.length && !punches.length) {
                 document.getElementById("map").innerHTML = '<div class="no-location-data">No location activity found for {{ \Carbon\Carbon::parse($selectedDate)->format('d M Y') }}.</div>';
                 return;
             }
 
             const firstPoint = locations.length
                 ? toLatLngLiteral(locations[0].latitude, locations[0].longitude)
-                : toLatLngLiteral(validVisits[0].latitude, validVisits[0].longitude);
+                : (validVisits.length
+                    ? toLatLngLiteral(validVisits[0].latitude, validVisits[0].longitude)
+                    : toLatLngLiteral(punches[0].latitude, punches[0].longitude));
 
             const map = new google.maps.Map(document.getElementById("map"), {
                 zoom: 14,
@@ -371,6 +374,45 @@
                 }
             });
 
+            // ---------- punch in / punch out: highlighted pins above everything ----------
+            const punchStyles = {
+                punch_in: { title: 'Punch In', label: 'IN', color: '#2563eb', zIndex: 500 },
+                punch_out: { title: 'Punch Out', label: 'OUT', color: '#111827', zIndex: 400 }
+            };
+
+            punches.forEach((punch) => {
+                const style = punchStyles[punch.type];
+                if (!style || !isValidPoint(punch.latitude, punch.longitude)) return;
+
+                const position = toLatLngLiteral(punch.latitude, punch.longitude);
+                bounds.extend(position);
+
+                const marker = new google.maps.Marker({
+                    position: position,
+                    label: { text: style.label, color: "#ffffff", fontSize: "9px", fontWeight: "700" },
+                    title: `${style.title} · ${punch.time || '-'}`,
+                    icon: mapPin(style.color, 2.4),
+                    zIndex: style.zIndex,
+                    map: map
+                });
+
+                attachTooltip(marker, () => {
+                    const wrap = document.createDocumentFragment();
+                    wrap.appendChild(textLine(style.title, "tooltip-title"));
+                    wrap.appendChild(textLine(punch.time || '-'));
+                    if (punch.address) wrap.appendChild(textLine(punch.address));
+                    return wrap;
+                });
+
+                marker.addListener("click", () => {
+                    tooltip.style.display = "none";
+                    const rows = [['Time', punch.time || '-']];
+                    if (punch.address) rows.push(['Address', punch.address]);
+                    infoWindow.setContent(infoContent(style.title, 'Attendance', rows));
+                    infoWindow.open(map, marker);
+                });
+            });
+
             if (!bounds.isEmpty()) {
                 map.fitBounds(bounds, 48);
             }
@@ -386,6 +428,8 @@
     <div id="map"></div>
     <div class="map-legend">
         <strong>{{ \Carbon\Carbon::parse($selectedDate)->format('d M Y') }}</strong>
+        <span><i style="background:#2563eb"></i> Punch in</span>
+        <span><i style="background:#111827"></i> Punch out</span>
         <span><i style="background:#ea4335"></i> Movement point</span>
         <span><i style="background:#7c3aed"></i> Last known location</span>
         <span><i style="background:#16a34a"></i> Customer visit (check in)</span>
