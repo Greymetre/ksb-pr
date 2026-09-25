@@ -1381,8 +1381,6 @@ break;
         ->pluck('total', 'created_by');
       $todayPunchIns = Attendance::whereIn('user_id', $accessibleUserIds)
         ->whereDate('punchin_date', Carbon::today())
-        ->whereNotNull('punchin_latitude')
-        ->whereNotNull('punchin_longitude')
         ->orderBy('id')
         ->get()
         ->keyBy('user_id');
@@ -1396,11 +1394,20 @@ break;
         ->map(function ($user) use ($latestLocations, $todayLocations, $todayVisits, $todayOrders, $todayPlans, $todayPunchIns) {
           $location = $latestLocations->get($user->id);
           $reportedAt = $location?->created_at ? Carbon::parse($location->created_at) : null;
-          $status = !$location ? 'GPS Off' : (($reportedAt && $reportedAt->diffInMinutes(Carbon::now()) <= 15) ? 'Online' : 'Offline');
-
-          // No live GPS ping yet today: fall back to today's punch-in location so a
-          // punched-in user is still placed on the map instead of showing GPS Off.
           $punchIn = $todayPunchIns->get($user->id);
+
+          // Background tracking runs only between punch in and punch out, so:
+          // not punched in / punched out => Offline, punched in with a ping in the
+          // last 15 minutes => Online, punched in without a recent ping => GPS Off.
+          if (!$punchIn || !empty($punchIn->punchout_time)) {
+            $status = 'Offline';
+          } elseif ($reportedAt && $reportedAt->diffInMinutes(Carbon::now()) <= 15) {
+            $status = 'Online';
+          } else {
+            $status = 'GPS Off';
+          }
+
+          // No live GPS ping yet today: place the user at the punch-in location.
           $punchInCoordinates = !$location && $punchIn ? $this->punchInCoordinates($punchIn) : null;
           if ($punchInCoordinates) {
             $reportedAt = Carbon::parse(Carbon::parse($punchIn->punchin_date)->toDateString() . ' ' . ($punchIn->punchin_time ?: '00:00:00'));
@@ -1410,7 +1417,6 @@ break;
               'address' => $punchIn->punchin_address,
               'time' => $reportedAt->format('h:i A'),
             ];
-            $status = empty($punchIn->punchout_time) ? 'Online' : 'Offline';
           }
           $distance = 0;
           $points = $todayLocations->get($user->id, collect())->values();
