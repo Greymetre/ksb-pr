@@ -53,15 +53,13 @@
             <div class="os-key-meta">Pulled from Odoo twice a day</div>
           </div>
         </a>
-        @foreach(['Product Master'] as $upcoming)
-        <div class="os-module is-soon">
+        <a class="os-module" href="{{ route('odoo_sync.products') }}">
           <div class="os-key-icon"><span class="material-icons">inventory_2</span></div>
           <div class="os-key-body">
-            <div class="os-key-name">{{ $upcoming }} <span class="os-pill os-pill-neutral os-pill-sm" style="margin-top:0">Soon</span></div>
-            <div class="os-key-meta">Not available yet</div>
+            <div class="os-key-name">Product Master Odoo <span class="os-pill os-pill-success os-pill-sm" style="margin-top:0">Ready</span></div>
+            <div class="os-key-meta">Pulled from Odoo twice a day</div>
           </div>
-        </div>
-        @endforeach
+        </a>
       </div>
     </div>
 

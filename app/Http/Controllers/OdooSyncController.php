@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\Odoo\CategorySync;
 use App\Services\Odoo\OdooPullSync;
 use App\Services\Odoo\PartyPriceSync;
+use App\Services\Odoo\ProductSync;
 use App\Services\Odoo\SubcategorySync;
 use Carbon\Carbon;
 use Gate;
@@ -23,6 +24,7 @@ class OdooSyncController extends Controller
         'party_prices' => 'Party Wise Pricing',
         'categories' => 'Category Master Odoo',
         'subcategories' => 'Sub Category Master Odoo',
+        'products' => 'Product Master Odoo',
     ];
 
     /**
@@ -179,11 +181,81 @@ class OdooSyncController extends Controller
     }
 
     /**
+     * Product Master Odoo: products pulled from Odoo (cron twice a day, or Sync now).
+     */
+    public function products()
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $lastRun = DB::table('odoo_sync_logs')->where('entity', ProductSync::ENTITY)->orderByDesc('id')
+            ->first(['created_at', 'status_code', 'received_count', 'failed_count']);
+
+        $counts = [
+            'total' => DB::table('odoo_products')->count(),
+            'active' => DB::table('odoo_products')->where('active', true)->where('is_deleted', false)->count(),
+            'unlinked' => DB::table('odoo_products')->whereNull('product_id')->count(),
+        ];
+
+        return view('odoo_sync.products', compact('counts', 'lastRun'));
+    }
+
+    public function productsData()
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $query = DB::table('odoo_products as op')
+            ->leftJoin('odoo_categories as oc', 'oc.external_id', '=', 'op.category_external_id')
+            ->leftJoin('odoo_subcategories as os', 'os.external_id', '=', 'op.subcategory_external_id')
+            ->leftJoin('products as p', 'p.id', '=', 'op.product_id')
+            ->select('op.id', 'op.external_id', 'op.product_code', 'op.product_name', 'op.display_name', 'op.category_code', 'op.subcategory_code',
+                'op.brand_name', 'op.uom_code', 'op.hsn_code', 'op.mrp', 'op.standard_price', 'op.gst_percent', 'op.currency_code',
+                'op.orderable', 'op.active', 'op.is_deleted', 'op.product_id', 'op.odoo_updated_at', 'op.updated_at',
+                'oc.category_name', 'os.subcategory_name', 'p.product_name as fk_product_name');
+
+        return datatables()->query($query)
+            ->editColumn('external_id', fn ($row) => '<span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->external_id) . '">' . e($row->external_id) . '</span>')
+            ->editColumn('product_code', fn ($row) => '<span class="os-mono os-strong">' . e($row->product_code) . '</span>')
+            ->editColumn('product_name', fn ($row) => '<div class="os-strong">' . e(\Illuminate\Support\Str::limit($row->product_name, 50)) . '</div>'
+                . ($row->brand_name ? '<div class="os-sub">' . e($row->brand_name) . '</div>' : ''))
+            ->addColumn('category', fn ($row) => '<div class="os-strong">' . e($row->category_name ?? $row->category_code) . '</div>'
+                . '<div class="os-sub">' . e($row->subcategory_name ?? $row->subcategory_code) . '</div>')
+            ->addColumn('price', function ($row) {
+                $gst = $row->gst_percent !== null ? rtrim(rtrim(number_format($row->gst_percent, 2), '0'), '.') . '% GST' : 'GST —';
+                return '<div class="os-price">MRP ' . $this->money($row->mrp, $row->currency_code) . '</div>'
+                    . '<div class="os-sub">Std ' . $this->money($row->standard_price, $row->currency_code) . ' · ' . $gst . '</div>';
+            })
+            ->addColumn('uom', fn ($row) => '<div class="os-strong">' . e($row->uom_code) . '</div>'
+                . '<div class="os-sub">HSN ' . e($row->hsn_code ?: '—') . '</div>')
+            ->addColumn('linked', fn ($row) => $row->product_id
+                ? '<div class="os-sub">' . e(\Illuminate\Support\Str::limit($row->fk_product_name, 40)) . ' <span class="os-tag">#' . (int) $row->product_id . '</span></div>'
+                : '<span class="os-pill os-pill-warning os-pill-sm">Not linked</span>')
+            ->addColumn('status', function ($row) {
+                if ($row->is_deleted) {
+                    return '<span class="os-pill os-pill-danger">Deleted</span>';
+                }
+                $status = $row->active ? '<span class="os-pill os-pill-success">Active</span>' : '<span class="os-pill os-pill-neutral">Inactive</span>';
+                return $status . ($row->orderable ? '' : '<div class="os-sub">Not orderable</div>');
+            })
+            ->editColumn('odoo_updated_at', fn ($row) => $this->dateTimeCell($row->odoo_updated_at))
+            ->editColumn('updated_at', fn ($row) => $this->dateTimeCell($row->updated_at))
+            ->rawColumns(['external_id', 'product_code', 'product_name', 'category', 'price', 'uom', 'linked', 'status', 'odoo_updated_at', 'updated_at'])
+            ->make(true);
+    }
+
+    public function syncProducts(ProductSync $sync)
+    {
+        return $this->runPullSync($sync);
+    }
+
+    /**
      * "Sync now" buttons: the same pull the cron runs.
      */
     private function runPullSync(OdooPullSync $sync)
     {
         abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        // Products are a few thousand rows; don't let PHP's web time limit cut the sync
+        set_time_limit(300);
 
         $result = $sync->run();
         unset($result['errors']);

@@ -20,7 +20,6 @@ use Throwable;
 */
 abstract class OdooPullSync
 {
-    private const PAGE_SIZE = 100;
     // Stops a broken has_next from looping forever
     private const MAX_PAGES = 500;
 
@@ -33,6 +32,12 @@ abstract class OdooPullSync
 
     /** [Odoo model, Odoo method] */
     abstract protected function source(): array;
+
+    /** Records asked from Odoo per call; override for big masters */
+    protected function pageSize(): int
+    {
+        return 100;
+    }
 
     /**
      * @return array{status: string, errors?: array}  status: created | updated | skipped | failed
@@ -54,7 +59,7 @@ abstract class OdooPullSync
             $page = 1;
             do {
                 $result = $this->odoo->call($model, $method, [
-                    ['page' => $page, 'page_size' => self::PAGE_SIZE],
+                    ['page' => $page, 'page_size' => $this->pageSize()],
                 ]);
 
                 foreach ($result['data'] ?? [] as $record) {

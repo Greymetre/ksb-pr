@@ -10,7 +10,7 @@ Setup, testing and go-live steps for the Odoo push integration. The API spec for
 | CRM "Odoo Sync" menu | Integrations → Odoo Sync → Sync Overview (`/odoo-sync`), Party Wise Pricing (`/odoo-sync/party-prices`) | Built |
 | Category Master Odoo (pull) | Odoo `product.category` / `get_fieldkonnect_categories` → `odoo_categories`, page `/odoo-sync/categories` | Built, cron twice a day |
 | Sub Category Master Odoo (pull) | Odoo `product.category` / `get_fieldkonnect_subcategories` → `odoo_subcategories`, page `/odoo-sync/subcategories` | Built, cron twice a day |
-| Product master | — | Not started |
+| Product Master Odoo (pull) | Odoo `product.product` / `get_fieldkonnect_products` → `odoo_products`, page `/odoo-sync/products` | Built, cron twice a day |
 | Parties, leave balance, order dispatch, invoices, outstanding | — | Not started |
 
 ## How it works
@@ -70,9 +70,9 @@ Both price tables have the same columns. Main ones:
 - `odoo_updated_at`: Odoo's `updated_at`. An incoming record older than this is skipped.
 - `raw_payload`: the exact JSON Odoo sent, for debugging.
 
-## Category / Sub Category Master Odoo (pull from Odoo)
+## Category / Sub Category / Product Master Odoo (pull from Odoo)
 
-Unlike party prices, categories and sub-categories are **pulled**: FieldKonnect calls Odoo's JSON-RPC endpoint.
+Unlike party prices, categories, sub-categories and products are **pulled**: FieldKonnect calls Odoo's JSON-RPC endpoint.
 
 | File | Purpose |
 |---|---|
@@ -82,12 +82,15 @@ Unlike party prices, categories and sub-categories are **pulled**: FieldKonnect 
 | `app/Services/Odoo/CategorySync.php` | Categories: upserts, links `category_id` by name to `categories` (`entity=categories`) |
 | `app/Services/Odoo/SubcategorySync.php` | Sub-categories: upserts, links `subcategory_id` by name to `subcategories`, under the parent's linked category when there is one (`entity=subcategories`) |
 | `database/migrations/2026_09_29_100000_create_odoo_subcategories_table.php` | `odoo_subcategories` table (`category_external_id` → `odoo_categories.external_id`) |
+| `app/Services/Odoo/ProductSync.php` | Products (500 per Odoo call): upserts, links `product_id` by `product_code` to `products.product_code`, then `products.sap_code` (`entity=products`) |
+| `database/migrations/2026_09_29_110000_create_odoo_products_table.php` | `odoo_products` table |
 | `app/Console/Commands/OdooSyncCategories.php` | `php artisan odoo:sync-categories` |
 | `app/Console/Commands/OdooSyncSubcategories.php` | `php artisan odoo:sync-subcategories` |
-| `app/Console/Kernel.php` | Categories at 06:00 / 18:00 IST, sub-categories at 06:10 / 18:10 IST |
+| `app/Console/Commands/OdooSyncProducts.php` | `php artisan odoo:sync-products` |
+| `app/Console/Kernel.php` | Categories at 06:00 / 18:00 IST, sub-categories at 06:10 / 18:10, products at 06:20 / 18:20 |
 
 - `.env` needs `ODOO_URL`, `ODOO_DB`, `ODOO_LOGIN`, `ODOO_DEV_KEY` (and `ODOO_MODE=test|live`, only used to tag the log row). See `.env.example`.
-- The live `categories` and `subcategories` tables are only read (name match), never changed.
+- The live `categories`, `subcategories` and `products` tables are only read (to link), never changed.
 - A record whose Odoo `updated_at` is not newer than the stored one is counted as skipped.
 - The page has a **Sync now** button that runs the same sync.
 - The cron needs the Laravel scheduler on the server: `* * * * * cd <project path> && php artisan schedule:run >> /dev/null 2>&1`

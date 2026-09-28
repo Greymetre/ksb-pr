@@ -3014,6 +3014,13 @@
                                     <div class="d-none mobile_hide">Sub Category Master Odoo</div>
                                 </a>
                             </li>
+                            <li class="nav-link-btn {{ request()->routeIs('odoo_sync.products') ? 'active' : '' }}">
+                                <a class="hoveradd2" href="{{ route('odoo_sync.products') }}">
+                                    <i class="material-icons icon">inventory_2</i>
+                                    <span>Product Master Odoo</span>
+                                    <div class="d-none mobile_hide">Product Master Odoo</div>
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </li>
