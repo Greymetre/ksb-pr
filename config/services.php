@@ -52,6 +52,17 @@ return [
         'enforce' => env('SAP_API_KEY_ENFORCE', false),
     ],
 
+    // FieldKonnect -> Odoo pull (JSON-RPC /json-call). See odoo-integration-docs/README.md
+    'odoo' => [
+        'url' => env('ODOO_URL'),
+        'db' => env('ODOO_DB'),
+        'login' => env('ODOO_LOGIN'),
+        'dev_key' => env('ODOO_DEV_KEY'),
+        // test | live: which mode pulled requests are logged under on Sync Overview
+        'mode' => env('ODOO_MODE', 'test'),
+        'timeout' => env('ODOO_TIMEOUT', 60),
+    ],
+
     'google' => [
         'maps_api_key' => 'AIzaSyAVSDwHbKULnZa93kYpYINTqX4eaWy9q18',
     ],

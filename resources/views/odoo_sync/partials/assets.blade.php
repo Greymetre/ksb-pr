@@ -73,6 +73,7 @@
 
     .os-method { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .06em; padding: 2px 6px; border-radius: 5px; margin-right: 8px; background: rgba(59,130,246,.16); color: #60a5fa; }
     .os-method-get { background: rgba(34,197,94,.14); color: #22c55e; }
+    .os-method-pull { background: rgba(168,85,247,.16); color: #c084fc; }
     .os-counts { display: flex; gap: 6px; flex-wrap: nowrap; }
     .os-count { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(125,143,191,.1); color: var(--fk-list-muted, #7d8fbf); }
     .os-count b { font-weight: 700; }
@@ -84,6 +85,11 @@
     .os-link-btn { border: 1px solid rgba(248,113,113,.35); background: rgba(248,113,113,.1); color: #f87171; border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
     .os-link-btn .material-icons { font-size: 15px; }
     .os-link-btn:hover { background: rgba(248,113,113,.18); }
+    .os-btn { border: 0; border-radius: 10px; padding: 9px 16px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; background: var(--fk-list-accent, #22d3ee); color: var(--fk-list-primary-text, #04121f); }
+    .os-btn .material-icons { font-size: 18px; }
+    .os-btn:disabled { opacity: .7; cursor: wait; }
+    .os-btn.is-busy .material-icons { animation: os-spin 1s linear infinite; }
+    @keyframes os-spin { to { transform: rotate(-360deg); } }
 
     /* DataTables controls */
     .os-dt-top { display: flex; justify-content: flex-end; padding: 6px 16px 10px; }
@@ -139,18 +145,20 @@
       return columns.map(function(col) { col.className = 'fk-preserve-case'; return col; });
     };
 
+    var osToastTimer;
+    window.osToast = function(message) {
+      var toast = document.getElementById('osToast');
+      toast.textContent = message;
+      toast.classList.add('is-visible');
+      clearTimeout(osToastTimer);
+      osToastTimer = setTimeout(function() { toast.classList.remove('is-visible'); }, 2400);
+    };
+
     $(function() {
-      var toastTimer;
       $(document).on('click', '.os-copy', function() {
         var value = $(this).data('copy');
         if (!navigator.clipboard) return;
-        navigator.clipboard.writeText(String(value)).then(function() {
-          var toast = document.getElementById('osToast');
-          toast.textContent = 'Copied ' + value;
-          toast.classList.add('is-visible');
-          clearTimeout(toastTimer);
-          toastTimer = setTimeout(function() { toast.classList.remove('is-visible'); }, 1600);
-        });
+        navigator.clipboard.writeText(String(value)).then(function() { window.osToast('Copied ' + value); });
       });
     });
   </script>

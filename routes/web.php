@@ -395,6 +395,9 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     Route::get('odoo-sync/party-prices', [OdooSyncController::class, 'partyPrices'])->name('odoo_sync.party_prices');
     Route::get('odoo-sync/test-prices', [OdooSyncController::class, 'testPrices'])->name('odoo_sync.test_prices');
     Route::get('odoo-sync/live-prices', [OdooSyncController::class, 'livePrices'])->name('odoo_sync.live_prices');
+    Route::get('odoo-sync/categories', [OdooSyncController::class, 'categories'])->name('odoo_sync.categories');
+    Route::get('odoo-sync/categories/data', [OdooSyncController::class, 'categoriesData'])->name('odoo_sync.categories_data');
+    Route::post('odoo-sync/categories/sync', [OdooSyncController::class, 'syncCategories'])->name('odoo_sync.categories_sync');
 
     //End User Routs
     Route::resource('end_user', EndUserController::class);

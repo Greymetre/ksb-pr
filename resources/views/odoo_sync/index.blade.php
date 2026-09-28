@@ -39,7 +39,14 @@
             <div class="os-key-meta">POST /api/v1/odoo/party-prices</div>
           </div>
         </a>
-        @foreach(['Product Category', 'Product Sub-category', 'Product Master'] as $upcoming)
+        <a class="os-module" href="{{ route('odoo_sync.categories') }}">
+          <div class="os-key-icon"><span class="material-icons">category</span></div>
+          <div class="os-key-body">
+            <div class="os-key-name">Category Master Odoo <span class="os-pill os-pill-success os-pill-sm" style="margin-top:0">Ready</span></div>
+            <div class="os-key-meta">Pulled from Odoo twice a day</div>
+          </div>
+        </a>
+        @foreach(['Product Sub-category', 'Product Master'] as $upcoming)
         <div class="os-module is-soon">
           <div class="os-key-icon"><span class="material-icons">inventory_2</span></div>
           <div class="os-key-body">

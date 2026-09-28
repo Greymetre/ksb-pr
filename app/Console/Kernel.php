@@ -46,6 +46,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Asia/Kolkata')
             ->hourly()
             ->withoutOverlapping();
+        // Category Master Odoo: pull categories from Odoo twice a day (06:00 and 18:00 IST)
+        $schedule->command('odoo:sync-categories')
+            ->timezone('Asia/Kolkata')
+            ->twiceDaily(6, 18)
+            ->withoutOverlapping();
         $schedule->command('tasks:send-pending-today')->everyMinute();
     }
 

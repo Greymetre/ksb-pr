@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Odoo\CategorySync;
 use App\Services\Odoo\PartyPriceSync;
 use Carbon\Carbon;
 use Gate;
@@ -18,6 +19,7 @@ class OdooSyncController extends Controller
     // odoo_sync_logs.entity => label. Add a line per new Odoo module.
     private const MODULES = [
         'party_prices' => 'Party Wise Pricing',
+        'categories' => 'Category Master Odoo',
     ];
 
     /**
@@ -63,6 +65,67 @@ class OdooSyncController extends Controller
         return view('odoo_sync.party_prices', compact('counts'));
     }
 
+    /**
+     * Category Master Odoo: categories pulled from Odoo (cron twice a day, or Sync now).
+     */
+    public function categories()
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $lastRun = DB::table('odoo_sync_logs')->where('entity', CategorySync::ENTITY)->orderByDesc('id')
+            ->first(['created_at', 'status_code', 'received_count', 'failed_count']);
+
+        $counts = [
+            'total' => DB::table('odoo_categories')->count(),
+            'active' => DB::table('odoo_categories')->where('active', true)->where('is_deleted', false)->count(),
+            'unlinked' => DB::table('odoo_categories')->whereNull('category_id')->count(),
+        ];
+
+        return view('odoo_sync.categories', compact('counts', 'lastRun'));
+    }
+
+    public function categoriesData()
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $query = DB::table('odoo_categories as oc')
+            ->leftJoin('categories as c', 'c.id', '=', 'oc.category_id')
+            ->select('oc.id', 'oc.external_id', 'oc.category_code', 'oc.category_name', 'oc.description', 'oc.ranking',
+                'oc.active', 'oc.is_deleted', 'oc.category_id', 'oc.odoo_updated_at', 'oc.updated_at', 'c.category_name as fk_category_name');
+
+        return datatables()->query($query)
+            ->editColumn('external_id', fn ($row) => '<span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->external_id) . '">' . e($row->external_id) . '</span>')
+            ->editColumn('category_code', fn ($row) => '<span class="os-mono os-strong">' . e($row->category_code) . '</span>')
+            ->editColumn('category_name', fn ($row) => '<div class="os-strong">' . e($row->category_name) . '</div>'
+                . ($row->description ? '<div class="os-sub">' . e(\Illuminate\Support\Str::limit($row->description, 60)) . '</div>' : ''))
+            ->addColumn('linked', fn ($row) => $row->category_id
+                ? '<div class="os-sub">' . e($row->fk_category_name) . ' <span class="os-tag">#' . (int) $row->category_id . '</span></div>'
+                : '<span class="os-pill os-pill-warning os-pill-sm">Not linked</span>')
+            ->addColumn('status', function ($row) {
+                if ($row->is_deleted) {
+                    return '<span class="os-pill os-pill-danger">Deleted</span>';
+                }
+                return $row->active ? '<span class="os-pill os-pill-success">Active</span>' : '<span class="os-pill os-pill-neutral">Inactive</span>';
+            })
+            ->editColumn('odoo_updated_at', fn ($row) => $this->dateTimeCell($row->odoo_updated_at))
+            ->editColumn('updated_at', fn ($row) => $this->dateTimeCell($row->updated_at))
+            ->rawColumns(['external_id', 'category_code', 'category_name', 'linked', 'status', 'odoo_updated_at', 'updated_at'])
+            ->make(true);
+    }
+
+    /**
+     * "Sync now" button: same pull the cron runs.
+     */
+    public function syncCategories(CategorySync $sync)
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $result = $sync->run();
+        unset($result['errors']);
+
+        return response()->json($result, $result['status_code'] === 502 ? 502 : 200);
+    }
+
     public function logs()
     {
         abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
@@ -78,7 +141,11 @@ class OdooSyncController extends Controller
                     . '<span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->correlation_id) . '">' . e($row->correlation_id) . '</span>';
             })
             ->addColumn('module', fn ($row) => '<span class="os-strong">' . e(self::MODULES[$row->entity] ?? $row->entity) . '</span>')
-            ->addColumn('client', fn ($row) => '<div class="os-strong">' . e($row->client_name ?? 'Deleted key') . '</div>' . $this->modePill($row->mode))
+            ->addColumn('client', function ($row) {
+                // PULL rows are FieldKonnect calling Odoo (cron / Sync now), not an API key
+                $name = $row->method === 'PULL' ? 'FieldKonnect pull' : ($row->client_name ?? 'Deleted key');
+                return '<div class="os-strong">' . e($name) . '</div>' . $this->modePill($row->mode);
+            })
             ->addColumn('result', function ($row) {
                 $chip = fn ($label, $value, $tone) => '<span class="os-count' . ($value > 0 ? ' os-count-' . $tone : '') . '"><b>' . (int) $value . '</b> ' . $label . '</span>';
                 return '<div class="os-counts">'
