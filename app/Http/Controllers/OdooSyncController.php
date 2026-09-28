@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Services\Odoo\CategorySync;
+use App\Services\Odoo\OdooPullSync;
 use App\Services\Odoo\PartyPriceSync;
+use App\Services\Odoo\SubcategorySync;
 use Carbon\Carbon;
 use Gate;
 use Illuminate\Http\Response;
@@ -20,6 +22,7 @@ class OdooSyncController extends Controller
     private const MODULES = [
         'party_prices' => 'Party Wise Pricing',
         'categories' => 'Category Master Odoo',
+        'subcategories' => 'Sub Category Master Odoo',
     ];
 
     /**
@@ -113,10 +116,72 @@ class OdooSyncController extends Controller
             ->make(true);
     }
 
-    /**
-     * "Sync now" button: same pull the cron runs.
-     */
     public function syncCategories(CategorySync $sync)
+    {
+        return $this->runPullSync($sync);
+    }
+
+    /**
+     * Sub Category Master Odoo: sub-categories pulled from Odoo (cron twice a day, or Sync now).
+     */
+    public function subcategories()
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $lastRun = DB::table('odoo_sync_logs')->where('entity', SubcategorySync::ENTITY)->orderByDesc('id')
+            ->first(['created_at', 'status_code', 'received_count', 'failed_count']);
+
+        $counts = [
+            'total' => DB::table('odoo_subcategories')->count(),
+            'active' => DB::table('odoo_subcategories')->where('active', true)->where('is_deleted', false)->count(),
+            'unlinked' => DB::table('odoo_subcategories')->whereNull('subcategory_id')->count(),
+        ];
+
+        return view('odoo_sync.subcategories', compact('counts', 'lastRun'));
+    }
+
+    public function subcategoriesData()
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $query = DB::table('odoo_subcategories as os')
+            ->leftJoin('odoo_categories as oc', 'oc.external_id', '=', 'os.category_external_id')
+            ->leftJoin('subcategories as s', 's.id', '=', 'os.subcategory_id')
+            ->select('os.id', 'os.external_id', 'os.subcategory_code', 'os.subcategory_name', 'os.description', 'os.category_code', 'os.ranking',
+                'os.active', 'os.is_deleted', 'os.subcategory_id', 'os.odoo_updated_at', 'os.updated_at',
+                'oc.category_name as parent_name', 's.subcategory_name as fk_subcategory_name');
+
+        return datatables()->query($query)
+            ->editColumn('external_id', fn ($row) => '<span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->external_id) . '">' . e($row->external_id) . '</span>')
+            ->editColumn('subcategory_code', fn ($row) => '<span class="os-mono os-strong">' . e($row->subcategory_code) . '</span>')
+            ->editColumn('subcategory_name', fn ($row) => '<div class="os-strong">' . e($row->subcategory_name) . '</div>'
+                . ($row->description ? '<div class="os-sub">' . e(\Illuminate\Support\Str::limit($row->description, 60)) . '</div>' : ''))
+            ->addColumn('parent', fn ($row) => '<div class="os-mono os-strong">' . e($row->category_code) . '</div>'
+                . '<div class="os-sub">' . ($row->parent_name ? e($row->parent_name) : 'Category not synced yet') . '</div>')
+            ->addColumn('linked', fn ($row) => $row->subcategory_id
+                ? '<div class="os-sub">' . e($row->fk_subcategory_name) . ' <span class="os-tag">#' . (int) $row->subcategory_id . '</span></div>'
+                : '<span class="os-pill os-pill-warning os-pill-sm">Not linked</span>')
+            ->addColumn('status', function ($row) {
+                if ($row->is_deleted) {
+                    return '<span class="os-pill os-pill-danger">Deleted</span>';
+                }
+                return $row->active ? '<span class="os-pill os-pill-success">Active</span>' : '<span class="os-pill os-pill-neutral">Inactive</span>';
+            })
+            ->editColumn('odoo_updated_at', fn ($row) => $this->dateTimeCell($row->odoo_updated_at))
+            ->editColumn('updated_at', fn ($row) => $this->dateTimeCell($row->updated_at))
+            ->rawColumns(['external_id', 'subcategory_code', 'subcategory_name', 'parent', 'linked', 'status', 'odoo_updated_at', 'updated_at'])
+            ->make(true);
+    }
+
+    public function syncSubcategories(SubcategorySync $sync)
+    {
+        return $this->runPullSync($sync);
+    }
+
+    /**
+     * "Sync now" buttons: the same pull the cron runs.
+     */
+    private function runPullSync(OdooPullSync $sync)
     {
         abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 

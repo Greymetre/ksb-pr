@@ -398,6 +398,9 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     Route::get('odoo-sync/categories', [OdooSyncController::class, 'categories'])->name('odoo_sync.categories');
     Route::get('odoo-sync/categories/data', [OdooSyncController::class, 'categoriesData'])->name('odoo_sync.categories_data');
     Route::post('odoo-sync/categories/sync', [OdooSyncController::class, 'syncCategories'])->name('odoo_sync.categories_sync');
+    Route::get('odoo-sync/subcategories', [OdooSyncController::class, 'subcategories'])->name('odoo_sync.subcategories');
+    Route::get('odoo-sync/subcategories/data', [OdooSyncController::class, 'subcategoriesData'])->name('odoo_sync.subcategories_data');
+    Route::post('odoo-sync/subcategories/sync', [OdooSyncController::class, 'syncSubcategories'])->name('odoo_sync.subcategories_sync');
 
     //End User Routs
     Route::resource('end_user', EndUserController::class);

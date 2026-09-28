@@ -46,7 +46,14 @@
             <div class="os-key-meta">Pulled from Odoo twice a day</div>
           </div>
         </a>
-        @foreach(['Product Sub-category', 'Product Master'] as $upcoming)
+        <a class="os-module" href="{{ route('odoo_sync.subcategories') }}">
+          <div class="os-key-icon"><span class="material-icons">account_tree</span></div>
+          <div class="os-key-body">
+            <div class="os-key-name">Sub Category Master Odoo <span class="os-pill os-pill-success os-pill-sm" style="margin-top:0">Ready</span></div>
+            <div class="os-key-meta">Pulled from Odoo twice a day</div>
+          </div>
+        </a>
+        @foreach(['Product Master'] as $upcoming)
         <div class="os-module is-soon">
           <div class="os-key-icon"><span class="material-icons">inventory_2</span></div>
           <div class="os-key-body">

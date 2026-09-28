@@ -51,6 +51,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Asia/Kolkata')
             ->twiceDaily(6, 18)
             ->withoutOverlapping();
+        // Sub Category Master Odoo: 10 minutes after categories so the parent link is fresh (06:10 and 18:10 IST)
+        $schedule->command('odoo:sync-subcategories')
+            ->timezone('Asia/Kolkata')
+            ->twiceDailyAt(6, 18, 10)
+            ->withoutOverlapping();
         $schedule->command('tasks:send-pending-today')->everyMinute();
     }
 
