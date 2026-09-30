@@ -1815,7 +1815,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('customer_login'))
+                                    @if(false && auth()->user()->can('customer_login'))
                                     <li class="nav-link-btn {{ request()->is('customersLogin*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('customersLogin') }}">
                                             <i class="material-icons icon">login</i>
