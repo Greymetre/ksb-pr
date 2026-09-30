@@ -2049,7 +2049,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('ware_house_access'))
+                                    @if(false && auth()->user()->can('ware_house_access'))
                                     <li class="nav-link-btn {{ request()->is('ware_house*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('ware_house') }}">
                                             <i class="material-icons icon">warehouse</i>
@@ -2121,7 +2121,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('primary_scheme'))
+                                    @if(false && auth()->user()->can('primary_scheme'))
                                     <li class="nav-item-btn {{ request()->is('primary_scheme') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('primary_scheme') }}">
                                             <i class="material-icons icon">holiday_village</i>
@@ -2130,7 +2130,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('primary_scheme_report'))
+                                    @if(false && auth()->user()->can('primary_scheme_report'))
                                     <li
                                         class="nav-item-btn {{ request()->is('primary_scheme_report') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('primary_scheme_report') }}">
@@ -2140,7 +2140,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('forecast_access'))
+                                    @if(false && auth()->user()->can('forecast_access'))
                                     <li
                                         class="nav-link-btn add_icon {{ request()->is('planned-sop-forecast*') || request()->is('planned-sop*') ? 'active' : '' }}">
                                         <a class="collapsed hoveradd" data-toggle="collapse" href="#forecastMenu"
@@ -2234,7 +2234,7 @@
                                         </a>
                                     </li>
                                     @endif
-                                    @if(auth()->user()->can('resignation_access'))
+                                    @if(false && auth()->user()->can('resignation_access'))
                                     <li class="nav-link-btn {{ request()->is('resignations*') ? 'active' : '' }}">
                                         <a class="hoveradd2" href="{{ url('resignations') }}">
                                             <i class="material-icons icon">outgoing_mail</i>
