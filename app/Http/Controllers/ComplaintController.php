@@ -65,8 +65,9 @@ class ComplaintController extends Controller
     private function crmComplaintQuery(Request $request)
     {
         $query = Complaint::query();
-        if (!Auth::user()->hasAnyRole(['superadmin', 'Sub_Admin', 'Service Admin', 'CRM_Support'])) {
-            $query->where(fn ($scope) => $scope->where('assign_user', Auth::id())->orWhere('created_by', Auth::id()));
+        if (!userHasAllDataAccess() && !Auth::user()->hasRole('CRM_Support')) {
+            $visibleUserIds = array_values(array_unique(array_merge(getUsersReportingToAuth(Auth::id()), [Auth::id()])));
+            $query->where(fn ($scope) => $scope->whereIn('assign_user', $visibleUserIds)->orWhereIn('created_by', $visibleUserIds));
         }
         if ($request->filled('created_by')) $query->where('created_by', $request->created_by);
         if ($request->filled('date_from')) $query->whereDate('complaint_date', '>=', $request->date_from);
@@ -170,8 +171,9 @@ class ComplaintController extends Controller
             'warranty_details',
             'assign_users'
         ])->latest()->newQuery();
-        if(!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Sub_Admin') && !Auth::user()->hasRole('Service Admin') &&  !Auth::user()->hasRole('CRM_Support')){
-           $query->where('assign_user' , Auth::user()->id);
+        if (!userHasAllDataAccess() && !Auth::user()->hasRole('CRM_Support')) {
+            $visibleUserIds = array_values(array_unique(array_merge(getUsersReportingToAuth(Auth::id()), [Auth::id()])));
+            $query->where(fn ($scope) => $scope->whereIn('assign_user', $visibleUserIds)->orWhereIn('created_by', $visibleUserIds));
         }
 
         if (isset($request->complaint_date)) {

@@ -533,6 +533,23 @@ if (! function_exists('getLatLongToCity')) {
 // }
 
 
+if (! function_exists('userHasAllDataAccess')) {
+    /**
+     * Any role whose name contains "admin" (e.g. "Complaint Admin", superadmin, Sub_Admin) sees every user's data
+     * in the modules it has permissions for; other roles (e.g. "Complaint") only see their own reporting hierarchy.
+     */
+    function userHasAllDataAccess($user = null)
+    {
+        $user = $user ?: Auth::user();
+        if (!$user) {
+            return false;
+        }
+
+        return $user->getRoleNames()->contains(fn ($roleName) => stripos($roleName, 'admin') !== false)
+            || $user->checkPermissionTo('all_data_access');
+    }
+}
+
 if (! function_exists('getUsersReportingToAuth')) {
     function getUsersReportingToAuth($userid = '')
     {
@@ -601,7 +618,7 @@ if (! function_exists('getUsersReportingToAuth')) {
         //         $query->whereIn('id', config('constants.customer_roles'));
         //     })->where('active', 'Y')->pluck('id')->toArray();
         // }
-        if ($userinfo->hasRole('superadmin') || $userinfo->hasRole('Admin') || $userinfo->hasRole('subAdmin') || $userinfo->hasRole('Sub_Admin')) {
+        if (userHasAllDataAccess($userinfo)) {
             $all_ids_array = User::whereDoesntHave('roles', function ($query) {
                     $query->whereIn('id', config('constants.customer_roles'));
                 })

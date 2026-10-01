@@ -91,12 +91,13 @@ class RolesController extends Controller
     public function store(Request $request)
 {
     $request->validate([
-        'name' => 'required|string|max:125|unique:roles,name,NULL,id,guard_name,web'
+        'name' => 'required|string|max:125|unique:roles,name,NULL,id,guard_name,users'
     ]);
 
     $role = Role::create([
         'name' => trim($request->name),
-        'guard_name' => 'web'
+        // must match User::$guard_name and existing permissions, otherwise the role can't be assigned or given permissions
+        'guard_name' => 'users'
     ]);
 
     return redirect()->route('roles.create', ['role' => $role->id])
