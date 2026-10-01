@@ -94,12 +94,13 @@ class RolesController extends Controller
         'name' => 'required|string|max:125|unique:roles,name,NULL,id,guard_name,web'
     ]);
 
-    Role::create([
+    $role = Role::create([
         'name' => trim($request->name),
         'guard_name' => 'web'
     ]);
 
-    return back()->with('success', 'Role created successfully');
+    return redirect()->route('roles.create', ['role' => $role->id])
+        ->with('success', 'Role "' . $role->name . '" created. Now set its permissions.');
 }
 
 

@@ -109,6 +109,11 @@
         line-height: 1.5;
     }
 
+    /* freshly created role column */
+    .permission-table .new-role-col {
+        background: rgba(76, 175, 80, 0.12);
+    }
+
     /* checkbox cell */
     .permission-table td.checkbox-cell {
         padding: 0;
@@ -240,7 +245,7 @@
                                     <tr>
                                         <th>Permission</th>
                                         @foreach($roles as $role)
-                                        <th class="text-center">
+                                        <th class="text-center {{ request('role') == $role->id ? 'new-role-col' : '' }}" data-role-col="{{ $role->id }}">
                                             {{
         Str::of($role->name)
             ->replace(['_', '-'], ' ')
@@ -260,7 +265,7 @@
                                         <td>{{ $permission->name }}</td>
 
                                         @foreach($roles as $role)
-                                        <td class="checkbox-cell">
+                                        <td class="checkbox-cell {{ request('role') == $role->id ? 'new-role-col' : '' }}">
                                             <div class="form-check">
                                                 <label class="form-check-label m-0">
                                                     <input type="checkbox" class="form-check-input permission-checkbox"
@@ -337,6 +342,13 @@
         });
         document.getElementById('permissionsJson').value = JSON.stringify(payload);
     });
+
+    @if(request('role'))
+    (function () {
+        const col = document.querySelector('[data-role-col="{{ (int) request('role') }}"]');
+        if (col) col.scrollIntoView({ block: 'nearest', inline: 'center' });
+    })();
+    @endif
 
     function filterPermissions() {
         const searchValue = document

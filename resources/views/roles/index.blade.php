@@ -38,7 +38,7 @@
                   <a href="{{ URL::to('roles-template') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.template') !!} {!! trans('panel.role.title_singular') !!}"><i class="material-icons">text_snippet</i></a>
                   @endif
                   @if(auth()->user()->can(['role_create']))
-                  <a href="{{ route('roles.create') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.add') !!} {!! trans('panel.role.title_singular') !!}"><i class="material-icons">add_circle</i></a>
+                  <a href="javascript:void(0)" data-toggle="modal" data-target="#createRoleModal" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.add') !!} {!! trans('panel.role.title_singular') !!}"><i class="material-icons">add_circle</i></a>
                   @endif
                 </div>
               </div>
@@ -74,8 +74,46 @@
       </div>
     </div>
   </div>
+  <!-- Create role: ask for the name first, permissions are set on the next screen -->
+  <div class="modal fade" id="createRoleModal" role="dialog" aria-labelledby="createRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content card">
+        <div class="card-header card-header-icon card-header-theme">
+          <div class="card-icon">
+            <i class="material-icons">perm_identity</i>
+          </div>
+          <h4 class="card-title" id="createRoleModalLabel">{!! trans('panel.global.add') !!} {!! trans('panel.role.title_singular') !!}
+            <span class="pull-right">
+              <a href="javascript:void(0)" class="btn btn-just-icon btn-danger" data-dismiss="modal"><i class="material-icons">clear</i></a>
+            </span>
+          </h4>
+        </div>
+        <div class="modal-body">
+          <form method="POST" action="{{ route('roles.store') }}" id="createRoleForm">
+            @csrf
+            <div class="form-group">
+              <label class="col-form-label" for="role_name">Role Name <span class="text-danger">*</span></label>
+              <input type="text" name="name" id="role_name" class="form-control" value="{{ old('name') }}" maxlength="125" placeholder="Enter role name" required>
+              @if($errors->has('name'))
+              <div class="error"><p class="text-danger">{{ $errors->first('name') }}</p></div>
+              @endif
+            </div>
+            <div class="text-right">
+              <button type="submit" class="btn btn-theme">Create &amp; Set Permissions</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
   <script type="text/javascript">
     $(document).ready(function() {
+      $('#createRoleModal').on('shown.bs.modal', function() {
+        $('#role_name').trigger('focus');
+      });
+      @if($errors->has('name'))
+      $('#createRoleModal').modal('show');
+      @endif
       oTable = $('#getrole').DataTable({
         "processing": true,
         "serverSide": true,
