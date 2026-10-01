@@ -138,6 +138,7 @@ use App\Http\Controllers\NewDealerTargetController;
 // use App\Http\Controllers\RolesAndPermissionsController;
 
 Route::post('roles/save-permissions', [RolesController::class, 'savePermissions'])
+    ->middleware('auth')
     ->name('roles.savePermissions');
 
 

@@ -91,11 +91,11 @@ class RolesController extends Controller
     public function store(Request $request)
 {
     $request->validate([
-        'name' => 'required|unique:roles,name'
+        'name' => 'required|string|max:125|unique:roles,name,NULL,id,guard_name,web'
     ]);
 
     Role::create([
-        'name' => $request->name,
+        'name' => trim($request->name),
         'guard_name' => 'web'
     ]);
 
@@ -183,8 +183,18 @@ class RolesController extends Controller
     }
     public function savePermissions(Request $request)
 {
-    // permissions[role_id] => [permission_ids]
-    foreach ($request->permissions as $roleId => $permissionIds) {
+    abort_if(Gate::denies('role_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+    // permissions_json: {role_id: [permission_ids]} — sent as one field so large matrices aren't cut off by max_input_vars
+    $permissions = $request->filled('permissions_json')
+        ? json_decode($request->input('permissions_json'), true)
+        : $request->input('permissions', []);
+
+    if (! is_array($permissions)) {
+        return redirect()->back()->withErrors(['permissions' => 'Invalid permissions data, please try again.']);
+    }
+
+    foreach ($permissions as $roleId => $permissionIds) {
         $role = Role::find($roleId);
 
         if ($role) {

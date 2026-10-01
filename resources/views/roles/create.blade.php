@@ -157,6 +157,14 @@
                     </h4>
                 </div>
                 <div class="card-body">
+                    @if(session('success'))
+                    <div class="alert alert-success">
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <i class="material-icons">close</i>
+                        </button>
+                        <span>{{ session('success') }}</span>
+                    </div>
+                    @endif
                     @if(count($errors) > 0)
                     <div class="alert alert-danger">
                         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -178,7 +186,7 @@
                             <div class="col-md-6">
                                 <label class="col-form-label">Role Name</label>
                                 <input type="text" name="name" class="form-control" placeholder="Enter role name"
-                                    required>
+                                    value="{{ old('name') }}" required>
                             </div>
 
                             <div class="col-md-6">
@@ -191,8 +199,10 @@
                     {{-- ================= END CREATE ROLE FORM ================= --}}
 
                     {{-- ================= SAVE PERMISSIONS FORM ================= --}}
-                    <form method="POST" action="{{ route('roles.savePermissions') }}">
+                    <form method="POST" action="{{ route('roles.savePermissions') }}" id="savePermissionsForm">
                         @csrf
+                        {{-- checkboxes are serialized into this field on submit to stay under PHP max_input_vars --}}
+                        <input type="hidden" name="permissions_json" id="permissionsJson">
 
                         <label class="col-form-label mt-3">
                             Permissions
@@ -254,7 +264,7 @@
                                             <div class="form-check">
                                                 <label class="form-check-label m-0">
                                                     <input type="checkbox" class="form-check-input permission-checkbox"
-                                                        name="permissions[{{ $role->id }}][]"
+                                                        data-role="{{ $role->id }}"
                                                         value="{{ $permission->id }}"
                                                         {{ $role->permissions->contains($permission->id) ? 'checked' : '' }}>
                                                     <span class="form-check-sign">
@@ -316,6 +326,17 @@
     function deselectAllPermissions() {
         document.querySelectorAll('.permission-checkbox').forEach(cb => cb.checked = false);
     }
+
+    document.getElementById('savePermissionsForm').addEventListener('submit', function () {
+        const payload = {};
+        @foreach($roles as $role)
+        payload[{{ $role->id }}] = [];
+        @endforeach
+        document.querySelectorAll('.permission-checkbox:checked').forEach(cb => {
+            payload[cb.dataset.role].push(parseInt(cb.value, 10));
+        });
+        document.getElementById('permissionsJson').value = JSON.stringify(payload);
+    });
 
     function filterPermissions() {
         const searchValue = document
