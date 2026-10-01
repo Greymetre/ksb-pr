@@ -597,6 +597,13 @@ class ComplaintController extends Controller
             ->make(true);
     }
 
+    private function dealerOrDistributorTypeScope($query)
+    {
+        return $query->where(fn ($q) => $q
+            ->where(fn ($dealer) => $dealer->whereRaw('LOWER(TRIM(type_name)) = ?', ['dealer'])->whereRaw('LOWER(TRIM(customertype_name)) = ?', ['dealer']))
+            ->orWhereRaw('LOWER(TRIM(type_name)) = ?', ['distributor']));
+    }
+
     /**
      * Show the form for creating a new resource.
      *
@@ -608,7 +615,7 @@ class ComplaintController extends Controller
         $customerIds = EmployeeDetail::whereIn('user_id', $visibleUserIds)
             ->where(fn ($query) => $query->whereNull('active')->orWhere('active', 'Y'))->distinct()->pluck('customer_id');
         $dealers = Customers::with('customeraddress')->whereIn('id', $customerIds)->where('active', 'Y')
-            ->whereHas('customertypes', fn ($query) => $query->whereRaw('LOWER(TRIM(type_name)) = ?', ['dealer'])->whereRaw('LOWER(TRIM(customertype_name)) = ?', ['dealer']))
+            ->whereHas('customertypes', fn ($query) => $this->dealerOrDistributorTypeScope($query))
             ->orderBy('name')->get();
         $categories = Category::where('active', 'Y')->orderBy('ranking')->orderBy('category_name')->get(['id', 'category_name']);
         $receivedThrough = Status::where('active', 'Y')->where('module', 'Complaint Received Through')->orderBy('display_name')->get();
@@ -847,7 +854,7 @@ class ComplaintController extends Controller
         abort_unless($requestedViewAction ? in_array((int) $complaint->complaint_status, [3, 4], true) : in_array((int) $complaint->complaint_status, [0, 6], true), 422, 'This complaint is not available for the requested action.');
         $visibleUserIds = array_values(array_unique(array_merge(getUsersReportingToAuth(auth()->id()), [auth()->id()])));
         $customerIds = EmployeeDetail::whereIn('user_id', $visibleUserIds)->where(fn ($query) => $query->whereNull('active')->orWhere('active', 'Y'))->distinct()->pluck('customer_id');
-        $dealers = Customers::with('customeraddress')->whereIn('id', $customerIds)->where('active', 'Y')->whereHas('customertypes', fn ($query) => $query->whereRaw('LOWER(TRIM(type_name)) = ?', ['dealer'])->whereRaw('LOWER(TRIM(customertype_name)) = ?', ['dealer']))->orderBy('name')->get();
+        $dealers = Customers::with('customeraddress')->whereIn('id', $customerIds)->where('active', 'Y')->whereHas('customertypes', fn ($query) => $this->dealerOrDistributorTypeScope($query))->orderBy('name')->get();
         $categories = Category::where('active', 'Y')->orderBy('ranking')->orderBy('category_name')->get(['id', 'category_name']);
         $receivedThrough = Status::where('active', 'Y')->where('module', 'Complaint Received Through')->orderBy('display_name')->get();
         $complaint->form_category_id = $complaint->product_category_id ?: Category::where('category_name', $complaint->category)->value('id');
