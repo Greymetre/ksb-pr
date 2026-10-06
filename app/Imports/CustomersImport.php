@@ -205,7 +205,7 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
           'longitude' => !empty($row['longitude']) ? $row['longitude'] : '',
           'device_type' => !empty($row['device_type']) ? ucfirst($row['device_type']) : '',
           'gender' => !empty($row['gender']) ? ucfirst($row['gender']) : '',
-          'customer_code' => !empty($row['customer_code']) ? $row['customer_code'] : null,
+          'customer_code' => !empty($row['customer_code']) ? $row['customer_code'] : '',
           'profile_image' =>  !empty($row['profile_image']) ? $row['profile_image'] : '',
           'status_id' =>  !empty($row['status_id']) ? $row['status_id'] : 2,
           'customertype' =>  !empty($row['customer_type_id']) ? $row['customer_type_id'] : 1,
@@ -288,14 +288,15 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
           // if ($customerdetails->isNotEmpty()) {
             CustomerDetails::updateOrCreate(['customer_id' => $customer['id'],],[
               'active' => 'Y',
-              'gstin_no' => !empty($row['gstin_no'])? $row['gstin_no']:null,
-              'pan_no' => !empty($row['pan_no'])? $row['pan_no']:null,
-              'aadhar_no' => !empty($row['aadhar_no'])? $row['aadhar_no']:null,
-          'otherid_no' => !empty($row['other_no']) ? $row['other_no'] : null,
-              'grade' => !empty($row['grade']) ? $row['grade'] : null,
-              'visit_status' => !empty($row['visit_status']) ? $row['visit_status'] : null,
-              'enrollment_date' => !empty($row['enrollment_date']) ? $row['enrollment_date'] : null,
-              'approval_date' => !empty($row['approval_date']) ? $row['approval_date'] : null,
+              // These string columns are NOT NULL (default ''), so blanks must be '' not null.
+              'gstin_no' => !empty($row['gstin_no'])? $row['gstin_no']:'',
+              'pan_no' => !empty($row['pan_no'])? $row['pan_no']:'',
+              'aadhar_no' => !empty($row['aadhar_no'])? $row['aadhar_no']:'',
+              'otherid_no' => !empty($row['other_no']) ? $row['other_no'] : '',
+              'grade' => !empty($row['grade']) ? $row['grade'] : '',
+              'visit_status' => !empty($row['visit_status']) ? $row['visit_status'] : '',
+              'enrollment_date' => $this->parseDate($row['enrollment_date'] ?? null),
+              'approval_date' => $this->parseDate($row['approval_date'] ?? null),
               'created_at' => getcurentDateTime(),
               'updated_at' => getcurentDateTime()
             ]);
