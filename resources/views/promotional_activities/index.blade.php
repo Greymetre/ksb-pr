@@ -81,11 +81,14 @@
           <h5 class="mb-3" style="color:#e3ecff;font-weight:700;">Complete Activity</h5>
           <div class="form-group">
             <label class="col-form-label">Distributor <span class="text-danger">*</span></label>
-            <select id="activityDistributor" class="form-control" style="width:100%;"></select>
+            <select id="activityDistributor" class="form-control" style="width:100%;"><option value=""></option></select>
           </div>
           <div class="form-group">
             <label class="col-form-label">Activity Photos <span class="text-danger">*</span> <small class="text-muted">(1 to 3, max 5 MB each)</small></label>
-            <input type="file" id="activityPhotos" class="form-control" accept="image/jpeg,image/png,image/webp" multiple>
+            <input type="file" id="activityPhotos" accept="image/jpeg,image/png,image/webp" multiple style="display:none;">
+            <div><button type="button" class="btn btn-sm btn-info" id="chooseActivityPhotos"><i class="material-icons" style="font-size:18px;vertical-align:middle;">add_photo_alternate</i> Choose Photos</button>
+            <small class="text-muted ml-2" id="activityPhotoCount">No photo selected</small></div>
+            <div id="activityPhotoPreview" class="d-flex flex-wrap mt-2"></div>
           </div>
           <div class="d-flex align-items-center justify-content-between mb-2">
             <label class="col-form-label mb-0">Participants <span class="text-danger">*</span></label>
@@ -120,9 +123,10 @@ $(function () {
     activeActivityId = row.id;
     $('#activityDetailBody').html('<p class="text-center">Loading...</p>');
     $('#activityApprovalBox, #activityCompleteBox').hide();
-    $('#activityApprovalRemark, #activityExecutionRemark, #activityPhotos').val('');
+    $('#activityApprovalRemark, #activityExecutionRemark').val('');
+    selectedPhotos = []; renderPhotos();
     $('#activityGiftRows, #activityParticipantRows').empty();
-    $('#activityDistributor').val(null).trigger('change');
+    $('#activityDistributor').empty().append('<option value=""></option>').trigger('change');
     $('#activityDetailModal').modal('show');
     $.get("{{ url('promotional-activities-crm') }}/" + row.id).done(function (response) {
       var d = response.data;
@@ -145,6 +149,7 @@ $(function () {
       }
       if (d.can_complete) {
         addParticipantRow();
+        loadDistributors(d.id);
         $('#activityCompleteBox').show();
       }
     }).fail(function () {
@@ -170,10 +175,42 @@ $(function () {
   $('#addActivityGift').on('click', function () { addGiftRow('', 1); });
   $('#addActivityParticipant').on('click', addParticipantRow);
   $('#activityDetailModal').on('click', '.remove-row', function () { $(this).closest('.form-row').remove(); });
-  $('#activityDistributor').select2({
-    dropdownParent: $('#activityDetailModal'), placeholder: 'Search distributor', allowClear: true,
-    ajax: { url: function () { return "{{ url('promotional-activities-crm') }}/" + activeActivityId + '/distributors'; }, dataType: 'json', delay: 300, data: function (params) { return { search: params.term }; } }
+  // Distributors are loaded when the popup opens so the full list shows by default; select2 searches it locally.
+  $('#activityDistributor').select2({ dropdownParent: $('#activityDetailModal'), placeholder: 'Select distributor', allowClear: true, width: '100%' });
+  function loadDistributors(activityId) {
+    var select = $('#activityDistributor');
+    select.empty().append('<option value=""></option>').trigger('change');
+    $.get("{{ url('promotional-activities-crm') }}/" + activityId + '/distributors').done(function (response) {
+      if (activityId !== activeActivityId) return;
+      (response.results || []).forEach(function (item) { select.append(new Option(item.text, item.id, false, false)); });
+      select.trigger('change');
+      if (!(response.results || []).length) Swal.fire('No distributor found for this user', '', 'warning');
+    }).fail(function (xhr) {
+      Swal.fire(errorMessage(xhr, 'Unable to load distributors'), '', 'error');
+    });
+  }
+  var selectedPhotos = [];
+  function renderPhotos() {
+    var preview = $('#activityPhotoPreview').empty();
+    selectedPhotos.forEach(function (file, index) {
+      var item = $('<div style="position:relative;margin:0 8px 8px 0;"></div>');
+      item.append($('<img style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid rgba(90,130,220,.35);">').attr('src', URL.createObjectURL(file)));
+      item.append('<button type="button" class="btn btn-danger btn-sm remove-photo" data-index="' + index + '" style="position:absolute;top:-8px;right:-8px;padding:0 7px;border-radius:50%;min-width:0;">×</button>');
+      preview.append(item);
+    });
+    $('#activityPhotoCount').text(selectedPhotos.length ? selectedPhotos.length + ' of 3 photos selected' : 'No photo selected');
+    $('#chooseActivityPhotos').prop('disabled', selectedPhotos.length >= 3);
+  }
+  $('#chooseActivityPhotos').on('click', function () { $('#activityPhotos').trigger('click'); });
+  $('#activityPhotos').on('change', function () {
+    var files = Array.prototype.slice.call(this.files || []);
+    var skipped = files.length > 3 - selectedPhotos.length;
+    selectedPhotos = selectedPhotos.concat(files.slice(0, 3 - selectedPhotos.length));
+    $(this).val('');
+    renderPhotos();
+    if (skipped) Swal.fire('Only 3 photos can be uploaded', '', 'warning');
   });
+  $('#activityPhotoPreview').on('click', '.remove-photo', function () { selectedPhotos.splice($(this).data('index'), 1); renderPhotos(); });
   function errorMessage(xhr, fallback) {
     var json = xhr.responseJSON || {};
     if (json.errors) return Object.values(json.errors)[0][0];
@@ -203,7 +240,7 @@ $(function () {
   });
   $('#activityCompleteBox').on('submit', function (e) {
     e.preventDefault();
-    var photos = $('#activityPhotos')[0].files, participants = [], participantError = false;
+    var photos = selectedPhotos, participants = [], participantError = false;
     $('#activityParticipantRows .activity-participant-row').each(function () {
       var p = { name: $.trim($(this).find('.participant-name').val()), mobile: $.trim($(this).find('.participant-mobile').val()), address: $.trim($(this).find('.participant-address').val()) };
       if (!p.name || !/^[0-9]{10}$/.test(p.mobile) || !p.address) participantError = true;

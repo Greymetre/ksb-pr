@@ -180,7 +180,9 @@ class PromotionalActivityWebController extends Controller
         // "distrib" also covers spelling variants such as "Distributer".
         $typeIds = CustomerType::where(function ($q) {
             $q->where('customertype_name', 'like', '%distrib%')->orWhere('customertype_name', 'like', '%dealer%');
-        })->where('customertype_name', 'not like', '%master%')->where('customertype_name', 'not like', '%secondary%')->pluck('id');
+        })->where('customertype_name', 'not like', '%master%')->where('customertype_name', 'not like', '%secondary%')->pluck('id')
+            // 3 and 4 are the dealer/distributor types used elsewhere (dashboard, reports).
+            ->merge([3, 4])->unique()->values();
 
         $query = Customers::where('active', 'Y')->whereIn('customertype', $typeIds);
 
@@ -200,7 +202,7 @@ class PromotionalActivityWebController extends Controller
             $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('mobile', 'like', "%{$search}%"));
         }
 
-        return response()->json(['results' => $query->orderBy('name')->limit(50)->get(['id', 'name', 'mobile'])
+        return response()->json(['results' => $query->orderBy('name')->limit(500)->get(['id', 'name', 'mobile'])
             ->map(fn ($customer) => ['id' => $customer->id, 'text' => $customer->name.($customer->mobile ? ' ('.$customer->mobile.')' : '')])]);
     }
 
