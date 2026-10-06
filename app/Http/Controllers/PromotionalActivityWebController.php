@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use App\Services\PromotionalGiftStock;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\Response;
 use Yajra\DataTables\Facades\DataTables;
@@ -229,14 +231,27 @@ class PromotionalActivityWebController extends Controller
             $photoPaths[] = $photo->store('promotional-activities', 'public');
         }
 
-        $promotionalActivity->update([
-            'distributor_id' => $request->distributor_id,
-            'activity_photos' => $photoPaths,
-            'participants' => array_values($participants),
-            'execution_remark' => $request->input('execution_remark'),
-            'approval_status' => 'completed',
-            'completed_at' => now(),
-        ]);
+        try {
+            DB::transaction(function () use ($request, $promotionalActivity, $photoPaths, $participants) {
+                $activity = PromotionalActivity::whereKey($promotionalActivity->id)->lockForUpdate()->firstOrFail();
+                abort_if($activity->approval_status !== 'approved', 422, 'Only an approved activity can be completed.');
+
+                // Gifts given in the activity are deducted from gift stock
+                app(PromotionalGiftStock::class)->issueForActivity($activity, auth()->id());
+
+                $activity->update([
+                    'distributor_id' => $request->distributor_id,
+                    'activity_photos' => $photoPaths,
+                    'participants' => array_values($participants),
+                    'execution_remark' => $request->input('execution_remark'),
+                    'approval_status' => 'completed',
+                    'completed_at' => now(),
+                ]);
+            });
+        } catch (ValidationException $e) {
+            Storage::disk('public')->delete($photoPaths);
+            return response()->json(['success' => false, 'message' => collect($e->errors())->flatten()->first()], 422);
+        }
 
         return response()->json(['success' => true, 'message' => 'Promotional activity completed successfully.']);
     }

@@ -12,10 +12,16 @@ class PromotionalGift extends Model
     protected $fillable = [
         'name',
         'quantity',
+        'opening_stock',
         'active',
         'created_by',
         'updated_by',
     ];
+
+    public function stockMovements()
+    {
+        return $this->hasMany(PromotionalGiftStockMovement::class);
+    }
 
     public function creator()
     {

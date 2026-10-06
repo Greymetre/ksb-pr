@@ -41,7 +41,10 @@
                 <th>Status</th>
                 <th>Action</th>
                 <th>Gift Name</th>
-                <th>Quantity</th>
+                <th>Opening Stock</th>
+                <th>Added</th>
+                <th>Issued</th>
+                <th>Current Stock</th>
                 <th>Created By</th>
                 <th>Created At</th>
               </tr>
@@ -75,9 +78,9 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-12">
+            <div class="col-md-12" id="openingStockSection">
               <div class="input_section">
-                <label class="col-form-label">Quantity <span class="text-danger">*</span></label>
+                <label class="col-form-label">Opening Stock <span class="text-danger">*</span></label>
                 <div class="form-group has-default bmd-form-group">
                   <input type="number" name="quantity" id="giftQuantity" class="form-control" min="0" step="1" required>
                 </div>
@@ -90,6 +93,64 @@
           <button type="submit" class="btn btn-theme" id="submitGift">Create Gift</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addStockModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content card">
+      <div class="card-header card-header-icon card-header-theme">
+        <div class="card-icon"><i class="material-icons">add_box</i></div>
+        <h4 class="card-title">Add Stock - <span id="addStockGiftName"></span>
+          <span class="pull-right"><button type="button" class="btn btn-just-icon btn-danger" data-dismiss="modal"><i class="material-icons">clear</i></button></span>
+        </h4>
+      </div>
+      <form id="addStockForm">
+        <input type="hidden" id="addStockGiftId">
+        <div class="modal-body">
+          <div class="input_section">
+            <label class="col-form-label">Quantity to Add <span class="text-danger">*</span></label>
+            <div class="form-group has-default bmd-form-group">
+              <input type="number" name="quantity" id="addStockQuantity" class="form-control" min="1" step="1" required>
+            </div>
+          </div>
+          <div class="input_section">
+            <label class="col-form-label">Remark</label>
+            <div class="form-group has-default bmd-form-group">
+              <input type="text" name="remark" id="addStockRemark" class="form-control" maxlength="255">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-theme" id="submitAddStock">Add Stock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="movementModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content card">
+      <div class="card-header card-header-icon card-header-theme">
+        <div class="card-icon"><i class="material-icons">swap_vert</i></div>
+        <h4 class="card-title">Stock Movement - <span id="movementGiftName"></span>
+          <span class="pull-right"><button type="button" class="btn btn-just-icon btn-danger" data-dismiss="modal"><i class="material-icons">clear</i></button></span>
+        </h4>
+      </div>
+      <div class="modal-body">
+        <p id="movementSummary"></p>
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover">
+            <thead class="text-primary">
+              <tr><th>Date</th><th>Type</th><th>In</th><th>Out</th><th>Balance</th><th>Remark</th><th>By</th></tr>
+            </thead>
+            <tbody id="movementRows"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -108,7 +169,10 @@ $(function () {
       {data: 'status_toggle', name: 'active', orderable: false, searchable: false},
       {data: 'action', name: 'action', orderable: false, searchable: false},
       {data: 'name', name: 'name'},
-      {data: 'quantity', name: 'quantity'},
+      {data: 'opening_stock', name: 'opening_stock', searchable: false},
+      {data: 'added_stock', name: 'added_stock', orderable: false, searchable: false},
+      {data: 'issued_stock', name: 'issued_stock', orderable: false, searchable: false},
+      {data: 'quantity', name: 'quantity', searchable: false},
       {data: 'creator.name', name: 'creator.name', defaultContent: '-'},
       {data: 'created_at', name: 'created_at'}
     ]
@@ -117,6 +181,8 @@ $(function () {
   $('#createGift').on('click', function () {
     $('#giftForm').attr('action', "{{ route('promotional-gifts.store') }}")[0].reset();
     $('#formMethod').val('POST');
+    $('#openingStockSection').show();
+    $('#giftQuantity').prop('disabled', false);
     $('#modalTitle').text('Add Gift');
     $('#submitGift').text('Create Gift');
   });
@@ -125,7 +191,9 @@ $(function () {
     var id = $(this).data('id');
     $.get("{{ url('promotional-gifts') }}/" + id + '/edit', function (gift) {
       $('#giftName').val(gift.name);
-      $('#giftQuantity').val(gift.quantity);
+      // Stock changes go through Add Stock, not the edit form
+      $('#openingStockSection').hide();
+      $('#giftQuantity').prop('disabled', true);
       $('#giftForm').attr('action', "{{ url('promotional-gifts') }}/" + id);
       $('#formMethod').val('PUT');
       $('#modalTitle').text('Edit Gift');
@@ -149,6 +217,47 @@ $(function () {
     $.post("{{ url('promotional-gifts') }}/" + checkbox.data('id') + '/active')
       .done(function (response) { showMessage(response.message, true); table.ajax.reload(null, false); })
       .fail(function () { checkbox.prop('checked', !checkbox.prop('checked')); showMessage('Unable to update gift status.', false); });
+  });
+
+  $(document).on('click', '.addStock', function () {
+    $('#addStockForm')[0].reset();
+    $('#addStockGiftId').val($(this).data('id'));
+    $('#addStockGiftName').text($(this).data('name'));
+    $('#addStockModal').modal('show');
+  });
+
+  $('#addStockForm').on('submit', function (e) {
+    e.preventDefault();
+    var $btn = $('#submitAddStock').prop('disabled', true);
+    $.post("{{ url('promotional-gifts') }}/" + $('#addStockGiftId').val() + '/stock', $(this).serialize())
+      .done(function (response) { $('#addStockModal').modal('hide'); showMessage(response.message, true); table.ajax.reload(null, false); })
+      .fail(function (xhr) {
+        var json = xhr.responseJSON || {};
+        showMessage(json.errors ? Object.values(json.errors)[0][0] : (json.message || 'Unable to add stock.'), false);
+        $('#addStockModal').modal('hide');
+      })
+      .always(function () { $btn.prop('disabled', false); });
+  });
+
+  $(document).on('click', '.stockMovement', function () {
+    $('#movementGiftName').text($(this).data('name'));
+    $('#movementSummary').text('Loading...');
+    $('#movementRows').empty();
+    $('#movementModal').modal('show');
+    $.get("{{ url('promotional-gifts') }}/" + $(this).data('id') + '/movements', function (data) {
+      $('#movementSummary').text('Opening Stock: ' + data.opening_stock + '  |  Current Stock: ' + data.current_stock);
+      if (!data.movements.length) {
+        $('#movementRows').append($('<tr>').append($('<td colspan="7" class="text-center">').text('No stock movement yet')));
+        return;
+      }
+      data.movements.forEach(function (m) {
+        $('#movementRows').append($('<tr>').append(
+          $('<td>').text(m.date), $('<td>').text(m.type),
+          $('<td class="text-success">').text(m.in), $('<td class="text-danger">').text(m.out),
+          $('<td>').text(m.balance), $('<td>').text(m.remark || '-'), $('<td>').text(m.by)
+        ));
+      });
+    }).fail(function () { $('#movementSummary').text('Unable to load stock movement.'); });
   });
 
   function showMessage(message, success) {
