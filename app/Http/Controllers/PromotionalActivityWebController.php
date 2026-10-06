@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Exports\PromotionalActivityExport;
+use App\Models\CustomerType;
+use App\Models\Customers;
 use App\Models\PromotionalActivity;
+use App\Models\PromotionalGift;
 use App\Models\Status;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
@@ -77,6 +81,14 @@ class PromotionalActivityWebController extends Controller
         return in_array((int) $user->id, $managerIds, true);
     }
 
+    // Same rule as the mobile app: only an approved activity, by its creator or a superadmin.
+    private function canComplete(PromotionalActivity $activity): bool
+    {
+        $user = auth()->user();
+        return $activity->approval_status === 'approved'
+            && ((int) $activity->created_by === (int) $user->id || $user->hasRole('superadmin'));
+    }
+
     public function show(PromotionalActivity $promotionalActivity)
     {
         $this->authorizeAccess();
@@ -102,13 +114,16 @@ class PromotionalActivityWebController extends Controller
             'approval_remark' => $activity->approval_remark,
             'approved_rejected_by' => $activity->approver->name ?? null,
             'approved_rejected_at' => $activity->approved_rejected_at ? showdatetimeformat($activity->approved_rejected_at) : null,
-            'gifts' => $activity->gifts->map(fn ($gift) => ['name' => $gift->name, 'quantity' => (int) $gift->pivot->quantity])->values(),
+            'gifts' => $activity->gifts->map(fn ($gift) => ['id' => $gift->id, 'name' => $gift->name, 'quantity' => (int) $gift->pivot->quantity])->values(),
             'distributor' => $activity->distributor->name ?? null,
             'participants' => $activity->participants ?: [],
             'photos' => collect($activity->activity_photos ?: [])->map(fn ($path) => Storage::disk('public')->url($path))->values(),
             'execution_remark' => $activity->execution_remark,
             'created_at' => showdatetimeformat($activity->created_at),
-            'can_approve' => $this->canApprove($activity),
+            'can_approve' => $canApprove = $this->canApprove($activity),
+            'can_complete' => $this->canComplete($activity),
+            // Gift options for editing before approval.
+            'available_gifts' => $canApprove ? PromotionalGift::where('active', 'Y')->orderBy('name')->get(['id', 'name', 'quantity']) : [],
         ]]);
     }
 
@@ -117,20 +132,107 @@ class PromotionalActivityWebController extends Controller
         $this->authorizeAccess();
         $request->validate([
             'status' => ['required', Rule::in(['approved', 'rejected'])],
-            'remark' => 'nullable|string|max:1000',
-        ]);
+            'remark' => 'required_if:status,rejected|nullable|string|max:1000',
+            'gifts' => 'nullable|array',
+            'gifts.*.gift_id' => 'required|integer|exists:promotional_gifts,id',
+            'gifts.*.quantity' => 'required|integer|min:1',
+        ], ['remark.required_if' => 'Remark is required to reject an activity.']);
         $promotionalActivity->load('creator:id,name,reportingid');
         abort_if($promotionalActivity->approval_status !== 'pending', 422, 'Activity has already been actioned.');
         abort_unless($this->canApprove($promotionalActivity), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $promotionalActivity->update([
-            'approval_status' => $request->status,
-            'approved_rejected_by' => auth()->id(),
-            'approved_rejected_at' => now(),
-            'approval_remark' => $request->remark,
-        ]);
+        // Gifts edited in the detail popup are saved only when the activity is approved.
+        $giftRows = null;
+        if ($request->status === 'approved' && $request->has('gifts')) {
+            $giftRows = collect($request->input('gifts', []))->groupBy('gift_id')->map(fn ($rows, $giftId) => [
+                'gift_id' => (int) $giftId,
+                'quantity' => (int) $rows->sum('quantity'),
+            ])->values();
+            foreach ($giftRows as $row) {
+                $gift = PromotionalGift::where('id', $row['gift_id'])->where('active', 'Y')->first();
+                if (!$gift || $row['quantity'] > $gift->quantity) {
+                    return response()->json(['success' => false, 'message' => 'Selected gift quantity is not available.'], 422);
+                }
+            }
+        }
+
+        DB::transaction(function () use ($request, $promotionalActivity, $giftRows) {
+            if ($giftRows !== null) {
+                $promotionalActivity->gifts()->sync($giftRows->mapWithKeys(fn ($row) => [$row['gift_id'] => ['quantity' => $row['quantity']]])->all());
+            }
+            $promotionalActivity->update([
+                'approval_status' => $request->status,
+                'approved_rejected_by' => auth()->id(),
+                'approved_rejected_at' => now(),
+                'approval_remark' => $request->remark,
+            ]);
+        });
 
         return response()->json(['success' => true, 'message' => 'Activity '.$request->status.' successfully.']);
+    }
+
+    // Distributor/dealer customers assigned to the activity creator or their team, as the app's execution form lists them.
+    public function distributors(Request $request, PromotionalActivity $promotionalActivity)
+    {
+        $this->authorizeAccess();
+        abort_unless($this->canComplete($promotionalActivity), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $typeIds = CustomerType::where(function ($q) {
+            $q->where('customertype_name', 'like', '%distributor%')->orWhere('customertype_name', 'like', '%dealer%');
+        })->where('customertype_name', 'not like', '%master%')->where('customertype_name', 'not like', '%secondary%')->pluck('id');
+
+        $userIds = array_values(array_unique(array_merge(
+            array_map('intval', getUsersReportingToAuth($promotionalActivity->created_by)),
+            [(int) $promotionalActivity->created_by]
+        )));
+
+        $query = Customers::where('active', 'Y')->whereIn('customertype', $typeIds)
+            ->where(function ($q) use ($userIds) {
+                $q->whereIn('created_by', $userIds)->orWhereIn('executive_id', $userIds)
+                    ->orWhereHas('getemployeedetail', fn ($employee) => $employee->whereIn('user_id', $userIds));
+            });
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('mobile', 'like', "%{$search}%"));
+        }
+
+        return response()->json(['results' => $query->orderBy('name')->limit(50)->get(['id', 'name', 'mobile'])
+            ->map(fn ($customer) => ['id' => $customer->id, 'text' => $customer->name.($customer->mobile ? ' ('.$customer->mobile.')' : '')])]);
+    }
+
+    public function complete(Request $request, PromotionalActivity $promotionalActivity)
+    {
+        $this->authorizeAccess();
+        abort_unless($this->canComplete($promotionalActivity), 422, 'Only an approved activity can be completed.');
+
+        $participants = json_decode((string) $request->input('participants', '[]'), true);
+        $request->merge(['participants_data' => $participants]);
+        $request->validate([
+            'distributor_id' => 'required|integer|exists:customers,id',
+            'photos' => 'required|array|min:1|max:3',
+            'photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+            'participants_data' => 'required|array|min:1|max:50',
+            'participants_data.*.name' => 'required|string|max:150',
+            'participants_data.*.mobile' => ['required', 'regex:/^[0-9]{10}$/'],
+            'participants_data.*.address' => 'required|string|max:255',
+            'execution_remark' => 'nullable|string|max:1000',
+        ]);
+
+        $photoPaths = [];
+        foreach ($request->file('photos', []) as $photo) {
+            $photoPaths[] = $photo->store('promotional-activities', 'public');
+        }
+
+        $promotionalActivity->update([
+            'distributor_id' => $request->distributor_id,
+            'activity_photos' => $photoPaths,
+            'participants' => array_values($participants),
+            'execution_remark' => $request->input('execution_remark'),
+            'approval_status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Promotional activity completed successfully.']);
     }
 
     public function export(Request $request)

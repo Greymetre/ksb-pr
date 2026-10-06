@@ -632,6 +632,8 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     Route::get('promotional-activities-crm/export', [PromotionalActivityWebController::class, 'export'])->name('promotional-activities-crm.export');
     Route::get('promotional-activities-crm/{promotionalActivity}', [PromotionalActivityWebController::class, 'show'])->name('promotional-activities-crm.show');
     Route::post('promotional-activities-crm/{promotionalActivity}/approval', [PromotionalActivityWebController::class, 'updateApproval'])->name('promotional-activities-crm.approval');
+    Route::get('promotional-activities-crm/{promotionalActivity}/distributors', [PromotionalActivityWebController::class, 'distributors'])->name('promotional-activities-crm.distributors');
+    Route::post('promotional-activities-crm/{promotionalActivity}/complete', [PromotionalActivityWebController::class, 'complete'])->name('promotional-activities-crm.complete');
 
     //Orders
     Route::resource('orders', OrderController::class);

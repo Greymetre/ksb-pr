@@ -62,15 +62,42 @@
         <div id="activityDetailBody"><p class="text-center">Loading...</p></div>
         <div id="activityApprovalBox" style="display:none;">
           <hr>
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <small class="text-muted">Gifts (edit before approving)</small>
+            <button type="button" class="btn btn-sm btn-info" id="addActivityGift">+ Add Gift</button>
+          </div>
+          <div id="activityGiftRows"></div>
           <div class="form-group">
             <label for="activityApprovalRemark" class="col-form-label">Remark</label>
-            <textarea id="activityApprovalRemark" class="form-control" rows="3" maxlength="1000" placeholder="Add remark (optional)"></textarea>
+            <textarea id="activityApprovalRemark" class="form-control" rows="3" maxlength="1000" placeholder="Add remark (required to reject)"></textarea>
           </div>
           <div class="text-right">
             <button type="button" class="btn btn-danger activity-approval-btn" data-status="rejected">Reject</button>
             <button type="button" class="btn btn-success activity-approval-btn" data-status="approved">Approve</button>
           </div>
         </div>
+        <form id="activityCompleteBox" style="display:none;" enctype="multipart/form-data">
+          <hr>
+          <h5 class="mb-3">Complete Activity</h5>
+          <div class="form-group">
+            <label class="col-form-label">Distributor <span class="text-danger">*</span></label>
+            <select id="activityDistributor" class="form-control" style="width:100%;"></select>
+          </div>
+          <div class="form-group">
+            <label class="col-form-label">Activity Photos <span class="text-danger">*</span> <small class="text-muted">(1 to 3, max 5 MB each)</small></label>
+            <input type="file" id="activityPhotos" class="form-control" accept="image/jpeg,image/png,image/webp" multiple>
+          </div>
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <label class="col-form-label mb-0">Participants <span class="text-danger">*</span></label>
+            <button type="button" class="btn btn-sm btn-info" id="addActivityParticipant">+ Add Participant</button>
+          </div>
+          <div id="activityParticipantRows"></div>
+          <div class="form-group">
+            <label for="activityExecutionRemark" class="col-form-label">Execution Remark</label>
+            <textarea id="activityExecutionRemark" class="form-control" rows="3" maxlength="1000" placeholder="Add remark (optional)"></textarea>
+          </div>
+          <div class="text-right"><button type="submit" class="btn btn-success" id="completeActivityBtn">Complete Activity</button></div>
+        </form>
       </div>
     </div>
   </div>
@@ -92,8 +119,10 @@ $(function () {
     if (!row) return;
     activeActivityId = row.id;
     $('#activityDetailBody').html('<p class="text-center">Loading...</p>');
-    $('#activityApprovalBox').hide();
-    $('#activityApprovalRemark').val('');
+    $('#activityApprovalBox, #activityCompleteBox').hide();
+    $('#activityApprovalRemark, #activityExecutionRemark, #activityPhotos').val('');
+    $('#activityGiftRows, #activityParticipantRows').empty();
+    $('#activityDistributor').val(null).trigger('change');
     $('#activityDetailModal').modal('show');
     $.get("{{ url('promotional-activities-crm') }}/" + row.id).done(function (response) {
       var d = response.data;
@@ -104,30 +133,101 @@ $(function () {
         + (d.approved_rejected_by ? detailRow(d.approval_status === 'rejected' ? 'Rejected By' : 'Approved By', d.approved_rejected_by) + detailRow(d.approval_status === 'rejected' ? 'Rejected At' : 'Approved At', d.approved_rejected_at) : '') + '</div>'
         + '<div class="mb-3"><small class="text-muted d-block">Remark</small>' + esc(d.remark) + '</div>';
       if (d.approval_remark) html += '<div class="mb-3"><small class="text-muted d-block">Approval Remark</small>' + esc(d.approval_remark) + '</div>';
-      if (d.gifts.length) html += '<div class="mb-3"><small class="text-muted d-block">Gifts</small>' + d.gifts.map(function (g) { return esc(g.name) + ' × ' + esc(g.quantity); }).join('<br>') + '</div>';
+      if (d.gifts.length && !d.can_approve) html += '<div class="mb-3"><small class="text-muted d-block">Gifts</small>' + d.gifts.map(function (g) { return esc(g.name) + ' × ' + esc(g.quantity); }).join('<br>') + '</div>';
       if (d.participants.length) html += '<div class="mb-3"><small class="text-muted d-block">Participants</small>' + d.participants.map(function (p) { return esc(p.name) + ' (' + esc(p.mobile) + ') - ' + esc(p.address); }).join('<br>') + '</div>';
       if (d.execution_remark) html += '<div class="mb-3"><small class="text-muted d-block">Execution Remark</small>' + esc(d.execution_remark) + '</div>';
       if (d.photos.length) html += '<div class="mb-3"><small class="text-muted d-block">Photos</small>' + d.photos.map(function (url) { return '<a href="' + esc(url) + '" target="_blank"><img src="' + esc(url) + '" style="width:90px;height:90px;object-fit:cover;border-radius:8px;margin:4px 6px 0 0;"></a>'; }).join('') + '</div>';
       $('#activityDetailBody').html(html);
-      $('#activityApprovalBox').toggle(!!d.can_approve);
+      availableGifts = d.available_gifts || [];
+      if (d.can_approve) {
+        d.gifts.forEach(function (g) { addGiftRow(g.id, g.quantity); });
+        $('#activityApprovalBox').show();
+      }
+      if (d.can_complete) {
+        addParticipantRow();
+        $('#activityCompleteBox').show();
+      }
     }).fail(function () {
       $('#activityDetailBody').html('<p class="text-center text-danger">Unable to load activity details.</p>');
     });
   });
+  var availableGifts = [];
+  function addGiftRow(giftId, quantity) {
+    var options = '<option value="">Select gift</option>' + availableGifts.map(function (g) {
+      return '<option value="' + g.id + '"' + (String(g.id) === String(giftId) ? ' selected' : '') + '>' + esc(g.name) + ' (stock ' + esc(g.quantity) + ')</option>';
+    }).join('');
+    $('#activityGiftRows').append('<div class="form-row align-items-center mb-2 activity-gift-row"><div class="col-7"><select class="form-control gift-id">' + options + '</select></div>'
+      + '<div class="col-3"><input type="number" min="1" class="form-control gift-qty" placeholder="Qty" value="' + (quantity || 1) + '"></div>'
+      + '<div class="col-2 text-right"><button type="button" class="btn btn-sm btn-danger remove-row">×</button></div></div>');
+  }
+  function addParticipantRow() {
+    if ($('#activityParticipantRows .activity-participant-row').length >= 50) return;
+    $('#activityParticipantRows').append('<div class="form-row align-items-center mb-2 activity-participant-row"><div class="col-md-3"><input type="text" maxlength="150" class="form-control participant-name" placeholder="Name"></div>'
+      + '<div class="col-md-3"><input type="text" maxlength="10" class="form-control participant-mobile" placeholder="Mobile (10 digits)"></div>'
+      + '<div class="col-md-5"><input type="text" maxlength="255" class="form-control participant-address" placeholder="Address"></div>'
+      + '<div class="col-md-1 text-right"><button type="button" class="btn btn-sm btn-danger remove-row">×</button></div></div>');
+  }
+  $('#addActivityGift').on('click', function () { addGiftRow('', 1); });
+  $('#addActivityParticipant').on('click', addParticipantRow);
+  $('#activityDetailModal').on('click', '.remove-row', function () { $(this).closest('.form-row').remove(); });
+  $('#activityDistributor').select2({
+    dropdownParent: $('#activityDetailModal'), placeholder: 'Search distributor', allowClear: true,
+    ajax: { url: function () { return "{{ url('promotional-activities-crm') }}/" + activeActivityId + '/distributors'; }, dataType: 'json', delay: 300, data: function (params) { return { search: params.term }; } }
+  });
+  function errorMessage(xhr, fallback) {
+    var json = xhr.responseJSON || {};
+    if (json.errors) return Object.values(json.errors)[0][0];
+    return json.message || fallback;
+  }
   $('.activity-approval-btn').on('click', function () {
     var status = $(this).data('status');
+    if (status === 'rejected' && !$.trim($('#activityApprovalRemark').val())) { Swal.fire('Please add a remark to reject', '', 'warning'); return; }
+    var gifts = [], giftError = false;
+    $('#activityGiftRows .activity-gift-row').each(function () {
+      var id = $(this).find('.gift-id').val(), qty = parseInt($(this).find('.gift-qty').val(), 10);
+      if (!id || !(qty > 0)) giftError = true; else gifts.push({ gift_id: id, quantity: qty });
+    });
+    if (status === 'approved' && giftError) { Swal.fire('Select a gift and quantity in every gift row', '', 'warning'); return; }
     var buttons = $('.activity-approval-btn').prop('disabled', true);
     $.ajax({
       url: "{{ url('promotional-activities-crm') }}/" + activeActivityId + '/approval', method: 'POST',
       headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-      data: { status: status, remark: $('#activityApprovalRemark').val() }
+      data: { status: status, remark: $('#activityApprovalRemark').val(), gifts: gifts.length ? gifts : '' }
     }).done(function (response) {
       $('#activityDetailModal').modal('hide');
       Swal.fire(response.message, '', 'success');
       table.draw(false);
     }).fail(function (xhr) {
-      Swal.fire((xhr.responseJSON && xhr.responseJSON.message) || 'Unable to update activity', '', 'error');
+      Swal.fire(errorMessage(xhr, 'Unable to update activity'), '', 'error');
     }).always(function () { buttons.prop('disabled', false); });
+  });
+  $('#activityCompleteBox').on('submit', function (e) {
+    e.preventDefault();
+    var photos = $('#activityPhotos')[0].files, participants = [], participantError = false;
+    $('#activityParticipantRows .activity-participant-row').each(function () {
+      var p = { name: $.trim($(this).find('.participant-name').val()), mobile: $.trim($(this).find('.participant-mobile').val()), address: $.trim($(this).find('.participant-address').val()) };
+      if (!p.name || !/^[0-9]{10}$/.test(p.mobile) || !p.address) participantError = true;
+      participants.push(p);
+    });
+    if (!$('#activityDistributor').val()) { Swal.fire('Please select a distributor', '', 'warning'); return; }
+    if (!photos.length || photos.length > 3) { Swal.fire('Please upload 1 to 3 photos', '', 'warning'); return; }
+    if (!participants.length || participantError) { Swal.fire('Fill name, 10 digit mobile and address for every participant', '', 'warning'); return; }
+    var formData = new FormData();
+    formData.append('distributor_id', $('#activityDistributor').val());
+    formData.append('participants', JSON.stringify(participants));
+    formData.append('execution_remark', $.trim($('#activityExecutionRemark').val()));
+    $.each(photos, function (i, file) { formData.append('photos[]', file); });
+    var button = $('#completeActivityBtn').prop('disabled', true);
+    $.ajax({
+      url: "{{ url('promotional-activities-crm') }}/" + activeActivityId + '/complete', method: 'POST', data: formData, processData: false, contentType: false,
+      headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+    }).done(function (response) {
+      $('#activityDetailModal').modal('hide');
+      Swal.fire(response.message, '', 'success');
+      table.draw(false);
+    }).fail(function (xhr) {
+      Swal.fire(errorMessage(xhr, 'Unable to complete activity'), '', 'error');
+    }).always(function () { button.prop('disabled', false); });
   });
   $('#applyActivityFilter').on('click', function(){ table.draw(); });
   $('#resetActivityFilter').on('click', function(){ $('#activity_type_filter').val('').trigger('change'); $('#date_from,#date_to').val(''); table.draw(); });
