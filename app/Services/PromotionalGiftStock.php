@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\PromotionalActivity;
 use App\Models\PromotionalGift;
 use App\Models\PromotionalGiftStockMovement;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -31,8 +32,9 @@ class PromotionalGiftStock
     /**
      * Deduct the activity's gifts from stock. Must run inside a transaction.
      * Throws a ValidationException (422) when a gift does not have enough stock.
+     * $at dates the movement (backfill of activities completed earlier).
      */
-    public function issueForActivity(PromotionalActivity $activity, ?int $userId): void
+    public function issueForActivity(PromotionalActivity $activity, ?int $userId, ?Carbon $at = null): void
     {
         if (PromotionalGiftStockMovement::where('promotional_activity_id', $activity->id)->exists()) {
             return;
@@ -62,13 +64,17 @@ class PromotionalGiftStock
         foreach ($rows as $row) {
             $gift = $gifts[$row->promotional_gift_id];
             $gift->decrement('quantity', $row->quantity, ['updated_by' => $userId]);
-            $this->record($gift, 'activity', -$row->quantity, $userId, 'Activity #' . $activity->id . ' - ' . $activity->location_name, $activity->id);
+            $this->record($gift, 'activity', -$row->quantity, $userId, 'Activity #' . $activity->id . ' - ' . $activity->location_name, $activity->id, $at);
         }
     }
 
-    private function record(PromotionalGift $gift, string $type, int $quantity, ?int $userId, ?string $remark, ?int $activityId = null): void
+    private function record(PromotionalGift $gift, string $type, int $quantity, ?int $userId, ?string $remark, ?int $activityId = null, ?Carbon $at = null): void
     {
-        PromotionalGiftStockMovement::create([
+        $movement = new PromotionalGiftStockMovement();
+        if ($at) {
+            $movement->created_at = $at;
+        }
+        $movement->fill([
             'promotional_gift_id' => $gift->id,
             'type' => $type,
             'quantity' => $quantity,
@@ -76,6 +82,6 @@ class PromotionalGiftStock
             'promotional_activity_id' => $activityId,
             'remark' => $remark,
             'created_by' => $userId,
-        ]);
+        ])->save();
     }
 }
