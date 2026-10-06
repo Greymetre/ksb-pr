@@ -18,6 +18,7 @@ use Carbon\Carbon;
 
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ExpensesTypeController extends Controller
 {
@@ -295,6 +296,86 @@ class ExpensesTypeController extends Controller
         }
     }
 
+
+    // Creates several expenses of one day in a single request. Date, night halt, from and to are shared;
+    // each item keeps its own type, amount, km, note and attachments. All rows are saved or none.
+    public function createMultipleExpense(Request $request)
+    {
+        try {
+            ini_set('memory_limit', '-1');
+
+            $validator = Validator::make($request->all(), [
+                'date' => 'required|date',
+                'night_halt' => 'required|boolean',
+                'from' => 'required|string|max:255',
+                'to' => 'required|string|max:255',
+                'expenses' => 'required|array|min:1|max:20',
+                'expenses.*.expenses_type' => 'required',
+                'expenses.*.claim_amount' => 'required|numeric|gt:0',
+                'expenses.*.start_km' => 'nullable|numeric',
+                'expenses.*.stop_km' => 'nullable|numeric',
+                'expenses.*.total_km' => 'nullable|numeric',
+                'expenses.*.note' => 'required|string',
+                'expenses.*.expense_file.*' => 'mimes:jpeg,jpg,png,pdf,doc,webp',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['status' => 'error', 'message' => $validator->errors()], $this->badrequest);
+            }
+
+            $userid = $request->user()->id;
+            $current_date_time = Carbon::now()->setTimezone('Asia/Kolkata');
+            $files = $request->file('expenses', []);
+
+            $created = DB::transaction(function () use ($request, $userid, $current_date_time, $files) {
+                $created = [];
+                foreach ($request->input('expenses', []) as $index => $item) {
+                    $expenses = Expenses::create([
+                        'user_id' => $userid,
+                        'expenses_type' => $item['expenses_type'],
+                        'rate' => $this->resolveExpenseRate($item['expenses_type'], $item['rate'] ?? null),
+                        'date' => $request->date,
+                        'night_halt' => $request->boolean('night_halt'),
+                        'from_location' => $request->input('from'),
+                        'to_location' => $request->input('to'),
+                        'claim_amount' => $item['claim_amount'],
+                        'start_km' => $item['start_km'] ?? null,
+                        'stop_km' => $item['stop_km'] ?? null,
+                        'total_km' => $item['total_km'] ?? null,
+                        'note' => $item['note'] ?? null,
+                        'created_by' => $userid,
+                        'created_at' => $current_date_time,
+                    ]);
+
+                    ExpenseLog::create([
+                        'log_date' => date('Y-m-d'),
+                        'expense_id' => $expenses->id,
+                        'created_by' => $userid,
+                        'status_type' => 'generated',
+                        'created_at' => $current_date_time,
+                    ]);
+
+                    foreach ($files[$index]['expense_file'] ?? [] as $fileIndex => $file) {
+                        $customname = time() . '-' . $index . '-' . $fileIndex . '.' . $file->getClientOriginalExtension();
+                        $expenses->addMedia($file)
+                            ->usingFileName($customname)
+                            ->toMediaCollection('expense_file', 'public');
+                    }
+
+                    $created[] = $expenses;
+                }
+                return $created;
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'message' => count($created) . ' expense(s) submitted successfully.',
+                'data' => $created,
+            ], $this->successStatus);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], $this->internalError);
+        }
+    }
 
     public function expenseListing(Request $request)
     {

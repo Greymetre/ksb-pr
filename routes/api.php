@@ -380,6 +380,7 @@ Route::group(['middleware' => ['auth:users,customers']], function () {
     //Expenses Type
     Route::post('/getExpensesType', [ExpensesTypeController::class, 'getExpensesType']);
     Route::post('createExpense', [ExpensesTypeController::class, 'createExpense']);
+    Route::post('createMultipleExpense', [ExpensesTypeController::class, 'createMultipleExpense']);
     Route::any('expenseListing', [ExpensesTypeController::class, 'expenseListing']);
     Route::any('allExpenseListing', [ExpensesTypeController::class, 'allExpenseListing']);
     Route::post('expenseDetails', [ExpensesTypeController::class, 'expenseDetails']);
