@@ -20,7 +20,7 @@ class SubcategoryTemplate implements FromCollection,WithHeadings,ShouldAutoSize
 
     public function headings(): array
     {
-        return ['subcategory_name', 'sap_code','category_id'];
+        return ['subcategory_name', 'odoo_code','category_id'];
     }
 
 }

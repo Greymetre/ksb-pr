@@ -50,7 +50,7 @@ class ProductImport implements ToCollection,WithValidation,WithHeadingRow, WithB
                 'product_image' => isset($row['product_image'])? $row['product_image']:'',
                 'unit_id' => isset($row['unit_id'])? $row['unit_id']:null,
                 'suc_del' => isset($row['suc_del'])? $row['suc_del']:null,
-                'sap_code' => isset($row['sap_code'])? $row['sap_code']:null,
+                'sap_code' => $row['odoo_code'] ?? $row['sap_code'] ?? null,
                 'created_by' => Auth::user()->id,
                 'created_at' => getcurentDateTime(),
                 'updated_at' => getcurentDateTime(),

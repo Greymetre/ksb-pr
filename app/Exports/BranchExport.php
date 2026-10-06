@@ -27,7 +27,7 @@ class BranchExport implements FromCollection,WithHeadings,ShouldAutoSize,WithMap
 
     public function headings(): array
     {
-        return ['id','branch_name','branch_code','Branch SAP Code','created_by','updated_by','active'];
+        return ['id','branch_name','branch_code','Branch Odoo Code','created_by','updated_by','active'];
     }
 
     public function map($data): array

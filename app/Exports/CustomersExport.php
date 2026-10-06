@@ -177,7 +177,7 @@ class CustomersExport implements FromCollection, WithHeadings, ShouldAutoSize, W
             'Customer Type ID',
             'Working Status',
             'Creation Date',
-            'Sap Code'
+            'Odoo Code'
         ];
 
         if (!empty($this->custom_fields) && count($this->custom_fields) > 0) {

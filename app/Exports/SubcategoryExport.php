@@ -20,7 +20,7 @@ class SubcategoryExport implements FromCollection,WithHeadings,ShouldAutoSize,Wi
 
     public function headings(): array
     {
-        return ['id','subcategory_name', 'Sap Code','category_id','category_name', 'service_category_id'];
+        return ['id','subcategory_name', 'Odoo Code','category_id','category_name', 'service_category_id'];
     }
 
     public function map($data): array

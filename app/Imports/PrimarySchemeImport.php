@@ -46,8 +46,9 @@ class PrimarySchemeImport implements ToCollection,WithValidation,WithHeadingRow,
     public function collection(Collection $rows)
     {
         foreach($rows as $row) {
-            if(isset($row['product_sap_code']) && !empty($row['product_sap_code'])){
-                $product = Product::where('sap_code', $row['product_sap_code'])->first();
+            $productCode = $row['product_odoo_code'] ?? $row['product_sap_code'] ?? null;
+            if(!empty($productCode)){
+                $product = Product::where('sap_code', $productCode)->first();
                 if($product){
                     $scheme = PrimarySchemeDetail::updateOrCreate([
                         'primary_scheme_id' => decrypt($this->scheme_id),

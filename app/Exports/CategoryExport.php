@@ -19,7 +19,7 @@ class CategoryExport implements FromCollection,WithHeadings,ShouldAutoSize,WithM
 
     public function headings(): array
     {
-        return ['id','category_name', 'SAP Code'];
+        return ['id','category_name', 'Odoo Code'];
     }
 
     public function map($data): array

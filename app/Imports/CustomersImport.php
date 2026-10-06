@@ -77,7 +77,7 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
           'email' => !empty($row['email']) ? $row['email'] : null,
           'working_status' => !empty($row['working_status']) ? $row['working_status'] : null,
           'creation_date' => !empty($row['creation_date']) ? $row['creation_date'] : null,
-          'sap_code' => !empty($row['sap_code']) ? $row['sap_code'] : null,
+          'sap_code' => ($row['odoo_code'] ?? null) ?: ($row['sap_code'] ?? null) ?: null,
           'customertype' => !empty($row['customer_type_id']) ? $row['customer_type_id'] : null,
 
 
@@ -164,7 +164,7 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
           'email' => !empty($row['email']) ? $row['email'] : null,
           'working_status' => !empty($row['working_status']) ? $row['working_status'] : null,
           'creation_date' => !empty($row['creation_date']) ? $row['creation_date'] : null,
-          'sap_code' => !empty($row['sap_code']) ? $row['sap_code'] : null,
+          'sap_code' => ($row['odoo_code'] ?? null) ?: ($row['sap_code'] ?? null) ?: null,
           'password' => !empty($row['password']) ? Hash::make($row['password']) : '',
           'notification_id' => !empty($row['notification_id']) ? $row['notification_id'] : '',
           'latitude' => !empty($row['latitude']) ? $row['latitude'] : '',

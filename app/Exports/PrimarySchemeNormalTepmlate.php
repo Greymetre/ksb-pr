@@ -19,7 +19,7 @@ class PrimarySchemeNormalTepmlate implements FromCollection,WithHeadings,ShouldA
 
     public function headings(): array
     {
-        return ['Product SAP Code', 'Product Name', 'Category Id', 'Category Name', 'Sub Category Id', 'Sub Category Name', 'Point'];
+        return ['Product Odoo Code', 'Product Name', 'Category Id', 'Category Name', 'Sub Category Id', 'Sub Category Name', 'Point'];
     }
 
 }

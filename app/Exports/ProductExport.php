@@ -35,7 +35,7 @@ class ProductExport implements FromCollection,WithHeadings,ShouldAutoSize,WithMa
 
     public function headings(): array
     {
-        return ['product_id','product_name','product_code','new_group','sub_group','expiry_interval','expiry_interval_preiod','display_name', 'description', 'subcategory_id','subcategory','category_id','category','brand_id','brand','product_image','unit_id','unit_name','mrp','price','selling_price','gst','discount','max_discount', 'hp', 'kw', 'product_stage', 'model_no','suc_del','Phase','status','Sap Code' , 'budget_for_month' , 'top_sku' , 'branch_id', 'rmc', 'hsn_sac', 'hsn_sac_no'];
+        return ['product_id','product_name','product_code','new_group','sub_group','expiry_interval','expiry_interval_preiod','display_name', 'description', 'subcategory_id','subcategory','category_id','category','brand_id','brand','product_image','unit_id','unit_name','mrp','price','selling_price','gst','discount','max_discount', 'hp', 'kw', 'product_stage', 'model_no','suc_del','Phase','status','Odoo Code' , 'budget_for_month' , 'top_sku' , 'branch_id', 'rmc', 'hsn_sac', 'hsn_sac_no'];
     }
 
     public function map($data): array

@@ -147,7 +147,7 @@ class PrimarySalesExport implements FromCollection, WithHeadings,WithMapping, Sh
             'Sales person',
             'Emp Code',
             'Model Name',
-            'Product Sap Code',
+            'Product Odoo Code',
             'Product Name',
             'Quantity',
             'Rate',

@@ -20,7 +20,7 @@ class CategoryTemplate implements FromCollection,WithHeadings,ShouldAutoSize
 
     public function headings(): array
     {
-        return ['category_name', 'sap_code'];
+        return ['category_name', 'odoo_code'];
     }
 
 }
