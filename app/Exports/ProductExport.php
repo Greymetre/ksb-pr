@@ -35,7 +35,7 @@ class ProductExport implements FromCollection,WithHeadings,ShouldAutoSize,WithMa
 
     public function headings(): array
     {
-        return ['product_id','product_name','product_code','new_group','sub_group','expiry_interval','expiry_interval_preiod','display_name', 'description', 'subcategory_id','subcategory','category_id','category','brand_id','brand','product_image','unit_id','unit_name','mrp','price','selling_price','gst','discount','max_discount', 'hp', 'kw', 'product_stage', 'model_no','suc_del','Phase','status','Odoo Code' , 'budget_for_month' , 'top_sku' , 'branch_id', 'rmc', 'hsn_sac', 'hsn_sac_no', 'delete'];
+        return ['Fieldkonnect Id', 'Product Name', 'Duke Code', 'Description', 'Subcategory ID', 'Subcategory', 'Category ID', 'Category', 'Product Image', 'Unit ID', 'Unit of Measure', 'Sales Price', 'GST', 'Discount', 'Model No', 'Status', 'Odoo Code', 'Cost', 'HSN/SAC Code', 'Delete'];
     }
 
     public function map($data): array
@@ -44,41 +44,22 @@ class ProductExport implements FromCollection,WithHeadings,ShouldAutoSize,WithMa
             $data['id'],
             $data['product_name'],
             $data['product_code'],
-            $data['new_group'],
-            $data['sub_group'],
-            $data['expiry_interval'],
-            $data['expiry_interval_preiod'],
-            $data['display_name'],
             $data['description'],
             $data['subcategory_id'],
             $data['subcategories']?$data['subcategories']['subcategory_name'] : '-',
             $data['category_id'],
             $data['categories']?$data['categories']['category_name'] : '-',
-            $data['brand_id'],
-            $data['brands']?$data['brands']['brand_name']:'',
             $data['product_image'],
             $data['unit_id'],
             $data['unitmeasures']?$data['unitmeasures']['unit_name']:'',
             isset($data['productpriceinfo']['mrp']) ? $data['productpriceinfo']['mrp'] :'',
-            isset($data['productpriceinfo']['price']) ? $data['productpriceinfo']['price'] :'',
-            isset($data['productpriceinfo']['selling_price']) ? $data['productpriceinfo']['selling_price'] :'',
             isset($data['productpriceinfo']['gst']) ? $data['productpriceinfo']['gst'] : '',
             isset($data['productpriceinfo']['discount']) ? $data['productpriceinfo']['discount'] : '',
-            isset($data['productpriceinfo']['max_discount']) ? $data['productpriceinfo']['max_discount'] :'' ,
-            isset($data['specification']) ? $data['specification'] :'',
-            isset($data['part_no']) ? $data['part_no'] :'',
-            isset($data['product_no']) ? $data['product_no'] :'',            
             isset($data['model_no']) ? $data['model_no'] :'',
-            $data['suc_del'],
-            $data['phase'],
             $data['active'],
             $data['sap_code'],
-            isset($data['productpriceinfo']['budget_for_month']) ? $data['productpriceinfo']['budget_for_month'] :'',
-            isset($data['productpriceinfo']['top_sku']) ? $data['productpriceinfo']['top_sku'] :'',
-            $data['branch_id'] ?? '',
             isset($data['productpriceinfo']['rmc']) ? $data['productpriceinfo']['rmc'] :'',
             isset($data['hsn_sac']) ? $data['hsn_sac'] :'',
-            isset($data['hsn_sac_no']) ? $data['hsn_sac_no'] :'',
             'No', // set to Yes and re-import to delete this product
         ];
     }

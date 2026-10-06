@@ -30,83 +30,127 @@ class ProductImport implements ToCollection,WithValidation,WithHeadingRow, WithB
             //
         ]);
     }
-    public function collection(Collection $rows)
+    /*
+    | Column => [heading aliases, default for a new product, transform].
+    | Headings are slugged: the current export uses "Fieldkonnect Id", "Duke Code",
+    | "Odoo Code", "Sales Price", "Cost", "HSN/SAC Code" (hsnsac_code); older files and
+    | the template use product_id, product_code, sap_code, mrp, rmc, hsn_sac.
+    | A column missing from the file is left unchanged on an existing product.
+    */
+    private function productColumns(): array
     {
-        $productdetails = collect([]);
-        foreach ($rows as $row) {
-            // delete = Yes: remove the product (same as the Delete button), needs product_delete
-            if (in_array(strtolower(trim((string) ($row['delete'] ?? ''))), ['yes', 'y'], true)) {
-                if (!empty($row['product_id']) && Auth::user()->can('product_delete')) {
-                    ProductDetails::where('product_id', $row['product_id'])->delete();
-                    Product::where('id', $row['product_id'])->delete();
+        return [
+            'active'                 => [['status'], 'Y', 'ucfirst'],
+            'product_name'           => [['product_name'], '', 'ucfirst'],
+            'product_code'           => [['duke_code', 'product_code'], '', null],
+            'new_group'              => [['new_group'], '', null],
+            'sub_group'              => [['sub_group'], '', 'ucfirst'],
+            'expiry_interval'        => [['expiry_interval'], '', 'ucfirst'],
+            'expiry_interval_preiod' => [['expiry_interval_preiod'], 0, 'ucfirst'],
+            'display_name'           => [['display_name'], '', 'ucfirst'],
+            'description'            => [['description'], '', 'ucfirst'],
+            'subcategory_id'         => [['subcategory_id'], null, null],
+            'category_id'            => [['category_id'], null, null],
+            'brand_id'               => [['brand_id'], null, null],
+            'product_image'          => [['product_image'], '', null],
+            'unit_id'                => [['unit_id'], null, null],
+            'suc_del'                => [['suc_del'], null, null],
+            'sap_code'               => [['odoo_code', 'sap_code'], null, null],
+            'specification'          => [['hp'], null, null],
+            'part_no'                => [['kw'], null, null],
+            'product_no'             => [['product_stage'], null, null],
+            'model_no'               => [['model_no'], null, null],
+            'phase'                  => [['phase'], null, null],
+            'hsn_sac'                => [['hsnsac_code', 'hsn_sac'], 0, null],
+            'hsn_sac_no'             => [['hsn_sac_no'], null, null],
+            'branch_id'              => [['branch_id'], '', null],
+        ];
+    }
+
+    private function detailColumns(): array
+    {
+        return [
+            'active'             => [['status'], 'Y', 'ucfirst'],
+            'detail_title'       => [['detail_title', 'product_name'], '', 'ucfirst'],
+            'detail_description' => [['detail_description'], '', 'ucfirst'],
+            'detail_image'       => [['detail_image'], '', null],
+            'mrp'                => [['sales_price', 'mrp'], 0.00, null],
+            'price'              => [['price'], null, null],
+            'discount'           => [['discount'], 0.00, null],
+            'max_discount'       => [['max_discount'], 0.00, null],
+            'rmc'                => [['cost', 'rmc'], 0.00, null],
+            'selling_price'      => [['selling_price'], 0.00, null],
+            'gst'                => [['gst'], 0.00, null],
+            'isprimary'          => [['isprimary'], 1, null],
+            'hsn_code'           => [['hsn_code'], null, null],
+            'ean_code'           => [['ean_code'], null, null],
+            'top_sku'            => [['top_sku'], null, null],
+            'budget_for_month'   => [['budget_for_month'], null, null],
+        ];
+    }
+
+    private function attributes(Collection $row, array $columns, bool $creating): array
+    {
+        $attributes = [];
+        foreach ($columns as $field => [$aliases, $default, $transform]) {
+            $alias = collect($aliases)->first(fn ($key) => $row->has($key));
+            if ($alias === null) {
+                if ($creating) {
+                    $attributes[$field] = $default;
                 }
                 continue;
             }
-            if( $product = Product::updateOrCreate(['id' => $row['product_id'] ],[
-                'active' => isset($row['status'])? ucfirst($row['status']):'Y',
-                'product_name' => isset($row['product_name'])? ucfirst($row['product_name']):'',
-                'product_code' => isset($row['product_code'])? $row['product_code']:'',
-                'new_group' => isset($row['new_group'])? $row['new_group']:'',
-                'sub_group' => isset($row['sub_group'])? ucfirst($row['sub_group']):'',
-                'expiry_interval' => isset($row['expiry_interval'])? ucfirst($row['expiry_interval']):'',
-                'expiry_interval_preiod' => isset($row['expiry_interval_preiod'])? ucfirst($row['expiry_interval_preiod']):0,
-                'display_name' => isset($row['display_name'])? ucfirst($row['display_name']):'',
-                'description' => isset($row['description'])? ucfirst($row['description']):'',
-                'subcategory_id' => isset($row['subcategory_id'])? $row['subcategory_id']:null,
-                'category_id' => isset($row['category_id'])? $row['category_id']:null,
-                'brand_id' => isset($row['brand_id'])? $row['brand_id']:null,
-                'product_image' => isset($row['product_image'])? $row['product_image']:'',
-                'unit_id' => isset($row['unit_id'])? $row['unit_id']:null,
-                'suc_del' => isset($row['suc_del'])? $row['suc_del']:null,
-                'sap_code' => $row['odoo_code'] ?? $row['sap_code'] ?? null,
-                'created_by' => Auth::user()->id,
-                'created_at' => getcurentDateTime(),
-                'updated_at' => getcurentDateTime(),
-                // 'specification' => isset($row['specification']) ? $row['specification'] :null,
-                // 'part_no'       => isset($row['part_no']) ? $row['part_no'] :null,
-                // 'product_no'    => isset($row['product_no']) ? $row['product_no'] :null,
-                // 'model_no'      => isset($row['model_no']) ? $row['model_no'] :null,
-                'specification' => isset($row['hp']) ? $row['hp'] :null,
-                'part_no'       => isset($row['kw']) ? $row['kw'] :null,
-                'product_no'    => isset($row['product_stage']) ? $row['product_stage'] :null,
-                'model_no'      => isset($row['model_no']) ? $row['model_no'] :null,
-                'model_no'      => isset($row['model_no']) ? $row['model_no'] :null,
-                'phase'      => isset($row['phase']) ? $row['phase'] :null,
-                'hsn_sac'      => isset($row['hsn_sac']) ? $row['hsn_sac'] :0,
-                'hsn_sac_no'      => isset($row['hsn_sac_no']) ? $row['hsn_sac_no'] :null,
-                'branch_id'  =>  $row['branch_id'] ?? ''
+            $value = $row[$alias];
+            $attributes[$field] = ($value === null || $value === '') ? $default : ($transform ? $transform($value) : $value);
+        }
+        return $attributes;
+    }
 
-            ]) )
-            {
-               ProductDetails::updateOrCreate(['product_id' => $product['id'] ],[
-                    'active' => isset($row['status'])? ucfirst($row['status']):'Y',
-                    'product_id' => $product['id'],
-                    'detail_title' => isset($row['detail_title'])? ucfirst($row['detail_title']):$row['product_name'],
-                    'detail_description' => isset($row['detail_description'])? ucfirst($row['detail_description']):'',
-                    'detail_image' => isset($row['detail_image'])? $row['detail_image']:'',
-                    'mrp' => isset($row['mrp'])? $row['mrp']:0.00,
-                    'price' => isset($row['price'])? $row['price']:$row['mrp'],
-                    'discount' => isset($row['discount'])? $row['discount']:0.00,
-                    'max_discount' => isset($row['max_discount'])? $row['max_discount']:0.00,
-                    'rmc' => isset($row['rmc'])? $row['rmc']:0.00,
-                    'selling_price' => isset($row['selling_price'])? $row['selling_price']:0.00,
-                    'gst' => isset($row['gst'])? $row['gst']:0.00,
-                    'isprimary' => isset($row['isprimary'])? $row['isprimary']:1,
-                    'hsn_code' => isset($row['hsn_code'])? $row['hsn_code']:null,
-                    'ean_code' => isset($row['ean_code'])? $row['ean_code']:null,
-                    'top_sku'          => !empty($rows['top_sku']) ? $rows['top_sku'] :null,
-                    'budget_for_month' => !empty($rows['budget_for_month']) ? $rows['budget_for_month'] :null,
-                    'created_at' => getcurentDateTime() ,
-                    'updated_at' => getcurentDateTime()
+    public function collection(Collection $rows)
+    {
+        foreach ($rows as $row) {
+            $productId = $row['fieldkonnect_id'] ?? $row['product_id'] ?? null;
+
+            // delete = Yes: remove the product (same as the Delete button), needs product_delete
+            if (in_array(strtolower(trim((string) ($row['delete'] ?? ''))), ['yes', 'y'], true)) {
+                if (!empty($productId) && Auth::user()->can('product_delete')) {
+                    ProductDetails::where('product_id', $productId)->delete();
+                    Product::where('id', $productId)->delete();
+                }
+                continue;
+            }
+
+            $product = !empty($productId) ? Product::find($productId) : null;
+
+            if ($product) {
+                $product->update($this->attributes($row, $this->productColumns(), false) + ['updated_at' => getcurentDateTime()]);
+            } else {
+                $product = Product::create($this->attributes($row, $this->productColumns(), true) + [
+                    'created_by' => Auth::user()->id,
+                    'created_at' => getcurentDateTime(),
+                    'updated_at' => getcurentDateTime(),
                 ]);
             }
+
+            $detail = ProductDetails::where('product_id', $product->id)->first();
+            $detailAttributes = $this->attributes($row, $this->detailColumns(), !$detail);
+            if (array_key_exists('price', $detailAttributes) && $detailAttributes['price'] === null) {
+                $detailAttributes['price'] = $detailAttributes['mrp'] ?? $detail->mrp ?? 0.00;
+            }
+
+            ProductDetails::updateOrCreate(['product_id' => $product->id], $detailAttributes + [
+                'product_id' => $product->id,
+                'updated_at' => getcurentDateTime(),
+            ] + ($detail ? [] : ['created_at' => getcurentDateTime()]));
         }
     }
+
     public function rules(): array
     {
         return [
             'product_name' => 'required|string|regex:/[a-zA-Z0-9\s]+/',
             'hsn_sac' => 'nullable|in:HSN,SAC',
+            'hsnsac_code' => 'nullable|in:HSN,SAC',
         ];
     }
 
@@ -117,6 +161,7 @@ class ProductImport implements ToCollection,WithValidation,WithHeadingRow, WithB
             'product_name.string' => 'Product name must be a string.',
             'product_name.regex' => 'Product name format is invalid.',
             'hsn_sac.in' => 'it should be only from HSN or SAC.',
+            'hsnsac_code.in' => 'HSN/SAC Code should be only HSN or SAC.',
         ];
     }
 
