@@ -1,10 +1,17 @@
 <x-app-layout>
 <style>
-  .fk-activity-status-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
-  .fk-activity-status-tab { height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(120, 150, 220, .3); background: rgba(15, 30, 65, .6); color: #a9bce6; font-size: 12px; font-weight: 700; cursor: pointer; }
-  .fk-activity-status-tab span { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: rgba(120, 150, 220, .18); font-size: 11px; text-align: center; }
-  .fk-activity-status-tab.active { color: #061125; border-color: transparent; background: linear-gradient(135deg, #3ad1f0, #4a7dff); }
-  .fk-activity-status-tab.active span { background: rgba(6, 17, 37, .18); }
+  body.fk-shell .fk-activity-status-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid rgba(90, 130, 220, .22); }
+  body.fk-shell .fk-activity-status-tab { --tab-color: #22d3ee; --tab-rgb: 34, 211, 238; height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 0 12px 0 14px; border-radius: 999px; border: 1px solid rgba(90, 130, 220, .28); background: rgba(8, 20, 50, .45); color: #a9bce6; font-size: 12px; font-weight: 700; letter-spacing: .3px; cursor: pointer; outline: none !important; box-shadow: none !important; transition: border-color .15s, background .15s, color .15s; }
+  body.fk-shell .fk-activity-status-tab::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--tab-color); }
+  body.fk-shell .fk-activity-status-tab[data-status="pending"] { --tab-color: #ffb547; --tab-rgb: 255, 181, 71; }
+  body.fk-shell .fk-activity-status-tab[data-status="approved"] { --tab-color: #4a9dff; --tab-rgb: 74, 157, 255; }
+  body.fk-shell .fk-activity-status-tab[data-status="rejected"] { --tab-color: #ff5d7a; --tab-rgb: 255, 93, 122; }
+  body.fk-shell .fk-activity-status-tab[data-status="completed"] { --tab-color: #12d18e; --tab-rgb: 18, 209, 142; }
+  body.fk-shell .fk-activity-status-tab span { min-width: 24px; height: 20px; line-height: 20px; padding: 0 7px; border-radius: 999px; background: rgba(90, 130, 220, .18); color: #cbd9ff; font-size: 11px; text-align: center; }
+  body.fk-shell .fk-activity-status-tab:hover { border-color: rgba(var(--tab-rgb), .5); color: #e3ecff; }
+  body.fk-shell .fk-activity-status-tab.active { border-color: rgba(var(--tab-rgb), .6); background: rgba(var(--tab-rgb), .12); color: var(--tab-color); }
+  body.fk-shell .fk-activity-status-tab.active span { background: rgba(var(--tab-rgb), .22); color: var(--tab-color); }
+  body.fk-shell table.fk-glass-table tbody td .badge-info { border: 1px solid rgba(74, 157, 255, .38); background: rgba(74, 157, 255, .10); color: #4a9dff; }
 </style>
 <section class="fk-manual-listing">
   <div class="fk-list-page-head">
