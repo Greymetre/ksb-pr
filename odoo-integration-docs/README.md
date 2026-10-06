@@ -79,7 +79,7 @@ Unlike party prices, categories, sub-categories and products are **pulled**: Fie
 | `database/migrations/2026_09_28_100000_create_odoo_categories_table.php` | `odoo_categories` table (upsert key `external_id`) |
 | `app/Services/Odoo/OdooRpcClient.php` | Calls Odoo `/json-call` with the `authenticate` block (reusable for other pull modules) |
 | `app/Services/Odoo/OdooPullSync.php` | Base class: pages through an Odoo method, counts results, writes one `odoo_sync_logs` row per run (`method=PULL`) |
-| `app/Services/Odoo/CategorySync.php` | Categories: upserts, links `category_id` by name to `categories` (`entity=categories`) |
+| `app/Services/Odoo/CategorySync.php` | Categories: upserts, links `category_id` by name to `categories` and copies Odoo `category_code` into `categories.sap_code` (shown as "Odoo Code") (`entity=categories`) |
 | `app/Services/Odoo/SubcategorySync.php` | Sub-categories: upserts, links `subcategory_id` by name to `subcategories`, under the parent's linked category when there is one (`entity=subcategories`) |
 | `database/migrations/2026_09_29_100000_create_odoo_subcategories_table.php` | `odoo_subcategories` table (`category_external_id` → `odoo_categories.external_id`) |
 | `app/Services/Odoo/ProductSync.php` | Products (500 per Odoo call): upserts, links `product_id` by `product_code` to `products.product_code`, then `products.sap_code` (`entity=products`) |
@@ -90,7 +90,7 @@ Unlike party prices, categories, sub-categories and products are **pulled**: Fie
 | `app/Console/Kernel.php` | Categories at 06:00 / 18:00 IST, sub-categories at 06:10 / 18:10, products at 06:20 / 18:20 |
 
 - `.env` needs `ODOO_URL`, `ODOO_DB`, `ODOO_LOGIN`, `ODOO_DEV_KEY` (and `ODOO_MODE=test|live`, only used to tag the log row). See `.env.example`.
-- The live `categories`, `subcategories` and `products` tables are only read (to link), never changed.
+- The live `subcategories` and `products` tables are only read (to link), never changed. For `categories`, only `sap_code` ("Odoo Code") is overwritten with Odoo's `category_code` on each sync.
 - A record whose Odoo `updated_at` is not newer than the stored one is counted as skipped.
 - The page has a **Sync now** button that runs the same sync.
 - The cron needs the Laravel scheduler on the server: `* * * * * cd <project path> && php artisan schedule:run >> /dev/null 2>&1`

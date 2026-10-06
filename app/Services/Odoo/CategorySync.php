@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 |
 | - Upsert key is external_id; re-syncing never duplicates.
 | - A record whose updated_at is not newer than the stored one is skipped.
+| - category_code is copied into the linked categories.sap_code ("Odoo Code").
 */
 class CategorySync extends OdooPullSync
 {
@@ -39,6 +40,8 @@ class CategorySync extends OdooPullSync
 
         $odooUpdatedAt = $this->toLocal($record['updated_at'] ?? null);
         $categoryId = $this->resolveCategoryId($record['category_name']);
+
+        $this->syncCategoryCode($categoryId, (string) ($record['category_code'] ?? ''));
 
         $existing = DB::table('odoo_categories')
             ->where('external_id', $record['external_id'])
@@ -76,6 +79,22 @@ class CategorySync extends OdooPullSync
         ]);
 
         return ['status' => 'created'];
+    }
+
+    /**
+     * Odoo is the master for the category code: copy category_code into the linked
+     * FieldKonnect categories.sap_code (shown as "Odoo Code") whenever it differs.
+     */
+    private function syncCategoryCode(?int $categoryId, string $code): void
+    {
+        if (!$categoryId || $code === '') {
+            return;
+        }
+
+        DB::table('categories')
+            ->where('id', $categoryId)
+            ->where(fn ($q) => $q->whereNull('sap_code')->orWhere('sap_code', '!=', $code))
+            ->update(['sap_code' => $code, 'updated_at' => now()]);
     }
 
     /**

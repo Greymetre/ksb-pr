@@ -6,7 +6,7 @@
       <div>
         <div class="os-breadcrumb">Odoo Sync › <b>Category Master Odoo</b></div>
         <h1 class="os-title"><span class="material-icons">category</span>Category Master Odoo</h1>
-        <p class="os-subtitle">Product categories pulled from Odoo twice a day (06:00 and 18:00). The FieldKonnect category master is not changed; a category is linked when its name matches.</p>
+        <p class="os-subtitle">Product categories pulled from Odoo twice a day (06:00 and 18:00). Only categories that already exist in FieldKonnect (matched by name) are shown; their Odoo code is copied to the category master on every sync.</p>
       </div>
       <button type="button" class="os-btn" id="osSyncNow"><span class="material-icons">sync</span><span class="os-btn-label">Sync now</span></button>
     </div>
@@ -29,9 +29,9 @@
         <div class="os-stat-note">{{ number_format($counts['active']) }} active</div>
       </div>
       <div class="os-stat">
-        <div class="os-stat-label"><span class="material-icons">link_off</span>Not linked</div>
+        <div class="os-stat-label"><span class="material-icons">link_off</span>Odoo only (hidden)</div>
         <div class="os-stat-value">{{ number_format($counts['unlinked']) }}</div>
-        <div class="os-stat-note {{ $counts['unlinked'] > 0 ? 'is-warning' : '' }}">No FieldKonnect category with the same name</div>
+        <div class="os-stat-note {{ $counts['unlinked'] > 0 ? 'is-warning' : '' }}">Not in FieldKonnect, not listed</div>
       </div>
     </div>
 
@@ -39,7 +39,7 @@
     <div class="os-table-wrap">
       <div class="os-table-scroll">
         <table id="osCategoriesTable" class="os-table">
-          <thead><tr><th>External ID</th><th>Code</th><th>Category</th><th>FieldKonnect category</th><th>Ranking</th><th>Status</th><th>Odoo updated</th><th>Synced</th></tr></thead>
+          <thead><tr><th>External ID</th><th>Odoo Code</th><th>Category</th><th>FieldKonnect category</th><th>Ranking</th><th>Status</th><th>Odoo updated</th><th>Synced</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>

@@ -80,9 +80,14 @@ class OdooSyncController extends Controller
         $lastRun = DB::table('odoo_sync_logs')->where('entity', CategorySync::ENTITY)->orderByDesc('id')
             ->first(['created_at', 'status_code', 'received_count', 'failed_count']);
 
+        // Only Odoo categories linked to an existing FieldKonnect category are listed
+        $linked = fn () => DB::table('odoo_categories as oc')
+            ->join('categories as c', 'c.id', '=', 'oc.category_id')
+            ->whereNull('c.deleted_at');
+
         $counts = [
-            'total' => DB::table('odoo_categories')->count(),
-            'active' => DB::table('odoo_categories')->where('active', true)->where('is_deleted', false)->count(),
+            'total' => $linked()->count(),
+            'active' => $linked()->where('oc.active', true)->where('oc.is_deleted', false)->count(),
             'unlinked' => DB::table('odoo_categories')->whereNull('category_id')->count(),
         ];
 
@@ -94,7 +99,8 @@ class OdooSyncController extends Controller
         abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $query = DB::table('odoo_categories as oc')
-            ->leftJoin('categories as c', 'c.id', '=', 'oc.category_id')
+            ->join('categories as c', 'c.id', '=', 'oc.category_id')
+            ->whereNull('c.deleted_at')
             ->select('oc.id', 'oc.external_id', 'oc.category_code', 'oc.category_name', 'oc.description', 'oc.ranking',
                 'oc.active', 'oc.is_deleted', 'oc.category_id', 'oc.odoo_updated_at', 'oc.updated_at', 'c.category_name as fk_category_name');
 

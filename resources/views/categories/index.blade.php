@@ -73,6 +73,7 @@
               <th>{!! trans('panel.global.active') !!}</th>
               <th>{!! trans('panel.category.fields.category_image') !!}</th>
               <th>{!! trans('panel.category.fields.category_name') !!}</th>
+              <th>Odoo Code</th>
               <th>{!! trans('panel.global.created_by') !!}</th>
               <th>{!! trans('panel.global.created_at') !!}</th>
             </thead>
@@ -112,7 +113,7 @@
                     <div class="error"><p class="text-danger">{{ $errors->first('category_name') }}</p></div>
                     @endif
                   </div>
-                  <label class="col-form-label">SAP Code <span class="text-danger"> *</span></label>
+                  <label class="col-form-label">Odoo Code <span class="text-danger"> *</span></label>
                     <div class="form-group has-default bmd-form-group">
                       <input type="text" name="sap_code" id="sap_code" class="form-control" value="{!! old( 'sap_code') !!}" maxlength="200">
                       @if ($errors->has('sap_code'))
@@ -171,6 +172,7 @@
              {data: 'active', name: 'active',"defaultContent": '', orderable: false, searchable: false},
             {data: 'image', name: 'image',"defaultContent": '', orderable: false, searchable: false},
             {data: 'category_name', name: 'category_name',"defaultContent": ''},
+            {data: 'sap_code', name: 'sap_code',"defaultContent": ''},
             {data: 'createdbyname.name', name: 'createdbyname.name',"defaultContent": ''},
             {data: 'created_at', name: 'created_at',"defaultContent": ''},
         ]

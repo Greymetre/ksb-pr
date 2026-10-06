@@ -408,7 +408,7 @@
                       <p class="border p-2 bg-light">{{$complaint->product_group ??  '-'}}</p>
                   </div>
                   <div class="col-md-3">
-                      <label>Product SAP Code</label>
+                      <label>Product Odoo Code</label>
                       <p class="border p-2 bg-light">{{$complaint->product_details->sap_code ?? '-'}}</p>
                   </div>
                    <div class="col-md-3">

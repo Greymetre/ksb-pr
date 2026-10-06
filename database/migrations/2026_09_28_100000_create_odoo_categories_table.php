@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
 | Pulled from Odoo (product.category / get_fieldkonnect_categories) by
 | `php artisan odoo:sync-categories` twice a day, or "Sync now" on the page.
 | category_id links to the FieldKonnect `categories` row with the same name;
-| the live `categories` table is only read, never changed.
+| on every sync the linked `categories.sap_code` is set to Odoo's category_code.
 | See odoo-integration-docs/README.md
 */
 return new class extends Migration

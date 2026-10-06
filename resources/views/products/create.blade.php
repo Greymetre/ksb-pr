@@ -68,7 +68,7 @@
 
               <!-- <div class="col-md-6">
                 <div class="input_section">
-                  <label class="col-form-label">SAP Code</label>
+                  <label class="col-form-label">Odoo Code</label>
                   <div class="form-group has-default bmd-form-group">
                     <input type="text" name="sap_code" id="sap_code" class="form-control" value="{!! old( 'sap_code', $products['sap_code']) !!}" min="0" step="0.01">
                     @if ($errors->has('sap_code'))
