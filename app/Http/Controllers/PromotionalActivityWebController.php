@@ -77,7 +77,7 @@ class PromotionalActivityWebController extends Controller
         $this->authorizeAccess();
         $promotionalActivity->load([
             'activityType:id,display_name,status_name', 'creator:id,name,reportingid',
-            'reportingManager:id,name', 'gifts:id,name', 'distributor:id,name,customer_code',
+            'reportingManager:id,name', 'approver:id,name', 'gifts:id,name', 'distributor:id,name,customer_code',
         ]);
         abort_unless($this->canView($promotionalActivity), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
@@ -95,6 +95,8 @@ class PromotionalActivityWebController extends Controller
             'remark' => $activity->remark,
             'approval_status' => $activity->approval_status,
             'approval_remark' => $activity->approval_remark,
+            'approved_rejected_by' => $activity->approver->name ?? null,
+            'approved_rejected_at' => $activity->approved_rejected_at ? showdatetimeformat($activity->approved_rejected_at) : null,
             'gifts' => $activity->gifts->map(fn ($gift) => ['name' => $gift->name, 'quantity' => (int) $gift->pivot->quantity])->values(),
             'distributor' => $activity->distributor->name ?? null,
             'participants' => $activity->participants ?: [],

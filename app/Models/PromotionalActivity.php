@@ -42,6 +42,11 @@ class PromotionalActivity extends Model
         return $this->belongsTo(User::class, 'reporting_manager_id')->select('id', 'name', 'designation_id');
     }
 
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_rejected_by')->select('id', 'name');
+    }
+
     public function gifts()
     {
         return $this->belongsToMany(PromotionalGift::class, 'promotional_activity_gifts')
