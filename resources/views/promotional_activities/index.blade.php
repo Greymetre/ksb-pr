@@ -82,6 +82,7 @@
           <div class="form-group">
             <label class="col-form-label">Distributor <span class="text-danger">*</span></label>
             <select id="activityDistributor" class="form-control" style="width:100%;"><option value=""></option></select>
+            <small class="text-muted d-block mt-1" id="activityDistributorInfo"></small>
           </div>
           <div class="form-group">
             <label class="col-form-label">Activity Photos <span class="text-danger">*</span> <small class="text-muted">(1 to 3, max 5 MB each)</small></label>
@@ -180,12 +181,15 @@ $(function () {
   function loadDistributors(activityId) {
     var select = $('#activityDistributor');
     select.empty().append('<option value=""></option>').trigger('change');
+    $('#activityDistributorInfo').text('Loading distributors...');
     $.get("{{ url('promotional-activities-crm') }}/" + activityId + '/distributors').done(function (response) {
-      if (activityId !== activeActivityId) return;
+      if (String(activityId) !== String(activeActivityId)) return;
       (response.results || []).forEach(function (item) { select.append(new Option(item.text, item.id, false, false)); });
       select.trigger('change');
+      $('#activityDistributorInfo').text((response.results || []).length + ' distributors loaded');
       if (!(response.results || []).length) Swal.fire('No distributor found for this user', '', 'warning');
     }).fail(function (xhr) {
+      $('#activityDistributorInfo').text('Unable to load distributors');
       Swal.fire(errorMessage(xhr, 'Unable to load distributors'), '', 'error');
     });
   }
