@@ -84,6 +84,7 @@
                 <div class="form-group has-default bmd-form-group">
                   <input type="number" name="quantity" id="giftQuantity" class="form-control" min="0" step="1" required>
                 </div>
+                <small class="text-muted" id="openingStockHint" style="display:none"></small>
               </div>
             </div>
           </div>
@@ -131,25 +132,55 @@
   </div>
 </div>
 
+<style>
+  #movementModal .gm-dialog { max-width: 1100px; width: calc(100% - 32px); margin: 40px auto; }
+  #movementModal .gm-content { background: #0b1736 !important; border: 1px solid rgba(90,130,220,.28); border-radius: 16px; color: #e6ecff; box-shadow: 0 24px 80px rgba(0,0,0,.55); overflow: hidden; }
+  #movementModal .gm-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; border-bottom: 1px solid rgba(90,130,220,.2); }
+  #movementModal .gm-title { margin: 0; font-size: 20px; font-weight: 700; color: #fff; }
+  #movementModal .gm-title small { display: block; font-size: 12px; font-weight: 500; color: #8fa1d2; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 2px; }
+  #movementModal .gm-close { background: transparent; border: 1px solid rgba(90,130,220,.35); color: #cfe0ff; border-radius: 10px; width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  #movementModal .gm-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 16px 22px; }
+  #movementModal .gm-stat { background: rgba(255,255,255,.04); border: 1px solid rgba(90,130,220,.18); border-radius: 12px; padding: 10px 14px; }
+  #movementModal .gm-stat span { display: block; font-size: 11px; color: #8fa1d2; text-transform: uppercase; letter-spacing: .08em; }
+  #movementModal .gm-stat b { font-size: 22px; color: #fff; }
+  #movementModal .gm-table-wrap { max-height: 55vh; overflow: auto; padding: 0 22px 20px; }
+  #movementModal table.gm-table { width: 100%; border-collapse: collapse; background: transparent !important; }
+  #movementModal .gm-table th { position: sticky; top: 0; z-index: 1; background: #0b1736; color: #8fa1d2; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; padding: 10px 12px; border-bottom: 1px solid rgba(90,130,220,.25); white-space: nowrap; text-align: left; }
+  #movementModal .gm-table td { padding: 12px; border-bottom: 1px solid rgba(90,130,220,.12); color: #e6ecff; font-size: 14px; vertical-align: middle; background: transparent !important; }
+  #movementModal .gm-table td.gm-num, #movementModal .gm-table th.gm-num { text-align: right; white-space: nowrap; }
+  #movementModal .gm-in { color: #34d399; font-weight: 700; }
+  #movementModal .gm-out { color: #f87171; font-weight: 700; }
+  #movementModal .gm-pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  #movementModal .gm-pill.opening { background: rgba(96,165,250,.16); color: #93c5fd; }
+  #movementModal .gm-pill.add { background: rgba(52,211,153,.16); color: #6ee7b7; }
+  #movementModal .gm-pill.activity { background: rgba(248,113,113,.16); color: #fca5a5; }
+  #movementModal .gm-muted { color: #8fa1d2; font-size: 12px; }
+  #movementModal .gm-empty { text-align: center; color: #8fa1d2; padding: 28px; }
+  @media (max-width: 768px) {
+    #movementModal .gm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #movementModal .gm-hide-sm { display: none; }
+  }
+</style>
 <div class="modal fade" id="movementModal" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog modal-lg" role="document">
-    <div class="modal-content card">
-      <div class="card-header card-header-icon card-header-theme">
-        <div class="card-icon"><i class="material-icons">swap_vert</i></div>
-        <h4 class="card-title">Stock Movement - <span id="movementGiftName"></span>
-          <span class="pull-right"><button type="button" class="btn btn-just-icon btn-danger" data-dismiss="modal"><i class="material-icons">clear</i></button></span>
-        </h4>
+  <div class="modal-dialog gm-dialog" role="document">
+    <div class="modal-content gm-content">
+      <div class="gm-head">
+        <h4 class="gm-title"><small>Stock Movement</small><span id="movementGiftName"></span></h4>
+        <button type="button" class="gm-close" data-dismiss="modal" title="Close"><i class="material-icons">close</i></button>
       </div>
-      <div class="modal-body">
-        <p id="movementSummary"></p>
-        <div class="table-responsive">
-          <table class="table table-bordered table-hover">
-            <thead class="text-primary">
-              <tr><th>Date</th><th>Type</th><th>In</th><th>Out</th><th>Balance</th><th>Remark</th><th>By</th></tr>
-            </thead>
-            <tbody id="movementRows"></tbody>
-          </table>
-        </div>
+      <div class="gm-stats">
+        <div class="gm-stat"><span>Opening Stock</span><b id="gmOpening">-</b></div>
+        <div class="gm-stat"><span>Added</span><b id="gmAdded" class="gm-in">-</b></div>
+        <div class="gm-stat"><span>Issued</span><b id="gmIssued" class="gm-out">-</b></div>
+        <div class="gm-stat"><span>Current Stock</span><b id="gmCurrent">-</b></div>
+      </div>
+      <div class="gm-table-wrap">
+        <table class="gm-table">
+          <thead>
+            <tr><th>Date</th><th>Type</th><th class="gm-num">Qty</th><th class="gm-num">Balance</th><th>Used / Added By</th><th class="gm-hide-sm">Details</th></tr>
+          </thead>
+          <tbody id="movementRows"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -181,8 +212,8 @@ $(function () {
   $('#createGift').on('click', function () {
     $('#giftForm').attr('action', "{{ route('promotional-gifts.store') }}")[0].reset();
     $('#formMethod').val('POST');
-    $('#openingStockSection').show();
-    $('#giftQuantity').prop('disabled', false);
+    $('#giftQuantity').attr('name', 'quantity').attr('min', 0);
+    $('#openingStockHint').hide();
     $('#modalTitle').text('Add Gift');
     $('#submitGift').text('Create Gift');
   });
@@ -191,9 +222,10 @@ $(function () {
     var id = $(this).data('id');
     $.get("{{ url('promotional-gifts') }}/" + id + '/edit', function (gift) {
       $('#giftName').val(gift.name);
-      // Stock changes go through Add Stock, not the edit form
-      $('#openingStockSection').hide();
-      $('#giftQuantity').prop('disabled', true);
+      // Opening stock change moves current stock by the same difference
+      var issuedSinceOpening = Math.max(0, gift.opening_stock - gift.quantity);
+      $('#giftQuantity').attr('name', 'opening_stock').attr('min', issuedSinceOpening).val(gift.opening_stock);
+      $('#openingStockHint').text('Current stock: ' + gift.quantity + '. Changing opening stock changes current stock by the same amount.').show();
       $('#giftForm').attr('action', "{{ url('promotional-gifts') }}/" + id);
       $('#formMethod').val('PUT');
       $('#modalTitle').text('Edit Gift');
@@ -241,23 +273,31 @@ $(function () {
 
   $(document).on('click', '.stockMovement', function () {
     $('#movementGiftName').text($(this).data('name'));
-    $('#movementSummary').text('Loading...');
-    $('#movementRows').empty();
+    $('#gmOpening, #gmAdded, #gmIssued, #gmCurrent').text('-');
+    $('#movementRows').html('<tr><td colspan="6" class="gm-empty">Loading...</td></tr>');
     $('#movementModal').modal('show');
     $.get("{{ url('promotional-gifts') }}/" + $(this).data('id') + '/movements', function (data) {
-      $('#movementSummary').text('Opening Stock: ' + data.opening_stock + '  |  Current Stock: ' + data.current_stock);
+      $('#gmOpening').text(data.opening_stock);
+      $('#gmAdded').text(data.added);
+      $('#gmIssued').text(data.issued);
+      $('#gmCurrent').text(data.current_stock);
+      var $rows = $('#movementRows').empty();
       if (!data.movements.length) {
-        $('#movementRows').append($('<tr>').append($('<td colspan="7" class="text-center">').text('No stock movement yet')));
+        $rows.append('<tr><td colspan="6" class="gm-empty">No stock movement yet</td></tr>');
         return;
       }
       data.movements.forEach(function (m) {
-        $('#movementRows').append($('<tr>').append(
-          $('<td>').text(m.date), $('<td>').text(m.type),
-          $('<td class="text-success">').text(m.in), $('<td class="text-danger">').text(m.out),
-          $('<td>').text(m.balance), $('<td>').text(m.remark || '-'), $('<td>').text(m.by)
+        var qty = m.quantity > 0 ? '+' + m.quantity : String(m.quantity);
+        $rows.append($('<tr>').append(
+          $('<td>').text(m.date).css('white-space', 'nowrap'),
+          $('<td>').append($('<span class="gm-pill">').addClass(m.type).text(m.type_label)),
+          $('<td class="gm-num">').addClass(m.quantity < 0 ? 'gm-out' : 'gm-in').text(qty),
+          $('<td class="gm-num">').text(m.balance),
+          $('<td>').text(m.user),
+          $('<td class="gm-hide-sm gm-muted">').text(m.details)
         ));
       });
-    }).fail(function () { $('#movementSummary').text('Unable to load stock movement.'); });
+    }).fail(function () { $('#movementRows').html('<tr><td colspan="6" class="gm-empty">Unable to load stock movement.</td></tr>'); });
   });
 
   function showMessage(message, success) {

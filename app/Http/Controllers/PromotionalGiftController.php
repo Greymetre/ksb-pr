@@ -99,15 +99,18 @@ class PromotionalGiftController extends Controller
         return response()->json($promotionalGift);
     }
 
-    public function update(Request $request, PromotionalGift $promotionalGift)
+    public function update(Request $request, PromotionalGift $promotionalGift, PromotionalGiftStock $stock)
     {
         abort_if(!$this->canManage('promotional_gift_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150', Rule::unique('promotional_gifts', 'name')->ignore($promotionalGift->id)],
+            'opening_stock' => ['required', 'integer', 'min:0'],
         ]);
 
-        // Stock is not edited here: use Add Stock so every change is in the stock movement
+        // Opening stock change shifts current stock by the same difference; other stock goes through Add Stock
+        $stock->setOpening($promotionalGift, (int) $validated['opening_stock'], auth()->id());
+        unset($validated['opening_stock']);
 
         $promotionalGift->update($validated + ['updated_by' => auth()->id()]);
 
@@ -143,21 +146,33 @@ class PromotionalGiftController extends Controller
     {
         abort_if(!$this->canManage('promotional_gift_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $movements = $promotionalGift->stockMovements()->with('creator')->orderByDesc('id')->get()
-            ->map(fn (PromotionalGiftStockMovement $movement) => [
-                'date' => showdatetimeformat($movement->created_at),
-                'type' => PromotionalGiftStockMovement::TYPES[$movement->type] ?? $movement->type,
-                'in' => $movement->quantity > 0 ? $movement->quantity : '',
-                'out' => $movement->quantity < 0 ? abs($movement->quantity) : '',
-                'balance' => $movement->balance_after,
-                'remark' => $movement->remark,
-                'by' => $movement->creator->name ?? '-',
-            ]);
+        $movements = $promotionalGift->stockMovements()
+            ->with(['creator', 'activity:id,location_name,activity_date,created_by,distributor_id', 'activity.creator', 'activity.distributor:id,name'])
+            ->orderByDesc('id')->get()
+            ->map(function (PromotionalGiftStockMovement $movement) {
+                $activity = $movement->activity;
+
+                return [
+                    'date' => showdatetimeformat($movement->created_at),
+                    'type' => $movement->type,
+                    'type_label' => PromotionalGiftStockMovement::TYPES[$movement->type] ?? $movement->type,
+                    'quantity' => (int) $movement->quantity,
+                    'balance' => (int) $movement->balance_after,
+                    // Activity rows: the field user who ran the activity; others: who changed the stock
+                    'user' => $activity ? ($activity->creator->name ?? '-') : ($movement->creator->name ?? '-'),
+                    'details' => $activity
+                        ? 'Activity #'.$activity->id.' · '.$activity->location_name
+                            .($activity->distributor ? ' · '.$activity->distributor->name : '')
+                        : ($movement->remark ?: '-'),
+                ];
+            });
 
         return response()->json([
             'name' => $promotionalGift->name,
             'opening_stock' => (int) $promotionalGift->opening_stock,
             'current_stock' => (int) $promotionalGift->quantity,
+            'added' => $movements->where('type', 'add')->sum('quantity'),
+            'issued' => abs($movements->where('type', 'activity')->sum('quantity')),
             'movements' => $movements,
         ]);
     }

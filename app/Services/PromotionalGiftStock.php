@@ -30,6 +30,50 @@ class PromotionalGiftStock
     }
 
     /**
+     * Change a gift's opening stock: current stock moves by the same difference and
+     * the ledger balances are rebuilt. Throws a ValidationException when current
+     * stock would go below zero.
+     */
+    public function setOpening(PromotionalGift $gift, int $opening, ?int $userId): void
+    {
+        DB::transaction(function () use ($gift, $opening, $userId) {
+            $gift = PromotionalGift::whereKey($gift->id)->lockForUpdate()->firstOrFail();
+            $difference = $opening - (int) $gift->opening_stock;
+            if ($difference === 0) {
+                return;
+            }
+
+            if ((int) $gift->quantity + $difference < 0) {
+                throw ValidationException::withMessages([
+                    'opening_stock' => 'Opening stock can be at least ' . ((int) $gift->opening_stock - (int) $gift->quantity)
+                        . ': that much has already been issued.',
+                ]);
+            }
+
+            $gift->update([
+                'opening_stock' => $opening,
+                'quantity' => (int) $gift->quantity + $difference,
+                'updated_by' => $userId,
+            ]);
+
+            $openingMovement = $gift->stockMovements()->where('type', 'opening')->orderBy('id')->first();
+            if ($openingMovement) {
+                $openingMovement->update(['quantity' => $opening]);
+            } else {
+                $this->record($gift, 'opening', $opening, $userId, 'Opening stock', null, Carbon::parse($gift->created_at));
+            }
+
+            $balance = 0;
+            foreach ($gift->stockMovements()->orderBy('id')->get() as $movement) {
+                $balance += $movement->quantity;
+                if ((int) $movement->balance_after !== $balance) {
+                    $movement->update(['balance_after' => $balance]);
+                }
+            }
+        });
+    }
+
+    /**
      * Deduct the activity's gifts from stock. Must run inside a transaction.
      * Throws a ValidationException (422) when a gift does not have enough stock.
      * $at dates the movement (backfill of activities completed earlier).
