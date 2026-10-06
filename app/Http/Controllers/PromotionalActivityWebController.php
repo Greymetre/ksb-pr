@@ -20,7 +20,7 @@ class PromotionalActivityWebController extends Controller
         abort_if(!$user || (!$user->hasRole('superadmin') && !$user->can('promotional_activity_access')), Response::HTTP_FORBIDDEN, '403 Forbidden');
     }
 
-    private function query(Request $request)
+    private function query(Request $request, bool $applyStatus = true)
     {
         $query = PromotionalActivity::with(['activityType:id,display_name,status_name', 'creator:id,name', 'distributor:id,name,customer_code']);
         $user = auth()->user();
@@ -31,6 +31,7 @@ class PromotionalActivityWebController extends Controller
         if ($request->filled('activity_type_id')) $query->where('activity_status_id', $request->activity_type_id);
         if ($request->filled('date_from')) $query->whereDate('activity_date', '>=', $request->date_from);
         if ($request->filled('date_to')) $query->whereDate('activity_date', '<=', $request->date_to);
+        if ($applyStatus && $request->filled('approval_status')) $query->where('approval_status', $request->approval_status);
         return $query;
     }
 
@@ -38,7 +39,11 @@ class PromotionalActivityWebController extends Controller
     {
         $this->authorizeAccess();
         if ($request->ajax()) {
+            // Status tab counts follow the other filters but ignore the selected status tab.
+            $statusCounts = $this->query($request, false)->reorder()->selectRaw('approval_status, COUNT(*) as total')
+                ->groupBy('approval_status')->pluck('total', 'approval_status');
             return DataTables::of($this->query($request)->latest('activity_date'))
+                ->with('status_counts', $statusCounts)
                 ->addIndexColumn()
                 ->addColumn('activity_type_name', fn ($row) => $row->activityType->display_name ?? $row->activityType->status_name ?? '-')
                 ->addColumn('creator_name', fn ($row) => $row->creator->name ?? '-')
@@ -46,7 +51,7 @@ class PromotionalActivityWebController extends Controller
                 ->addColumn('total_amount', fn ($row) => number_format((float) $row->company_share + (float) $row->distributor_share, 2))
                 ->addColumn('participants_count', fn ($row) => count($row->participants ?: []))
                 ->editColumn('activity_date', fn ($row) => $row->activity_date ? $row->activity_date->format('d-M-Y') : '-')
-                ->editColumn('approval_status', fn ($row) => '<span class="badge badge-'.($row->approval_status === 'completed' ? 'success' : ($row->approval_status === 'rejected' ? 'danger' : 'warning')).'">'.ucwords(str_replace('_', ' ', $row->approval_status)).'</span>')
+                ->editColumn('approval_status', fn ($row) => '<span class="badge badge-'.($row->approval_status === 'completed' ? 'success' : ($row->approval_status === 'rejected' ? 'danger' : ($row->approval_status === 'approved' ? 'info' : 'warning'))).'">'.ucwords(str_replace('_', ' ', $row->approval_status)).'</span>')
                 ->editColumn('created_at', fn ($row) => showdatetimeformat($row->created_at))
                 ->rawColumns(['approval_status'])->make(true);
         }

@@ -1,4 +1,11 @@
 <x-app-layout>
+<style>
+  .fk-activity-status-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
+  .fk-activity-status-tab { height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(120, 150, 220, .3); background: rgba(15, 30, 65, .6); color: #a9bce6; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .fk-activity-status-tab span { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: rgba(120, 150, 220, .18); font-size: 11px; text-align: center; }
+  .fk-activity-status-tab.active { color: #061125; border-color: transparent; background: linear-gradient(135deg, #3ad1f0, #4a7dff); }
+  .fk-activity-status-tab.active span { background: rgba(6, 17, 37, .18); }
+</style>
 <section class="fk-manual-listing">
   <div class="fk-list-page-head">
     <div class="fk-list-heading-block">
@@ -9,6 +16,13 @@
   </div>
   <div class="card fk-listing-card" data-fk-listing-ready="1"><div class="card-body">
     <div class="fk-table-meta"><div class="fk-table-meta-icon"><span class="material-icons">campaign</span></div><div class="fk-table-meta-copy"><h2>Activity Directory</h2><p class="fk-table-meta-subline" id="activityTableMeta">Live directory · page 1 of 1</p></div></div>
+    <div class="fk-activity-status-tabs" id="activityStatusTabs">
+      <button type="button" class="fk-activity-status-tab active" data-status="">All <span data-count="all">0</span></button>
+      <button type="button" class="fk-activity-status-tab" data-status="pending">Pending <span data-count="pending">0</span></button>
+      <button type="button" class="fk-activity-status-tab" data-status="approved">Approved <span data-count="approved">0</span></button>
+      <button type="button" class="fk-activity-status-tab" data-status="rejected">Rejected <span data-count="rejected">0</span></button>
+      <button type="button" class="fk-activity-status-tab" data-status="completed">Completed <span data-count="completed">0</span></button>
+    </div>
     <div class="table-responsive"><table class="table fk-glass-table" id="activityTable"><thead><tr>
       <th>#</th><th>Activity Date</th><th>Activity Type</th><th>Created By</th><th>Location</th><th>Status</th><th>Distributor</th><th>Total Amount</th><th>Participants</th><th>Created At</th>
     </tr></thead></table></div>
@@ -57,10 +71,12 @@
 
 <script>
 $(function () {
-  function filters() { return { activity_type_id: $('#activity_type_filter').val(), date_from: $('#date_from').val(), date_to: $('#date_to').val() }; }
+  var activeStatus = '';
+  function filters() { return { activity_type_id: $('#activity_type_filter').val(), date_from: $('#date_from').val(), date_to: $('#date_to').val(), approval_status: activeStatus }; }
   var table = $('#activityTable').DataTable({ processing: true, serverSide: true, order: [[1, 'desc']], ajax: { url: "{{ route('promotional-activities-crm.index') }}", data: function (data) { $.extend(data, filters()); } }, columns: [
     {data:'DT_RowIndex', orderable:false, searchable:false}, {data:'activity_date', name:'activity_date'}, {data:'activity_type_name', name:'activityType.display_name', orderable:false}, {data:'creator_name', name:'creator.name', orderable:false}, {data:'location_name', name:'location_name'}, {data:'approval_status', name:'approval_status'}, {data:'distributor_name', orderable:false, searchable:false}, {data:'total_amount', orderable:false, searchable:false}, {data:'participants_count', orderable:false, searchable:false}, {data:'created_at', name:'created_at'}
-  ], drawCallback:function(){ var info=this.api().page.info(); $('#activityRecordCount').text((info.recordsDisplay||0)+' records'); $('#activityTableMeta').text('Live directory · page '+((info.page||0)+1)+' of '+(info.pages||1)); }});
+  ], drawCallback:function(){ var info=this.api().page.info(); $('#activityRecordCount').text((info.recordsDisplay||0)+' records'); $('#activityTableMeta').text('Live directory · page '+((info.page||0)+1)+' of '+(info.pages||1)); var counts=(this.api().ajax.json()||{}).status_counts||{}, total=0; $.each(['pending','approved','rejected','completed'], function(i,key){ var value=parseInt(counts[key]||0,10); total+=value; $('#activityStatusTabs [data-count="'+key+'"]').text(value); }); $('#activityStatusTabs [data-count="all"]').text(total); }});
+  $('#activityStatusTabs').on('click', '.fk-activity-status-tab', function(){ activeStatus=$(this).data('status'); $('#activityStatusTabs .fk-activity-status-tab').removeClass('active'); $(this).addClass('active'); table.draw(); });
   var activeActivityId = null;
   function esc(value) { return $('<div>').text(value === null || value === undefined || value === '' ? '-' : value).html(); }
   function detailRow(label, value) { return '<div class="col-md-4 mb-3"><small class="text-muted d-block">' + label + '</small><strong>' + esc(value) + '</strong></div>'; }
