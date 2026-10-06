@@ -34,6 +34,14 @@ class ProductImport implements ToCollection,WithValidation,WithHeadingRow, WithB
     {
         $productdetails = collect([]);
         foreach ($rows as $row) {
+            // delete = Yes: remove the product (same as the Delete button), needs product_delete
+            if (in_array(strtolower(trim((string) ($row['delete'] ?? ''))), ['yes', 'y'], true)) {
+                if (!empty($row['product_id']) && Auth::user()->can('product_delete')) {
+                    ProductDetails::where('product_id', $row['product_id'])->delete();
+                    Product::where('id', $row['product_id'])->delete();
+                }
+                continue;
+            }
             if( $product = Product::updateOrCreate(['id' => $row['product_id'] ],[
                 'active' => isset($row['status'])? ucfirst($row['status']):'Y',
                 'product_name' => isset($row['product_name'])? ucfirst($row['product_name']):'',
