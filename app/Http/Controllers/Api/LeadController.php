@@ -1029,12 +1029,12 @@ class LeadController extends Controller
         try {
             if (!$request->user()->hasRole('superadmin')) {
                 $all_task_ids = TaskAssignment::where('user_id', $request->user()->id)->pluck('task_id');
-                $other_tasks = Tasks::with('users:id,name', 'task_department', 'task_priority', 'lead:id,company_name', 'project:id,name', 'customers:id,name')->where(function ($q) use ($request, $all_task_ids) {
+                $other_tasks = Tasks::with('users:id,name', 'assigned_users.users:id,name', 'task_department', 'task_priority', 'lead:id,company_name', 'project:id,name', 'customers:id,name')->where(function ($q) use ($request, $all_task_ids) {
                     $q->where('user_id', $request->user()->id)
                         ->orWhereIn('id', $all_task_ids);
                 });
             } else {
-                $other_tasks = Tasks::with('users:id,name', 'task_department', 'task_priority', 'lead:id,company_name', 'project:id,name', 'customers:id,name');
+                $other_tasks = Tasks::with('users:id,name', 'assigned_users.users:id,name', 'task_department', 'task_priority', 'lead:id,company_name', 'project:id,name', 'customers:id,name');
             }
 
             if ($request->input('search') != "") {
