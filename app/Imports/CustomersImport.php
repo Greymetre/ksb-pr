@@ -155,8 +155,26 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
 
       } else {
 
+        $addressdetails = collect([]);
+        $mobile = !empty($row['mobile']) ? (string)$row['mobile'] : null;
+        $odooCode = ($row['odoo_code'] ?? null) ?: ($row['sap_code'] ?? null) ?: null;
 
-        if ($customer = Customers::updateOrCreate(['mobile' =>  !empty($row['mobile']) ? (string)$row['mobile'] : '',],[
+        // Match an existing customer by mobile, then Odoo/SAP code, then customer code.
+        // Rows without a mobile must not all collapse onto one customer with mobile ''.
+        $existing = null;
+        if ($mobile) {
+          $existing = Customers::where('mobile', $mobile)->first();
+        }
+        if (!$existing && $odooCode) {
+          $existing = Customers::where('sap_code', $odooCode)->first();
+        }
+        if (!$existing && !empty($row['customer_code'])) {
+          $existing = Customers::where('customer_code', $row['customer_code'])->first();
+        }
+
+        $customer = $existing ?: new Customers();
+        $customer->fill([
+          'mobile' => $mobile ?? ($existing ? $existing->mobile : null),
           'active' => 'Y',
           'name' => !empty($row['firm_name']) ? ucfirst($row['firm_name']) : '',
           'first_name' => !empty($row['first_name']) ? ucfirst($row['first_name']) : '',
@@ -183,7 +201,9 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
           'contact_number' => !empty($row['contact_number_2']) ? $row['contact_number_2'] : null,
           'created_at' => getcurentDateTime(),
           'updated_at' => getcurentDateTime()
-        ])) {
+        ]);
+
+        if ($customer->save()) {
 
           //employee start
           if (!empty($row['employee_id'])) {
@@ -265,7 +285,8 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
             ]);
           // }
           if ($addressdetails->isNotEmpty()) {
-            Address::insert($addressdetails->toArray());
+            $address = $addressdetails->first();
+            Address::updateOrCreate(['customer_id' => $customer['id']], $address);
           }
           // if ($attachments->isNotEmpty()) {
           //   Attachment::insert($attachments->toArray());
