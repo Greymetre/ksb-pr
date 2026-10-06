@@ -6,6 +6,8 @@ use App\Exports\PromotionalActivityExport;
 use App\Models\PromotionalActivity;
 use App\Models\Status;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\Response;
 use Yajra\DataTables\Facades\DataTables;
@@ -50,6 +52,78 @@ class PromotionalActivityWebController extends Controller
         }
         $activityTypes = Status::where('module', 'Promotional Activity')->where('active', 'Y')->orderBy('display_name')->get(['id', 'display_name', 'status_name']);
         return view('promotional_activities.index', compact('activityTypes'));
+    }
+
+    private function canView(PromotionalActivity $activity): bool
+    {
+        $user = auth()->user();
+        if ($user->hasRole('superadmin') || (int) $activity->created_by === (int) $user->id) return true;
+        return in_array((int) $activity->created_by, array_map('intval', getUsersReportingToAuth($user->id)), true);
+    }
+
+    // Same rule as the mobile app: superadmin, or the creator's direct reporting manager (not the creator).
+    private function canApprove(PromotionalActivity $activity): bool
+    {
+        $user = auth()->user();
+        if ($activity->approval_status !== 'pending') return false;
+        if ($user->hasRole('superadmin')) return true;
+        if ((int) $activity->created_by === (int) $user->id || !$activity->creator) return false;
+        $managerIds = array_map('intval', array_filter(array_map('trim', explode(',', (string) $activity->creator->reportingid))));
+        return in_array((int) $user->id, $managerIds, true);
+    }
+
+    public function show(PromotionalActivity $promotionalActivity)
+    {
+        $this->authorizeAccess();
+        $promotionalActivity->load([
+            'activityType:id,display_name,status_name', 'creator:id,name,reportingid',
+            'reportingManager:id,name', 'gifts:id,name', 'distributor:id,name,customer_code',
+        ]);
+        abort_unless($this->canView($promotionalActivity), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $activity = $promotionalActivity;
+        return response()->json(['success' => true, 'data' => [
+            'id' => $activity->id,
+            'activity_type' => $activity->activityType->display_name ?? $activity->activityType->status_name ?? 'Promotional Activity',
+            'activity_date' => $activity->activity_date ? $activity->activity_date->format('d-M-Y') : '-',
+            'location_name' => $activity->location_name,
+            'creator' => $activity->creator->name ?? '-',
+            'reporting_manager' => $activity->reportingManager->name ?? '-',
+            'company_share' => number_format((float) $activity->company_share, 2),
+            'distributor_share' => number_format((float) $activity->distributor_share, 2),
+            'total_amount' => number_format((float) $activity->company_share + (float) $activity->distributor_share, 2),
+            'remark' => $activity->remark,
+            'approval_status' => $activity->approval_status,
+            'approval_remark' => $activity->approval_remark,
+            'gifts' => $activity->gifts->map(fn ($gift) => ['name' => $gift->name, 'quantity' => (int) $gift->pivot->quantity])->values(),
+            'distributor' => $activity->distributor->name ?? null,
+            'participants' => $activity->participants ?: [],
+            'photos' => collect($activity->activity_photos ?: [])->map(fn ($path) => Storage::disk('public')->url($path))->values(),
+            'execution_remark' => $activity->execution_remark,
+            'created_at' => showdatetimeformat($activity->created_at),
+            'can_approve' => $this->canApprove($activity),
+        ]]);
+    }
+
+    public function updateApproval(Request $request, PromotionalActivity $promotionalActivity)
+    {
+        $this->authorizeAccess();
+        $request->validate([
+            'status' => ['required', Rule::in(['approved', 'rejected'])],
+            'remark' => 'nullable|string|max:1000',
+        ]);
+        $promotionalActivity->load('creator:id,name,reportingid');
+        abort_if($promotionalActivity->approval_status !== 'pending', 422, 'Activity has already been actioned.');
+        abort_unless($this->canApprove($promotionalActivity), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $promotionalActivity->update([
+            'approval_status' => $request->status,
+            'approved_rejected_by' => auth()->id(),
+            'approved_rejected_at' => now(),
+            'approval_remark' => $request->remark,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Activity '.$request->status.' successfully.']);
     }
 
     public function export(Request $request)

@@ -630,6 +630,8 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     Route::post('promotional-gifts/{promotionalGift}/active', [PromotionalGiftController::class, 'active'])->name('promotional-gifts.active');
     Route::get('promotional-activities-crm', [PromotionalActivityWebController::class, 'index'])->name('promotional-activities-crm.index');
     Route::get('promotional-activities-crm/export', [PromotionalActivityWebController::class, 'export'])->name('promotional-activities-crm.export');
+    Route::get('promotional-activities-crm/{promotionalActivity}', [PromotionalActivityWebController::class, 'show'])->name('promotional-activities-crm.show');
+    Route::post('promotional-activities-crm/{promotionalActivity}/approval', [PromotionalActivityWebController::class, 'updateApproval'])->name('promotional-activities-crm.approval');
 
     //Orders
     Route::resource('orders', OrderController::class);
