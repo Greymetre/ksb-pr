@@ -177,20 +177,24 @@ class PromotionalActivityWebController extends Controller
         $this->authorizeAccess();
         abort_unless($this->canComplete($promotionalActivity), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
+        // "distrib" also covers spelling variants such as "Distributer".
         $typeIds = CustomerType::where(function ($q) {
-            $q->where('customertype_name', 'like', '%distributor%')->orWhere('customertype_name', 'like', '%dealer%');
+            $q->where('customertype_name', 'like', '%distrib%')->orWhere('customertype_name', 'like', '%dealer%');
         })->where('customertype_name', 'not like', '%master%')->where('customertype_name', 'not like', '%secondary%')->pluck('id');
 
-        $userIds = array_values(array_unique(array_merge(
-            array_map('intval', getUsersReportingToAuth($promotionalActivity->created_by)),
-            [(int) $promotionalActivity->created_by]
-        )));
+        $query = Customers::where('active', 'Y')->whereIn('customertype', $typeIds);
 
-        $query = Customers::where('active', 'Y')->whereIn('customertype', $typeIds)
-            ->where(function ($q) use ($userIds) {
+        // Like the app's customer list: a superadmin sees every distributor, others only their team's.
+        if (!auth()->user()->hasRole('superadmin')) {
+            $userIds = array_values(array_unique(array_merge(
+                array_map('intval', getUsersReportingToAuth($promotionalActivity->created_by)),
+                [(int) $promotionalActivity->created_by]
+            )));
+            $query->where(function ($q) use ($userIds) {
                 $q->whereIn('created_by', $userIds)->orWhereIn('executive_id', $userIds)
                     ->orWhereHas('getemployeedetail', fn ($employee) => $employee->whereIn('user_id', $userIds));
             });
+        }
         if ($request->filled('search')) {
             $search = trim($request->search);
             $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('mobile', 'like', "%{$search}%"));

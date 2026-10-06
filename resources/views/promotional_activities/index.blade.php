@@ -78,7 +78,7 @@
         </div>
         <form id="activityCompleteBox" style="display:none;" enctype="multipart/form-data">
           <hr>
-          <h5 class="mb-3">Complete Activity</h5>
+          <h5 class="mb-3" style="color:#e3ecff;font-weight:700;">Complete Activity</h5>
           <div class="form-group">
             <label class="col-form-label">Distributor <span class="text-danger">*</span></label>
             <select id="activityDistributor" class="form-control" style="width:100%;"></select>
