@@ -1036,6 +1036,8 @@ class CustomerController extends Controller
         ////abort_if(Gate::denies('customer_upload'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         if (ob_get_contents()) ob_end_clean();
         ob_start();
+        // Large sheets (thousands of rows) exceed the default 30s limit.
+        set_time_limit(0);
         try {
             Excel::import(new CustomersImport, request()->file('import_file'));
         } catch (\Throwable $e) {

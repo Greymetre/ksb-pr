@@ -56,56 +56,72 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
         $row['mobile'] = '91' . preg_replace('/\s+/', '', $row['mobile']);
       }
 
-      if (isset($row['creation_date']) && is_numeric($row['creation_date'])) {
-        $excelDate = $row['creation_date'] - 25569; // Adjust for Excel's epoch
-        $unixTimestamp = strtotime('+' . $excelDate . ' days', strtotime('1970-01-01'));
-        $row['creation_date'] = !empty($row['creation_date']) ? Carbon::createFromTimestamp($unixTimestamp)->toDateString() : '';
-      }
+      $row['creation_date'] = $this->parseDate($row['creation_date'] ?? null);
 
 
       if (!empty($row['customer_id'])) {
 
-        Customers::where('id', '=', $row['customer_id'])->update([
-          'name' => $row['firm_name'],
-          'active' => $row['status'] ?? 'Y',
-          'first_name' => !empty($row['first_name']) ? $row['first_name'] : '',
-          'last_name' => !empty($row['last_name']) ? $row['last_name'] : '',
-          'contact_number' => !empty($row['contact_number_2']) ? $row['contact_number_2'] : null,
-          //'executive_id' => !empty($row['employee_id'])? $row['employee_id'] :null,
-          //'parent_id' => !empty($row['parent_id'])? $row['parent_id'] :null,
-          'customer_code' => !empty($row['customer_code']) ? $row['customer_code'] : null,
-          'email' => !empty($row['email']) ? $row['email'] : null,
-          'working_status' => !empty($row['working_status']) ? $row['working_status'] : null,
-          'creation_date' => !empty($row['creation_date']) ? $row['creation_date'] : null,
-          'sap_code' => ($row['odoo_code'] ?? null) ?: ($row['sap_code'] ?? null) ?: null,
-          'customertype' => !empty($row['customer_type_id']) ? $row['customer_type_id'] : null,
+        if (!Customers::where('id', $row['customer_id'])->exists()) {
+          Log::warning('Customer import: customer_id ' . $row['customer_id'] . ' not found, row skipped');
+          continue;
+        }
 
-
+        // Only columns filled in the sheet are updated; blank cells keep the existing value.
+        $customerData = $this->filled([
+          'name' => $row['firm_name'] ?? null,
+          'active' => $row['status'] ?? null,
+          'first_name' => $row['first_name'] ?? null,
+          'last_name' => $row['last_name'] ?? null,
+          'contact_number' => $row['contact_number_2'] ?? null,
+          'customer_code' => $row['customer_code'] ?? null,
+          'working_status' => $row['working_status'] ?? null,
+          'creation_date' => $row['creation_date'],
+          'sap_code' => ($row['odoo_code'] ?? null) ?: ($row['sap_code'] ?? null),
+          'customertype' => $row['customer_type_id'] ?? null,
+          'latitude' => $row['latitude'] ?? null,
+          'longitude' => $row['longitude'] ?? null,
         ]);
 
+        // mobile and email are unique: skip them if another customer already uses the value.
+        foreach (['mobile' => $row['mobile'] ?? null, 'email' => $row['email'] ?? null] as $field => $value) {
+          $value = trim((string)$value);
+          if ($value !== '' && !Customers::where($field, $value)->where('id', '!=', $row['customer_id'])->exists()) {
+            $customerData[$field] = $value;
+          }
+        }
 
+        if (!empty($customerData)) {
+          Customers::where('id', '=', $row['customer_id'])->update($customerData);
+        }
 
-        CustomerDetails::where('customer_id', '=', $row['customer_id'])->update([
-          'gstin_no' => !empty($row['gstin_no']) ? $row['gstin_no'] : null,
-          'pan_no' => !empty($row['pan_no']) ? $row['pan_no'] : null,
-          'aadhar_no' => !empty($row['aadhar_no']) ? $row['aadhar_no'] : null,
-          'otherid_no' => !empty($row['other_no']) ? $row['other_no'] : null,
-          'grade' => !empty($row['grade']) ? $row['grade'] : null,
-          'visit_status' => !empty($row['visit_status']) ? $row['visit_status'] : null,
-
+        $detailData = $this->filled([
+          'gstin_no' => $row['gstin_no'] ?? null,
+          'pan_no' => $row['pan_no'] ?? null,
+          'aadhar_no' => $row['aadhar_no'] ?? null,
+          'otherid_no' => $row['other_no'] ?? null,
+          'grade' => $row['grade'] ?? null,
+          'visit_status' => $row['visit_status'] ?? null,
         ]);
+        if (!empty($detailData)) {
+          CustomerDetails::updateOrCreate(['customer_id' => $row['customer_id']], $detailData);
+        }
 
-
-        Address::where('customer_id', '=', $row['customer_id'])->update([
-          'pincode_id' => !empty($row['pincode_id']) ? $row['pincode_id'] : null,
-          'city_id' => !empty($row['city_id']) ? $row['city_id'] : null,
-          'district_id' => !empty($row['district_id']) ? $row['district_id'] : null,
-          'state_id' => !empty($row['state_id']) ? $row['state_id'] : null,
-          'country_id' => !empty($row['country_id']) ? $row['country_id'] : null,
-          'address1' => !empty($row['address']) ? $row['address'] : null,
-          'landmark' => !empty($row['market_place']) ? $row['market_place'] : null,
-
+        $addressData = $this->filled([
+          'pincode_id' => $row['pincode_id'] ?? null,
+          'city_id' => $row['city_id'] ?? null,
+          'district_id' => $row['district_id'] ?? null,
+          'state_id' => $row['state_id'] ?? null,
+          'country_id' => $row['country_id'] ?? null,
+          'address1' => $row['address'] ?? null,
+          'landmark' => $row['market_place'] ?? null,
         ]);
+        if (!empty($addressData)) {
+          if (Address::where('customer_id', $row['customer_id'])->exists()) {
+            Address::where('customer_id', $row['customer_id'])->update($addressData);
+          } else {
+            Address::create($addressData + ['customer_id' => $row['customer_id'], 'created_by' => Auth::user()->id]);
+          }
+        }
 
 
 
@@ -294,6 +310,41 @@ class CustomersImport implements ToCollection, WithValidation, WithHeadingRow, W
         }
       }
     }
+  }
+
+  // Drop null / empty-string values so blank cells don't overwrite existing data.
+  private function filled(array $data): array
+  {
+    return array_filter(array_map(function ($v) {
+      return is_string($v) ? trim($v) : $v;
+    }, $data), function ($v) {
+      return $v !== null && $v !== '';
+    });
+  }
+
+  // Accepts an Excel serial number, d-m-Y, d/m/Y or Y-m-d; anything else becomes null.
+  private function parseDate($value)
+  {
+    if ($value === null || $value === '') {
+      return null;
+    }
+    if (is_numeric($value)) {
+      // Small serials are real Excel dates; large numbers (e.g. a phone number) are junk.
+      if ($value > 0 && $value < 100000) {
+        return Carbon::createFromTimestamp(((int)$value - 25569) * 86400)->toDateString();
+      }
+      return null;
+    }
+    foreach (['d-m-Y', 'd/m/Y', 'Y-m-d'] as $format) {
+      try {
+        $date = Carbon::createFromFormat('!' . $format, trim($value));
+        if ($date && $date->format($format) === trim($value)) {
+          return $date->toDateString();
+        }
+      } catch (\Throwable $e) {
+      }
+    }
+    return null;
   }
 
   public function rules(): array
