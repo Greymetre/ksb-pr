@@ -127,7 +127,7 @@ $(function () {
     $('#activityApprovalRemark, #activityExecutionRemark').val('');
     selectedPhotos = []; renderPhotos();
     $('#activityGiftRows, #activityParticipantRows').empty();
-    $('#activityDistributor').empty().append('<option value=""></option>').trigger('change');
+    $('#activityDistributor').val('');
     $('#activityDetailModal').modal('show');
     $.get("{{ url('promotional-activities-crm') }}/" + row.id).done(function (response) {
       var d = response.data;
@@ -177,15 +177,22 @@ $(function () {
   $('#addActivityParticipant').on('click', addParticipantRow);
   $('#activityDetailModal').on('click', '.remove-row', function () { $(this).closest('.form-row').remove(); });
   // Distributors are loaded when the popup opens so the full list shows by default; select2 searches it locally.
-  $('#activityDistributor').select2({ dropdownParent: $('#activityDetailModal'), placeholder: 'Select distributor', allowClear: true, width: '100%' });
+  // select2 is set up only after the list loads: initialising it on page load lets the layout's global
+  // $('.select2').select2() wrap our select2 container in a second, empty dropdown.
+  function initDistributorSelect() {
+    var select = $('#activityDistributor');
+    if (select.hasClass('select2-hidden-accessible')) select.select2('destroy');
+    select.select2({ dropdownParent: $('#activityDetailModal'), placeholder: 'Select distributor', allowClear: true, width: '100%' });
+  }
   function loadDistributors(activityId) {
     var select = $('#activityDistributor');
-    select.empty().append('<option value=""></option>').trigger('change');
+    select.empty().append('<option value=""></option>');
+    initDistributorSelect();
     $('#activityDistributorInfo').text('Loading distributors...');
     $.get("{{ url('promotional-activities-crm') }}/" + activityId + '/distributors').done(function (response) {
       if (String(activityId) !== String(activeActivityId)) return;
       (response.results || []).forEach(function (item) { select.append(new Option(item.text, item.id, false, false)); });
-      select.trigger('change');
+      initDistributorSelect();
       $('#activityDistributorInfo').text((response.results || []).length + ' distributors loaded');
       if (!(response.results || []).length) Swal.fire('No distributor found for this user', '', 'warning');
     }).fail(function (xhr) {
