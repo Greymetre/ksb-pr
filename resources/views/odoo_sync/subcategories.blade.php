@@ -42,7 +42,7 @@
     <div class="os-table-wrap">
       <div class="os-table-scroll">
         <table id="osSubcategoriesTable" class="os-table">
-          <thead><tr><th>External ID</th><th>Code</th><th>Sub-category</th><th>Odoo category</th><th>FieldKonnect sub-category</th><th>Ranking</th><th>Status</th><th>Odoo updated</th><th>Synced</th></tr></thead>
+          <thead><tr><th>External ID</th><th>Code</th><th>Sub-category</th><th>Category</th><th>FieldKonnect sub-category</th><th>Ranking</th><th>Status</th><th>Odoo updated</th><th>Synced</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
