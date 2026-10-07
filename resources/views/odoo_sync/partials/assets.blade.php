@@ -88,6 +88,9 @@
     .os-btn { border: 0; border-radius: 10px; padding: 9px 16px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; background: var(--fk-list-accent, #22d3ee); color: var(--fk-list-primary-text, #04121f); }
     .os-btn .material-icons { font-size: 18px; }
     .os-btn:disabled { opacity: .7; cursor: wait; }
+    .os-btn-ghost { background: transparent; color: var(--fk-list-accent, #22d3ee); border: 1px solid var(--fk-list-accent, #22d3ee); text-decoration: none !important; }
+    .os-btn-ghost:hover { background: rgba(34,211,238,.1); color: var(--fk-list-accent, #22d3ee); }
+    .os-head-actions { display: flex; gap: 10px; flex-wrap: wrap; }
     .os-btn.is-busy .material-icons { animation: os-spin 1s linear infinite; }
     @keyframes os-spin { to { transform: rotate(-360deg); } }
 

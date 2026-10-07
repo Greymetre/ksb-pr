@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ExcelExport;
 use App\Services\Odoo\CategorySync;
 use App\Services\Odoo\OdooPullSync;
 use App\Services\Odoo\PartyPriceSync;
@@ -11,6 +12,7 @@ use Carbon\Carbon;
 use Gate;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 /*
 | CRM "Odoo Sync" page: lets the Odoo developer and superadmin see what Odoo
@@ -189,6 +191,41 @@ class OdooSyncController extends Controller
     }
 
     /**
+     * Excel of every row on Sub Category Master Odoo.
+     */
+    public function subcategoriesExport()
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $rows = DB::table('odoo_subcategories as os')
+            ->leftJoin('odoo_categories as oc', 'oc.external_id', '=', 'os.category_external_id')
+            ->leftJoin('odoo_subcategories as ps', 'ps.external_id', '=', 'os.category_external_id')
+            ->leftJoin('subcategories as s', 's.id', '=', 'os.subcategory_id')
+            ->orderBy('os.subcategory_name')
+            ->get(['os.*', DB::raw('COALESCE(oc.category_name, ps.subcategory_name) as parent_name'), 's.subcategory_name as fk_subcategory_name'])
+            ->map(fn ($row) => [
+                $row->external_id,
+                $row->subcategory_code,
+                $row->subcategory_name,
+                $row->category_external_id,
+                $row->category_code,
+                $row->parent_name,
+                $row->subcategory_id,
+                $row->fk_subcategory_name ?? 'Not linked',
+                $row->description,
+                $row->ranking,
+                $this->statusText($row),
+                $this->exportDate($row->odoo_updated_at),
+                $this->exportDate($row->updated_at),
+            ])->all();
+
+        return Excel::download(new ExcelExport([
+            'External ID', 'Sub-category Code', 'Sub-category', 'Parent External ID', 'Parent Code', 'Parent Name',
+            'FieldKonnect Sub-category ID', 'FieldKonnect Sub-category', 'Description', 'Ranking', 'Status', 'Odoo Updated', 'Synced',
+        ], $rows), 'odoo_subcategories_' . now()->format('Y-m-d_His') . '.xlsx');
+    }
+
+    /**
      * Product Master Odoo: products pulled from Odoo (cron twice a day, or Sync now).
      */
     public function products()
@@ -253,6 +290,52 @@ class OdooSyncController extends Controller
     public function syncProducts(ProductSync $sync)
     {
         return $this->runPullSync($sync);
+    }
+
+    /**
+     * Excel of every row on Product Master Odoo.
+     */
+    public function productsExport()
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $rows = DB::table('odoo_products as op')
+            ->leftJoin('odoo_categories as oc', 'oc.external_id', '=', 'op.category_external_id')
+            ->leftJoin('odoo_subcategories as os', 'os.external_id', '=', 'op.subcategory_external_id')
+            ->leftJoin('products as p', 'p.id', '=', 'op.product_id')
+            ->orderBy('op.product_name')
+            ->get(['op.*', 'oc.category_name', 'os.subcategory_name', 'p.product_name as fk_product_name'])
+            ->map(fn ($row) => [
+                $row->external_id,
+                $row->product_code,
+                $row->product_name,
+                $row->display_name,
+                $row->category_external_id,
+                $row->category_code,
+                $row->category_name ?? $row->category_code,
+                $row->subcategory_external_id,
+                $row->subcategory_code,
+                $row->subcategory_name ?? $row->subcategory_code,
+                $row->brand_name,
+                $row->uom_code,
+                $row->hsn_code,
+                $row->mrp,
+                $row->standard_price,
+                $row->gst_percent,
+                $row->currency_code,
+                $row->orderable ? 'Yes' : 'No',
+                $row->product_id,
+                $row->fk_product_name ?? 'Not linked',
+                $this->statusText($row),
+                $this->exportDate($row->odoo_updated_at),
+                $this->exportDate($row->updated_at),
+            ])->all();
+
+        return Excel::download(new ExcelExport([
+            'External ID', 'Product Code', 'Product Name', 'Display Name', 'Category External ID', 'Category Code', 'Category',
+            'Sub-category External ID', 'Sub-category Code', 'Sub-category', 'Brand', 'UOM', 'HSN', 'MRP', 'Standard Price', 'GST %',
+            'Currency', 'Orderable', 'FieldKonnect Product ID', 'FieldKonnect Product', 'Status', 'Odoo Updated', 'Synced',
+        ], $rows), 'odoo_products_' . now()->format('Y-m-d_His') . '.xlsx');
     }
 
     /**
@@ -397,6 +480,19 @@ class OdooSyncController extends Controller
         return $mode === 'live'
             ? '<span class="os-pill os-pill-live os-pill-sm">Live</span>'
             : '<span class="os-pill os-pill-test os-pill-sm">Test</span>';
+    }
+
+    private function statusText(object $row): string
+    {
+        if ($row->is_deleted) {
+            return 'Deleted';
+        }
+        return $row->active ? 'Active' : 'Inactive';
+    }
+
+    private function exportDate($value): string
+    {
+        return $value ? Carbon::parse($value)->format('d M Y, h:i A') : '';
     }
 
     private function dateTimeCell($value): string

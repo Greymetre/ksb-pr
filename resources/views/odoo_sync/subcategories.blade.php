@@ -8,7 +8,10 @@
         <h1 class="os-title"><span class="material-icons">account_tree</span>Sub Category Master Odoo</h1>
         <p class="os-subtitle">Product sub-categories pulled from Odoo twice a day (06:10 and 18:10, after categories). Only sub-categories whose parent category is linked to a FieldKonnect category are kept. The FieldKonnect sub-category master is not changed; a sub-category is linked when its name matches under that parent category.</p>
       </div>
-      <button type="button" class="os-btn" id="osSyncNow"><span class="material-icons">sync</span><span class="os-btn-label">Sync now</span></button>
+      <div class="os-head-actions">
+        <a href="{{ route('odoo_sync.subcategories_export') }}" class="os-btn os-btn-ghost"><span class="material-icons">download</span>Export</a>
+        <button type="button" class="os-btn" id="osSyncNow"><span class="material-icons">sync</span><span class="os-btn-label">Sync now</span></button>
+      </div>
     </div>
 
     <div class="os-stats is-3">
