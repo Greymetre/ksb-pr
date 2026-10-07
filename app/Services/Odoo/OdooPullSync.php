@@ -16,7 +16,7 @@ use Throwable;
 | writes one odoo_sync_logs row per run (method = PULL).
 |
 | - One bad record never blocks the others.
-| - Odoo unreachable / auth failed: rows already saved are kept, run logged as HTTP 502.
+| - Odoo unreachable / auth failed: nothing is changed, run logged as HTTP 502.
 */
 abstract class OdooPullSync
 {
@@ -40,6 +40,13 @@ abstract class OdooPullSync
     }
 
     /**
+     * Called once with every record of the run, before the first upsert().
+     */
+    protected function prepare(array $records): void
+    {
+    }
+
+    /**
      * @return array{status: string, errors?: array}  status: created | updated | skipped | failed
      */
     abstract protected function upsert(array $record, string $correlationId): array;
@@ -56,29 +63,35 @@ abstract class OdooPullSync
         $statusCode = 200;
 
         try {
+            // All pages are read first, so a module can look across records (e.g. the
+            // sub-category tree) and nothing is written or removed on a half-read run.
+            $records = [];
             $page = 1;
             do {
                 $result = $this->odoo->call($model, $method, [
                     ['page' => $page, 'page_size' => $this->pageSize()],
                 ]);
-
-                foreach ($result['data'] ?? [] as $record) {
-                    $index = $summary['received']++;
-                    try {
-                        $outcome = $this->upsert($record, $correlationId);
-                        $summary[$outcome['status']]++;
-                        if (!empty($outcome['errors'])) {
-                            $errors[] = ['index' => $index, 'external_id' => $record['external_id'] ?? null, 'status' => $outcome['status'], 'errors' => $outcome['errors']];
-                        }
-                    } catch (Throwable $e) {
-                        $summary['failed']++;
-                        $errors[] = ['index' => $index, 'external_id' => $record['external_id'] ?? null, 'status' => 'failed', 'errors' => ['record' => [$e->getMessage()]]];
-                    }
-                }
+                array_push($records, ...($result['data'] ?? []));
 
                 $hasNext = !empty($result['pagination']['has_next']);
                 $page++;
             } while ($hasNext && $page <= self::MAX_PAGES);
+
+            $this->prepare($records);
+
+            foreach ($records as $record) {
+                $index = $summary['received']++;
+                try {
+                    $outcome = $this->upsert($record, $correlationId);
+                    $summary[$outcome['status']]++;
+                    if (!empty($outcome['errors'])) {
+                        $errors[] = ['index' => $index, 'external_id' => $record['external_id'] ?? null, 'status' => $outcome['status'], 'errors' => $outcome['errors']];
+                    }
+                } catch (Throwable $e) {
+                    $summary['failed']++;
+                    $errors[] = ['index' => $index, 'external_id' => $record['external_id'] ?? null, 'status' => 'failed', 'errors' => ['record' => [$e->getMessage()]]];
+                }
+            }
         } catch (Throwable $e) {
             $statusCode = 502;
             $errors[] = ['index' => null, 'external_id' => null, 'status' => 'failed', 'errors' => ['odoo' => [$e->getMessage()]]];

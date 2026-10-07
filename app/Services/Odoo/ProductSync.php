@@ -15,9 +15,9 @@ use Illuminate\Support\Facades\DB;
 |
 | - Upsert key is external_id; re-syncing never duplicates.
 | - A record whose updated_at is not newer than the stored one is skipped.
-| - Only products of synced masters are kept: the sub-category must be in
-|   odoo_subcategories (or, with no sub-category, the category must be linked
-|   in odoo_categories). The rest are skipped and removed if stored earlier.
+| - Only products of synced masters are kept: the category must be linked in
+|   odoo_categories, or the sub-category stored in odoo_subcategories. The rest
+|   are skipped and removed if stored earlier.
 | - product_id links by product_code to products.product_code, then
 |   products.sap_code (same rule as party prices). `products` is never changed.
 */
@@ -46,14 +46,14 @@ class ProductSync extends OdooPullSync
 
     protected function upsert(array $record, string $correlationId): array
     {
-        if (empty($record['external_id']) || empty($record['product_code']) || empty($record['product_name'])) {
-            return ['status' => 'failed', 'errors' => ['record' => ['external_id, product_code and product_name are required.']]];
-        }
-
         // Category / sub-category not synced in FieldKonnect: do not keep this product
         if (!$this->belongsToSyncedMaster($record)) {
-            DB::table('odoo_products')->where('external_id', $record['external_id'])->delete();
+            DB::table('odoo_products')->where('external_id', $record['external_id'] ?? '')->delete();
             return ['status' => 'skipped'];
+        }
+
+        if (empty($record['external_id']) || empty($record['product_code']) || empty($record['product_name'])) {
+            return ['status' => 'failed', 'errors' => ['record' => ['external_id, product_code and product_name are required.']]];
         }
 
         $odooUpdatedAt = $this->toLocal($record['updated_at'] ?? null);
@@ -118,28 +118,24 @@ class ProductSync extends OdooPullSync
     }
 
     /**
-     * Sub-category kept by SubcategorySync, or (no sub-category) a category linked to FieldKonnect.
+     * Category linked to FieldKonnect (odoo_categories), or a sub-category kept by SubcategorySync.
      */
     private function belongsToSyncedMaster(array $record): bool
     {
-        $subcategoryExternalId = $record['subcategory_external_id'] ?? null;
-
-        if ($subcategoryExternalId) {
-            return $this->subcategoryCache[$subcategoryExternalId] ??= DB::table('odoo_subcategories')
-                ->where('external_id', $subcategoryExternalId)
-                ->exists();
-        }
-
         $categoryExternalId = $record['category_external_id'] ?? null;
 
-        if (!$categoryExternalId) {
-            return false;
-        }
-
-        return $this->categoryCache[$categoryExternalId] ??= DB::table('odoo_categories')
+        if ($categoryExternalId && ($this->categoryCache[$categoryExternalId] ??= DB::table('odoo_categories')
             ->where('external_id', $categoryExternalId)
             ->whereNotNull('category_id')
-            ->exists();
+            ->exists())) {
+            return true;
+        }
+
+        $subcategoryExternalId = $record['subcategory_external_id'] ?? null;
+
+        return $subcategoryExternalId && ($this->subcategoryCache[$subcategoryExternalId] ??= DB::table('odoo_subcategories')
+            ->where('external_id', $subcategoryExternalId)
+            ->exists());
     }
 
     /**

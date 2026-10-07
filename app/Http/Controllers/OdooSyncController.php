@@ -154,10 +154,12 @@ class OdooSyncController extends Controller
 
         $query = DB::table('odoo_subcategories as os')
             ->leftJoin('odoo_categories as oc', 'oc.external_id', '=', 'os.category_external_id')
+            // Nested sub-category (Column Pipe > Heavy Pipe): parent is another sub-category
+            ->leftJoin('odoo_subcategories as ps', 'ps.external_id', '=', 'os.category_external_id')
             ->leftJoin('subcategories as s', 's.id', '=', 'os.subcategory_id')
             ->select('os.id', 'os.external_id', 'os.subcategory_code', 'os.subcategory_name', 'os.description', 'os.category_code', 'os.ranking',
                 'os.active', 'os.is_deleted', 'os.subcategory_id', 'os.odoo_updated_at', 'os.updated_at',
-                'oc.category_name as parent_name', 's.subcategory_name as fk_subcategory_name');
+                DB::raw('COALESCE(oc.category_name, ps.subcategory_name) as parent_name'), 's.subcategory_name as fk_subcategory_name');
 
         return datatables()->query($query)
             ->editColumn('external_id', fn ($row) => '<span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->external_id) . '">' . e($row->external_id) . '</span>')

@@ -14,8 +14,9 @@ use Illuminate\Support\Facades\DB;
 |
 | - Upsert key is external_id; re-syncing never duplicates.
 | - A record whose updated_at is not newer than the stored one is skipped.
-| - Only sub-categories whose parent Odoo category is linked to a FieldKonnect
-|   category are kept; the rest are skipped (and removed if stored earlier).
+| - Odoo nests sub-categories (PVC Pipes > Column Pipe > Heavy Pipe), so the
+|   parent chain is walked up: only sub-categories under a category linked to
+|   FieldKonnect are kept; the rest are skipped (and removed if stored earlier).
 | - subcategory_id links to FieldKonnect `subcategories` by name: inside the
 |   parent's linked FieldKonnect category. `subcategories` is never changed.
 */
@@ -24,6 +25,8 @@ class SubcategorySync extends OdooPullSync
     public const ENTITY = 'subcategories';
 
     private array $parentCache = [];
+    /** sub-category external_id => parent external_id, for the whole run */
+    private array $parentOf = [];
     private array $subcategoryCache = [];
 
     public function entity(): string
@@ -34,6 +37,16 @@ class SubcategorySync extends OdooPullSync
     protected function source(): array
     {
         return ['product.category', 'get_fieldkonnect_subcategories'];
+    }
+
+    protected function prepare(array $records): void
+    {
+        $this->parentOf = [];
+        foreach ($records as $record) {
+            if (!empty($record['external_id'])) {
+                $this->parentOf[$record['external_id']] = $record['category_external_id'] ?? null;
+            }
+        }
     }
 
     protected function upsert(array $record, string $correlationId): array
@@ -94,21 +107,30 @@ class SubcategorySync extends OdooPullSync
     }
 
     /**
-     * FieldKonnect category the parent Odoo category is linked to (from odoo_categories).
+     * FieldKonnect category of the nearest linked ancestor (odoo_categories), walking
+     * up through parent sub-categories. Null when no ancestor is a linked category.
      */
     private function resolveParentCategoryId(?string $categoryExternalId): ?int
     {
-        if (!$categoryExternalId) {
-            return null;
+        $seen = [];
+
+        while ($categoryExternalId && !isset($seen[$categoryExternalId])) {
+            $seen[$categoryExternalId] = true;
+
+            if (!array_key_exists($categoryExternalId, $this->parentCache)) {
+                $this->parentCache[$categoryExternalId] = DB::table('odoo_categories')
+                    ->where('external_id', $categoryExternalId)
+                    ->value('category_id');
+            }
+
+            if ($this->parentCache[$categoryExternalId]) {
+                return (int) $this->parentCache[$categoryExternalId];
+            }
+
+            $categoryExternalId = $this->parentOf[$categoryExternalId] ?? null;
         }
 
-        if (!array_key_exists($categoryExternalId, $this->parentCache)) {
-            $this->parentCache[$categoryExternalId] = DB::table('odoo_categories')
-                ->where('external_id', $categoryExternalId)
-                ->value('category_id');
-        }
-
-        return $this->parentCache[$categoryExternalId];
+        return null;
     }
 
     private function resolveSubcategoryId(string $name, int $parentCategoryId): ?int
