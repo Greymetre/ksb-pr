@@ -214,22 +214,32 @@ class ComplaintApiController extends Controller
         return response()->json(['status' => 'success', 'data' => $complaints]);
     }
 
-    public function create_options(Request $request)
+    /**
+     * Dealers and distributors visible to the user via reporting hierarchy
+     * (created by, executive of, or assigned to the user or their team).
+     */
+    private function complaintDealerQuery(Request $request)
     {
         $visibleUserIds = getUsersReportingToAuth($request->user()->id);
         $visibleUserIds[] = $request->user()->id;
         $visibleUserIds = array_values(array_unique($visibleUserIds));
 
-        $customerIds = EmployeeDetail::whereIn('user_id', $visibleUserIds)
-            ->where(fn ($query) => $query->whereNull('active')->orWhere('active', 'Y'))
-            ->distinct()->pluck('customer_id');
-
-        $dealers = Customers::with('customeraddress')
-            ->whereIn('id', $customerIds)
-            ->where('active', 'Y')
+        return Customers::query()
+            ->where(fn ($query) => $query
+                ->whereIn('created_by', $visibleUserIds)
+                ->orWhereIn('executive_id', $visibleUserIds)
+                ->orWhereHas('getemployeedetail', fn ($employee) => $employee
+                    ->whereIn('user_id', $visibleUserIds)
+                    ->where(fn ($active) => $active->whereNull('active')->orWhere('active', 'Y'))))
             ->whereHas('customertypes', fn ($query) => $query
-                ->whereRaw('LOWER(TRIM(type_name)) = ?', ['dealer'])
-                ->whereRaw('LOWER(TRIM(customertype_name)) = ?', ['dealer']))
+                ->whereRaw('LOWER(TRIM(type_name)) IN (?, ?)', ['dealer', 'distributor']));
+    }
+
+    public function create_options(Request $request)
+    {
+        $dealers = $this->complaintDealerQuery($request)
+            ->with('customeraddress')
+            ->where('active', 'Y')
             ->orderBy('name')->get()
             ->map(function ($dealer) {
                 $address = $dealer->customeraddress;
@@ -275,19 +285,8 @@ class ComplaintApiController extends Controller
             'attachment' => 'nullable|file|mimes:jpg,jpeg,png,heic,heif,webp,pdf|max:20480',
         ]);
 
-        $visibleUserIds = getUsersReportingToAuth($request->user()->id);
-        $visibleUserIds[] = $request->user()->id;
-        $visibleUserIds = array_values(array_unique($visibleUserIds));
-
-        $isAssigned = EmployeeDetail::whereIn('user_id', $visibleUserIds)
-            ->where('customer_id', $validated['dealer_id'])
-            ->where(fn ($query) => $query->whereNull('active')->orWhere('active', 'Y'))->exists();
-        $isDealer = Customers::whereKey($validated['dealer_id'])
-            ->whereHas('customertypes', fn ($query) => $query
-                ->whereRaw('LOWER(TRIM(type_name)) = ?', ['dealer'])
-                ->whereRaw('LOWER(TRIM(customertype_name)) = ?', ['dealer']))
-            ->exists();
-        abort_unless($isAssigned && $isDealer, 403, 'The selected dealer is not available in your reporting hierarchy.');
+        $isAllowed = $this->complaintDealerQuery($request)->whereKey($validated['dealer_id'])->exists();
+        abort_unless($isAllowed, 403, 'The selected dealer/distributor is not available in your reporting hierarchy.');
 
         try {
         $complaint = DB::transaction(function () use ($request, $validated) {
