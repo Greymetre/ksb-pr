@@ -32,6 +32,7 @@ class OdooRpcClient
             ->acceptJson()
             ->post($config['url'], [
                 'jsonrpc' => '2.0',
+                'method' => 'call',
                 'params' => [
                     'authenticate' => [[
                         'db' => $config['db'],

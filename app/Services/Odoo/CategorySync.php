@@ -32,6 +32,11 @@ class CategorySync extends OdooPullSync
         return ['product.category', 'get_fieldkonnect_categories'];
     }
 
+    protected function pageSize(): int
+    {
+        return 1000;
+    }
+
     protected function upsert(array $record, string $correlationId): array
     {
         if (empty($record['external_id']) || empty($record['category_name'])) {

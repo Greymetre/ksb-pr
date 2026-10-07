@@ -15,11 +15,11 @@
     },
     {
       "key": "odoo_url",
-      "value": "https://techultra-duke-pipes-stage-37576517.dev.odoo.com"
+      "value": "https://techultra-duke-pipes-stage-39369263.dev.odoo.com"
     },
     {
       "key": "odoo_db",
-      "value": "techultra-duke-pipes-stage-37576517"
+      "value": "techultra-duke-pipes-stage-39369263"
     },
     {
       "key": "odoo_login",
@@ -65,7 +65,7 @@
             "description": "Returns result.data[] in the same shape FieldKonnect accepts in POST /party-prices records[].",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"params\": {\n    \"authenticate\": [\n      {\n        \"db\": \"{{odoo_db}}\",\n        \"login\": \"{{odoo_login}}\",\n        \"dev_key\": \"{{odoo_dev_key}}\"\n      }\n    ],\n    \"model\": \"product.pricelist\",\n    \"method\": \"get_customer_product_price\",\n    \"args\": [\n      {\n        \"customer_name\": \"4C Consulting\",\n        \"sku\": \"Delivery_007\"\n      }\n    ]\n  }\n}",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"authenticate\": [\n      {\n        \"db\": \"{{odoo_db}}\",\n        \"login\": \"{{odoo_login}}\",\n        \"dev_key\": \"{{odoo_dev_key}}\"\n      }\n    ],\n    \"model\": \"product.pricelist\",\n    \"method\": \"get_customer_product_price\",\n    \"args\": [\n      {\n        \"customer_name\": \"4C Consulting\",\n        \"sku\": \"Delivery_007\"\n      }\n    ]\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
