@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 |
 | - Upsert key is external_id; re-syncing never duplicates.
 | - A record whose updated_at is not newer than the stored one is skipped.
+| - Only categories that already exist in FieldKonnect (matched by name) are
+|   kept; the rest are skipped and removed if stored earlier.
 | - category_code is copied into the linked categories.sap_code ("Odoo Code").
 */
 class CategorySync extends OdooPullSync
@@ -45,6 +47,12 @@ class CategorySync extends OdooPullSync
 
         $odooUpdatedAt = $this->toLocal($record['updated_at'] ?? null);
         $categoryId = $this->resolveCategoryId($record['category_name']);
+
+        // Not a FieldKonnect category: do not keep it (its sub-categories and products are skipped too)
+        if (!$categoryId) {
+            DB::table('odoo_categories')->where('external_id', $record['external_id'])->delete();
+            return ['status' => 'skipped'];
+        }
 
         $this->syncCategoryCode($categoryId, (string) ($record['category_code'] ?? ''));
 
