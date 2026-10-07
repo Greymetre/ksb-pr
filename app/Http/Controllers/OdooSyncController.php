@@ -160,7 +160,7 @@ class OdooSyncController extends Controller
             // Nested sub-category (Column Pipe > Heavy Pipe): parent is another sub-category
             ->leftJoin('odoo_subcategories as ps', 'ps.external_id', '=', 'os.category_external_id')
             ->leftJoin('subcategories as s', 's.id', '=', 'os.subcategory_id')
-            ->select('os.id', 'os.external_id', 'os.subcategory_code', 'os.subcategory_name', 'os.description', 'os.category_code', 'os.ranking',
+            ->select('os.id', 'os.external_id', 'os.subcategory_code', 'os.subcategory_name', 'os.description', 'os.category_external_id', 'os.category_code', 'os.ranking',
                 'os.active', 'os.is_deleted', 'os.subcategory_id', 'os.odoo_updated_at', 'os.updated_at',
                 DB::raw('COALESCE(oc.category_name, ps.subcategory_name) as parent_name'), 's.subcategory_name as fk_subcategory_name');
 
