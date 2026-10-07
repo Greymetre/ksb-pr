@@ -6,7 +6,7 @@
       <div>
         <div class="os-breadcrumb">Odoo Sync › <b>Product Master Odoo</b></div>
         <h1 class="os-title"><span class="material-icons">inventory_2</span>Product Master Odoo</h1>
-        <p class="os-subtitle">Products pulled from Odoo twice a day (06:20 and 18:20, after categories and sub-categories). The FieldKonnect product master is not changed; a product is linked when its code matches the product code or SAP code.</p>
+        <p class="os-subtitle">Products pulled from Odoo twice a day (06:20 and 18:20, after categories and sub-categories). Only products of synced categories and sub-categories are kept. The FieldKonnect product master is not changed; a product is linked when its code matches the product code or SAP code.</p>
       </div>
       <button type="button" class="os-btn" id="osSyncNow"><span class="material-icons">sync</span><span class="os-btn-label">Sync now</span></button>
     </div>
