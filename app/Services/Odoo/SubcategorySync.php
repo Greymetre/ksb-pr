@@ -14,9 +14,10 @@ use Illuminate\Support\Facades\DB;
 |
 | - Upsert key is external_id; re-syncing never duplicates.
 | - A record whose updated_at is not newer than the stored one is skipped.
+| - Only sub-categories whose parent Odoo category is linked to a FieldKonnect
+|   category are kept; the rest are skipped (and removed if stored earlier).
 | - subcategory_id links to FieldKonnect `subcategories` by name: inside the
-|   parent's linked FieldKonnect category when there is one, otherwise only
-|   when exactly one sub-category has that name. `subcategories` is never changed.
+|   parent's linked FieldKonnect category. `subcategories` is never changed.
 */
 class SubcategorySync extends OdooPullSync
 {
@@ -43,6 +44,13 @@ class SubcategorySync extends OdooPullSync
 
         $odooUpdatedAt = $this->toLocal($record['updated_at'] ?? null);
         $parentCategoryId = $this->resolveParentCategoryId($record['category_external_id'] ?? null);
+
+        // Parent category not synced/linked in FieldKonnect: do not keep this sub-category
+        if (!$parentCategoryId) {
+            DB::table('odoo_subcategories')->where('external_id', $record['external_id'])->delete();
+            return ['status' => 'skipped'];
+        }
+
         $subcategoryId = $this->resolveSubcategoryId($record['subcategory_name'], $parentCategoryId);
 
         $existing = DB::table('odoo_subcategories')
@@ -103,23 +111,16 @@ class SubcategorySync extends OdooPullSync
         return $this->parentCache[$categoryExternalId];
     }
 
-    private function resolveSubcategoryId(string $name, ?int $parentCategoryId): ?int
+    private function resolveSubcategoryId(string $name, int $parentCategoryId): ?int
     {
         $key = mb_strtolower(trim($name)) . '|' . $parentCategoryId;
 
         if (!array_key_exists($key, $this->subcategoryCache)) {
-            $query = DB::table('subcategories')
+            $this->subcategoryCache[$key] = DB::table('subcategories')
                 ->whereNull('deleted_at')
-                ->where('subcategory_name', trim($name));
-
-            if ($parentCategoryId) {
-                $id = $query->where('category_id', $parentCategoryId)->value('id');
-            } else {
-                $ids = $query->limit(2)->pluck('id');
-                $id = $ids->count() === 1 ? $ids->first() : null;
-            }
-
-            $this->subcategoryCache[$key] = $id;
+                ->where('subcategory_name', trim($name))
+                ->where('category_id', $parentCategoryId)
+                ->value('id');
         }
 
         return $this->subcategoryCache[$key];
