@@ -49,6 +49,15 @@ abstract class OdooPullSync
     }
 
     /**
+     * Called once with every record read from Odoo, before prepare(); a module may
+     * add or adjust records here (e.g. a placeholder sub-category).
+     */
+    protected function transform(array $records): array
+    {
+        return $records;
+    }
+
+    /**
      * Called once with every record of the run, before the first upsert().
      */
     protected function prepare(array $records): void
@@ -90,6 +99,7 @@ abstract class OdooPullSync
                 } while ($hasNext && $page <= self::MAX_PAGES);
             }
 
+            $records = $this->transform($records);
             $this->prepare($records);
 
             foreach ($records as $record) {

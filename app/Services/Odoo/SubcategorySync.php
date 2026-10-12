@@ -23,6 +23,11 @@ use Illuminate\Support\Facades\DB;
 |   odoo_subcategory_id, else by name inside the category) gets
 |   odoo_subcategory_id, Odoo's name, category and active flag; a missing one is
 |   created. Sub Category List shows only these.
+| - A synced category for which Odoo sends no sub-category (today: Column Coupler)
+|   gets one placeholder sub-category with the category's name, keyed by the
+|   category's Odoo id (subcategory_odoo_id = category_odoo_id), so its products
+|   can sync. Once Odoo sends real sub-categories for it, the placeholder drops
+|   off the list and the real ones are synced.
 */
 class SubcategorySync extends OdooPullSync
 {
@@ -54,6 +59,37 @@ class SubcategorySync extends OdooPullSync
             ->all();
 
         return array_map(fn ($odooId) => ['category_odoo_id' => (int) $odooId], array_keys($this->categories));
+    }
+
+    /**
+     * Placeholder sub-category (same name and Odoo id as the category) for every
+     * synced category that came back from Odoo without sub-categories.
+     */
+    protected function transform(array $records): array
+    {
+        $withSubcategories = array_flip(array_map(fn ($r) => (int) ($r['category_odoo_id'] ?? 0), $records));
+
+        $empty = DB::table('odoo_categories')
+            ->whereIn('category_odoo_id', array_keys($this->categories) ?: [0])
+            ->get(['category_odoo_id', 'category_name', 'active', 'is_deleted', 'odoo_created_at', 'odoo_updated_at']);
+
+        foreach ($empty as $category) {
+            if (isset($withSubcategories[(int) $category->category_odoo_id])) {
+                continue;
+            }
+            $records[] = [
+                'subcategory_odoo_id' => (int) $category->category_odoo_id,
+                'subcategory_name' => $category->category_name,
+                'category_odoo_id' => (int) $category->category_odoo_id,
+                'active' => (bool) $category->active,
+                'is_deleted' => (bool) $category->is_deleted,
+                'created_at' => $category->odoo_created_at,
+                'updated_at' => $category->odoo_updated_at,
+                'is_placeholder' => true,
+            ];
+        }
+
+        return $records;
     }
 
     /**

@@ -19,7 +19,9 @@ use Illuminate\Support\Facades\DB;
 |
 | - Only products whose category AND sub-category are both synced
 |   (odoo_categories / odoo_subcategories) are kept; the rest are skipped and
-|   removed if stored earlier. A product with no sub-category is skipped too.
+|   removed if stored earlier. A product with no sub-category goes under its
+|   category's placeholder sub-category (subcategory_odoo_id = category_odoo_id,
+|   see SubcategorySync), when there is one.
 | - Upsert key is product_odoo_id; re-syncing never duplicates.
 | - A record whose updated_at is not newer than the stored one is skipped.
 | - Odoo sends no product code, so product_id links by name to
@@ -69,6 +71,21 @@ class ProductSync extends OdooPullSync
             ->all();
 
         return array_map(fn ($odooId) => ['category_odoo_id' => $odooId], $this->categoryOdooIds);
+    }
+
+    /**
+     * A product with no sub-category is put under its category's placeholder
+     * sub-category (same Odoo id as the category), when SubcategorySync made one.
+     */
+    protected function transform(array $records): array
+    {
+        return array_map(function ($record) {
+            $categoryOdooId = (int) ($record['category_odoo_id'] ?? 0);
+            if (empty($record['subcategory_odoo_id']) && ($this->subcategories[$categoryOdooId] ?? null) === $categoryOdooId) {
+                $record['subcategory_odoo_id'] = $categoryOdooId;
+            }
+            return $record;
+        }, $records);
     }
 
     /**
