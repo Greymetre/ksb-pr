@@ -46,11 +46,11 @@
             <div class="os-key-meta">Synced on Product Management › Sub Category List</div>
           </div>
         </a>
-        <a class="os-module" href="{{ route('odoo_sync.products') }}">
+        <a class="os-module" href="{{ route('products.index') }}">
           <div class="os-key-icon"><span class="material-icons">inventory_2</span></div>
           <div class="os-key-body">
-            <div class="os-key-name">Product Master Odoo <span class="os-pill os-pill-success os-pill-sm" style="margin-top:0">Ready</span></div>
-            <div class="os-key-meta">Pulled from Odoo twice a day</div>
+            <div class="os-key-name">Products <span class="os-pill os-pill-success os-pill-sm" style="margin-top:0">Ready</span></div>
+            <div class="os-key-meta">Synced on Product Management › Product List</div>
           </div>
         </a>
         <a class="os-module" href="{{ route('odoo_sync.customers') }}">

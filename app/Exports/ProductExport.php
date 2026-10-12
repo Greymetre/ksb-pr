@@ -21,7 +21,7 @@ class ProductExport implements FromCollection,WithHeadings,ShouldAutoSize,WithMa
 
     public function collection()
     {
-        $data = Product::with('productpriceinfo')->select('id','active','product_name','product_code','new_group','sub_group','expiry_interval','expiry_interval_preiod', 'display_name', 'description', 'subcategory_id', 'category_id', 'brand_id', 'product_image', 'unit_id', 'specification', 'part_no','suc_del', 'product_no', 'model_no','phase','sap_code' , 'branch_id', 'hsn_sac', 'hsn_sac_no');
+        $data = Product::with('productpriceinfo')->select('id','active','product_name','product_code','new_group','sub_group','expiry_interval','expiry_interval_preiod', 'display_name', 'description', 'subcategory_id', 'category_id', 'brand_id', 'product_image', 'unit_id', 'specification', 'part_no','suc_del', 'product_no', 'model_no','phase','sap_code' , 'branch_id', 'hsn_sac', 'hsn_sac_no', 'odoo_product_id')->whereNotNull('odoo_product_id');
         if($this->category_id && !empty($this->category_id)){
             $data->where('category_id', $this->category_id);
         }
@@ -57,7 +57,7 @@ class ProductExport implements FromCollection,WithHeadings,ShouldAutoSize,WithMa
             isset($data['productpriceinfo']['discount']) ? $data['productpriceinfo']['discount'] : '',
             isset($data['model_no']) ? $data['model_no'] :'',
             $data['active'],
-            $data['sap_code'],
+            $data['odoo_product_id'],
             isset($data['productpriceinfo']['rmc']) ? $data['productpriceinfo']['rmc'] :'',
             isset($data['hsn_sac']) ? $data['hsn_sac'] :'',
             'No', // set to Yes and re-import to delete this product

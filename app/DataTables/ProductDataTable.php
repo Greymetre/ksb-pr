@@ -45,12 +45,7 @@ class ProductDataTable extends DataTable
                     //       <i class="material-icons">visibility</i>
                     //     </a>';
                   }
-                  if(auth()->user()->can(['product_delete']))
-                  {
-                    $btn = $btn.' <a href="" class="btn btn-danger btn-just-icon btn-sm delete" value="'.$query->id.'" title="'.trans('panel.global.delete').' '.trans('panel.product.title_singular').'">
-                                <i class="material-icons">clear</i>
-                              </a>';
-                  }
+                  // No delete: products come from Odoo (Product List -> Sync now)
                   if(auth()->user()->can(['product_active']))
                   {
                     $active = ($query->active == 'Y') ? 'checked="" value="'.$query->active.'"' : 'value="'.$query->active.'"';
@@ -69,6 +64,8 @@ class ProductDataTable extends DataTable
                 $product_image = !empty($query->product_image) ? $query->product_image : asset('assets/img/placeholder.jpg') ;
                 return '<img src="'.$product_image.'" border="0" width="70" class="img-rounded imageDisplayModel" align="center" />';
             })
+            ->addColumn('mrp', fn ($row) => $row->productpriceinfo->mrp ?? '')
+            ->addColumn('gst', fn ($row) => isset($row->productpriceinfo->gst) ? rtrim(rtrim(number_format($row->productpriceinfo->gst, 2), '0'), '.') . '%' : '')
             ->rawColumns(['action','image', 'expiry_info']);
     }
 
@@ -87,6 +84,8 @@ class ProductDataTable extends DataTable
         if($request->active && !empty($request->active)){
             $data->where('active', $request->active);
         }
+        // Only products synced from Odoo
+        $data->whereNotNull('odoo_product_id');
         $data = $data->latest()->newQuery();
 
         return $data;

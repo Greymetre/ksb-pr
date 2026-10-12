@@ -46,43 +46,23 @@
                 </form>
                 @endif
                 <div class="next-btn">
-                  @if(auth()->user()->can(['product_upload']))
-                  <form action="{{ URL::to('products-upload') }}" class="form-horizontal" method="post" enctype="multipart/form-data">
-                    {{ csrf_field() }}
-                    <div class="input-group">
-                      <div class="fileinput fileinput-new text-center" data-provides="fileinput">
-                        <span class="btn btn-just-icon btn-theme btn-file">
-                          <span class="fileinput-new"><i class="material-icons">attach_file</i></span>
-                          <span class="fileinput-exists">Change</span>
-                          <input type="hidden">
-                          <input type="file" name="import_file" required accept=".xls,.xlsx" />
-                        </span>
-                      </div>
-                      <div class="input-group-append">
-                        <button class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.upload') !!} {!! trans('panel.product.title') !!}">
-                          <i class="material-icons">cloud_upload</i>
-                          <div class="ripple-container"></div>
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                  @endif
-
                   @if(auth()->user()->can(['product_download']))
                   <!-- <a href="{{ URL::to('products-download') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.download') !!} {!! trans('panel.product.title') !!}"><i class="material-icons">cloud_download</i></a> -->
                   @endif
-                  @if(auth()->user()->can(['product_template']))
-                  <a href="{{ URL::to('products-template') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.template') !!} {!! trans('panel.product.title_singular') !!}"><i class="material-icons">text_snippet</i></a>
-                  @endif
-                  @if(auth()->user()->can(['product_create']))
-                  <a href="{{ route('products.create') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.add') !!} {!! trans('panel.product.title_singular') !!}"><i class="material-icons">add_circle</i></a>
-                  @endif
+                  {{-- Products come from Odoo (Sync now below): no add / upload / template --}}
                 </div>
               </div>
             </span>
           </h4>
         </div>
         <div class="card-body">
+          {{-- Products of the synced categories / sub-categories come from Odoo twice a day (06:20 and 18:20), or Sync now --}}
+          @include('odoo_sync.partials.list_panel', [
+            'odooSubtitle' => 'Auto sync twice a day (06:20 and 18:20) · products of the synced categories and sub-categories',
+            'odooNoun' => 'products',
+            'odooIcon' => 'inventory_2',
+            'odooSyncUrl' => route('products.odoo_sync'),
+          ])
           @if(count($errors) > 0)
           <div class="alert alert-danger">
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -107,26 +87,13 @@
                 <th>{!! trans('panel.global.no') !!}</th>
                 <th>{!! trans('panel.global.action') !!}</th>
                 <th>{!! trans('panel.product.fields.product_image') !!}</th>
-                <!-- <th>{!! trans('panel.product.fields.category_name') !!}</th> -->
-                  <th>Segment</th>
-                <!-- <th>{!! trans('panel.product.fields.subcategory_name') !!}</th> -->
-                <!-- <th>{!! trans('panel.product.fields.product_name') !!}</th> -->
-                                <th>Material Description</th>
-
-                <th>Material Group</th>
-                <th>Old Stage </th>
-                <!-- <th>{!! trans('panel.product.fields.mrp') !!}</th> -->
-                <!-- <th>{!! trans('panel.product.fields.gst') !!}</th> -->
-                <!-- <th>Discount %</th> -->
-                <!-- <th>Expiry Interval Preiod</th> -->
-                <!-- <th>{!! trans('panel.product.fields.suc-del') !!}</th> -->
-                                 <th>WM Packing Standard</th>
-
-                <th>Material</th>
-                <!-- <th>{!! trans('panel.product.fields.unit_name') !!}</th> -->
-                <!-- <th>{!! trans('panel.product.fields.price') !!}</th> -->
-                <!-- <th>{!! trans('panel.product.fields.selling_price') !!}</th> -->
-                <th>{!! trans('panel.global.created_by') !!}</th>
+                <th>Odoo Product ID</th>
+                <th>Product Name</th>
+                <th>Category</th>
+                <th>Sub-category</th>
+                <th>UOM</th>
+                <th>MRP</th>
+                <th>GST</th>
                 <th>{!! trans('panel.global.created_at') !!}</th>
               </thead>
               <tbody>
@@ -182,96 +149,13 @@
             orderable: false,
             searchable: false
           },
-          // {
-          //   data: 'categories.category_name',
-          //   name: 'categories.category_name',
-          //   orderable: false,
-          //   "defaultContent": ''
-          // },
-          {
-            data: 'subcategories.subcategory_name',
-            name: 'subcategories.subcategory_name',
-            orderable: false,
-            "defaultContent": ''
-          },
-          {
-            data: 'product_name',
-            name: 'product_name',
-            orderable: false,
-            "defaultContent": ''
-          },
-          {
-            data: 'specification',
-            name: 'specification',
-            orderable: false,
-            "defaultContent": ''
-          },
-          {
-            data: 'product_no',
-            name: 'product_no',
-            orderable: false,
-            "defaultContent": ''
-          },
-          // {
-          //   data: 'productpriceinfo.mrp',
-          //   name: 'productpriceinfo.mrp',
-          //   orderable: false,
-          //   "defaultContent": ''
-          // },
-          // {
-          //   data: 'productpriceinfo.gst',
-          //   name: 'productpriceinfo.gst',
-          //   orderable: false,
-          //   "defaultContent": ''
-          // },
-          // {
-          //   data: 'productpriceinfo.discount',
-          //   name: 'productpriceinfo.discount',
-          //   orderable: false,
-          //   "defaultContent": ''
-          // },
-          // {
-          //   data: 'expiry_info',
-          //   name: 'expiry_info',
-          //   orderable: false,
-          //   "defaultContent": ''
-          // },
-          {
-            data: 'suc_del',
-            name: 'suc_del',
-            orderable: false,
-            "defaultContent": ''
-          },
-          {
-            data: 'sap_code',
-            name: 'sap_code',
-            orderable: false,
-            "defaultContent": ''
-          },
-          // {
-          //   data: 'unitmeasures.unit_code',
-          //   name: 'unitmeasures.unit_code',
-          //   orderable: false,
-          //   "defaultContent": ''
-          // },
-          // {
-          //   data: 'productpriceinfo.price',
-          //   name: 'productpriceinfo.price',
-          //   orderable: false,
-          //   "defaultContent": ''
-          // },
-          // {
-          //   data: 'productpriceinfo.selling_price',
-          //   name: 'productpriceinfo.selling_price',
-          //   orderable: false,
-          //   "defaultContent": ''
-          // },
-          {
-            data: 'createdbyname.name',
-            name: 'createdbyname.name',
-            orderable: false,
-            "defaultContent": ''
-          },
+          { data: 'odoo_product_id', name: 'odoo_product_id', "defaultContent": '' },
+          { data: 'product_name', name: 'product_name', "defaultContent": '' },
+          { data: 'categories.category_name', name: 'categories.category_name', orderable: false, "defaultContent": '' },
+          { data: 'subcategories.subcategory_name', name: 'subcategories.subcategory_name', orderable: false, "defaultContent": '' },
+          { data: 'unitmeasures.unit_name', name: 'unitmeasures.unit_name', orderable: false, searchable: false, "defaultContent": '' },
+          { data: 'mrp', name: 'mrp', orderable: false, searchable: false, "defaultContent": '' },
+          { data: 'gst', name: 'gst', orderable: false, searchable: false, "defaultContent": '' },
           {
             data: 'created_at',
             name: 'created_at',

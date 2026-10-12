@@ -19,6 +19,7 @@ use DataTables;
 // use Validator;
 use Gate;
 use App\DataTables\ProductDataTable;
+use App\Services\Odoo\ProductSync;
 use App\Exports\BranchStockExport;
 use App\Exports\BranchStockTemplate;
 use App\Imports\ProductImport;
@@ -45,10 +46,33 @@ class ProductController extends Controller
         $categories = Category::where('active', 'Y')->get();
         $subCategories = Subcategory::where('active', 'Y')->get();
         if(!isCustomerUser()){
-            return view('products.index', compact('categories', 'subCategories'));
+            // Odoo sync panel: products come from Odoo (cron twice a day, or Sync now)
+            $odooLastRun = DB::table('odoo_sync_logs')->where('entity', ProductSync::ENTITY)->orderByDesc('id')
+                ->first(['created_at', 'status_code', 'received_count', 'failed_count']);
+            $odooCounts = [
+                'total' => Product::whereNotNull('odoo_product_id')->count(),
+                'active' => Product::whereNotNull('odoo_product_id')->where('active', 'Y')->count(),
+            ];
+            return view('products.index', compact('categories', 'subCategories', 'odooLastRun', 'odooCounts'));
         }else{
             return view('products.dealer_product', compact('categories', 'subCategories'));
         }
+    }
+
+    /**
+     * "Sync now" on Product List: the same pull the cron runs twice a day.
+     */
+    public function odooSync(ProductSync $sync)
+    {
+        abort_if(Gate::denies('product_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        // ~1300 products over a few Odoo pages; don't let PHP's web time limit cut the sync
+        set_time_limit(300);
+
+        $result = $sync->run();
+        unset($result['errors']);
+
+        return response()->json($result, $result['status_code'] === 502 ? 502 : 200);
     }
 
     public function productList(ProductDataTable $dataTable, Request $request)
