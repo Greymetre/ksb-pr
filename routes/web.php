@@ -538,6 +538,7 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     Route::any('categories-template', [CategoryController::class, 'template'])->name('categories.template');
     Route::post('categories-upload', [CategoryController::class, 'upload'])->name('categories.upload');
     Route::post('categories-active', [CategoryController::class, 'active'])->name('categories.active');
+    Route::post('categories-odoo-sync', [CategoryController::class, 'odooSync'])->name('categories.odoo_sync');
     //Sub Category
     Route::resource('subcategories', SubCategoryController::class);
     Route::any('subcategories-download', [SubCategoryController::class, 'download'])->name('subcategories.download');

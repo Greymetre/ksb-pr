@@ -20,6 +20,7 @@ use App\Exports\CategoryTemplate;
 use App\Http\Requests\CategoryRequest;
 use App\Models\Attachment;
 use App\Models\Customers;
+use App\Services\Odoo\CategorySync;
 use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
@@ -106,6 +107,19 @@ class CategoryController extends Controller
         }
         return response()->json(['status' => 'error','message' => 'Error in Status Update']);
     }
+    /**
+     * "Sync from Odoo" on Category List: the same pull the cron runs twice a day.
+     */
+    public function odooSync(CategorySync $sync)
+    {
+        abort_if(Gate::denies('category_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $result = $sync->run();
+        unset($result['errors']);
+
+        return response()->json($result, $result['status_code'] === 502 ? 502 : 200);
+    }
+
     public function upload(Request $request) 
     {
       //abort_if(Gate::denies('category_upload'), Response::HTTP_FORBIDDEN, '403 Forbidden');

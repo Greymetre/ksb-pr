@@ -14,6 +14,7 @@
                   <a href="{{ URL::to('categories-download') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.download') !!} {!! trans('panel.category.title') !!}"><i class="material-icons">cloud_download</i></a>
                   @endif
                   {{-- Categories come from Odoo (Odoo Sync -> Category Master Odoo): no add / upload / template --}}
+                  <a href="javascript:void(0)" class="btn btn-just-icon btn-theme" id="odooSyncCategories" title="Sync from Odoo"><i class="material-icons">sync</i></a>
                 </div>
                 </div>
               </span>
@@ -178,6 +179,27 @@
       })
      });
     
+    // Pull categories from Odoo now (cron also runs twice a day)
+    $('#odooSyncCategories').on('click', function () {
+        var $btn = $(this).addClass('disabled');
+        $('.alert').removeClass('alert-success alert-danger').hide();
+        $.ajax({
+            url: "{{ route('categories.odoo_sync') }}",
+            type: 'POST',
+            data: {_token: $("meta[name='csrf-token']").attr("content")},
+            success: function (r) {
+              $('.message').empty().append('Synced from Odoo: ' + r.created + ' created, ' + r.updated + ' updated, ' + r.skipped + ' unchanged, ' + r.failed + ' failed');
+              $('.alert').addClass('alert-success').show();
+              table.draw();
+            },
+            error: function () {
+              $('.message').empty().append('Odoo sync failed. See Odoo Sync -> Sync Overview for the error.');
+              $('.alert').addClass('alert-danger').show();
+            },
+            complete: function () { $btn.removeClass('disabled'); }
+        });
+    });
+
     $('body').on('click', '.categoryActive', function () {
         var id = $(this).attr("id");
         var active = $(this).attr("value");
