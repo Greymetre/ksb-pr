@@ -14,12 +14,12 @@ class CategoryExport implements FromCollection,WithHeadings,ShouldAutoSize,WithM
 {
     public function collection()
     {
-        return Category::select('id','category_name', 'sap_code')->latest()->get();   
+        return Category::select('id','category_name', 'odoo_category_id')->whereNotNull('odoo_category_id')->latest()->get();   
     }
 
     public function headings(): array
     {
-        return ['id','category_name', 'Odoo Code'];
+        return ['id','category_name', 'Odoo Category ID'];
     }
 
     public function map($data): array
@@ -27,7 +27,7 @@ class CategoryExport implements FromCollection,WithHeadings,ShouldAutoSize,WithM
         return [
             $data['id'],
             $data['category_name'],
-            $data['sap_code'],
+            $data['odoo_category_id'],
         ];
     }
 

@@ -32,12 +32,7 @@ class CategoryDataTable extends DataTable
                           <i class="material-icons">edit</i>
                         </a>';
                   }
-                  if(auth()->user()->can(['category_delete']))
-                  {
-                    $btn = $btn.' <a href="" class="btn btn-danger btn-just-icon btn-sm delete" value="'.$query->id.'" title="'.trans('panel.global.delete').' '.trans('panel.category.title_singular').'">
-                                <i class="material-icons">clear</i>
-                              </a>';
-                  }
+                  // No delete: categories come from Odoo (Odoo Sync -> Category Master Odoo)
                   return '<div class="btn-group btn-group-sm" role="group" aria-label="Small button group">
                                 '.$btn.'
                             </div>';
@@ -69,7 +64,8 @@ class CategoryDataTable extends DataTable
      */
     public function query(Category $model)
     {
-        return $model->with('createdbyname')->latest()->newQuery();
+        // Only categories synced from Odoo
+        return $model->with('createdbyname')->whereNotNull('odoo_category_id')->latest()->newQuery();
     }
 
     /**

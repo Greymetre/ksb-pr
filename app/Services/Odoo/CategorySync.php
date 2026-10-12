@@ -17,7 +17,9 @@ use Illuminate\Support\Facades\DB;
 |   and removed if stored earlier.
 | - Upsert key is category_odoo_id; re-syncing never duplicates.
 | - A record whose updated_at is not newer than the stored one is skipped.
-| - The category must also exist in FieldKonnect (matched by name).
+| - Odoo is the master for FieldKonnect `categories`: the matching category
+|   (by odoo_category_id, else by name) gets odoo_category_id, Odoo's name and
+|   active flag; a missing one is created. Category List shows only these.
 */
 class CategorySync extends OdooPullSync
 {
@@ -25,8 +27,6 @@ class CategorySync extends OdooPullSync
 
     // Odoo categories FieldKonnect syncs for now (matched by name, case-insensitive)
     public const SYNCED_CATEGORIES = ['Column Coupler', 'HDPE Pipe', 'PVC Pipes'];
-
-    private array $categoryCache = [];
 
     public function entity(): string
     {
@@ -43,9 +43,17 @@ class CategorySync extends OdooPullSync
      */
     protected function prepare(array $records): void
     {
+        $synced = array_map('mb_strtolower', self::SYNCED_CATEGORIES);
+
         DB::table('odoo_categories')
-            ->whereNotIn(DB::raw('LOWER(TRIM(category_name))'), array_map('mb_strtolower', self::SYNCED_CATEGORIES))
+            ->whereNotIn(DB::raw('LOWER(TRIM(category_name))'), $synced)
             ->delete();
+
+        // Categories no longer synced drop off Category List
+        DB::table('categories')
+            ->whereNotNull('odoo_category_id')
+            ->whereNotIn(DB::raw('LOWER(TRIM(category_name))'), $synced)
+            ->update(['odoo_category_id' => null, 'updated_at' => now()]);
     }
 
     protected function upsert(array $record, string $correlationId): array
@@ -61,13 +69,7 @@ class CategorySync extends OdooPullSync
             return ['status' => 'skipped'];
         }
 
-        $categoryId = $this->resolveCategoryId($name);
-
-        // Not a FieldKonnect category: do not keep it (its sub-categories and products are skipped too)
-        if (!$categoryId) {
-            DB::table('odoo_categories')->where('category_odoo_id', $odooId)->delete();
-            return ['status' => 'skipped', 'errors' => ['category_name' => ["{$name} does not exist in FieldKonnect categories."]]];
-        }
+        $categoryId = $this->syncFieldKonnectCategory($odooId, $name, $record);
 
         $odooUpdatedAt = $this->toLocal($record['updated_at'] ?? null);
 
@@ -112,20 +114,27 @@ class CategorySync extends OdooPullSync
     }
 
     /**
-     * category_name is matched against FieldKonnect categories.category_name (not deleted).
+     * FieldKonnect category for this Odoo category: matched by odoo_category_id, else by
+     * name (not deleted), else created. Its name, active flag and odoo_category_id follow Odoo.
      */
-    private function resolveCategoryId(string $name): ?int
+    private function syncFieldKonnectCategory(int $odooId, string $name, array $record): int
     {
-        $key = mb_strtolower($name);
+        $categoryId = DB::table('categories')->where('odoo_category_id', $odooId)->value('id')
+            ?? DB::table('categories')->whereNull('deleted_at')->where('category_name', $name)->value('id');
 
-        if (!array_key_exists($key, $this->categoryCache)) {
-            $id = DB::table('categories')
-                ->whereNull('deleted_at')
-                ->where('category_name', $name)
-                ->value('id');
-            $this->categoryCache[$key] = $id ? (int) $id : null;
+        $row = [
+            'category_name' => $name,
+            'odoo_category_id' => $odooId,
+            'active' => filter_var($record['active'] ?? true, FILTER_VALIDATE_BOOLEAN)
+                && !filter_var($record['is_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 'Y' : 'N',
+            'updated_at' => now(),
+        ];
+
+        if ($categoryId) {
+            DB::table('categories')->where('id', $categoryId)->update($row);
+            return (int) $categoryId;
         }
 
-        return $this->categoryCache[$key];
+        return (int) DB::table('categories')->insertGetId($row + ['created_at' => now()]);
     }
 }

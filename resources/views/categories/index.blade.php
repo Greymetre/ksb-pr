@@ -10,37 +10,10 @@
               <span class="">
                 <div class="btn-group header-frm-btn">
                     <div class="next-btn">
-                  @if(auth()->user()->can(['category_upload']))
-                  <form action="{{ URL::to('categories-upload') }}" class="form-horizontal" method="post" enctype="multipart/form-data">
-                  {{ csrf_field() }}
-                  <div class="input-group">
-                      <div class="fileinput fileinput-new text-center" data-provides="fileinput">
-                        <span class="btn btn-just-icon btn-theme btn-file">
-                          <span class="fileinput-new"><i class="material-icons">attach_file</i></span>
-                          <span class="fileinput-exists">Change</span>
-                          <input type="hidden">
-                          <input type="file" name="import_file" required accept=".xls,.xlsx" />
-                        </span>
-                      </div>
-                    <div class="input-group-append">
-                      <button class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.upload') !!} {!! trans('panel.category.title') !!}">
-                        <i class="material-icons">cloud_upload</i>
-                        <div class="ripple-container"></div>
-                      </button>
-                    </div>
-                  </div>
-                  </form>
-                  @endif
-                
                   @if(auth()->user()->can(['category_download']))
                   <a href="{{ URL::to('categories-download') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.download') !!} {!! trans('panel.category.title') !!}"><i class="material-icons">cloud_download</i></a>
                   @endif
-                  @if(auth()->user()->can(['category_template']))
-                  <a href="{{ URL::to('categories-template') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.template') !!} {!! trans('panel.category.title_singular') !!}"><i class="material-icons">text_snippet</i></a>
-                  @endif
-                  @if(auth()->user()->can(['category_create']))
-                   <a data-toggle="modal" data-target="#createCategory" class="btn btn-just-icon btn-theme create" title="{!!  trans('panel.global.add') !!} {!! trans('panel.category.title_singular') !!}"><i class="material-icons">add_circle</i></a>
-                  @endif
+                  {{-- Categories come from Odoo (Odoo Sync -> Category Master Odoo): no add / upload / template --}}
                 </div>
                 </div>
               </span>
@@ -73,7 +46,7 @@
               <th>{!! trans('panel.global.active') !!}</th>
               <th>{!! trans('panel.category.fields.category_image') !!}</th>
               <th>{!! trans('panel.category.fields.category_name') !!}</th>
-              <th>Odoo Code</th>
+              <th>Odoo Category ID</th>
               <th>{!! trans('panel.global.created_by') !!}</th>
               <th>{!! trans('panel.global.created_at') !!}</th>
             </thead>
@@ -108,17 +81,16 @@
                   <label class="col-form-label">{!! trans('panel.category.fields.category_name') !!} <span class="text-danger"> *</span></label>
                   
                   <div class="form-group has-default bmd-form-group">
-                    <input type="text" name="category_name" id="category_name" class="form-control" value="{!! old( 'category_name') !!}" maxlength="200" required>
+                    {{-- Name comes from Odoo; the next sync would overwrite an edit --}}
+                    <input type="text" name="category_name" id="category_name" class="form-control" value="{!! old( 'category_name') !!}" maxlength="200" required readonly>
                     @if ($errors->has('category_name'))
                     <div class="error"><p class="text-danger">{{ $errors->first('category_name') }}</p></div>
                     @endif
                   </div>
-                  <label class="col-form-label">Odoo Code <span class="text-danger"> *</span></label>
+                  <label class="col-form-label">Odoo Category ID</label>
                     <div class="form-group has-default bmd-form-group">
-                      <input type="text" name="sap_code" id="sap_code" class="form-control" value="{!! old( 'sap_code') !!}" maxlength="200">
-                      @if ($errors->has('sap_code'))
-                        <div class="error"><p class="text-danger">{{ $errors->first('sap_code') }}</p></div>
-                      @endif
+                      {{-- Set by the Odoo sync; shown only, never posted --}}
+                      <input type="text" id="odoo_category_id" class="form-control" readonly>
                   </div>
                 </div>
               </div>
@@ -172,7 +144,7 @@
              {data: 'active', name: 'active',"defaultContent": '', orderable: false, searchable: false},
             {data: 'image', name: 'image',"defaultContent": '', orderable: false, searchable: false},
             {data: 'category_name', name: 'category_name',"defaultContent": ''},
-            {data: 'sap_code', name: 'sap_code',"defaultContent": ''},
+            {data: 'odoo_category_id', name: 'odoo_category_id',"defaultContent": ''},
             {data: 'createdbyname.name', name: 'createdbyname.name',"defaultContent": ''},
             {data: 'created_at', name: 'created_at',"defaultContent": ''},
         ]
@@ -187,7 +159,7 @@
        success:function(data)
        {
         $('#category_name').val(data.category_name);
-        $('#sap_code').val(data.sap_code);
+        $('#odoo_category_id').val(data.odoo_category_id);
         if(data.category_image)
         {
           var image = data.category_image ;
