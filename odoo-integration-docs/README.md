@@ -11,6 +11,7 @@ Setup, testing and go-live steps for the Odoo push integration. The API spec for
 | Category Master Odoo (pull) | Odoo `product.category` / `get_fieldkonnect_category_list` → `odoo_categories` (only Column Coupler, HDPE Pipe, PVC Pipes; key `category_odoo_id`), page `/odoo-sync/categories` | Built, cron twice a day |
 | Sub Category Master Odoo (pull) | Odoo `product.category` / `get_fieldkonnect_subcategory_list` (one call per synced `category_odoo_id`) → `odoo_subcategories`, page `/odoo-sync/subcategories` | Built, cron twice a day |
 | Product Master Odoo (pull) | Odoo `product.product` / `get_fieldkonnect_product_list` (one call per synced `category_odoo_id`; kept only when the sub-category is synced too) → `odoo_products`, page `/odoo-sync/products` | Built, cron twice a day |
+| Primary Customer Odoo (pull) | Odoo `res.partner` / `get_fieldkonnect_customer_list` (paginated, key `odoo_parent_id`) → `odoo_customers`, page `/odoo-sync/customers` | Built, cron twice a day (06:30, 18:30) |
 | Parties, leave balance, order dispatch, invoices, outstanding | — | Not started |
 
 ## How it works

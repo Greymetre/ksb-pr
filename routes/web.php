@@ -407,6 +407,10 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     Route::get('odoo-sync/products/data', [OdooSyncController::class, 'productsData'])->name('odoo_sync.products_data');
     Route::post('odoo-sync/products/sync', [OdooSyncController::class, 'syncProducts'])->name('odoo_sync.products_sync');
     Route::get('odoo-sync/products/export', [OdooSyncController::class, 'productsExport'])->name('odoo_sync.products_export');
+    Route::get('odoo-sync/customers', [OdooSyncController::class, 'customers'])->name('odoo_sync.customers');
+    Route::get('odoo-sync/customers/data', [OdooSyncController::class, 'customersData'])->name('odoo_sync.customers_data');
+    Route::post('odoo-sync/customers/sync', [OdooSyncController::class, 'syncCustomers'])->name('odoo_sync.customers_sync');
+    Route::get('odoo-sync/customers/export', [OdooSyncController::class, 'customersExport'])->name('odoo_sync.customers_export');
 
     //End User Routs
     Route::resource('end_user', EndUserController::class);

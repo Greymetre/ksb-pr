@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\ExcelExport;
 use App\Services\Odoo\CategorySync;
+use App\Services\Odoo\CustomerSync;
 use App\Services\Odoo\OdooPullSync;
 use App\Services\Odoo\PartyPriceSync;
 use App\Services\Odoo\ProductSync;
@@ -27,6 +28,7 @@ class OdooSyncController extends Controller
         'categories' => 'Category Master Odoo',
         'subcategories' => 'Sub Category Master Odoo',
         'products' => 'Product Master Odoo',
+        'customers' => 'Primary Customer Odoo',
     ];
 
     /**
@@ -316,6 +318,108 @@ class OdooSyncController extends Controller
             'Odoo Product ID', 'Product Name', 'Odoo Category ID', 'Category', 'Odoo Sub-category ID', 'Sub-category',
             'UOM', 'MRP', 'Standard Price', 'GST %', 'FieldKonnect Product ID', 'FieldKonnect Product', 'Status', 'Odoo Updated', 'Synced',
         ], $rows), 'odoo_products_' . now()->format('Y-m-d_His') . '.xlsx');
+    }
+
+    /**
+     * Primary Customer Odoo: primary customers / dealers pulled from Odoo (cron twice a day, or Sync now).
+     */
+    public function customers()
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $lastRun = DB::table('odoo_sync_logs')->where('entity', CustomerSync::ENTITY)->orderByDesc('id')
+            ->first(['created_at', 'status_code', 'received_count', 'failed_count']);
+
+        $counts = [
+            'total' => DB::table('odoo_customers')->count(),
+            'active' => DB::table('odoo_customers')->where('active', true)->where('is_deleted', false)->count(),
+            'unlinked' => DB::table('odoo_customers')->whereNull('customer_id')->count(),
+        ];
+
+        return view('odoo_sync.customers', compact('counts', 'lastRun'));
+    }
+
+    public function customersData()
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $query = DB::table('odoo_customers as ocu')
+            ->leftJoin('customers as c', 'c.id', '=', 'ocu.customer_id')
+            ->select('ocu.id', 'ocu.customer_odoo_id', 'ocu.firm_name', 'ocu.contact_person_name', 'ocu.mobile', 'ocu.email',
+                'ocu.city', 'ocu.district', 'ocu.state', 'ocu.pin_code', 'ocu.gstin', 'ocu.customer_type', 'ocu.salesperson',
+                'ocu.active', 'ocu.is_deleted', 'ocu.customer_id', 'ocu.odoo_updated_at', 'ocu.updated_at', 'c.name as fk_customer_name');
+
+        return datatables()->query($query)
+            ->editColumn('customer_odoo_id', fn ($row) => '<span class="os-mono os-copy os-strong" title="Click to copy" data-copy="' . e($row->customer_odoo_id) . '">' . e($row->customer_odoo_id) . '</span>')
+            ->editColumn('firm_name', fn ($row) => '<div class="os-strong">' . e(\Illuminate\Support\Str::limit($row->firm_name, 45)) . '</div>'
+                . ($row->contact_person_name ? '<div class="os-sub">' . e($row->contact_person_name) . '</div>' : ''))
+            ->addColumn('contact', fn ($row) => '<div class="os-strong">' . e($row->mobile ?: '—') . '</div>'
+                . ($row->email ? '<div class="os-sub">' . e($row->email) . '</div>' : ''))
+            ->addColumn('location', fn ($row) => '<div class="os-strong">' . e($row->state ?: '—') . '</div>'
+                . '<div class="os-sub">' . e(implode(', ', array_filter([$row->city, $row->district, $row->pin_code])) ?: '—') . '</div>')
+            ->editColumn('gstin', fn ($row) => '<span class="os-mono">' . e($row->gstin ?: '—') . '</span>')
+            ->editColumn('customer_type', fn ($row) => '<div class="os-strong">' . e($row->customer_type ?: '—') . '</div>'
+                . ($row->salesperson ? '<div class="os-sub">' . e($row->salesperson) . '</div>' : ''))
+            ->addColumn('linked', fn ($row) => $row->customer_id
+                ? '<div class="os-sub">' . e(\Illuminate\Support\Str::limit($row->fk_customer_name, 40)) . ' <span class="os-tag">#' . (int) $row->customer_id . '</span></div>'
+                : '<span class="os-pill os-pill-warning os-pill-sm">Not linked</span>')
+            ->addColumn('status', function ($row) {
+                if ($row->is_deleted) {
+                    return '<span class="os-pill os-pill-danger">Deleted</span>';
+                }
+                return $row->active ? '<span class="os-pill os-pill-success">Active</span>' : '<span class="os-pill os-pill-neutral">Inactive</span>';
+            })
+            ->editColumn('odoo_updated_at', fn ($row) => $this->dateTimeCell($row->odoo_updated_at))
+            ->editColumn('updated_at', fn ($row) => $this->dateTimeCell($row->updated_at))
+            ->rawColumns(['customer_odoo_id', 'firm_name', 'contact', 'location', 'gstin', 'customer_type', 'linked', 'status', 'odoo_updated_at', 'updated_at'])
+            ->make(true);
+    }
+
+    public function syncCustomers(CustomerSync $sync)
+    {
+        return $this->runPullSync($sync);
+    }
+
+    /**
+     * Excel of every row on Primary Customer Odoo.
+     */
+    public function customersExport()
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $rows = DB::table('odoo_customers as ocu')
+            ->leftJoin('customers as c', 'c.id', '=', 'ocu.customer_id')
+            ->orderBy('ocu.firm_name')
+            ->get(['ocu.*', 'c.name as fk_customer_name'])
+            ->map(fn ($row) => [
+                $row->customer_odoo_id,
+                $row->firm_name,
+                $row->contact_person_name,
+                $row->mobile,
+                $row->phone,
+                $row->email,
+                $row->street,
+                $row->street2,
+                $row->city,
+                $row->district,
+                $row->state,
+                $row->pin_code,
+                $row->country,
+                $row->gstin,
+                $row->customer_type,
+                $row->salesperson,
+                $row->customer_id,
+                $row->fk_customer_name ?? 'Not linked',
+                $this->statusText($row),
+                $this->exportDate($row->odoo_updated_at),
+                $this->exportDate($row->updated_at),
+            ])->all();
+
+        return Excel::download(new ExcelExport([
+            'Odoo Customer ID', 'Firm Name', 'Contact Person', 'Mobile', 'Phone', 'Email', 'Street', 'Street 2', 'City', 'District',
+            'State', 'PIN Code', 'Country', 'GSTIN', 'Customer Type', 'Salesperson', 'FieldKonnect Customer ID', 'FieldKonnect Customer',
+            'Status', 'Odoo Updated', 'Synced',
+        ], $rows), 'odoo_customers_' . now()->format('Y-m-d_His') . '.xlsx');
     }
 
     /**

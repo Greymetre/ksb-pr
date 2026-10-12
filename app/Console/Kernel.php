@@ -61,6 +61,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Asia/Kolkata')
             ->twiceDailyAt(6, 18, 20)
             ->withoutOverlapping();
+        // Primary Customer Odoo: pull primary customers / dealers from Odoo (06:30 and 18:30 IST)
+        $schedule->command('odoo:sync-customers')
+            ->timezone('Asia/Kolkata')
+            ->twiceDailyAt(6, 18, 30)
+            ->withoutOverlapping();
         $schedule->command('tasks:send-pending-today')->everyMinute();
     }
 
