@@ -2993,13 +2993,6 @@
                                     <div class="d-none mobile_hide">Sync Overview</div>
                                 </a>
                             </li>
-                            <li class="nav-link-btn {{ request()->routeIs('odoo_sync.party_prices') ? 'active' : '' }}">
-                                <a class="hoveradd2" href="{{ route('odoo_sync.party_prices') }}">
-                                    <i class="material-icons icon">sell</i>
-                                    <span>Party Wise Pricing</span>
-                                    <div class="d-none mobile_hide">Party Wise Pricing</div>
-                                </a>
-                            </li>
                             <li class="nav-link-btn {{ request()->routeIs('odoo_sync.categories') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ route('odoo_sync.categories') }}">
                                     <i class="material-icons icon">category</i>

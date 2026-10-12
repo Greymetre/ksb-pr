@@ -32,13 +32,6 @@
     <div class="os-panel">
       <div class="os-panel-title">Modules</div>
       <div class="os-module-grid">
-        <a class="os-module" href="{{ route('odoo_sync.party_prices') }}">
-          <div class="os-key-icon"><span class="material-icons">sell</span></div>
-          <div class="os-key-body">
-            <div class="os-key-name">Party Wise Pricing <span class="os-pill os-pill-success os-pill-sm" style="margin-top:0">Ready</span></div>
-            <div class="os-key-meta">POST /api/v1/odoo/party-prices</div>
-          </div>
-        </a>
         <a class="os-module" href="{{ route('odoo_sync.categories') }}">
           <div class="os-key-icon"><span class="material-icons">category</span></div>
           <div class="os-key-body">
@@ -57,6 +50,13 @@
           <div class="os-key-icon"><span class="material-icons">inventory_2</span></div>
           <div class="os-key-body">
             <div class="os-key-name">Product Master Odoo <span class="os-pill os-pill-success os-pill-sm" style="margin-top:0">Ready</span></div>
+            <div class="os-key-meta">Pulled from Odoo twice a day</div>
+          </div>
+        </a>
+        <a class="os-module" href="{{ route('odoo_sync.customers') }}">
+          <div class="os-key-icon"><span class="material-icons">storefront</span></div>
+          <div class="os-key-body">
+            <div class="os-key-name">Primary Customer Odoo <span class="os-pill os-pill-success os-pill-sm" style="margin-top:0">Ready</span></div>
             <div class="os-key-meta">Pulled from Odoo twice a day</div>
           </div>
         </a>

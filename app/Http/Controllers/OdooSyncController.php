@@ -6,7 +6,6 @@ use App\Exports\ExcelExport;
 use App\Services\Odoo\CategorySync;
 use App\Services\Odoo\CustomerSync;
 use App\Services\Odoo\OdooPullSync;
-use App\Services\Odoo\PartyPriceSync;
 use App\Services\Odoo\ProductSync;
 use App\Services\Odoo\SubcategorySync;
 use Carbon\Carbon;
@@ -52,26 +51,6 @@ class OdooSyncController extends Controller
         ];
 
         return view('odoo_sync.index', compact('clients', 'counts', 'lastRequest'));
-    }
-
-    /**
-     * Party Wise Pricing: prices stored with the test key and with the live key.
-     */
-    public function partyPrices()
-    {
-        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-
-        $unlinked = fn ($mode) => DB::table(PartyPriceSync::tableFor($mode))->where(fn ($q) => $q->whereNull('party_id')->orWhereNull('product_id'))->count();
-
-        $counts = [
-            'test' => DB::table(PartyPriceSync::tableFor('test'))->count(),
-            'test_unlinked' => $unlinked('test'),
-            'live' => DB::table(PartyPriceSync::tableFor('live'))->count(),
-            'live_unlinked' => $unlinked('live'),
-            'last_received' => DB::table('odoo_sync_logs')->where('entity', 'party_prices')->max('created_at'),
-        ];
-
-        return view('odoo_sync.party_prices', compact('counts'));
     }
 
     /**
@@ -485,80 +464,6 @@ class OdooSyncController extends Controller
             ->make(true);
     }
 
-    public function testPrices()
-    {
-        return $this->pricesTable('test');
-    }
-
-    public function livePrices()
-    {
-        return $this->pricesTable('live');
-    }
-
-    private function pricesTable(string $mode)
-    {
-        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-
-        $query = DB::table(PartyPriceSync::tableFor($mode) . ' as pp')
-            ->leftJoin('customers as c', function ($join) {
-                $join->on('c.id', '=', 'pp.party_id')->where('pp.party_type', '=', 'customer');
-            })
-            ->leftJoin('master_distributors as md', function ($join) {
-                $join->on('md.id', '=', 'pp.party_id')->where('pp.party_type', '=', 'master_distributor');
-            })
-            ->leftJoin('products as pr', 'pr.id', '=', 'pp.product_id')
-            ->select(
-                'pp.id', 'pp.external_id', 'pp.price_list_code', 'pp.price_list_name', 'pp.party_code', 'pp.party_type', 'pp.party_id',
-                'pp.product_code', 'pp.product_id', 'pp.currency_code', 'pp.base_price', 'pp.party_price',
-                'pp.discount_percent', 'pp.tax_inclusive', 'pp.minimum_quantity', 'pp.maximum_quantity', 'pp.uom_code',
-                'pp.valid_from', 'pp.valid_to', 'pp.priority', 'pp.active', 'pp.is_deleted', 'pp.odoo_updated_at', 'pp.updated_at',
-                DB::raw('COALESCE(c.name, md.legal_name) as party_name'),
-                'pr.product_name'
-            );
-
-        return datatables()->query($query)
-            ->editColumn('external_id', fn ($row) => '<span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->external_id) . '">' . e($row->external_id) . '</span>')
-            ->addColumn('party', function ($row) {
-                $type = $row->party_type === 'master_distributor' ? 'Distributor' : 'Customer';
-                $linked = $row->party_id
-                    ? '<div class="os-sub">' . e($row->party_name) . ' <span class="os-tag">' . $type . '</span></div>'
-                    : '<div class="os-sub"><span class="os-pill os-pill-warning os-pill-sm">Not linked</span></div>';
-                return '<div class="os-mono os-strong">' . e($row->party_code) . '</div>' . $linked;
-            })
-            ->addColumn('product', function ($row) {
-                $linked = $row->product_id
-                    ? '<div class="os-sub">' . e($row->product_name) . '</div>'
-                    : '<div class="os-sub"><span class="os-pill os-pill-warning os-pill-sm">Not linked</span></div>';
-                return '<div class="os-mono os-strong">' . e($row->product_code) . '</div>' . $linked;
-            })
-            ->editColumn('price_list_code', fn ($row) => '<div class="os-strong">' . e($row->price_list_code) . '</div>'
-                . ($row->price_list_name ? '<div class="os-sub">' . e($row->price_list_name) . '</div>' : ''))
-            ->addColumn('price', function ($row) {
-                $discount = $row->discount_percent !== null ? ' · ' . rtrim(rtrim(number_format($row->discount_percent, 2), '0'), '.') . '% off' : '';
-                return '<div class="os-price">' . $this->money($row->party_price, $row->currency_code) . '</div>'
-                    . '<div class="os-sub">Base ' . $this->money($row->base_price, $row->currency_code) . $discount . '</div>'
-                    . '<div class="os-sub">' . ($row->tax_inclusive ? 'Incl. tax' : 'Excl. tax') . '</div>';
-            })
-            ->addColumn('slab', function ($row) {
-                $min = $this->qty($row->minimum_quantity);
-                $range = $row->maximum_quantity === null ? $min . '+' : $min . ' – ' . $this->qty($row->maximum_quantity);
-                return '<div class="os-strong">' . $range . '</div><div class="os-sub">' . e($row->uom_code) . '</div>';
-            })
-            ->addColumn('validity', function ($row) {
-                $to = $row->valid_to ? Carbon::parse($row->valid_to)->format('d M Y') : 'Open-ended';
-                return '<div class="os-strong">' . Carbon::parse($row->valid_from)->format('d M Y') . '</div><div class="os-sub">to ' . $to . '</div>';
-            })
-            ->addColumn('status', function ($row) {
-                if ($row->is_deleted) {
-                    return '<span class="os-pill os-pill-danger">Deleted</span>';
-                }
-                return $row->active ? '<span class="os-pill os-pill-success">Active</span>' : '<span class="os-pill os-pill-neutral">Inactive</span>';
-            })
-            ->editColumn('updated_at', fn ($row) => $this->dateTimeCell($row->updated_at))
-            ->rawColumns(['external_id', 'party', 'product', 'price_list_code', 'price', 'slab', 'validity', 'status', 'updated_at'])
-            ->make(true);
-    }
-
     private function modePill(?string $mode): string
     {
         return $mode === 'live'
@@ -592,10 +497,5 @@ class OdooSyncController extends Controller
     {
         $symbol = strtoupper((string) $currency) === 'INR' ? '₹' : e($currency) . ' ';
         return $symbol . number_format((float) $amount, 2);
-    }
-
-    private function qty($value): string
-    {
-        return rtrim(rtrim(number_format((float) $value, 4, '.', ''), '0'), '.');
     }
 }

@@ -7,7 +7,7 @@ Setup, testing and go-live steps for the Odoo push integration. The API spec for
 | Module | Endpoint | Status |
 |---|---|---|
 | Party-wise pricing | `POST/GET /api/v1/odoo/party-prices` | Built, ready for Odoo testing |
-| CRM "Odoo Sync" menu | Integrations → Odoo Sync → Sync Overview (`/odoo-sync`), Party Wise Pricing (`/odoo-sync/party-prices`) | Built |
+| CRM "Odoo Sync" menu | Integrations → Odoo Sync → Sync Overview (`/odoo-sync`), Category / Sub Category / Product / Primary Customer pages (Party Wise Pricing page removed; the push API still stores prices) | Built |
 | Category Master Odoo (pull) | Odoo `product.category` / `get_fieldkonnect_category_list` → `odoo_categories` (only Column Coupler, HDPE Pipe, PVC Pipes; key `category_odoo_id`), page `/odoo-sync/categories` | Built, cron twice a day |
 | Sub Category Master Odoo (pull) | Odoo `product.category` / `get_fieldkonnect_subcategory_list` (one call per synced `category_odoo_id`) → `odoo_subcategories`, page `/odoo-sync/subcategories` | Built, cron twice a day |
 | Product Master Odoo (pull) | Odoo `product.product` / `get_fieldkonnect_product_list` (one call per synced `category_odoo_id`; kept only when the sub-category is synced too) → `odoo_products`, page `/odoo-sync/products` | Built, cron twice a day |
@@ -47,7 +47,7 @@ Odoo ──POST──► /api/v1/odoo/party-prices   (same URL for testing and p
 | `routes/api.php` | `v1/odoo` route group |
 | `database/migrations/2026_09_21_110000_add_odoo_sync_permission_and_role.php` | Permission `odoo_sync_access`, role `odoo`, given to `superadmin` and `odoo` |
 | `app/Http/Controllers/OdooSyncController.php` | CRM page + DataTables data (read only) |
-| `resources/views/odoo_sync/` | `index` (Sync Overview), `party_prices`, `partials/assets` (shared styles/JS) |
+| `resources/views/odoo_sync/` | `index` (Sync Overview), `categories`, `subcategories`, `products`, `customers`, `partials/assets` (shared styles/JS) |
 | `app/Http/Middleware/RestrictOdooRole.php` | Keeps `odoo` role users on the Odoo Sync page only (web group) |
 | `app/Console/Commands/OdooCrmUser.php` | `php artisan odoo:crm-user` to create the Odoo developer's CRM login |
 | `resources/views/layouts/app.blade.php` | Sidebar "Integrations → Odoo Sync" menu (only with `odoo_sync_access`) |
@@ -117,12 +117,11 @@ Send the API key and the CRM login to the Odoo developer securely, not in a grou
 Sidebar: **Integrations → Odoo Sync**, a parent menu with one sub-menu per module. Visible to users with the `odoo_sync_access` permission: `superadmin` and the `odoo` role. All pages are read only.
 
 - **Sync Overview** (`/odoo-sync`): last request, requests today, failed records today, the module list, API keys (the key itself is never shown), and request logs of **all** modules with correlation ID, module, counts and a "View errors" popup.
-- **Party Wise Pricing** (`/odoo-sync/party-prices`): Test Prices and Live Prices tabs. Each row shows the Odoo party/product code and the FieldKonnect party/product it matched, or a **Not linked** badge.
 
 Adding a new Odoo module later:
 1. Add a sub-menu `<li>` under `#odooSyncMenu` in `resources/views/layouts/app.blade.php`.
 2. Add its label to `OdooSyncController::MODULES` (key = the `entity` written to `odoo_sync_logs`).
-3. Add a page like `party_prices.blade.php` and include `odoo_sync.partials.assets` for the shared look.
+3. Add a page like `products.blade.php` and include `odoo_sync.partials.assets` for the shared look.
 4. Replace its "Soon" card on the Sync Overview page with a link.
 
 **The `odoo` role is restricted.** `RestrictOdooRole` lets it open only `/odoo-sync*` and log out. Any other CRM URL redirects back to Odoo Sync (403 for AJAX/POST). After login it lands directly on Odoo Sync. Don't give the `odoo` role any other permission. To remove the developer's access, deactivate the user from CRM → Users.
