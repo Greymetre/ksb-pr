@@ -19,8 +19,10 @@ use Illuminate\Support\Facades\DB;
 | - A record whose updated_at is not newer than the stored one is skipped.
 | - Odoo returns nested sub-categories (PVC Pipes > Column Pipe > Heavy Pipe) as one
 |   flat list with no parent sub-category, so all are stored under the category.
-| - subcategory_id links to FieldKonnect `subcategories` by name, inside the
-|   category's linked FieldKonnect category. `subcategories` is never changed.
+| - Odoo is the master for FieldKonnect `subcategories`: the matching row (by
+|   odoo_subcategory_id, else by name inside the category) gets
+|   odoo_subcategory_id, Odoo's name, category and active flag; a missing one is
+|   created. Sub Category List shows only these.
 */
 class SubcategorySync extends OdooPullSync
 {
@@ -28,7 +30,6 @@ class SubcategorySync extends OdooPullSync
 
     /** odoo category_odoo_id => FieldKonnect category_id, for the synced categories */
     private array $categories = [];
-    private array $subcategoryCache = [];
 
     public function entity(): string
     {
@@ -73,6 +74,12 @@ class SubcategorySync extends OdooPullSync
             ->whereNull('subcategory_odoo_id')
             ->whereNotIn(DB::raw('LOWER(TRIM(subcategory_name))'), $names ?: [''])
             ->delete();
+
+        // FieldKonnect sub-categories no longer in Odoo drop off Sub Category List
+        DB::table('subcategories')
+            ->whereNotNull('odoo_subcategory_id')
+            ->whereNotIn('odoo_subcategory_id', $ids ?: [0])
+            ->update(['odoo_subcategory_id' => null, 'updated_at' => now()]);
     }
 
     protected function upsert(array $record, string $correlationId): array
@@ -93,7 +100,7 @@ class SubcategorySync extends OdooPullSync
             return ['status' => 'skipped'];
         }
 
-        $subcategoryId = $this->resolveSubcategoryId($name, $categoryId);
+        $subcategoryId = $this->syncFieldKonnectSubcategory($odooId, $name, $categoryId, $record);
         $odooUpdatedAt = $this->toLocal($record['updated_at'] ?? null);
 
         $existing = DB::table('odoo_subcategories')->where('subcategory_odoo_id', $odooId)
@@ -132,19 +139,31 @@ class SubcategorySync extends OdooPullSync
         return ['status' => 'created'];
     }
 
-    private function resolveSubcategoryId(string $name, int $categoryId): ?int
+    /**
+     * FieldKonnect sub-category for this Odoo sub-category: matched by odoo_subcategory_id,
+     * else by name inside the category (not deleted), else created. Name, category,
+     * active flag and odoo_subcategory_id follow Odoo.
+     */
+    private function syncFieldKonnectSubcategory(int $odooId, string $name, int $categoryId, array $record): int
     {
-        $key = mb_strtolower($name) . '|' . $categoryId;
+        $subcategoryId = DB::table('subcategories')->where('odoo_subcategory_id', $odooId)->value('id')
+            ?? DB::table('subcategories')->whereNull('deleted_at')->whereNull('odoo_subcategory_id')
+                ->where('category_id', $categoryId)->where('subcategory_name', $name)->value('id');
 
-        if (!array_key_exists($key, $this->subcategoryCache)) {
-            $id = DB::table('subcategories')
-                ->whereNull('deleted_at')
-                ->where('subcategory_name', $name)
-                ->where('category_id', $categoryId)
-                ->value('id');
-            $this->subcategoryCache[$key] = $id ? (int) $id : null;
+        $row = [
+            'subcategory_name' => $name,
+            'category_id' => $categoryId,
+            'odoo_subcategory_id' => $odooId,
+            'active' => filter_var($record['active'] ?? true, FILTER_VALIDATE_BOOLEAN)
+                && !filter_var($record['is_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 'Y' : 'N',
+            'updated_at' => now(),
+        ];
+
+        if ($subcategoryId) {
+            DB::table('subcategories')->where('id', $subcategoryId)->update($row);
+            return (int) $subcategoryId;
         }
 
-        return $this->subcategoryCache[$key];
+        return (int) DB::table('subcategories')->insertGetId($row + ['created_at' => now()]);
     }
 }

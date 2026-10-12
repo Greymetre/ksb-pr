@@ -19,6 +19,7 @@ use App\DataTables\SubCategoryDataTable;
 use App\Imports\SubcategoryImport;
 use App\Exports\SubcategoryExport;
 use App\Exports\SubcategoryTemplate;
+use App\Services\Odoo\SubcategorySync;
 
 class SubCategoryController extends Controller
 {
@@ -33,7 +34,16 @@ class SubCategoryController extends Controller
     {
         abort_if(Gate::denies('subcategory_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $categories = Category::where('active','=','Y')->select('id', 'category_name')->get();
-        return $dataTable->render('subcategories.index',compact('categories'));
+
+        // Odoo sync panel: sub-categories come from Odoo (cron twice a day, or Sync now)
+        $odooLastRun = DB::table('odoo_sync_logs')->where('entity', SubcategorySync::ENTITY)->orderByDesc('id')
+            ->first(['created_at', 'status_code', 'received_count', 'failed_count']);
+        $odooCounts = [
+            'total' => Subcategory::whereNotNull('odoo_subcategory_id')->count(),
+            'active' => Subcategory::whereNotNull('odoo_subcategory_id')->where('active', 'Y')->count(),
+        ];
+
+        return $dataTable->render('subcategories.index', compact('categories', 'odooLastRun', 'odooCounts'));
     }
 
     public function store(SubcategoryRequest $request)
@@ -110,6 +120,19 @@ class SubCategoryController extends Controller
             return response()->json(['status' => 'success','message' => 'Subcategory '.$message.' Successfully!']);
         }
         return response()->json(['status' => 'error','message' => 'Error in Status Update']);
+    }
+
+    /**
+     * "Sync now" on Sub Category List: the same pull the cron runs twice a day.
+     */
+    public function odooSync(SubcategorySync $sync)
+    {
+        abort_if(Gate::denies('subcategory_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $result = $sync->run();
+        unset($result['errors']);
+
+        return response()->json($result, $result['status_code'] === 502 ? 502 : 200);
     }
 
     public function upload(Request $request) 

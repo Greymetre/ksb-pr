@@ -10,43 +10,23 @@
                 <span class="">
                   <div class="btn-group header-frm-btn">
                     <div class="next-btn">
-                    @if(auth()->user()->can(['subcategory_upload']))
-                    <form action="{{ URL::to('subcategories-upload') }}" class="form-horizontal" method="post" enctype="multipart/form-data">
-                    {{ csrf_field() }}
-                    <div class="input-group">
-                        <div class="fileinput fileinput-new text-center" data-provides="fileinput">
-                          <span class="btn btn-just-icon btn-theme btn-file">
-                            <span class="fileinput-new"><i class="material-icons">attach_file</i></span>
-                            <span class="fileinput-exists">Change</span>
-                            <input type="hidden">
-                            <input type="file" name="import_file" required accept=".xls,.xlsx" />
-                          </span>
-                        </div>
-                      <div class="input-group-append">
-                        <button class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.upload') !!} {!! trans('panel.subcategory.title') !!}">
-                          <i class="material-icons">cloud_upload</i>
-                          <div class="ripple-container"></div>
-                        </button>
-                      </div>
-                    </div>
-                    </form>
-                    @endif
-                    
                     @if(auth()->user()->can(['subcategory_download']))
                     <a href="{{ URL::to('subcategories-download') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.download') !!} {!! trans('panel.subcategory.title') !!}"><i class="material-icons">cloud_download</i></a>
                     @endif
-                    @if(auth()->user()->can(['subcategory_template']))
-                    <a href="{{ URL::to('subcategories-template') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.template') !!} {!! trans('panel.subcategory.title_singular') !!}"><i class="material-icons">text_snippet</i></a>
-                    @endif
-                    @if(auth()->user()->can(['subcategory_create']))
-                    <a data-toggle="modal" data-target="#createsubcategory" class="btn btn-just-icon btn-theme create" title="{!!  trans('panel.global.add') !!} {!! trans('panel.subcategory.title_singular') !!}"><i class="material-icons">add_circle</i></a>
-                    @endif
+                    {{-- Sub-categories come from Odoo (Sync now below): no add / upload / template --}}
                   </div>
                   </div>
                 </span>
             </h4>
         </div>
         <div class="card-body">
+          {{-- Sub-categories of the synced categories come from Odoo twice a day (06:10 and 18:10), or Sync now --}}
+          @include('odoo_sync.partials.list_panel', [
+            'odooSubtitle' => 'Auto sync twice a day (06:10 and 18:10) · all Odoo sub-categories of the synced categories',
+            'odooNoun' => 'sub-categories',
+            'odooIcon' => 'account_tree',
+            'odooSyncUrl' => route('subcategories.odoo_sync'),
+          ])
           @if(count($errors) > 0)
           <div class="alert alert-danger">
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -73,8 +53,10 @@
                 <th>{!! trans('panel.global.active') !!}</th>
                 <th>{!! trans('panel.subcategory.fields.subcategory_image') !!}</th>
                 <th>{!! trans('panel.subcategory.fields.subcategory_name') !!}</th>
+                <th>Odoo Sub-category ID</th>
                 <th>{!! trans('panel.subcategory.fields.category') !!}</th>
-                <th>{!! trans('panel.global.created_by') !!}</th>
+                <th>Odoo Category ID</th>
+                <th>Odoo Updated</th>
                 <th>{!! trans('panel.global.created_at') !!}</th>
               </thead>
               <tbody>
@@ -107,7 +89,8 @@
                 <div class="input_section">
                   <label class="col-form-label">Subcategory<span class="text-danger"> *</span></label>
                                 <div class="form-group has-default bmd-form-group">
-                      <input type="text" name="subcategory_name" id="subcategory_name" class="form-control" value="{!! old( 'subcategory_name') !!}" maxlength="200" required>
+                      {{-- Name and category come from Odoo; the next sync would overwrite an edit --}}
+                      <input type="text" name="subcategory_name" id="subcategory_name" class="form-control" value="{!! old( 'subcategory_name') !!}" maxlength="200" required readonly>
                       @if ($errors->has('subcategory_name'))
                         <div class="error"><p class="text-danger">{{ $errors->first('subcategory_name') }}</p></div>
                       @endif
@@ -132,7 +115,8 @@
                   <label class="col-form-label">{!! trans('panel.subcategory.fields.category') !!}<span class="text-danger"> *</span></label>
                 
                     <div class="form-group has-default bmd-form-group">
-                      <select class="form-control select2 " name="category_id" id="category_id" style="width: 100%;" required>
+                      <input type="hidden" name="category_id" id="category_id_value">
+                      <select class="form-control select2 " id="category_id" style="width: 100%;" disabled>
                          
                       <option value="">Select {!! trans('panel.subcategory.fields.category') !!}</option>
                           @if(@isset($categories ))
@@ -205,10 +189,12 @@
               {data: 'action', name: 'action',"defaultContent": '', orderable: false, searchable: false},
               {data: 'active', name: 'active',"defaultContent": '', orderable: false, searchable: false},
               {data: 'image', name: 'image',"defaultContent": '', orderable: false, searchable: false},
-              {data: 'subcategory_name', name: 'subcategory_name',"defaultContent": ''},
+              {data: 'subcategory_name', name: 'subcategories.subcategory_name',"defaultContent": ''},
+              {data: 'odoo_subcategory_id', name: 'subcategories.odoo_subcategory_id',"defaultContent": ''},
               {data: 'categories.category_name', name: 'categories.category_name',"defaultContent": ''},
-              {data: 'createdbyname.name', name: 'createdbyname.name',"defaultContent": ''},
-              {data: 'created_at', name: 'created_at',"defaultContent": ''},
+              {data: 'categories.odoo_category_id', name: 'categories.odoo_category_id',"defaultContent": '', orderable: false, searchable: false},
+              {data: 'odoo_updated_at', name: 'os.odoo_updated_at',"defaultContent": '', searchable: false},
+              {data: 'created_at', name: 'subcategories.created_at',"defaultContent": ''},
           ]
       });
           
@@ -224,6 +210,7 @@
           $('#sap_code').val(data.sap_code);
           // $("#category_id").append('<option value="'+data.category_id+'" selected="selected">'+data.category_name+'</option>');
           $('#category_id').val(data.category_id).trigger('change');
+          $('#category_id_value').val(data.category_id);
           if(data.subcategory_image)
           {
             var image = data.subcategory_image ;

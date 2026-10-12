@@ -23,6 +23,7 @@ class SubCategoryDataTable extends DataTable
             {
                 return isset($data->created_at) ? showdatetimeformat($data->created_at) : '';
             })
+            ->editColumn('odoo_updated_at', fn ($data) => $data->odoo_updated_at ? showdatetimeformat($data->odoo_updated_at) : '')
             ->addColumn('action', function ($query) {
                   $btn = '';
                   $activebtn ='';
@@ -32,18 +33,7 @@ class SubCategoryDataTable extends DataTable
                           <i class="material-icons">edit</i>
                         </a>';
                   }
-                  if(auth()->user()->can(['subcategory_show']))
-                  {
-                    $btn = $btn.'<a href="javascript:void(0)" class="btn btn-theme btn-just-icon btn-sm show" id="'.encrypt($query->id).'" title="'.trans('panel.global.show').' '.trans('panel.subcategory.title_singular').'">
-                          <i class="material-icons">visibility</i>
-                        </a>';
-                  }
-                  if(auth()->user()->can(['subcategory_delete']))
-                  {
-                    $btn = $btn.' <a href="javascript:void(0)" class="btn btn-danger btn-just-icon btn-sm delete" value="'.$query->id.'" title="'.trans('panel.global.delete').' '.trans('panel.subcategory.title_singular').'">
-                                <i class="material-icons">clear</i>
-                              </a>';
-                  }
+                  // No show / delete: sub-categories come from Odoo (Sub Category List -> Sync now)
                   return '<div class="btn-group btn-group-sm" role="group" aria-label="Small button group">
                                 '.$btn.'
                             </div>';
@@ -75,7 +65,13 @@ class SubCategoryDataTable extends DataTable
      */
     public function query(Subcategory $model)
     {
-        return $model->with('createdbyname','categories')->latest()->newQuery();
+        // Only sub-categories synced from Odoo
+        return $model->with('createdbyname','categories')
+            ->leftJoin('odoo_subcategories as os', 'os.subcategory_id', '=', 'subcategories.id')
+            ->whereNotNull('subcategories.odoo_subcategory_id')
+            ->select('subcategories.*', 'os.odoo_updated_at')
+            ->latest('subcategories.created_at')
+            ->newQuery();
     }
 
     /**
