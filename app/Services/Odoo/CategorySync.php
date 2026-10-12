@@ -8,19 +8,23 @@ use Illuminate\Support\Facades\DB;
 |--------------------------------------------------------------------------
 | Pulls product categories from Odoo into odoo_categories.
 |--------------------------------------------------------------------------
-| Odoo: product.category / get_fieldkonnect_categories (paginated).
+| Odoo: product.category / get_fieldkonnect_category_list (paginated).
+| Each record: category_odoo_id, category_name, active, is_deleted, created_at, updated_at.
 | Run by `php artisan odoo:sync-categories` (cron, twice a day) and by the
 | "Sync now" button on Odoo Sync -> Category Master Odoo.
 |
-| - Upsert key is external_id; re-syncing never duplicates.
+| - Only the categories in SYNCED_CATEGORIES are kept; the rest are skipped
+|   and removed if stored earlier.
+| - Upsert key is category_odoo_id; re-syncing never duplicates.
 | - A record whose updated_at is not newer than the stored one is skipped.
-| - Only categories that already exist in FieldKonnect (matched by name) are
-|   kept; the rest are skipped and removed if stored earlier.
-| - category_code is copied into the linked categories.sap_code ("Odoo Code").
+| - The category must also exist in FieldKonnect (matched by name).
 */
 class CategorySync extends OdooPullSync
 {
     public const ENTITY = 'categories';
+
+    // Odoo categories FieldKonnect syncs for now (matched by name, case-insensitive)
+    public const SYNCED_CATEGORIES = ['Column Coupler', 'HDPE Pipe', 'PVC Pipes'];
 
     private array $categoryCache = [];
 
@@ -31,46 +35,57 @@ class CategorySync extends OdooPullSync
 
     protected function source(): array
     {
-        return ['product.category', 'get_fieldkonnect_categories'];
+        return ['product.category', 'get_fieldkonnect_category_list'];
     }
 
-    protected function pageSize(): int
+    /**
+     * Rows of categories no longer synced are removed (only after Odoo was read fully).
+     */
+    protected function prepare(array $records): void
     {
-        return 1000;
+        DB::table('odoo_categories')
+            ->whereNotIn(DB::raw('LOWER(TRIM(category_name))'), array_map('mb_strtolower', self::SYNCED_CATEGORIES))
+            ->delete();
     }
 
     protected function upsert(array $record, string $correlationId): array
     {
-        if (empty($record['external_id']) || empty($record['category_name'])) {
-            return ['status' => 'failed', 'errors' => ['record' => ['external_id and category_name are required.']]];
+        $odooId = (int) ($record['category_odoo_id'] ?? 0);
+        $name = trim((string) ($record['category_name'] ?? ''));
+
+        if (!$odooId || $name === '') {
+            return ['status' => 'failed', 'errors' => ['record' => ['category_odoo_id and category_name are required.']]];
         }
 
-        $odooUpdatedAt = $this->toLocal($record['updated_at'] ?? null);
-        $categoryId = $this->resolveCategoryId($record['category_name']);
-
-        // Not a FieldKonnect category: do not keep it (its sub-categories and products are skipped too)
-        if (!$categoryId) {
-            DB::table('odoo_categories')->where('external_id', $record['external_id'])->delete();
+        if (!$this->isSynced($name)) {
             return ['status' => 'skipped'];
         }
 
-        $this->syncCategoryCode($categoryId, (string) ($record['category_code'] ?? ''));
+        $categoryId = $this->resolveCategoryId($name);
 
-        $existing = DB::table('odoo_categories')
-            ->where('external_id', $record['external_id'])
-            ->first(['id', 'odoo_updated_at', 'category_id']);
+        // Not a FieldKonnect category: do not keep it (its sub-categories and products are skipped too)
+        if (!$categoryId) {
+            DB::table('odoo_categories')->where('category_odoo_id', $odooId)->delete();
+            return ['status' => 'skipped', 'errors' => ['category_name' => ["{$name} does not exist in FieldKonnect categories."]]];
+        }
+
+        $odooUpdatedAt = $this->toLocal($record['updated_at'] ?? null);
+
+        // Rows synced before category_odoo_id existed are matched by their FieldKonnect category
+        $existing = DB::table('odoo_categories')->where('category_odoo_id', $odooId)
+            ->first(['id', 'odoo_updated_at', 'category_id'])
+            ?? DB::table('odoo_categories')->whereNull('category_odoo_id')->where('category_id', $categoryId)
+                ->first(['id', 'odoo_updated_at', 'category_id']);
 
         // Unchanged in Odoo: nothing to do, unless the FieldKonnect link changed
-        if ($this->isUnchanged($existing, $odooUpdatedAt) && (int) $existing->category_id === (int) $categoryId) {
+        if ($existing && $this->isUnchanged($existing, $odooUpdatedAt) && (int) $existing->category_id === $categoryId) {
+            DB::table('odoo_categories')->where('id', $existing->id)->update(['category_odoo_id' => $odooId]);
             return ['status' => 'skipped'];
         }
 
         $row = [
-            'category_code' => (string) ($record['category_code'] ?? ''),
-            'category_name' => $record['category_name'],
-            'description' => $record['description'] ?? null,
-            'ranking' => (int) ($record['ranking'] ?? 1),
-            'image_url' => $record['image_url'] ?? null,
+            'category_odoo_id' => $odooId,
+            'category_name' => $name,
             'active' => filter_var($record['active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'is_deleted' => filter_var($record['is_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'category_id' => $categoryId,
@@ -86,28 +101,14 @@ class CategorySync extends OdooPullSync
             return ['status' => 'updated'];
         }
 
-        DB::table('odoo_categories')->insert($row + [
-            'external_id' => $record['external_id'],
-            'created_at' => now(),
-        ]);
+        DB::table('odoo_categories')->insert($row + ['created_at' => now()]);
 
         return ['status' => 'created'];
     }
 
-    /**
-     * Odoo is the master for the category code: copy category_code into the linked
-     * FieldKonnect categories.sap_code (shown as "Odoo Code") whenever it differs.
-     */
-    private function syncCategoryCode(?int $categoryId, string $code): void
+    private function isSynced(string $name): bool
     {
-        if (!$categoryId || $code === '') {
-            return;
-        }
-
-        DB::table('categories')
-            ->where('id', $categoryId)
-            ->where(fn ($q) => $q->whereNull('sap_code')->orWhere('sap_code', '!=', $code))
-            ->update(['sap_code' => $code, 'updated_at' => now()]);
+        return in_array(mb_strtolower($name), array_map('mb_strtolower', self::SYNCED_CATEGORIES), true);
     }
 
     /**
@@ -115,13 +116,14 @@ class CategorySync extends OdooPullSync
      */
     private function resolveCategoryId(string $name): ?int
     {
-        $key = mb_strtolower(trim($name));
+        $key = mb_strtolower($name);
 
         if (!array_key_exists($key, $this->categoryCache)) {
-            $this->categoryCache[$key] = DB::table('categories')
+            $id = DB::table('categories')
                 ->whereNull('deleted_at')
-                ->where('category_name', trim($name))
+                ->where('category_name', $name)
                 ->value('id');
+            $this->categoryCache[$key] = $id ? (int) $id : null;
         }
 
         return $this->categoryCache[$key];

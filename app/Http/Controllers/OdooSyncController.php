@@ -103,14 +103,12 @@ class OdooSyncController extends Controller
         $query = DB::table('odoo_categories as oc')
             ->join('categories as c', 'c.id', '=', 'oc.category_id')
             ->whereNull('c.deleted_at')
-            ->select('oc.id', 'oc.external_id', 'oc.category_code', 'oc.category_name', 'oc.description', 'oc.ranking',
+            ->select('oc.id', 'oc.category_odoo_id', 'oc.category_name',
                 'oc.active', 'oc.is_deleted', 'oc.category_id', 'oc.odoo_updated_at', 'oc.updated_at', 'c.category_name as fk_category_name');
 
         return datatables()->query($query)
-            ->editColumn('external_id', fn ($row) => '<span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->external_id) . '">' . e($row->external_id) . '</span>')
-            ->editColumn('category_code', fn ($row) => '<span class="os-mono os-strong">' . e($row->category_code) . '</span>')
-            ->editColumn('category_name', fn ($row) => '<div class="os-strong">' . e($row->category_name) . '</div>'
-                . ($row->description ? '<div class="os-sub">' . e(\Illuminate\Support\Str::limit($row->description, 60)) . '</div>' : ''))
+            ->editColumn('category_odoo_id', fn ($row) => '<span class="os-mono os-copy os-strong" title="Click to copy" data-copy="' . e($row->category_odoo_id) . '">' . e($row->category_odoo_id) . '</span>')
+            ->editColumn('category_name', fn ($row) => '<div class="os-strong">' . e($row->category_name) . '</div>')
             ->addColumn('linked', fn ($row) => $row->category_id
                 ? '<div class="os-sub">' . e($row->fk_category_name) . ' <span class="os-tag">#' . (int) $row->category_id . '</span></div>'
                 : '<span class="os-pill os-pill-warning os-pill-sm">Not linked</span>')
@@ -122,7 +120,7 @@ class OdooSyncController extends Controller
             })
             ->editColumn('odoo_updated_at', fn ($row) => $this->dateTimeCell($row->odoo_updated_at))
             ->editColumn('updated_at', fn ($row) => $this->dateTimeCell($row->updated_at))
-            ->rawColumns(['external_id', 'category_code', 'category_name', 'linked', 'status', 'odoo_updated_at', 'updated_at'])
+            ->rawColumns(['category_odoo_id', 'category_name', 'linked', 'status', 'odoo_updated_at', 'updated_at'])
             ->make(true);
     }
 

@@ -6,7 +6,7 @@
       <div>
         <div class="os-breadcrumb">Odoo Sync › <b>Category Master Odoo</b></div>
         <h1 class="os-title"><span class="material-icons">category</span>Category Master Odoo</h1>
-        <p class="os-subtitle">Product categories pulled from Odoo twice a day (06:00 and 18:00). Only categories that already exist in FieldKonnect (matched by name) are shown; their Odoo code is copied to the category master on every sync.</p>
+        <p class="os-subtitle">Product categories pulled from Odoo twice a day (06:00 and 18:00). Only Column Coupler, HDPE Pipe and PVC Pipes are synced for now, and only when the category exists in FieldKonnect (matched by name).</p>
       </div>
       <button type="button" class="os-btn" id="osSyncNow"><span class="material-icons">sync</span><span class="os-btn-label">Sync now</span></button>
     </div>
@@ -35,11 +35,11 @@
       </div>
     </div>
 
-    <p class="os-pane-note">Click an external ID to copy it. Sync history and errors are on <a href="{{ route('odoo_sync.index') }}">Sync Overview</a>.</p>
+    <p class="os-pane-note">Click an Odoo ID to copy it. Sync history and errors are on <a href="{{ route('odoo_sync.index') }}">Sync Overview</a>.</p>
     <div class="os-table-wrap">
       <div class="os-table-scroll">
         <table id="osCategoriesTable" class="os-table">
-          <thead><tr><th>External ID</th><th>Odoo Code</th><th>Category</th><th>FieldKonnect category</th><th>Ranking</th><th>Status</th><th>Odoo updated</th><th>Synced</th></tr></thead>
+          <thead><tr><th>Odoo ID</th><th>Category</th><th>FieldKonnect category</th><th>Status</th><th>Odoo updated</th><th>Synced</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -52,11 +52,9 @@
         order: [[1, 'asc']],
         ajax: "{{ route('odoo_sync.categories_data') }}",
         columns: window.osPreserveCase([
-          { data: 'external_id', name: 'oc.external_id' },
-          { data: 'category_code', name: 'oc.category_code' },
+          { data: 'category_odoo_id', name: 'oc.category_odoo_id' },
           { data: 'category_name', name: 'oc.category_name' },
           { data: 'linked', name: 'c.category_name' },
-          { data: 'ranking', name: 'oc.ranking', searchable: false },
           { data: 'status', name: 'oc.active', searchable: false },
           { data: 'odoo_updated_at', name: 'oc.odoo_updated_at', searchable: false },
           { data: 'updated_at', name: 'oc.updated_at', searchable: false }
