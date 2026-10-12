@@ -32,11 +32,11 @@
     <div class="os-panel">
       <div class="os-panel-title">Modules</div>
       <div class="os-module-grid">
-        <a class="os-module" href="{{ route('odoo_sync.categories') }}">
+        <a class="os-module" href="{{ route('categories.index') }}">
           <div class="os-key-icon"><span class="material-icons">category</span></div>
           <div class="os-key-body">
-            <div class="os-key-name">Category Master Odoo <span class="os-pill os-pill-success os-pill-sm" style="margin-top:0">Ready</span></div>
-            <div class="os-key-meta">Pulled from Odoo twice a day</div>
+            <div class="os-key-name">Categories <span class="os-pill os-pill-success os-pill-sm" style="margin-top:0">Ready</span></div>
+            <div class="os-key-meta">Synced on Product Management › Category List</div>
           </div>
         </a>
         <a class="os-module" href="{{ route('odoo_sync.subcategories') }}">

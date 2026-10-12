@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Exports\ExcelExport;
-use App\Services\Odoo\CategorySync;
 use App\Services\Odoo\CustomerSync;
 use App\Services\Odoo\OdooPullSync;
 use App\Services\Odoo\ProductSync;
@@ -51,63 +50,6 @@ class OdooSyncController extends Controller
         ];
 
         return view('odoo_sync.index', compact('clients', 'counts', 'lastRequest'));
-    }
-
-    /**
-     * Category Master Odoo: categories pulled from Odoo (cron twice a day, or Sync now).
-     */
-    public function categories()
-    {
-        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-
-        $lastRun = DB::table('odoo_sync_logs')->where('entity', CategorySync::ENTITY)->orderByDesc('id')
-            ->first(['created_at', 'status_code', 'received_count', 'failed_count']);
-
-        // Only Odoo categories linked to an existing FieldKonnect category are listed
-        $linked = fn () => DB::table('odoo_categories as oc')
-            ->join('categories as c', 'c.id', '=', 'oc.category_id')
-            ->whereNull('c.deleted_at');
-
-        $counts = [
-            'total' => $linked()->count(),
-            'active' => $linked()->where('oc.active', true)->where('oc.is_deleted', false)->count(),
-            'unlinked' => DB::table('odoo_categories')->whereNull('category_id')->count(),
-        ];
-
-        return view('odoo_sync.categories', compact('counts', 'lastRun'));
-    }
-
-    public function categoriesData()
-    {
-        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-
-        $query = DB::table('odoo_categories as oc')
-            ->join('categories as c', 'c.id', '=', 'oc.category_id')
-            ->whereNull('c.deleted_at')
-            ->select('oc.id', 'oc.category_odoo_id', 'oc.category_name',
-                'oc.active', 'oc.is_deleted', 'oc.category_id', 'oc.odoo_updated_at', 'oc.updated_at', 'c.category_name as fk_category_name');
-
-        return datatables()->query($query)
-            ->editColumn('category_odoo_id', fn ($row) => '<span class="os-mono os-copy os-strong" title="Click to copy" data-copy="' . e($row->category_odoo_id) . '">' . e($row->category_odoo_id) . '</span>')
-            ->editColumn('category_name', fn ($row) => '<div class="os-strong">' . e($row->category_name) . '</div>')
-            ->addColumn('linked', fn ($row) => $row->category_id
-                ? '<div class="os-sub">' . e($row->fk_category_name) . ' <span class="os-tag">#' . (int) $row->category_id . '</span></div>'
-                : '<span class="os-pill os-pill-warning os-pill-sm">Not linked</span>')
-            ->addColumn('status', function ($row) {
-                if ($row->is_deleted) {
-                    return '<span class="os-pill os-pill-danger">Deleted</span>';
-                }
-                return $row->active ? '<span class="os-pill os-pill-success">Active</span>' : '<span class="os-pill os-pill-neutral">Inactive</span>';
-            })
-            ->editColumn('odoo_updated_at', fn ($row) => $this->dateTimeCell($row->odoo_updated_at))
-            ->editColumn('updated_at', fn ($row) => $this->dateTimeCell($row->updated_at))
-            ->rawColumns(['category_odoo_id', 'category_name', 'linked', 'status', 'odoo_updated_at', 'updated_at'])
-            ->make(true);
-    }
-
-    public function syncCategories(CategorySync $sync)
-    {
-        return $this->runPullSync($sync);
     }
 
     /**

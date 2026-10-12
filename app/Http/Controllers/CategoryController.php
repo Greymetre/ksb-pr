@@ -35,7 +35,16 @@ class CategoryController extends Controller
     public function index(CategoryDataTable $dataTable)
     {
         abort_if(Gate::denies('category_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-        return $dataTable->render('categories.index');
+
+        // Odoo sync panel: categories come from Odoo (cron twice a day, or Sync now)
+        $odooLastRun = DB::table('odoo_sync_logs')->where('entity', CategorySync::ENTITY)->orderByDesc('id')
+            ->first(['created_at', 'status_code', 'received_count', 'failed_count']);
+        $odooCounts = [
+            'total' => Category::whereNotNull('odoo_category_id')->count(),
+            'active' => Category::whereNotNull('odoo_category_id')->where('active', 'Y')->count(),
+        ];
+
+        return $dataTable->render('categories.index', compact('odooLastRun', 'odooCounts'));
     }
 
     public function store(CategoryRequest $request)

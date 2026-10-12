@@ -14,13 +14,43 @@
                   <a href="{{ URL::to('categories-download') }}" class="btn btn-just-icon btn-theme" title="{!!  trans('panel.global.download') !!} {!! trans('panel.category.title') !!}"><i class="material-icons">cloud_download</i></a>
                   @endif
                   {{-- Categories come from Odoo (Odoo Sync -> Category Master Odoo): no add / upload / template --}}
-                  <a href="javascript:void(0)" class="btn btn-just-icon btn-theme" id="odooSyncCategories" title="Sync from Odoo"><i class="material-icons">sync</i></a>
                 </div>
                 </div>
               </span>
           </h4>
       </div>
       <div class="card-body">
+        @include('odoo_sync.partials.assets')
+        {{-- Odoo sync: categories come from Odoo twice a day (06:00 and 18:00), or Sync now --}}
+        <div class="os-page" style="padding-bottom:0">
+          <div class="os-head">
+            <p class="os-subtitle">Categories come from Odoo twice a day (06:00 and 18:00). Only Column Coupler, HDPE Pipe and PVC Pipes are synced for now.</p>
+            <button type="button" class="os-btn" id="odooSyncCategories"><span class="material-icons">sync</span><span class="os-btn-label">Sync now</span></button>
+          </div>
+          <div class="os-stats is-3">
+            <div class="os-stat">
+              <div class="os-stat-label"><span class="material-icons">schedule</span>Last sync</div>
+              <div class="os-stat-value is-small">{{ $odooLastRun ? \Carbon\Carbon::parse($odooLastRun->created_at)->diffForHumans() : 'Not synced yet' }}</div>
+              <div class="os-stat-note {{ $odooLastRun && $odooLastRun->status_code >= 300 ? 'is-danger' : '' }}">
+                @if($odooLastRun)
+                  {{ \Carbon\Carbon::parse($odooLastRun->created_at)->format('d M Y, h:i A') }} · {{ $odooLastRun->status_code === 502 ? 'Odoo call failed, see Odoo Sync › Sync Overview' : number_format($odooLastRun->received_count) . ' received' }}
+                @else
+                  Click Sync now or wait for the cron
+                @endif
+              </div>
+            </div>
+            <div class="os-stat">
+              <div class="os-stat-label"><span class="material-icons">category</span>Categories</div>
+              <div class="os-stat-value">{{ number_format($odooCounts['total']) }}</div>
+              <div class="os-stat-note">{{ number_format($odooCounts['active']) }} active</div>
+            </div>
+            <div class="os-stat">
+              <div class="os-stat-label"><span class="material-icons">cloud_sync</span>In Odoo</div>
+              <div class="os-stat-value">{{ $odooLastRun && $odooLastRun->status_code !== 502 ? number_format($odooLastRun->received_count) : '—' }}</div>
+              <div class="os-stat-note">Odoo categories; {{ number_format($odooCounts['total']) }} synced here</div>
+            </div>
+          </div>
+        </div>
         @if(count($errors) > 0)
         <div class="alert alert-danger">
           <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -48,6 +78,8 @@
               <th>{!! trans('panel.category.fields.category_image') !!}</th>
               <th>{!! trans('panel.category.fields.category_name') !!}</th>
               <th>Odoo Category ID</th>
+              <th>Odoo Updated</th>
+              <th>Last Synced</th>
               <th>{!! trans('panel.global.created_by') !!}</th>
               <th>{!! trans('panel.global.created_at') !!}</th>
             </thead>
@@ -144,10 +176,12 @@
             {data: 'action', name: 'action',"defaultContent": '',orderable: false, searchable: false},
              {data: 'active', name: 'active',"defaultContent": '', orderable: false, searchable: false},
             {data: 'image', name: 'image',"defaultContent": '', orderable: false, searchable: false},
-            {data: 'category_name', name: 'category_name',"defaultContent": ''},
-            {data: 'odoo_category_id', name: 'odoo_category_id',"defaultContent": ''},
+            {data: 'category_name', name: 'categories.category_name',"defaultContent": ''},
+            {data: 'odoo_category_id', name: 'categories.odoo_category_id',"defaultContent": ''},
+            {data: 'odoo_updated_at', name: 'oc.odoo_updated_at',"defaultContent": '', searchable: false},
+            {data: 'odoo_synced_at', name: 'oc.updated_at',"defaultContent": '', searchable: false},
             {data: 'createdbyname.name', name: 'createdbyname.name',"defaultContent": ''},
-            {data: 'created_at', name: 'created_at',"defaultContent": ''},
+            {data: 'created_at', name: 'categories.created_at',"defaultContent": ''},
         ]
     });
          
@@ -181,22 +215,20 @@
     
     // Pull categories from Odoo now (cron also runs twice a day)
     $('#odooSyncCategories').on('click', function () {
-        var $btn = $(this).addClass('disabled');
-        $('.alert').removeClass('alert-success alert-danger').hide();
+        var $btn = $(this).prop('disabled', true).addClass('is-busy');
+        $btn.find('.os-btn-label').text('Syncing…');
         $.ajax({
             url: "{{ route('categories.odoo_sync') }}",
             type: 'POST',
             data: {_token: $("meta[name='csrf-token']").attr("content")},
             success: function (r) {
-              $('.message').empty().append('Synced from Odoo: ' + r.created + ' created, ' + r.updated + ' updated, ' + r.skipped + ' unchanged, ' + r.failed + ' failed');
-              $('.alert').addClass('alert-success').show();
-              table.draw();
+              window.osToast('Synced: ' + r.created + ' created, ' + r.updated + ' updated, ' + r.skipped + ' unchanged, ' + r.failed + ' failed');
+              setTimeout(function() { location.reload(); }, 1400);
             },
             error: function () {
-              $('.message').empty().append('Odoo sync failed. See Odoo Sync -> Sync Overview for the error.');
-              $('.alert').addClass('alert-danger').show();
-            },
-            complete: function () { $btn.removeClass('disabled'); }
+              window.osToast('Sync failed. See Odoo Sync › Sync Overview for the error.');
+              $btn.prop('disabled', false).removeClass('is-busy').find('.os-btn-label').text('Sync now');
+            }
         });
     });
 
