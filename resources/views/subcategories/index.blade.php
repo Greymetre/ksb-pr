@@ -99,14 +99,10 @@
               </div>
               <div class="col-md-6">
                   <div class="input_section">
-                    <label class="col-form-label">Material<span class="text-danger"> *</span></label>
+                    <label class="col-form-label">Odoo Code</label>
                     <div class="form-group has-default bmd-form-group">
-                      <input type="text" name="sap_code" id="sap_code" class="form-control" value="{!! old( 'sap_code') !!}" maxlength="200" >
-                      @if ($errors->has('sap_code'))
-                      <div class="error">
-                        <p class="text-danger">{{ $errors->first('sap_code') }}</p>
-                      </div>
-                      @endif
+                      {{-- Odoo sub-category ID, set by the Odoo sync; shown only, never posted --}}
+                      <input type="text" id="odoo_subcategory_id" class="form-control" readonly>
                     </div>
                   </div>
                 </div>
@@ -207,7 +203,7 @@
         success:function(data)
         {
           $('#subcategory_name').val(data.subcategory_name);
-          $('#sap_code').val(data.sap_code);
+          $('#odoo_subcategory_id').val(data.odoo_subcategory_id);
           // $("#category_id").append('<option value="'+data.category_id+'" selected="selected">'+data.category_name+'</option>');
           $('#category_id').val(data.category_id).trigger('change');
           $('#category_id_value').val(data.category_id);
