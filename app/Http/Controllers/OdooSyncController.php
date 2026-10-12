@@ -240,28 +240,25 @@ class OdooSyncController extends Controller
         abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $query = DB::table('odoo_products as op')
-            ->leftJoin('odoo_categories as oc', 'oc.external_id', '=', 'op.category_external_id')
-            ->leftJoin('odoo_subcategories as os', 'os.external_id', '=', 'op.subcategory_external_id')
+            ->leftJoin('odoo_categories as oc', 'oc.category_odoo_id', '=', 'op.category_odoo_id')
+            ->leftJoin('odoo_subcategories as os', 'os.subcategory_odoo_id', '=', 'op.subcategory_odoo_id')
             ->leftJoin('products as p', 'p.id', '=', 'op.product_id')
-            ->select('op.id', 'op.external_id', 'op.product_code', 'op.product_name', 'op.display_name', 'op.category_code', 'op.subcategory_code',
-                'op.brand_name', 'op.uom_code', 'op.hsn_code', 'op.mrp', 'op.standard_price', 'op.gst_percent', 'op.currency_code',
-                'op.orderable', 'op.active', 'op.is_deleted', 'op.product_id', 'op.odoo_updated_at', 'op.updated_at',
+            ->select('op.id', 'op.product_odoo_id', 'op.product_name', 'op.category_odoo_id', 'op.subcategory_odoo_id',
+                'op.uom_name', 'op.mrp', 'op.standard_price', 'op.gst_percent',
+                'op.active', 'op.is_deleted', 'op.product_id', 'op.odoo_updated_at', 'op.updated_at',
                 'oc.category_name', 'os.subcategory_name', 'p.product_name as fk_product_name');
 
         return datatables()->query($query)
-            ->editColumn('external_id', fn ($row) => '<span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->external_id) . '">' . e($row->external_id) . '</span>')
-            ->editColumn('product_code', fn ($row) => '<span class="os-mono os-strong">' . e($row->product_code) . '</span>')
-            ->editColumn('product_name', fn ($row) => '<div class="os-strong">' . e(\Illuminate\Support\Str::limit($row->product_name, 50)) . '</div>'
-                . ($row->brand_name ? '<div class="os-sub">' . e($row->brand_name) . '</div>' : ''))
-            ->addColumn('category', fn ($row) => '<div class="os-strong">' . e($row->category_name ?? $row->category_code) . '</div>'
-                . '<div class="os-sub">' . e($row->subcategory_name ?? $row->subcategory_code) . '</div>')
+            ->editColumn('product_odoo_id', fn ($row) => '<span class="os-mono os-copy os-strong" title="Click to copy" data-copy="' . e($row->product_odoo_id) . '">' . e($row->product_odoo_id) . '</span>')
+            ->editColumn('product_name', fn ($row) => '<div class="os-strong">' . e(\Illuminate\Support\Str::limit($row->product_name, 50)) . '</div>')
+            ->addColumn('category', fn ($row) => '<div class="os-strong">' . e($row->category_name) . ' <span class="os-tag">#' . (int) $row->category_odoo_id . '</span></div>'
+                . '<div class="os-sub">' . e($row->subcategory_name) . ' <span class="os-tag">#' . (int) $row->subcategory_odoo_id . '</span></div>')
             ->addColumn('price', function ($row) {
                 $gst = $row->gst_percent !== null ? rtrim(rtrim(number_format($row->gst_percent, 2), '0'), '.') . '% GST' : 'GST —';
-                return '<div class="os-price">MRP ' . $this->money($row->mrp, $row->currency_code) . '</div>'
-                    . '<div class="os-sub">Std ' . $this->money($row->standard_price, $row->currency_code) . ' · ' . $gst . '</div>';
+                return '<div class="os-price">MRP ' . $this->money($row->mrp, 'INR') . '</div>'
+                    . '<div class="os-sub">Std ' . $this->money($row->standard_price, 'INR') . ' · ' . $gst . '</div>';
             })
-            ->addColumn('uom', fn ($row) => '<div class="os-strong">' . e($row->uom_code) . '</div>'
-                . '<div class="os-sub">HSN ' . e($row->hsn_code ?: '—') . '</div>')
+            ->editColumn('uom_name', fn ($row) => '<div class="os-strong">' . e($row->uom_name) . '</div>')
             ->addColumn('linked', fn ($row) => $row->product_id
                 ? '<div class="os-sub">' . e(\Illuminate\Support\Str::limit($row->fk_product_name, 40)) . ' <span class="os-tag">#' . (int) $row->product_id . '</span></div>'
                 : '<span class="os-pill os-pill-warning os-pill-sm">Not linked</span>')
@@ -269,12 +266,11 @@ class OdooSyncController extends Controller
                 if ($row->is_deleted) {
                     return '<span class="os-pill os-pill-danger">Deleted</span>';
                 }
-                $status = $row->active ? '<span class="os-pill os-pill-success">Active</span>' : '<span class="os-pill os-pill-neutral">Inactive</span>';
-                return $status . ($row->orderable ? '' : '<div class="os-sub">Not orderable</div>');
+                return $row->active ? '<span class="os-pill os-pill-success">Active</span>' : '<span class="os-pill os-pill-neutral">Inactive</span>';
             })
             ->editColumn('odoo_updated_at', fn ($row) => $this->dateTimeCell($row->odoo_updated_at))
             ->editColumn('updated_at', fn ($row) => $this->dateTimeCell($row->updated_at))
-            ->rawColumns(['external_id', 'product_code', 'product_name', 'category', 'price', 'uom', 'linked', 'status', 'odoo_updated_at', 'updated_at'])
+            ->rawColumns(['product_odoo_id', 'product_name', 'category', 'price', 'uom_name', 'linked', 'status', 'odoo_updated_at', 'updated_at'])
             ->make(true);
     }
 
@@ -291,30 +287,24 @@ class OdooSyncController extends Controller
         abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $rows = DB::table('odoo_products as op')
-            ->leftJoin('odoo_categories as oc', 'oc.external_id', '=', 'op.category_external_id')
-            ->leftJoin('odoo_subcategories as os', 'os.external_id', '=', 'op.subcategory_external_id')
+            ->leftJoin('odoo_categories as oc', 'oc.category_odoo_id', '=', 'op.category_odoo_id')
+            ->leftJoin('odoo_subcategories as os', 'os.subcategory_odoo_id', '=', 'op.subcategory_odoo_id')
             ->leftJoin('products as p', 'p.id', '=', 'op.product_id')
+            ->orderBy('oc.category_name')
+            ->orderBy('os.subcategory_name')
             ->orderBy('op.product_name')
             ->get(['op.*', 'oc.category_name', 'os.subcategory_name', 'p.product_name as fk_product_name'])
             ->map(fn ($row) => [
-                $row->external_id,
-                $row->product_code,
+                $row->product_odoo_id,
                 $row->product_name,
-                $row->display_name,
-                $row->category_external_id,
-                $row->category_code,
-                $row->category_name ?? $row->category_code,
-                $row->subcategory_external_id,
-                $row->subcategory_code,
-                $row->subcategory_name ?? $row->subcategory_code,
-                $row->brand_name,
-                $row->uom_code,
-                $row->hsn_code,
+                $row->category_odoo_id,
+                $row->category_name,
+                $row->subcategory_odoo_id,
+                $row->subcategory_name,
+                $row->uom_name,
                 $row->mrp,
                 $row->standard_price,
                 $row->gst_percent,
-                $row->currency_code,
-                $row->orderable ? 'Yes' : 'No',
                 $row->product_id,
                 $row->fk_product_name ?? 'Not linked',
                 $this->statusText($row),
@@ -323,9 +313,8 @@ class OdooSyncController extends Controller
             ])->all();
 
         return Excel::download(new ExcelExport([
-            'External ID', 'Product Code', 'Product Name', 'Display Name', 'Category External ID', 'Category Code', 'Category',
-            'Sub-category External ID', 'Sub-category Code', 'Sub-category', 'Brand', 'UOM', 'HSN', 'MRP', 'Standard Price', 'GST %',
-            'Currency', 'Orderable', 'FieldKonnect Product ID', 'FieldKonnect Product', 'Status', 'Odoo Updated', 'Synced',
+            'Odoo Product ID', 'Product Name', 'Odoo Category ID', 'Category', 'Odoo Sub-category ID', 'Sub-category',
+            'UOM', 'MRP', 'Standard Price', 'GST %', 'FieldKonnect Product ID', 'FieldKonnect Product', 'Status', 'Odoo Updated', 'Synced',
         ], $rows), 'odoo_products_' . now()->format('Y-m-d_His') . '.xlsx');
     }
 

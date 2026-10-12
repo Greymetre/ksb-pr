@@ -6,7 +6,7 @@
       <div>
         <div class="os-breadcrumb">Odoo Sync › <b>Product Master Odoo</b></div>
         <h1 class="os-title"><span class="material-icons">inventory_2</span>Product Master Odoo</h1>
-        <p class="os-subtitle">Products pulled from Odoo twice a day (06:20 and 18:20, after categories and sub-categories). Only products of synced categories and sub-categories are kept. The FieldKonnect product master is not changed; a product is linked when its code matches the product code or SAP code.</p>
+        <p class="os-subtitle">Products pulled from Odoo twice a day (06:20 and 18:20, after categories and sub-categories). Fetched per synced category by its Odoo category ID; only products whose category and sub-category are both synced are kept. The FieldKonnect product master is not changed; a product is linked when its name matches the product name or display name.</p>
       </div>
       <div class="os-head-actions">
         <a href="{{ route('odoo_sync.products_export') }}" class="os-btn os-btn-ghost"><span class="material-icons">download</span>Export</a>
@@ -34,15 +34,15 @@
       <div class="os-stat">
         <div class="os-stat-label"><span class="material-icons">link_off</span>Not linked</div>
         <div class="os-stat-value">{{ number_format($counts['unlinked']) }}</div>
-        <div class="os-stat-note {{ $counts['unlinked'] > 0 ? 'is-warning' : '' }}">No FieldKonnect product with the same code</div>
+        <div class="os-stat-note {{ $counts['unlinked'] > 0 ? 'is-warning' : '' }}">No FieldKonnect product with the same name</div>
       </div>
     </div>
 
-    <p class="os-pane-note">Click an external ID to copy it. Sync history and errors are on <a href="{{ route('odoo_sync.index') }}">Sync Overview</a>.</p>
+    <p class="os-pane-note">Click an Odoo ID to copy it. Sync history and errors are on <a href="{{ route('odoo_sync.index') }}">Sync Overview</a>.</p>
     <div class="os-table-wrap">
       <div class="os-table-scroll">
         <table id="osProductsTable" class="os-table">
-          <thead><tr><th>External ID</th><th>Code</th><th>Product</th><th>Category</th><th>Price</th><th>UOM</th><th>FieldKonnect product</th><th>Status</th><th>Odoo updated</th><th>Synced</th></tr></thead>
+          <thead><tr><th>Odoo Product ID</th><th>Product</th><th>Category / Sub-category (Odoo ID)</th><th>Price</th><th>UOM</th><th>FieldKonnect product</th><th>Status</th><th>Odoo updated</th><th>Synced</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -55,12 +55,11 @@
         order: [[1, 'asc']],
         ajax: "{{ route('odoo_sync.products_data') }}",
         columns: window.osPreserveCase([
-          { data: 'external_id', name: 'op.external_id' },
-          { data: 'product_code', name: 'op.product_code' },
+          { data: 'product_odoo_id', name: 'op.product_odoo_id' },
           { data: 'product_name', name: 'op.product_name' },
           { data: 'category', name: 'oc.category_name' },
           { data: 'price', name: 'op.mrp', searchable: false },
-          { data: 'uom', name: 'op.uom_code' },
+          { data: 'uom_name', name: 'op.uom_name' },
           { data: 'linked', name: 'p.product_name' },
           { data: 'status', name: 'op.active', searchable: false },
           { data: 'odoo_updated_at', name: 'op.odoo_updated_at', searchable: false },

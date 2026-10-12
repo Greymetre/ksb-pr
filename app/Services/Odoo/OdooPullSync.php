@@ -98,11 +98,11 @@ abstract class OdooPullSync
                     $outcome = $this->upsert($record, $correlationId);
                     $summary[$outcome['status']]++;
                     if (!empty($outcome['errors'])) {
-                        $errors[] = ['index' => $index, 'external_id' => $record['external_id'] ?? $record['subcategory_odoo_id'] ?? $record['category_odoo_id'] ?? null, 'status' => $outcome['status'], 'errors' => $outcome['errors']];
+                        $errors[] = ['index' => $index, 'external_id' => $record['external_id'] ?? $record['product_odoo_id'] ?? $record['subcategory_odoo_id'] ?? $record['category_odoo_id'] ?? null, 'status' => $outcome['status'], 'errors' => $outcome['errors']];
                     }
                 } catch (Throwable $e) {
                     $summary['failed']++;
-                    $errors[] = ['index' => $index, 'external_id' => $record['external_id'] ?? $record['subcategory_odoo_id'] ?? $record['category_odoo_id'] ?? null, 'status' => 'failed', 'errors' => ['record' => [$e->getMessage()]]];
+                    $errors[] = ['index' => $index, 'external_id' => $record['external_id'] ?? $record['product_odoo_id'] ?? $record['subcategory_odoo_id'] ?? $record['category_odoo_id'] ?? null, 'status' => 'failed', 'errors' => ['record' => [$e->getMessage()]]];
                 }
             }
         } catch (Throwable $e) {

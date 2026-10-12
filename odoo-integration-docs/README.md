@@ -10,7 +10,7 @@ Setup, testing and go-live steps for the Odoo push integration. The API spec for
 | CRM "Odoo Sync" menu | Integrations → Odoo Sync → Sync Overview (`/odoo-sync`), Party Wise Pricing (`/odoo-sync/party-prices`) | Built |
 | Category Master Odoo (pull) | Odoo `product.category` / `get_fieldkonnect_category_list` → `odoo_categories` (only Column Coupler, HDPE Pipe, PVC Pipes; key `category_odoo_id`), page `/odoo-sync/categories` | Built, cron twice a day |
 | Sub Category Master Odoo (pull) | Odoo `product.category` / `get_fieldkonnect_subcategory_list` (one call per synced `category_odoo_id`) → `odoo_subcategories`, page `/odoo-sync/subcategories` | Built, cron twice a day |
-| Product Master Odoo (pull) | Odoo `product.product` / `get_fieldkonnect_products` → `odoo_products`, page `/odoo-sync/products` | Built, cron twice a day |
+| Product Master Odoo (pull) | Odoo `product.product` / `get_fieldkonnect_product_list` (one call per synced `category_odoo_id`; kept only when the sub-category is synced too) → `odoo_products`, page `/odoo-sync/products` | Built, cron twice a day |
 | Parties, leave balance, order dispatch, invoices, outstanding | — | Not started |
 
 ## How it works

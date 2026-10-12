@@ -9,25 +9,31 @@ use Illuminate\Support\Facades\DB;
 |--------------------------------------------------------------------------
 | Pulls products from Odoo into odoo_products.
 |--------------------------------------------------------------------------
-| Odoo: product.product / get_fieldkonnect_products (paginated, ~2900 rows).
+| Odoo: product.product / get_fieldkonnect_product_list, called once per
+| synced category (odoo_categories.category_odoo_id), paginated.
+| Each record: product_odoo_id, product_name, category_odoo_id, subcategory_odoo_id,
+| subcategory_name, uom_id, uom_name, mrp, standard_price, gst_percent, active,
+| is_deleted, created_at, updated_at.
 | Run by `php artisan odoo:sync-products` (cron, twice a day, after the
 | category and sub-category syncs) and by "Sync now" on Odoo Sync -> Product Master Odoo.
 |
-| - Upsert key is external_id; re-syncing never duplicates.
+| - Only products whose category AND sub-category are both synced
+|   (odoo_categories / odoo_subcategories) are kept; the rest are skipped and
+|   removed if stored earlier. A product with no sub-category is skipped too.
+| - Upsert key is product_odoo_id; re-syncing never duplicates.
 | - A record whose updated_at is not newer than the stored one is skipped.
-| - Only products of synced masters are kept: the category must be linked in
-|   odoo_categories, or the sub-category stored in odoo_subcategories. The rest
-|   are skipped and removed if stored earlier.
-| - product_id links by product_code to products.product_code, then
-|   products.sap_code (same rule as party prices). `products` is never changed.
+| - Odoo sends no product code, so product_id links by name to
+|   products.product_name, then products.display_name. `products` is never changed.
 */
 class ProductSync extends OdooPullSync
 {
     public const ENTITY = 'products';
 
+    /** Synced categories' category_odoo_id */
+    private array $categoryOdooIds = [];
+    /** Synced sub-categories: subcategory_odoo_id => category_odoo_id */
+    private array $subcategories = [];
     private array $productCache = [];
-    private array $subcategoryCache = [];
-    private array $categoryCache = [];
 
     public function entity(): string
     {
@@ -36,7 +42,7 @@ class ProductSync extends OdooPullSync
 
     protected function source(): array
     {
-        return ['product.product', 'get_fieldkonnect_products'];
+        return ['product.product', 'get_fieldkonnect_product_list'];
     }
 
     protected function pageSize(): int
@@ -44,56 +50,86 @@ class ProductSync extends OdooPullSync
         return 500;
     }
 
+    /**
+     * One read per synced category (Scenario C: products under a category id).
+     */
+    protected function requests(): array
+    {
+        $this->categoryOdooIds = DB::table('odoo_categories')
+            ->whereNotNull('category_odoo_id')
+            ->whereNotNull('category_id')
+            ->pluck('category_odoo_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $this->subcategories = DB::table('odoo_subcategories')
+            ->whereNotNull('subcategory_odoo_id')
+            ->pluck('category_odoo_id', 'subcategory_odoo_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return array_map(fn ($odooId) => ['category_odoo_id' => $odooId], $this->categoryOdooIds);
+    }
+
+    /**
+     * Rows Odoo no longer returns for a synced category are removed (only after Odoo was read fully).
+     */
+    protected function prepare(array $records): void
+    {
+        $records = array_filter($records, fn ($r) => $this->isSynced($r));
+        $ids = array_values(array_filter(array_map(fn ($r) => (int) ($r['product_odoo_id'] ?? 0), $records)));
+        $names = array_values(array_filter(array_map(fn ($r) => mb_strtolower(trim((string) ($r['product_name'] ?? ''))), $records)));
+
+        DB::table('odoo_products')
+            ->whereNotNull('product_odoo_id')
+            ->whereNotIn('product_odoo_id', $ids ?: [0])
+            ->delete();
+
+        // Rows synced before product_odoo_id existed: kept only if Odoo still has that name
+        DB::table('odoo_products')
+            ->whereNull('product_odoo_id')
+            ->whereNotIn(DB::raw('LOWER(TRIM(product_name))'), $names ?: [''])
+            ->delete();
+    }
+
     protected function upsert(array $record, string $correlationId): array
     {
-        // Category / sub-category not synced in FieldKonnect: do not keep this product
-        if (!$this->belongsToSyncedMaster($record)) {
-            DB::table('odoo_products')->where('external_id', $record['external_id'] ?? '')->delete();
+        $odooId = (int) ($record['product_odoo_id'] ?? 0);
+        $name = trim((string) ($record['product_name'] ?? ''));
+
+        if (!$odooId || $name === '') {
+            return ['status' => 'failed', 'errors' => ['record' => ['product_odoo_id and product_name are required.']]];
+        }
+
+        // Category or sub-category not synced in FieldKonnect: do not keep this product
+        if (!$this->isSynced($record)) {
+            DB::table('odoo_products')->where('product_odoo_id', $odooId)->delete();
             return ['status' => 'skipped'];
         }
 
-        if (empty($record['external_id']) || empty($record['product_code']) || empty($record['product_name'])) {
-            return ['status' => 'failed', 'errors' => ['record' => ['external_id, product_code and product_name are required.']]];
-        }
-
+        $productId = $this->resolveProductId($name);
         $odooUpdatedAt = $this->toLocal($record['updated_at'] ?? null);
-        $productId = $this->resolveProductId($record['product_code']);
 
-        $existing = DB::table('odoo_products')
-            ->where('external_id', $record['external_id'])
-            ->first(['id', 'odoo_updated_at', 'product_id']);
+        $existing = DB::table('odoo_products')->where('product_odoo_id', $odooId)
+            ->first(['id', 'odoo_updated_at', 'product_id'])
+            ?? DB::table('odoo_products')->whereNull('product_odoo_id')->where('product_name', $name)
+                ->first(['id', 'odoo_updated_at', 'product_id']);
 
         // Unchanged in Odoo: nothing to do, unless the FieldKonnect link changed
-        if ($this->isUnchanged($existing, $odooUpdatedAt) && (int) $existing->product_id === (int) $productId) {
+        if ($existing && $this->isUnchanged($existing, $odooUpdatedAt) && (int) $existing->product_id === (int) $productId) {
             return ['status' => 'skipped'];
         }
 
         $row = [
-            'product_code' => $record['product_code'],
-            'product_name' => $record['product_name'],
-            'display_name' => $record['display_name'] ?? null,
-            'description' => $record['description'] ?? null,
-            'category_external_id' => $record['category_external_id'] ?? null,
-            'category_code' => $record['category_code'] ?? null,
-            'subcategory_external_id' => $record['subcategory_external_id'] ?? null,
-            'subcategory_code' => $record['subcategory_code'] ?? null,
-            'brand_code' => $record['brand_code'] ?? null,
-            'brand_name' => $record['brand_name'] ?? null,
-            'uom_code' => $record['uom_code'] ?? null,
+            'product_odoo_id' => $odooId,
+            'product_name' => $name,
+            'category_odoo_id' => (int) $record['category_odoo_id'],
+            'subcategory_odoo_id' => (int) $record['subcategory_odoo_id'],
+            'uom_id' => !empty($record['uom_id']) ? (int) $record['uom_id'] : null,
             'uom_name' => $record['uom_name'] ?? null,
-            'hsn_code' => $record['hsn_code'] ?? null,
-            'ean_barcode' => $record['ean_barcode'] ?? null,
             'mrp' => $record['mrp'] ?? null,
             'standard_price' => $record['standard_price'] ?? null,
             'gst_percent' => $record['gst_percent'] ?? null,
-            'currency_code' => isset($record['currency_code']) ? strtoupper($record['currency_code']) : null,
-            'model_no' => $record['model_no'] ?? null,
-            'part_no' => $record['part_no'] ?? null,
-            'product_group' => $record['product_group'] ?? null,
-            'product_subgroup' => $record['product_subgroup'] ?? null,
-            'specification' => $record['specification'] ?? null,
-            'image_url' => $record['image_url'] ?? null,
-            'orderable' => filter_var($record['orderable'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'active' => filter_var($record['active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'is_deleted' => filter_var($record['is_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'product_id' => $productId,
@@ -109,45 +145,36 @@ class ProductSync extends OdooPullSync
             return ['status' => 'updated'];
         }
 
-        DB::table('odoo_products')->insert($row + [
-            'external_id' => $record['external_id'],
-            'created_at' => now(),
-        ]);
+        DB::table('odoo_products')->insert($row + ['created_at' => now()]);
 
         return ['status' => 'created'];
     }
 
     /**
-     * Category linked to FieldKonnect (odoo_categories), or a sub-category kept by SubcategorySync.
+     * Category is synced and the sub-category is a synced one of that category.
      */
-    private function belongsToSyncedMaster(array $record): bool
+    private function isSynced(array $record): bool
     {
-        $categoryExternalId = $record['category_external_id'] ?? null;
+        $categoryOdooId = (int) ($record['category_odoo_id'] ?? 0);
+        $subcategoryOdooId = (int) ($record['subcategory_odoo_id'] ?? 0);
 
-        if ($categoryExternalId && ($this->categoryCache[$categoryExternalId] ??= DB::table('odoo_categories')
-            ->where('external_id', $categoryExternalId)
-            ->whereNotNull('category_id')
-            ->exists())) {
-            return true;
-        }
-
-        $subcategoryExternalId = $record['subcategory_external_id'] ?? null;
-
-        return $subcategoryExternalId && ($this->subcategoryCache[$subcategoryExternalId] ??= DB::table('odoo_subcategories')
-            ->where('external_id', $subcategoryExternalId)
-            ->exists());
+        return in_array($categoryOdooId, $this->categoryOdooIds, true)
+            && ($this->subcategories[$subcategoryOdooId] ?? null) === $categoryOdooId;
     }
 
     /**
-     * product_code is matched against products.product_code, then products.sap_code.
+     * product_name is matched against products.product_name, then products.display_name.
      */
-    private function resolveProductId(string $productCode): ?int
+    private function resolveProductId(string $name): ?int
     {
-        if (!array_key_exists($productCode, $this->productCache)) {
-            $this->productCache[$productCode] = Product::where('product_code', $productCode)->value('id')
-                ?? Product::where('sap_code', $productCode)->value('id');
+        $key = mb_strtolower($name);
+
+        if (!array_key_exists($key, $this->productCache)) {
+            $id = Product::where('product_name', $name)->value('id')
+                ?? Product::where('display_name', $name)->value('id');
+            $this->productCache[$key] = $id ? (int) $id : null;
         }
 
-        return $this->productCache[$productCode];
+        return $this->productCache[$key];
     }
 }
