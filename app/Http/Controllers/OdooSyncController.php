@@ -152,28 +152,18 @@ class OdooSyncController extends Controller
     {
         abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $roots = null;
         $query = DB::table('odoo_subcategories as os')
-            ->leftJoin('odoo_categories as oc', 'oc.external_id', '=', 'os.category_external_id')
-            // Nested sub-category (Column Pipe > Heavy Pipe): parent is another sub-category
-            ->leftJoin('odoo_subcategories as ps', 'ps.external_id', '=', 'os.category_external_id')
+            ->leftJoin('odoo_categories as oc', 'oc.category_odoo_id', '=', 'os.category_odoo_id')
             ->leftJoin('subcategories as s', 's.id', '=', 'os.subcategory_id')
-            ->select('os.id', 'os.external_id', 'os.subcategory_code', 'os.subcategory_name', 'os.description', 'os.category_external_id', 'os.category_code', 'os.ranking',
+            ->select('os.id', 'os.subcategory_odoo_id', 'os.category_odoo_id', 'os.subcategory_name',
                 'os.active', 'os.is_deleted', 'os.subcategory_id', 'os.odoo_updated_at', 'os.updated_at',
-                DB::raw('COALESCE(oc.category_name, ps.subcategory_name) as parent_name'), 's.subcategory_name as fk_subcategory_name');
+                'oc.category_name', 's.subcategory_name as fk_subcategory_name');
 
         return datatables()->query($query)
-            ->editColumn('external_id', fn ($row) => '<span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->external_id) . '">' . e($row->external_id) . '</span>')
-            ->editColumn('subcategory_code', fn ($row) => '<span class="os-mono os-strong">' . e($row->subcategory_code) . '</span>')
-            ->editColumn('subcategory_name', fn ($row) => '<div class="os-strong">' . e($row->subcategory_name) . '</div>'
-                . ($row->description ? '<div class="os-sub">' . e(\Illuminate\Support\Str::limit($row->description, 60)) . '</div>' : ''))
-            ->addColumn('parent', function ($row) use (&$roots) {
-                $roots ??= $this->subcategoryRoots();
-                $root = $roots[$row->external_id] ?? null;
-                $nested = $root && $root->external_id !== $row->category_external_id;
-                return '<div class="os-strong">' . ($root ? e($root->category_name) : 'Category not synced yet') . '</div>'
-                    . ($nested ? '<div class="os-sub">under ' . e($row->parent_name) . '</div>' : '');
-            })
+            ->editColumn('subcategory_odoo_id', fn ($row) => '<span class="os-mono os-copy os-strong" title="Click to copy" data-copy="' . e($row->subcategory_odoo_id) . '">' . e($row->subcategory_odoo_id) . '</span>')
+            ->editColumn('category_odoo_id', fn ($row) => '<span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->category_odoo_id) . '">' . e($row->category_odoo_id) . '</span>')
+            ->editColumn('subcategory_name', fn ($row) => '<div class="os-strong">' . e($row->subcategory_name) . '</div>')
+            ->editColumn('category_name', fn ($row) => '<div class="os-strong">' . e($row->category_name ?? 'Category not synced yet') . '</div>')
             ->addColumn('linked', fn ($row) => $row->subcategory_id
                 ? '<div class="os-sub">' . e($row->fk_subcategory_name) . ' <span class="os-tag">#' . (int) $row->subcategory_id . '</span></div>'
                 : '<span class="os-pill os-pill-warning os-pill-sm">Not linked</span>')
@@ -185,7 +175,7 @@ class OdooSyncController extends Controller
             })
             ->editColumn('odoo_updated_at', fn ($row) => $this->dateTimeCell($row->odoo_updated_at))
             ->editColumn('updated_at', fn ($row) => $this->dateTimeCell($row->updated_at))
-            ->rawColumns(['external_id', 'subcategory_code', 'subcategory_name', 'parent', 'linked', 'status', 'odoo_updated_at', 'updated_at'])
+            ->rawColumns(['subcategory_odoo_id', 'category_odoo_id', 'subcategory_name', 'category_name', 'linked', 'status', 'odoo_updated_at', 'updated_at'])
             ->make(true);
     }
 
@@ -202,34 +192,27 @@ class OdooSyncController extends Controller
         abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $rows = DB::table('odoo_subcategories as os')
-            ->leftJoin('odoo_categories as oc', 'oc.external_id', '=', 'os.category_external_id')
-            ->leftJoin('odoo_subcategories as ps', 'ps.external_id', '=', 'os.category_external_id')
+            ->leftJoin('odoo_categories as oc', 'oc.category_odoo_id', '=', 'os.category_odoo_id')
             ->leftJoin('subcategories as s', 's.id', '=', 'os.subcategory_id')
+            ->orderBy('oc.category_name')
             ->orderBy('os.subcategory_name')
-            ->get(['os.*', DB::raw('COALESCE(oc.category_name, ps.subcategory_name) as parent_name'), 's.subcategory_name as fk_subcategory_name']);
-
-        $roots = $this->subcategoryRoots();
+            ->get(['os.*', 'oc.category_name', 's.subcategory_name as fk_subcategory_name']);
 
         $rows = $rows->map(fn ($row) => [
-                $row->external_id,
-                $row->subcategory_code,
+                $row->subcategory_odoo_id,
                 $row->subcategory_name,
-                $roots[$row->external_id]->category_code ?? '',
-                $roots[$row->external_id]->category_name ?? '',
-                $row->category_external_id,
-                $row->parent_name,
+                $row->category_odoo_id,
+                $row->category_name ?? '',
                 $row->subcategory_id,
                 $row->fk_subcategory_name ?? 'Not linked',
-                $row->description,
-                $row->ranking,
                 $this->statusText($row),
                 $this->exportDate($row->odoo_updated_at),
                 $this->exportDate($row->updated_at),
             ])->all();
 
         return Excel::download(new ExcelExport([
-            'External ID', 'Sub-category Code', 'Sub-category', 'Category Code', 'Category', 'Parent External ID', 'Parent (direct)',
-            'FieldKonnect Sub-category ID', 'FieldKonnect Sub-category', 'Description', 'Ranking', 'Status', 'Odoo Updated', 'Synced',
+            'Odoo Sub-category ID', 'Sub-category', 'Odoo Category ID', 'Category',
+            'FieldKonnect Sub-category ID', 'FieldKonnect Sub-category', 'Status', 'Odoo Updated', 'Synced',
         ], $rows), 'odoo_subcategories_' . now()->format('Y-m-d_His') . '.xlsx');
     }
 
@@ -488,28 +471,6 @@ class OdooSyncController extends Controller
         return $mode === 'live'
             ? '<span class="os-pill os-pill-live os-pill-sm">Live</span>'
             : '<span class="os-pill os-pill-test os-pill-sm">Test</span>';
-    }
-
-    /**
-     * Odoo nests sub-categories (PVC Pipes > Column Pipe > Heavy Pipe): sub-category
-     * external_id => its top category row in odoo_categories (one of the synced ones).
-     */
-    private function subcategoryRoots(): array
-    {
-        $categories = DB::table('odoo_categories')->get(['external_id', 'category_code', 'category_name'])->keyBy('external_id');
-        $parentOf = DB::table('odoo_subcategories')->pluck('category_external_id', 'external_id');
-
-        $roots = [];
-        foreach ($parentOf as $externalId => $parent) {
-            $seen = [];
-            while ($parent && !isset($categories[$parent]) && !isset($seen[$parent])) {
-                $seen[$parent] = true;
-                $parent = $parentOf[$parent] ?? null;
-            }
-            $roots[$externalId] = $parent ? ($categories[$parent] ?? null) : null;
-        }
-
-        return $roots;
     }
 
     private function statusText(object $row): string

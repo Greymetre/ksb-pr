@@ -40,6 +40,15 @@ abstract class OdooPullSync
     }
 
     /**
+     * Extra args per Odoo request; one paginated read per entry (e.g. one per parent
+     * category). Each entry is also merged into the records it returned.
+     */
+    protected function requests(): array
+    {
+        return [[]];
+    }
+
+    /**
      * Called once with every record of the run, before the first upsert().
      */
     protected function prepare(array $records): void
@@ -66,16 +75,20 @@ abstract class OdooPullSync
             // All pages are read first, so a module can look across records (e.g. the
             // sub-category tree) and nothing is written or removed on a half-read run.
             $records = [];
-            $page = 1;
-            do {
-                $result = $this->odoo->call($model, $method, [
-                    ['page' => $page, 'page_size' => $this->pageSize()],
-                ]);
-                array_push($records, ...($result['data'] ?? []));
+            foreach ($this->requests() as $extra) {
+                $page = 1;
+                do {
+                    $result = $this->odoo->call($model, $method, [
+                        $extra + ['page' => $page, 'page_size' => $this->pageSize()],
+                    ]);
+                    foreach ($result['data'] ?? [] as $record) {
+                        $records[] = $record + $extra;
+                    }
 
-                $hasNext = !empty($result['pagination']['has_next']);
-                $page++;
-            } while ($hasNext && $page <= self::MAX_PAGES);
+                    $hasNext = !empty($result['pagination']['has_next']);
+                    $page++;
+                } while ($hasNext && $page <= self::MAX_PAGES);
+            }
 
             $this->prepare($records);
 
@@ -85,11 +98,11 @@ abstract class OdooPullSync
                     $outcome = $this->upsert($record, $correlationId);
                     $summary[$outcome['status']]++;
                     if (!empty($outcome['errors'])) {
-                        $errors[] = ['index' => $index, 'external_id' => $record['external_id'] ?? $record['category_odoo_id'] ?? null, 'status' => $outcome['status'], 'errors' => $outcome['errors']];
+                        $errors[] = ['index' => $index, 'external_id' => $record['external_id'] ?? $record['subcategory_odoo_id'] ?? $record['category_odoo_id'] ?? null, 'status' => $outcome['status'], 'errors' => $outcome['errors']];
                     }
                 } catch (Throwable $e) {
                     $summary['failed']++;
-                    $errors[] = ['index' => $index, 'external_id' => $record['external_id'] ?? $record['category_odoo_id'] ?? null, 'status' => 'failed', 'errors' => ['record' => [$e->getMessage()]]];
+                    $errors[] = ['index' => $index, 'external_id' => $record['external_id'] ?? $record['subcategory_odoo_id'] ?? $record['category_odoo_id'] ?? null, 'status' => 'failed', 'errors' => ['record' => [$e->getMessage()]]];
                 }
             }
         } catch (Throwable $e) {

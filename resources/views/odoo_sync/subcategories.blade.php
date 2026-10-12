@@ -6,7 +6,7 @@
       <div>
         <div class="os-breadcrumb">Odoo Sync › <b>Sub Category Master Odoo</b></div>
         <h1 class="os-title"><span class="material-icons">account_tree</span>Sub Category Master Odoo</h1>
-        <p class="os-subtitle">Product sub-categories pulled from Odoo twice a day (06:10 and 18:10, after categories). Only sub-categories whose parent category is linked to a FieldKonnect category are kept. The FieldKonnect sub-category master is not changed; a sub-category is linked when its name matches under that parent category.</p>
+        <p class="os-subtitle">Product sub-categories pulled from Odoo twice a day (06:10 and 18:10, after categories). Fetched per synced category (Column Coupler, HDPE Pipe, PVC Pipes) by its Odoo category ID; sub-categories of other categories are not kept. The FieldKonnect sub-category master is not changed; a sub-category is linked when its name matches under that parent category.</p>
       </div>
       <div class="os-head-actions">
         <a href="{{ route('odoo_sync.subcategories_export') }}" class="os-btn os-btn-ghost"><span class="material-icons">download</span>Export</a>
@@ -38,11 +38,11 @@
       </div>
     </div>
 
-    <p class="os-pane-note">Click an external ID to copy it. Sync history and errors are on <a href="{{ route('odoo_sync.index') }}">Sync Overview</a>.</p>
+    <p class="os-pane-note">Click an Odoo ID to copy it. Sync history and errors are on <a href="{{ route('odoo_sync.index') }}">Sync Overview</a>.</p>
     <div class="os-table-wrap">
       <div class="os-table-scroll">
         <table id="osSubcategoriesTable" class="os-table">
-          <thead><tr><th>External ID</th><th>Code</th><th>Sub-category</th><th>Category</th><th>FieldKonnect sub-category</th><th>Ranking</th><th>Status</th><th>Odoo updated</th><th>Synced</th></tr></thead>
+          <thead><tr><th>Odoo Sub-category ID</th><th>Sub-category</th><th>Odoo Category ID</th><th>Category</th><th>FieldKonnect sub-category</th><th>Status</th><th>Odoo updated</th><th>Synced</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -52,15 +52,14 @@
   <script type="text/javascript">
     $(function() {
       var table = $('#osSubcategoriesTable').DataTable($.extend({}, window.osDataTableDefaults, {
-        order: [[1, 'asc']],
+        order: [[3, 'asc'], [1, 'asc']],
         ajax: "{{ route('odoo_sync.subcategories_data') }}",
         columns: window.osPreserveCase([
-          { data: 'external_id', name: 'os.external_id' },
-          { data: 'subcategory_code', name: 'os.subcategory_code' },
+          { data: 'subcategory_odoo_id', name: 'os.subcategory_odoo_id' },
           { data: 'subcategory_name', name: 'os.subcategory_name' },
-          { data: 'parent', name: 'os.category_code' },
+          { data: 'category_odoo_id', name: 'os.category_odoo_id' },
+          { data: 'category_name', name: 'oc.category_name' },
           { data: 'linked', name: 's.subcategory_name' },
-          { data: 'ranking', name: 'os.ranking', searchable: false },
           { data: 'status', name: 'os.active', searchable: false },
           { data: 'odoo_updated_at', name: 'os.odoo_updated_at', searchable: false },
           { data: 'updated_at', name: 'os.updated_at', searchable: false }
