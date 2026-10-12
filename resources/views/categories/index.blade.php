@@ -22,32 +22,60 @@
       <div class="card-body">
         @include('odoo_sync.partials.assets')
         {{-- Odoo sync: categories come from Odoo twice a day (06:00 and 18:00), or Sync now --}}
-        <div class="os-page" style="padding-bottom:0">
-          <div class="os-head">
-            <p class="os-subtitle">Categories come from Odoo twice a day (06:00 and 18:00). Only Column Coupler, HDPE Pipe and PVC Pipes are synced for now.</p>
+        <style>
+          .cat-odoo { padding: 18px 20px 4px; }
+          .cat-odoo-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+          .cat-odoo-title { font-size: 15px; font-weight: 600; color: var(--fk-list-heading, #fff); display: flex; align-items: center; gap: 8px; }
+          .cat-odoo-title .material-icons { font-size: 20px; color: var(--fk-list-accent, #5ad1f0); }
+          .cat-odoo-sub { font-size: 12.5px; color: var(--fk-list-muted, #7d8fbf); margin-top: 2px; }
+          .cat-odoo .os-stats { margin-bottom: 14px; gap: 12px; }
+          .cat-odoo .os-stat { padding: 12px 16px; display: flex; align-items: center; gap: 14px; }
+          .cat-odoo .os-stat-icon { width: 38px; height: 38px; flex: 0 0 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: rgba(90,209,240,.12); color: var(--fk-list-accent, #5ad1f0); }
+          .cat-odoo .os-stat-icon .material-icons { font-size: 20px; }
+          .cat-odoo .os-stat-label { font-size: 10.5px; }
+          .cat-odoo .os-stat-value { font-size: 20px; margin-top: 2px; }
+          .cat-odoo .os-stat-value.is-small { font-size: 15px; padding-top: 2px; }
+          .cat-odoo .os-stat-note { font-size: 11.5px; margin-top: 2px; }
+          .cat-odoo .os-btn { white-space: nowrap; }
+        </style>
+        <div class="os-page cat-odoo">
+          <div class="cat-odoo-head">
+            <div>
+              <div class="cat-odoo-title"><span class="material-icons">sync_alt</span>Synced from Odoo</div>
+              <div class="cat-odoo-sub">Auto sync twice a day (06:00 and 18:00) · Column Coupler, HDPE Pipe and PVC Pipes</div>
+            </div>
             <button type="button" class="os-btn" id="odooSyncCategories"><span class="material-icons">sync</span><span class="os-btn-label">Sync now</span></button>
           </div>
           <div class="os-stats is-3">
             <div class="os-stat">
-              <div class="os-stat-label"><span class="material-icons">schedule</span>Last sync</div>
-              <div class="os-stat-value is-small">{{ $odooLastRun ? \Carbon\Carbon::parse($odooLastRun->created_at)->diffForHumans() : 'Not synced yet' }}</div>
-              <div class="os-stat-note {{ $odooLastRun && $odooLastRun->status_code >= 300 ? 'is-danger' : '' }}">
-                @if($odooLastRun)
-                  {{ \Carbon\Carbon::parse($odooLastRun->created_at)->format('d M Y, h:i A') }} · {{ $odooLastRun->status_code === 502 ? 'Odoo call failed, see Odoo Sync › Sync Overview' : number_format($odooLastRun->received_count) . ' received' }}
-                @else
-                  Click Sync now or wait for the cron
-                @endif
+              <div class="os-stat-icon"><span class="material-icons">schedule</span></div>
+              <div>
+                <div class="os-stat-label">Last sync</div>
+                <div class="os-stat-value is-small">{{ $odooLastRun ? \Carbon\Carbon::parse($odooLastRun->created_at)->diffForHumans() : 'Not synced yet' }}</div>
+                <div class="os-stat-note {{ $odooLastRun && $odooLastRun->status_code >= 300 ? 'is-danger' : '' }}">
+                  @if($odooLastRun)
+                    {{ \Carbon\Carbon::parse($odooLastRun->created_at)->format('d M Y, h:i A') }}{{ $odooLastRun->status_code === 502 ? ' · Failed, see Odoo Sync › Sync Overview' : '' }}
+                  @else
+                    Click Sync now or wait for the cron
+                  @endif
+                </div>
               </div>
             </div>
             <div class="os-stat">
-              <div class="os-stat-label"><span class="material-icons">category</span>Categories</div>
-              <div class="os-stat-value">{{ number_format($odooCounts['total']) }}</div>
-              <div class="os-stat-note">{{ number_format($odooCounts['active']) }} active</div>
+              <div class="os-stat-icon"><span class="material-icons">category</span></div>
+              <div>
+                <div class="os-stat-label">Synced categories</div>
+                <div class="os-stat-value">{{ number_format($odooCounts['total']) }}</div>
+                <div class="os-stat-note">{{ number_format($odooCounts['active']) }} active</div>
+              </div>
             </div>
             <div class="os-stat">
-              <div class="os-stat-label"><span class="material-icons">cloud_sync</span>In Odoo</div>
-              <div class="os-stat-value">{{ $odooLastRun && $odooLastRun->status_code !== 502 ? number_format($odooLastRun->received_count) : '—' }}</div>
-              <div class="os-stat-note">Odoo categories; {{ number_format($odooCounts['total']) }} synced here</div>
+              <div class="os-stat-icon"><span class="material-icons">cloud_done</span></div>
+              <div>
+                <div class="os-stat-label">Categories in Odoo</div>
+                <div class="os-stat-value">{{ $odooLastRun && $odooLastRun->status_code !== 502 ? number_format($odooLastRun->received_count) : '—' }}</div>
+                <div class="os-stat-note">Received in the last sync</div>
+              </div>
             </div>
           </div>
         </div>
@@ -79,8 +107,6 @@
               <th>{!! trans('panel.category.fields.category_name') !!}</th>
               <th>Odoo Category ID</th>
               <th>Odoo Updated</th>
-              <th>Last Synced</th>
-              <th>{!! trans('panel.global.created_by') !!}</th>
               <th>{!! trans('panel.global.created_at') !!}</th>
             </thead>
             <tbody>
@@ -179,8 +205,6 @@
             {data: 'category_name', name: 'categories.category_name',"defaultContent": ''},
             {data: 'odoo_category_id', name: 'categories.odoo_category_id',"defaultContent": ''},
             {data: 'odoo_updated_at', name: 'oc.odoo_updated_at',"defaultContent": '', searchable: false},
-            {data: 'odoo_synced_at', name: 'oc.updated_at',"defaultContent": '', searchable: false},
-            {data: 'createdbyname.name', name: 'createdbyname.name',"defaultContent": ''},
             {data: 'created_at', name: 'categories.created_at',"defaultContent": ''},
         ]
     });

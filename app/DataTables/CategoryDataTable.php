@@ -24,7 +24,6 @@ class CategoryDataTable extends DataTable
                 return isset($data->created_at) ? showdatetimeformat($data->created_at) : '';
             })
             ->editColumn('odoo_updated_at', fn ($data) => $data->odoo_updated_at ? showdatetimeformat($data->odoo_updated_at) : '')
-            ->editColumn('odoo_synced_at', fn ($data) => $data->odoo_synced_at ? showdatetimeformat($data->odoo_synced_at) : '')
             ->addColumn('action', function ($query) {
                   $btn = '';
                   $activebtn ='';
@@ -70,7 +69,7 @@ class CategoryDataTable extends DataTable
         return $model->with('createdbyname')
             ->leftJoin('odoo_categories as oc', 'oc.category_id', '=', 'categories.id')
             ->whereNotNull('categories.odoo_category_id')
-            ->select('categories.*', 'oc.odoo_updated_at', 'oc.updated_at as odoo_synced_at')
+            ->select('categories.*', 'oc.odoo_updated_at')
             ->latest('categories.created_at')
             ->newQuery();
     }
