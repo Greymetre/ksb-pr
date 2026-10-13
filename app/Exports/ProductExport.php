@@ -10,9 +10,12 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ProductExport implements FromCollection,WithHeadings,ShouldAutoSize,WithMapping
 {
+    private $costs = [];
+
     public function __construct($request)
     {
         $this->category_id = $request->input('category_id');
@@ -21,7 +24,9 @@ class ProductExport implements FromCollection,WithHeadings,ShouldAutoSize,WithMa
 
     public function collection()
     {
-        $data = Product::with('productpriceinfo')->select('id','active','product_name','product_code','new_group','sub_group','expiry_interval','expiry_interval_preiod', 'display_name', 'description', 'subcategory_id', 'category_id', 'brand_id', 'product_image', 'unit_id', 'specification', 'part_no','suc_del', 'product_no', 'model_no','phase','sap_code' , 'branch_id', 'hsn_sac', 'hsn_sac_no', 'odoo_product_id')->whereNotNull('odoo_product_id');
+        $data = Product::with(['categories', 'subcategories', 'unitmeasures', 'productpriceinfo'])
+            ->select('id', 'odoo_product_id', 'active', 'product_name', 'category_id', 'subcategory_id', 'unit_id')
+            ->whereNotNull('odoo_product_id');
         if($this->category_id && !empty($this->category_id)){
             $data->where('category_id', $this->category_id);
         }
@@ -30,37 +35,35 @@ class ProductExport implements FromCollection,WithHeadings,ShouldAutoSize,WithMa
         }
         $data = $data->latest()->get();
 
+        // Odoo cost price (standard_price) per Odoo product id
+        $this->costs = DB::table('odoo_products')
+            ->whereIn('product_odoo_id', $data->pluck('odoo_product_id'))
+            ->pluck('standard_price', 'product_odoo_id');
+
         return $data;
     }
 
+    /**
+     * Only the fields the Odoo product sync fills.
+     */
     public function headings(): array
     {
-        return ['Fieldkonnect Id', 'Product Name', 'Duke Code', 'Description', 'Subcategory ID', 'Subcategory', 'Category ID', 'Category', 'Product Image', 'Unit ID', 'Unit of Measure', 'Sales Price', 'GST', 'Discount', 'Model No', 'Status', 'Odoo Code', 'Cost', 'HSN/SAC Code', 'Delete'];
+        return ['Fieldkonnect Id', 'Odoo Product Id', 'Product Name', 'Category', 'Sub Category', 'Unit of Measure', 'MRP', 'Cost Price', 'GST %', 'Status'];
     }
 
     public function map($data): array
     {
         return [
-            $data['id'],
-            $data['product_name'],
-            $data['product_code'],
-            $data['description'],
-            $data['subcategory_id'],
-            $data['subcategories']?$data['subcategories']['subcategory_name'] : '-',
-            $data['category_id'],
-            $data['categories']?$data['categories']['category_name'] : '-',
-            $data['product_image'],
-            $data['unit_id'],
-            $data['unitmeasures']?$data['unitmeasures']['unit_name']:'',
-            isset($data['productpriceinfo']['mrp']) ? $data['productpriceinfo']['mrp'] :'',
-            isset($data['productpriceinfo']['gst']) ? $data['productpriceinfo']['gst'] : '',
-            isset($data['productpriceinfo']['discount']) ? $data['productpriceinfo']['discount'] : '',
-            isset($data['model_no']) ? $data['model_no'] :'',
-            $data['active'],
-            $data['odoo_product_id'],
-            isset($data['productpriceinfo']['rmc']) ? $data['productpriceinfo']['rmc'] :'',
-            isset($data['hsn_sac']) ? $data['hsn_sac'] :'',
-            'No', // set to Yes and re-import to delete this product
+            $data->id,
+            $data->odoo_product_id,
+            $data->product_name,
+            $data->categories->category_name ?? '',
+            $data->subcategories->subcategory_name ?? '',
+            $data->unitmeasures->unit_name ?? '',
+            $data->productpriceinfo->mrp ?? '',
+            $this->costs[$data->odoo_product_id] ?? '',
+            $data->productpriceinfo->gst ?? '',
+            $data->active === 'Y' ? 'Active' : 'Inactive',
         ];
     }
 

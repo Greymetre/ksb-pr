@@ -14,57 +14,19 @@ class ProductRequest extends FormRequest
         return true;
     }
 
+    /**
+     * Only the fields the Odoo product sync fills.
+     */
     public function rules()
     {
-        $rules = [];
-        switch($this) {
-            case !empty($this->id) :
-                $rules = [
-                    'product_name'  =>  'required|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
-                    'display_name'  =>  'nullable|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
-                    'description'   =>  'required|min:2|max:450|string|regex:/[a-zA-Z0-9\s]+/',
-                    'mrp'           =>  'nullable|numeric',
-                    'price'         =>  'nullable|numeric',
-                    'discount'      =>  'nullable|numeric',
-                    'max_discount'  =>  'nullable|numeric',
-                    'selling_price' =>  'nullable|numeric',
-                    'gst'           =>  'nullable|numeric|max:90',
-                    'subcategory_id'=>  'nullable|numeric|exists:subcategories,id',
-                    'category_id'   =>  'nullable|numeric|exists:categories,id',
-                    'brand_id'      =>  'nullable|string|regex:/[a-zA-Z0-9\s]+/',
-                    'unit_id'       =>  'nullable|numeric|exists:unit_measures,id',
-                    'image'         =>  'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-                    'hsn_code'      =>  'nullable|min:2|max:50|string|regex:/[a-zA-Z0-9\s]+/',
-                    'ean_code'      =>  'nullable|min:2|max:50|string|regex:/[a-zA-Z0-9\s]+/',
-                ];
-                break;
-            default :
-                $rules = [
-                    'product_name'  =>  'required|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
-                    'display_name'  =>  'nullable|min:2|max:100|string|regex:/[a-zA-Z0-9\s]+/',
-                    'description'   =>  'required|min:2|max:450|string|regex:/[a-zA-Z0-9\s]+/',
-                    'mrp'           =>  'nullable|numeric',
-                    'price'         =>  'nullable|numeric',
-                    'discount'      =>  'nullable|numeric',
-                    'max_discount'  =>  'nullable|numeric',
-                    'selling_price' =>  'nullable|numeric',
-                    'gst'           =>  'nullable|numeric|max:90',
-                    'subcategory_id'=>  'nullable|numeric|exists:subcategories,id',
-                    'category_id'   =>  'nullable|numeric|exists:categories,id',
-                    'brand_id'      =>  'required|string|regex:/[a-zA-Z0-9\s]+/',
-                    'unit_id'       =>  'nullable|numeric|exists:unit_measures,id',
-                    'image'         =>  'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-                    'hsn_code'      =>  'nullable|min:2|max:50|string|regex:/[a-zA-Z0-9\s]+/',
-                    'ean_code'      =>  'nullable|min:2|max:50|string|regex:/[a-zA-Z0-9\s]+/',
-                ];
-                break;
-        }
-        $rules['suc_del'] = 'required|string|max:200';
-        $rules['detail'] = 'required|array|min:1';
-        $rules['detail.0.mrp'] = 'required|numeric|min:0';
-        $rules['detail.0.price'] = 'required|numeric|min:0';
-        $rules['detail.0.selling_price'] = 'nullable|numeric|min:0';
-
-        return $rules;
+        return [
+            'product_name'   => 'required|string|min:2|max:250',
+            'category_id'    => 'required|numeric|exists:categories,id',
+            'subcategory_id' => 'required|numeric|exists:subcategories,id',
+            'unit_id'        => 'nullable|numeric|exists:unit_measures,id',
+            'mrp'            => 'required|numeric|min:0',
+            'gst'            => 'nullable|numeric|min:0|max:90',
+            'active'         => 'required|in:Y,N',
+        ];
     }
 }

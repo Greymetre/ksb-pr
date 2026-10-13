@@ -88,12 +88,7 @@ class ProductController extends Controller
     public function create()
     {
         abort_if(Gate::denies('product_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-        $categories = Category::where('active','=','Y')->select('id', 'category_name')->get();
-        $subcategories = Subcategory::where('active','=','Y')->select('id', 'subcategory_name')->get();
-        $brands = Brand::where('active','=','Y')->select('id', 'brand_name')->get();
-        $units = UnitMeasure::where('active','=','Y')->select('id', 'unit_name')->get();
-        $branches = Branch::where('active','=','Y')->select('id', 'branch_name')->get();
-        return view('products.create',compact('categories','subcategories','brands','units', 'branches') )->with('products',$this->products);
+        return view('products.create', $this->formOptions())->with('products',$this->products);
     }
 
     /**
@@ -104,104 +99,10 @@ class ProductController extends Controller
      */
     public function store(ProductRequest $request)
     {
-        try
-        { 
-            abort_if(Gate::denies('product_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-            $validator = Validator::make($request->all(), [
-                'product_code' => 'unique:products',
-            ]);
-        
-            if ($validator->fails()) {
-                return redirect()->back()
-                            ->withErrors($validator)
-                            ->withInput();
-            }
-            $request['product_image'] = '';
-            if($request->file('image')){
-                $image = $request->file('image');
-                $filename = 'product'.autoIncrementId('Product','id');
-                unset($request['image']);
-                $request['product_image'] = fileupload($image, $this->path, $filename);
-            }
-            $request['active'] = 'Y';
-            $request['created_by'] = Auth::user()->id;
-            if($product_id = Product::insertGetId([
-                'active'        => 'Y', 
-                'product_name'  => !empty($request['product_name']) ? $request['product_name'] :'',
-                'product_code'  => !empty($request['product_code']) ? $request['product_code'] :'',
-                'new_group'  => !empty($request['new_group']) ? $request['new_group'] :'',
-                'sub_group'  => !empty($request['sub_group']) ? $request['sub_group'] :'',
-                // 'expiry_interval'  => !empty($request['expiry_interval']) ? $request['expiry_interval'] :'',
-                // 'expiry_interval_preiod'  => !empty($request['expiry_interval_preiod']) ? $request['expiry_interval_preiod'] :0,
-                //'display_name'  => !empty($request['display_name']) ? $request['display_name'] :'',
-                'description'   => !empty($request['description']) ? $request['description'] :'',
-                'subcategory_id'=> !empty($request['subcategory_id']) ? $request['subcategory_id'] :null,
-                // 'category_id'   => !empty($request['category_id']) ? $request['category_id'] :null,
-                'brand_id'      => !empty($request['brand_id']) ? $request['brand_id'] :null,
-                'product_image' => !empty($request['product_image']) ? $request['product_image'] :'',
-                // 'unit_id'       => !empty($request['unit_id']) ? $request['unit_id'] :null,
-                'created_by'    => Auth::user()->id,
-                'created_at'    => getcurentDateTime(),
-                'specification' => !empty($request['specification']) ? $request['specification'] :'',
-                'phase' => !empty($request['phase']) ? $request['phase'] :'',
-                'sap_code' => !empty($request['sap_code']) ? $request['sap_code'] :'',
-                'part_no'       => !empty($request['part_no']) ? $request['part_no'] :'',
-                'product_no'    => !empty($request['product_no']) ? $request['product_no'] :'',
-                'model_no'      => !empty($request['model_no']) ? $request['model_no'] :'',
-                'hsn_sac'       => $request->input('hsn_sac'),
-                'hsn_sac_no'    => $request->input('hsn_sac_no'),
-                'suc_del'       => $request->input('suc_del', ''),
-            ]))
-            {
-                if(!empty($request['detail']))
-                {
-                    $details = collect([]);
-                    foreach ($request['detail'] as $key => $rows) {
-                        if(!empty($rows['mrp'])){
-                            $price = $rows['mrp'];
-                            if(!empty($request['gst']) && $request['gst'] > 0){
-                                $price = ($rows['mrp']+(($rows['mrp']*$request['gst'])/100));
-                            }
-                            if(!empty($request['discount']) && $request['discount'] > 0){
-                                $price = ($price-(($rows['mrp']*$request['discount'])/100));
-                            }
-                        }
-                        $details->push([
-                            'active'        => 'Y',
-                            'product_id'    => $product_id,
-                            'detail_title'  => !empty($rows['detail_title']) ? $rows['detail_title'] :'',
-                            'detail_description' => !empty($rows['detail_description']) ? $rows['detail_description'] :'',
-                            'detail_image'  => !empty($rows['detail_image']) ? $rows['detail_image'] :'',
-                            'mrp'       => !empty($rows['mrp']) ? $rows['mrp'] :0.00,
-                            'price'     => $rows['price'] ?? $rows['mrp'] ?? 0.00,
-                            'selling_price' => $rows['selling_price'] ?? $rows['price'] ?? $rows['mrp'] ?? 0.00,
-                            'discount' => !empty($request['discount']) ? $request['discount'] :0.00,
-                            'max_discount' => !empty($request['max_discount']) ? $request['max_discount'] :0.00,
-                            'rmc' => !empty($request['rmc']) ? $request['rmc'] :0.00,
-                            'gst'       => !empty($request['gst']) ? $request['gst'] :0,
-                            'hsn_code'      => !empty($rows['hsn_code']) ? $rows['hsn_code'] :null,
-                            'ean_code'      => !empty($rows['ean_code']) ? $rows['ean_code'] :null,
-                            'isprimary'      => !empty($rows['isprimary']) ? $rows['isprimary'] :0,
-                            'top_sku'          => !empty($rows['top_sku']) ? $rows['top_sku'] :null,
-                            'budget_for_month' => !empty($rows['budget_for_month']) ? $rows['budget_for_month'] :null,
-                            'created_at'    => getcurentDateTime(),
-                            'updated_at'    => getcurentDateTime(),
-                        ]);
-                    }
-
-                    if(!empty($details))
-                    {
-                        ProductDetails::insert($details->toArray());
-                    }
-                }
-              return Redirect::to('products')->with('message_success', 'Product Store Successfully');
-            }
-            return redirect()->back()->with('message_danger', 'Error in Product Store')->withInput();  
-        }         
-        catch(\Exception $e)
-        {
-          return redirect()->back()->withErrors($e->getMessage())->withInput();
-        }
+        abort_if(Gate::denies('product_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        $product = Product::create($this->productAttributes($request) + ['created_by' => Auth::user()->id]);
+        $this->savePrimaryDetail($product->id, $request);
+        return Redirect::to('products')->with('message_success', 'Product Store Successfully');
     }
 
     /**
@@ -232,13 +133,8 @@ class ProductController extends Controller
     {
         abort_if(Gate::denies('product_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $id = decrypt($id);
-        $products = Product::find($id);
-        $categories = Category::where('active','=','Y')->select('id', 'category_name')->get();
-        $subcategories = Subcategory::where('active','=','Y')->select('id', 'subcategory_name')->get();
-        $brands = Brand::where('active','=','Y')->select('id', 'brand_name')->get();
-        $units = UnitMeasure::where('active','=','Y')->select('id', 'unit_name')->get();
-        $branches = Branch::where('active','=','Y')->select('id', 'branch_name')->get();
-        return view('products.create',compact('categories','subcategories','brands','units', 'branches') )->with('products',$products);
+        $products = Product::with('productdetails')->findOrFail($id);
+        return view('products.create', $this->formOptions())->with('products',$products);
     }
 
     /**
@@ -250,131 +146,60 @@ class ProductController extends Controller
      */
     public function update(ProductRequest $request, $id)
     {
-        try
-        { 
+        abort_if(Gate::denies('product_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        $product = Product::findOrFail(decrypt($id));
+        $product->update($this->productAttributes($request) + ['updated_by' => Auth::user()->id]);
+        $this->savePrimaryDetail($product->id, $request);
+        return Redirect::to('products')->with('message_success', 'Product Update Successfully');
+    }
 
-            abort_if(Gate::denies('product_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-            $validator = Validator::make($request->all(), [
-                'product_code' => 'unique:products,product_code,'.decrypt($id),
-            ]);
-        
-            if ($validator->fails()) {
-                return redirect()->back()
-                            ->withErrors($validator)
-                            ->withInput();
-            }
-            $id = decrypt($id);
-            $product = Product::find($id);
-            $product->product_name = !empty($request['product_name'])? $request['product_name'] :'';
-            $product->product_code = !empty($request['product_code'])? $request['product_code'] :'';
-            $product->new_group = !empty($request['new_group'])? $request['new_group'] :'';
-            $product->sub_group = !empty($request['sub_group'])? $request['sub_group'] :'';
-            // $product->expiry_interval = !empty($request['expiry_interval'])? $request['expiry_interval'] :'';
-            // $product->expiry_interval_preiod = !empty($request['expiry_interval_preiod'])? $request['expiry_interval_preiod'] :0;
-            //$product->display_name = !empty($request['display_name']) ? $request['display_name'] :'';
-            $product->description = !empty($request['description']) ? $request['description'] :'';
-            $product->subcategory_id = !empty($request['subcategory_id']) ? $request['subcategory_id'] :null;
-            // $product->category_id = !empty($request['category_id']) ? $request['category_id'] :null;
-            $product->brand_id = !empty($request['brand_id']) ? $request['brand_id'] :null;
-            // $product->unit_id = !empty($request['unit_id']) ? $request['unit_id'] :null;
-            $product->specification = !empty($request['specification']) ? $request['specification'] :'';
-            $product->phase = !empty($request['phase']) ? $request['phase'] :'';
-            $product->sap_code = !empty($request['sap_code']) ? $request['sap_code'] :'';
-            $product->part_no = !empty($request['part_no']) ? $request['part_no'] :'';
-            $product->product_no = !empty($request['product_no']) ? $request['product_no'] :'';
-            $product->model_no = !empty($request['model_no']) ? $request['model_no'] :'';
-            $product->hsn_sac = !empty($request['hsn_sac']) ? $request['hsn_sac'] :'';
-            $product->hsn_sac_no = !empty($request['hsn_sac_no']) ? $request['hsn_sac_no'] :'';
-            $product->suc_del  = !empty($request['suc_del']) ? $request['suc_del'] :'';
-            if($request->file('image')){
-                $image = $request->file('image');
-                $filename = 'category'.$id;
-                unset($request['image']);
-                $product->product_image = fileupload($image, $this->path, $filename);
-            }
-            $product->updated_by = Auth::user()->id;
-            if($product->save())
-            {
-                if(!empty($request['detail']))
-                {
-                    $details = collect([]);
-                    // $detailsids = $request['detail']->get('detail_id');
-                    // ProductDetails::whereNotIn('id',$detailsids)->delete();
-                    foreach ($request['detail'] as $key => $rows) {
-                        // $price = $rows['mrp'];
-                        if(!empty($rows['mrp'])){
-                            $price = $rows['mrp'];
-                            // if(!empty($request['gst']) && $request['gst'] > 0){
-                            //     $price = ($rows['mrp']+(($rows['mrp']*$request['gst'])/100));
-                            // }
-                            // if(!empty($request['discount']) && $request['discount'] > 0){
-                            //     $price = ($price-(($rows['mrp']*$request['discount'])/100));
-                            // }
-                        }
-                        // dd($rows, $request->all());
-                        if(empty($rows['detail_id']))
-                        {
-                            $details->push([
-                                'active'        => 'Y',
-                                'product_id'    => $id,
-                                'detail_title'  => !empty($rows['detail_title']) ? $rows['detail_title'] :'',
-                                'detail_description' => !empty($rows['detail_description']) ? $rows['detail_description'] :'',
-                                'detail_image'  => !empty($rows['detail_image']) ? $rows['detail_image'] :'',
-                                'mrp'       => !empty($rows['mrp']) ? $rows['mrp'] :0.00,
-                                'price'     => !empty($rows['price']) ? $rows['price'] :0.00,
-                                //'price'     => $price,
-                                'selling_price' => !empty($rows['selling_price']) ? $rows['selling_price'] :0.00,
-                                'discount' => !empty($request['discount']) ? $request['discount'] :0.00,
-                                'max_discount' => !empty($request['max_discount']) ? $request['max_discount'] :0.00,
-                                'rmc' => !empty($request['rmc']) ? $request['rmc'] :0.00,
-                                'gst'       => !empty($request['gst']) ? $request['gst'] :0,
-                                'hsn_code'      => !empty($rows['hsn_code']) ? $rows['hsn_code'] :null,
-                                'ean_code'      => !empty($rows['ean_code']) ? $rows['ean_code'] :null,
-                                'isprimary'      => $rows['isprimary'] ?? 1,
-                                'top_sku'          => $rows['top_sku'] ?? null,
-                                'budget_for_month' => $rows['budget_for_month'] ?? null,
-                                'created_at'    => getcurentDateTime(),
-                                'updated_at'    => getcurentDateTime(),
-                            ]);
-                        }
-                        else
-                        {
-                            ProductDetails::where('id',$rows['detail_id'])->update([
-                                'detail_title'  => isset($rows['detail_title']) ? $rows['detail_title'] :'',
-                                'detail_description' => isset($rows['detail_description']) ? $rows['detail_description'] :'',
-                                'detail_image'  => isset($rows['detail_image']) ? $rows['detail_image'] :'',
-                                'mrp'       => isset($rows['mrp']) ? $rows['mrp'] :0.00,
-                                'price'     => $rows['price'] ?? $rows['mrp'] ?? 0.00,
-                                'selling_price' => isset($rows['selling_price']) ? $rows['selling_price'] :0.00,
-                                'discount' => isset($request['discount']) ? $request['discount'] :0.00,
-                                'max_discount' => isset($request['max_discount']) ? $request['max_discount'] :0.00,
-                                'rmc' => isset($request['rmc']) ? $request['rmc'] :0.00,
-                                'gst'       => isset($request['gst']) ? $request['gst'] :0,
-                                'isprimary'      => $rows['isprimary'] ?? 1,
-                                'top_sku'          => $rows['top_sku'] ?? null,
-                                'budget_for_month' => $rows['budget_for_month'] ?? null,
-                                'hsn_code'      => isset($rows['hsn_code']) ? $rows['hsn_code'] :null,
-                                'ean_code'      => isset($rows['ean_code']) ? $rows['ean_code'] :null,
-                                'updated_at'    => getcurentDateTime(),
-                            ]);
-                        }
-                    }
+    /**
+     * Category, sub-category and unit choices for the product form.
+     */
+    private function formOptions(): array
+    {
+        return [
+            'categories' => Category::where('active','=','Y')->orderBy('category_name')->select('id', 'category_name')->get(),
+            'subcategories' => Subcategory::where('active','=','Y')->orderBy('subcategory_name')->select('id', 'subcategory_name', 'category_id')->get(),
+            'units' => UnitMeasure::where('active','=','Y')->orderBy('unit_name')->select('id', 'unit_name')->get(),
+        ];
+    }
 
-                    if(!empty($details))
-                    {
-                        ProductDetails::insert($details->toArray());
-                    }
-                }
-                
-              return Redirect::to('products')->with('message_success', 'Product Update Successfully');
-            }
-            return redirect()->back()->with('message_danger', 'Error in Category Update')->withInput();
-        }         
-        catch(\Exception $e)
-        {
-          return redirect()->back()->withErrors($e->getMessage())->withInput();
+    /**
+     * The product fields Odoo syncs: name, category, sub-category, unit, status.
+     */
+    private function productAttributes(ProductRequest $request): array
+    {
+        return [
+            'product_name'   => $request->input('product_name'),
+            'display_name'   => $request->input('product_name'),
+            'category_id'    => $request->input('category_id'),
+            'subcategory_id' => $request->input('subcategory_id'),
+            'unit_id'        => $request->input('unit_id'),
+            'active'         => $request->input('active', 'Y'),
+        ];
+    }
+
+    /**
+     * MRP and GST on the primary product_details row, the same row ProductSync writes
+     * (price and selling price follow MRP, as in the sync).
+     */
+    private function savePrimaryDetail(int $productId, ProductRequest $request): void
+    {
+        $mrp = (float) $request->input('mrp');
+        $detail = [
+            'mrp' => $mrp,
+            'price' => $mrp,
+            'selling_price' => $mrp,
+            'gst' => $request->filled('gst') ? (float) $request->input('gst') : null,
+        ];
+        $detailId = ProductDetails::where('product_id', $productId)->orderByDesc('isprimary')->orderBy('id')->value('id');
+
+        if ($detailId) {
+            ProductDetails::where('id', $detailId)->update($detail);
+        } else {
+            ProductDetails::create($detail + ['product_id' => $productId, 'active' => 'Y', 'isprimary' => 1]);
         }
-
     }
 
     public function destroy($id)
