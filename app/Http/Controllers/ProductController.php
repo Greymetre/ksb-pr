@@ -214,8 +214,12 @@ class ProductController extends Controller
     {
         abort_if(Gate::denies('product_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $id = decrypt($id);
-        $products = Product::find($id);
-        return view('products.show')->with('products',$products);
+        $products = Product::with(['categories', 'subcategories', 'unitmeasures', 'productdetails'])->findOrFail($id);
+        // Odoo sync row for this product (cost price, Odoo timestamps, sub-category name)
+        $odoo = $products->odoo_product_id
+            ? DB::table('odoo_products')->where('product_odoo_id', $products->odoo_product_id)->first()
+            : null;
+        return view('products.show', compact('odoo'))->with('products',$products);
     }
 
     /**
