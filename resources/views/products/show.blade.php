@@ -11,12 +11,16 @@
     $isActive = $products->active === 'Y';
     $money = fn ($v) => $v === null || $v === '' ? '—' : '₹ ' . number_format((float) $v, 2);
     $date = fn ($v) => $v ? \Carbon\Carbon::parse($v)->format('d M Y, h:i A') : '—';
+    // product_image is a full URL (fileupload) on new uploads, a path under uploads/ on old ones
+    $image = $products->product_image;
+    $imageUrl = $image ? (\Illuminate\Support\Str::startsWith($image, ['http://', 'https://']) ? $image : asset('uploads/' . ltrim($image, '/'))) : null;
   @endphp
 
   <style>
     .pd-hero { display: flex; gap: 18px; align-items: center; }
     .pd-hero-icon { width: 56px; height: 56px; border-radius: 14px; display: grid; place-items: center; background: rgba(34,211,238,.1); color: var(--fk-list-accent, #22d3ee); flex: none; }
     .pd-hero-icon .material-icons { font-size: 28px; }
+    .pd-hero-img { width: 96px; height: 96px; border-radius: 14px; object-fit: contain; background: #fff; flex: none; border: 1px solid var(--fk-list-border, rgba(120,160,255,.14)); cursor: zoom-in; }
     .pd-name { font-size: 22px; font-weight: 700; color: var(--fk-list-heading, #fff); margin: 0; line-height: 1.3; word-break: break-word; }
     .pd-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
     .pd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
@@ -35,15 +39,22 @@
         <div class="os-breadcrumb">Product Management › <a href="{{ route('products.index') }}" class="os-muted">Product List</a> › <b>Product Details</b></div>
         <h1 class="os-title"><span class="material-icons">inventory_2</span>Product Details</h1>
       </div>
-      <div class="os-head-actions">
+      <div class="os-head-actions" style="display:flex;gap:10px">
         <a href="{{ route('products.index') }}" class="os-btn os-btn-ghost"><span class="material-icons" style="font-size:16px">arrow_back</span> Back</a>
+        @can('product_edit')
+          <a href="{{ route('products.edit', encrypt($products->id)) }}" class="os-btn"><span class="material-icons" style="font-size:16px">edit</span> Edit</a>
+        @endcan
       </div>
     </div>
 
     {{-- Name and status --}}
     <div class="os-panel">
       <div class="pd-hero">
-        <div class="pd-hero-icon"><span class="material-icons">inventory_2</span></div>
+        @if($imageUrl)
+          <a href="{{ $imageUrl }}" target="_blank" rel="noopener"><img class="pd-hero-img" src="{{ $imageUrl }}" alt="Product image"></a>
+        @else
+          <div class="pd-hero-icon"><span class="material-icons">inventory_2</span></div>
+        @endif
         <div style="min-width:0">
           <h2 class="pd-name">{{ $products->product_name }}</h2>
           <div class="pd-tags">
@@ -108,6 +119,23 @@
           <div class="pd-field">
             <div class="pd-label"><span class="material-icons">tag</span>Odoo product ID</div>
             <div class="pd-value is-mono">{{ $products->odoo_product_id ?? '—' }}</div>
+          </div>
+          <div class="pd-field">
+            <div class="pd-label"><span class="material-icons">toggle_on</span>Odoo status</div>
+            <div class="pd-value">
+              @if(!$odoo)—
+              @elseif($odoo->is_deleted)<span class="os-pill os-pill-danger">Deleted</span>
+              @elseif($odoo->active)<span class="os-pill os-pill-success">Active</span>
+              @else<span class="os-pill os-pill-neutral">Archived</span>@endif
+            </div>
+          </div>
+          <div class="pd-field">
+            <div class="pd-label"><span class="material-icons">straighten</span>Odoo UOM</div>
+            <div class="pd-value">{{ $odoo->uom_name ?? '—' }}{{ !empty($odoo->uom_id) ? ' (#' . $odoo->uom_id . ')' : '' }}</div>
+          </div>
+          <div class="pd-field">
+            <div class="pd-label"><span class="material-icons">account_tree</span>Odoo category / sub-category ID</div>
+            <div class="pd-value is-mono">{{ $odoo->category_odoo_id ?? '—' }} / {{ $odoo->subcategory_odoo_id ?? '—' }}</div>
           </div>
           <div class="pd-field">
             <div class="pd-label"><span class="material-icons">sync</span>Last synced</div>

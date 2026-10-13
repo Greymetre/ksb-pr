@@ -15,7 +15,7 @@ class ProductRequest extends FormRequest
     }
 
     /**
-     * Only the fields the Odoo product sync fills.
+     * The fields the Odoo product sync fills, plus the image (kept in FieldKonnect only).
      */
     public function rules()
     {
@@ -27,6 +27,7 @@ class ProductRequest extends FormRequest
             'mrp'            => 'required|numeric|min:0',
             'gst'            => 'nullable|numeric|min:0|max:90',
             'active'         => 'required|in:Y,N',
+            'image'          => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ];
     }
 }

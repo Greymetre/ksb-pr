@@ -101,6 +101,7 @@ class ProductController extends Controller
     {
         abort_if(Gate::denies('product_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $product = Product::create($this->productAttributes($request) + ['created_by' => Auth::user()->id]);
+        $this->saveImage($product, $request);
         $this->savePrimaryDetail($product->id, $request);
         return Redirect::to('products')->with('message_success', 'Product Store Successfully');
     }
@@ -116,10 +117,7 @@ class ProductController extends Controller
         abort_if(Gate::denies('product_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $id = decrypt($id);
         $products = Product::with(['categories', 'subcategories', 'unitmeasures', 'productdetails'])->findOrFail($id);
-        // Odoo sync row for this product (cost price, Odoo timestamps, sub-category name)
-        $odoo = $products->odoo_product_id
-            ? DB::table('odoo_products')->where('product_odoo_id', $products->odoo_product_id)->first()
-            : null;
+        $odoo = $this->odooRow($products);
         return view('products.show', compact('odoo'))->with('products',$products);
     }
 
@@ -134,7 +132,8 @@ class ProductController extends Controller
         abort_if(Gate::denies('product_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $id = decrypt($id);
         $products = Product::with('productdetails')->findOrFail($id);
-        return view('products.create', $this->formOptions())->with('products',$products);
+        $odoo = $this->odooRow($products);
+        return view('products.create', $this->formOptions() + compact('odoo'))->with('products',$products);
     }
 
     /**
@@ -149,8 +148,29 @@ class ProductController extends Controller
         abort_if(Gate::denies('product_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $product = Product::findOrFail(decrypt($id));
         $product->update($this->productAttributes($request) + ['updated_by' => Auth::user()->id]);
+        $this->saveImage($product, $request);
         $this->savePrimaryDetail($product->id, $request);
         return Redirect::to('products')->with('message_success', 'Product Update Successfully');
+    }
+
+    /**
+     * Odoo sync row for this product (cost price, Odoo UOM, Odoo timestamps).
+     */
+    private function odooRow(Product $product): ?object
+    {
+        return $product->odoo_product_id
+            ? DB::table('odoo_products')->where('product_odoo_id', $product->odoo_product_id)->first()
+            : null;
+    }
+
+    /**
+     * New product image from the form, if one was chosen. Odoo does not sync images.
+     */
+    private function saveImage(Product $product, ProductRequest $request): void
+    {
+        if ($request->hasFile('image')) {
+            $product->update(['product_image' => fileupload($request->file('image'), $this->path, 'product' . $product->id . '_')]);
+        }
     }
 
     /**
