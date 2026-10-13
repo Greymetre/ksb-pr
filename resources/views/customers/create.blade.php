@@ -289,7 +289,7 @@
                   <label class="col-form-label">Odoo Code</label>
 
                   <div class="form-group has-default bmd-form-group">
-                    <input type="text" name="sap_code" id="sap_code" class="form-control" value="{!! old( 'contact_number', $customers['sap_code']) !!}" autocomplete="off">
+                    <input type="text" name="sap_code" id="sap_code" class="form-control" value="{!! old( 'sap_code', $customers['sap_code']) !!}" autocomplete="off">
                   </div>
                   @if ($errors->has('sap_code'))
                   <div class="error">
@@ -1301,9 +1301,12 @@
       function toggleAddressView() {
         if ($('#same_address').is(':checked')) {
           $('#shipping_address').hide();
+          // hidden required fields silently block form submit
+          $('#shipping_address [name="shipping_address1"]').prop('required', false);
           $('#billing_address').removeClass('col-md-6').addClass('col-md-12');
         } else {
           $('#shipping_address').show();
+          $('#shipping_address [name="shipping_address1"]').prop('required', true);
           $('#billing_address').removeClass('col-md-12').addClass('col-md-6');
         }
       }
