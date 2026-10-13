@@ -6,7 +6,7 @@
       <div>
         <div class="os-breadcrumb">Odoo Sync › <b>Primary Customer Odoo</b></div>
         <h1 class="os-title"><span class="material-icons">storefront</span>Primary Customer Odoo</h1>
-        <p class="os-subtitle">Primary customers / dealers pulled from Odoo twice a day (06:30 and 18:30). The FieldKonnect customer master is not changed; a customer is linked when its GSTIN matches, else its 10-digit mobile.</p>
+        <p class="os-subtitle">Primary customers / dealers pulled from Odoo twice a day (06:30 and 18:30). The FieldKonnect customer master is not changed; a customer is linked when its Odoo Code matches the Odoo customer ID, else its GSTIN, else its 10-digit mobile.</p>
       </div>
       <div class="os-head-actions">
         <a href="{{ route('odoo_sync.customers_export') }}" class="os-btn os-btn-ghost"><span class="material-icons">download</span>Export</a>
@@ -34,7 +34,7 @@
       <div class="os-stat">
         <div class="os-stat-label"><span class="material-icons">link_off</span>Not linked</div>
         <div class="os-stat-value">{{ number_format($counts['unlinked']) }}</div>
-        <div class="os-stat-note {{ $counts['unlinked'] > 0 ? 'is-warning' : '' }}">No FieldKonnect customer with the same GSTIN or mobile</div>
+        <div class="os-stat-note {{ $counts['unlinked'] > 0 ? 'is-warning' : '' }}">No FieldKonnect customer with the same Odoo Code, GSTIN or mobile</div>
       </div>
     </div>
 

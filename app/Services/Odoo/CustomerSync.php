@@ -18,13 +18,16 @@ use Illuminate\Support\Facades\DB;
 | - Upsert key is odoo_parent_id (stored as customer_odoo_id); re-syncing never duplicates.
 | - A record whose updated_at is not newer than the stored one is skipped.
 | - Customers Odoo no longer returns are removed.
-| - customer_id links to FieldKonnect `customers` by GSTIN (customer_details.gstin_no),
-|   else by 10-digit mobile. `customers` is never changed.
+| - customer_id links to FieldKonnect `customers` by Odoo ID first (customers.sap_code,
+|   "Odoo Code" on the customer form = odoo_parent_id), else by GSTIN
+|   (customer_details.gstin_no), else by 10-digit mobile. `customers` is never changed.
 */
 class CustomerSync extends OdooPullSync
 {
     public const ENTITY = 'customers';
 
+    /** FieldKonnect customers.sap_code (Odoo ID) => customers.id */
+    private array $odooCodes = [];
     private array $gstinCache = [];
     private array $mobileCache = [];
 
@@ -46,6 +49,16 @@ class CustomerSync extends OdooPullSync
         $ids = array_values(array_filter(array_map(fn ($r) => $this->odooId($r), $records)));
 
         DB::table('odoo_customers')->whereNotIn('customer_odoo_id', $ids ?: [0])->delete();
+
+        // Oldest customer wins when two share an Odoo code
+        $this->odooCodes = [];
+        DB::table('customers')->whereNull('deleted_at')
+            ->whereNotNull('sap_code')->where('sap_code', '!=', '')
+            ->orderBy('id')
+            ->get(['id', 'sap_code'])
+            ->each(function ($c) {
+                $this->odooCodes[trim((string) $c->sap_code)] ??= (int) $c->id;
+            });
     }
 
     protected function upsert(array $record, string $correlationId): array
@@ -58,7 +71,7 @@ class CustomerSync extends OdooPullSync
         }
 
         $gstin = strtoupper(trim((string) ($record['gstin'] ?? ''))) ?: null;
-        $customerId = $this->resolveCustomerId($gstin, $record['mobile'] ?? null);
+        $customerId = $this->odooCodes[(string) $odooId] ?? $this->resolveCustomerId($gstin, $record['mobile'] ?? null);
         $odooUpdatedAt = $this->toLocal($record['updated_at'] ?? null);
 
         $existing = DB::table('odoo_customers')
