@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\SapStockController;
 use App\Http\Controllers\Api\Odoo\PartyPriceController as OdooPartyPriceController;
 use App\Http\Controllers\Api\Odoo\AttendanceController as OdooAttendanceController;
 use App\Http\Controllers\Api\Odoo\LeaveController as OdooLeaveController;
+use App\Http\Controllers\Api\Odoo\OrderController as OdooOrderController;
 use App\Http\Controllers\Api\MspActivityController;
 use App\Http\Controllers\Api\ComplaintApiController;
 use App\Http\Controllers\Api\ServiceBillController;
@@ -108,6 +109,7 @@ Route::prefix('v1/odoo')->middleware('odoo.key')->group(function () {
     Route::get('party-prices', [OdooPartyPriceController::class, 'index']);
     Route::get('attendance', [OdooAttendanceController::class, 'index']);
     Route::get('leaves', [OdooLeaveController::class, 'index']);
+    Route::get('orders', [OdooOrderController::class, 'index']);
 });
 Route::get('master-distributors/supervisors', [MasterDistributorApiController::class, 'getSupervisors']);
 Route::get('master-distributors/contact-personss', [MasterDistributorApiController::class, 'contactPersonList']);

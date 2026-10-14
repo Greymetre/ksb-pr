@@ -14,6 +14,7 @@ Setup, testing and go-live steps for the Odoo push integration. The API spec for
 | Primary Customer Odoo (pull) | Odoo `res.partner` / `get_fieldkonnect_customer_list` (paginated, key `odoo_parent_id`) → `odoo_customers`, page `/odoo-sync/customers` | Built, cron twice a day (06:30, 18:30) |
 | Monthly attendance (Odoo reads) | `GET /api/v1/odoo/attendance` (spec: [attendance-api.md](attendance-api.md)); previous month frozen into `odoo_attendance_exports` on the 1st at 01:00 IST | Built, ready for Odoo testing |
 | Employee leaves (Odoo reads) | `GET /api/v1/odoo/leaves` (spec: [leave-api.md](leave-api.md)); live from `leaves`, filters `month`, `employee_code`, `status` | Built, ready for Odoo testing |
+| Orders (Odoo reads) | `GET /api/v1/odoo/orders`; live, one record per order with nested lines, incremental with `updated_since` | Built, ready for Odoo testing |
 | Parties, leave balance, order dispatch, invoices, outstanding | — | Not started |
 
 ## How it works
@@ -124,6 +125,17 @@ Odoo **reads** attendance with the same `X-API-Key` as party prices. Both test a
 - Leave hours are fixed per type (agreed with Odoo): Full Day 10:00–18:00, First Half 10:00–13:00, Second Half 13:00–18:00 (`LeaveController::TIMES`).
 - `leave_days` follows the app's balance logic: 0.5 for a half day, otherwise calendar days from `from_date` to `to_date`.
 - Deleting a leave in the CRM hard-deletes the row, so Odoo has to re-read a month to notice deletions.
+
+## Orders (Odoo reads from FieldKonnect)
+
+`app/Http/Controllers/Api/Odoo/OrderController.php`, route `GET /api/v1/odoo/orders`. Live read of `orders` + `order_details`, no migration. Logs with `entity=orders`.
+
+- One record per order, product lines nested under `lines`. Max 200 orders per page.
+- `updated_since`: an order is returned when the order row **or any of its lines** changed at or after that time (`GREATEST(orders.updated_at, MAX(order_details.updated_at))`), sorted oldest change first. Odoo stores the largest `updated_at` it received and sends it as the next `updated_since`.
+- Other filters: `from_date` / `to_date` (order date), `order_no`, `distributor_code`.
+- Ship qty / balance qty are **not** sent: dispatch is done in Odoo.
+- `odoo_party_id` = customer's "Odoo Code" (`customers.sap_code`); `odoo_product_id` = `products.odoo_product_id`. Both are null until the record is linked to Odoo.
+- Deleted orders (hard delete or `deleted_at`) simply stop appearing; Odoo cannot see deletions through `updated_since`.
 
 ## Setup on the server (one time)
 
