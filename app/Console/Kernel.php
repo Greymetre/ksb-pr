@@ -66,6 +66,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Asia/Kolkata')
             ->twiceDailyAt(6, 18, 30)
             ->withoutOverlapping();
+        // Attendance for Odoo: freeze the previous full month on the 1st at 01:00 IST (GET /api/v1/odoo/attendance)
+        $schedule->command('odoo:export-attendance')
+            ->timezone('Asia/Kolkata')
+            ->monthlyOn(1, '01:00')
+            ->withoutOverlapping();
         $schedule->command('tasks:send-pending-today')->everyMinute();
     }
 

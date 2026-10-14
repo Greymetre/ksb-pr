@@ -12,6 +12,7 @@ Setup, testing and go-live steps for the Odoo push integration. The API spec for
 | Sub Category Master Odoo (pull) | Odoo `product.category` / `get_fieldkonnect_subcategory_list` (one call per synced `category_odoo_id`) → `odoo_subcategories`, page `/odoo-sync/subcategories` | Built, cron twice a day |
 | Product Master Odoo (pull) | Odoo `product.product` / `get_fieldkonnect_product_list` (one call per synced `category_odoo_id`; kept only when the sub-category is synced too) → `odoo_products`, page `/odoo-sync/products` | Built, cron twice a day |
 | Primary Customer Odoo (pull) | Odoo `res.partner` / `get_fieldkonnect_customer_list` (paginated, key `odoo_parent_id`) → `odoo_customers`, page `/odoo-sync/customers` | Built, cron twice a day (06:30, 18:30) |
+| Monthly attendance (Odoo reads) | `GET /api/v1/odoo/attendance` (spec: [attendance-api.md](attendance-api.md)); previous month frozen into `odoo_attendance_exports` on the 1st at 01:00 IST | Built, ready for Odoo testing |
 | Parties, leave balance, order dispatch, invoices, outstanding | — | Not started |
 
 ## How it works
@@ -96,6 +97,24 @@ Unlike party prices, categories, sub-categories and products are **pulled**: Fie
 - The page has a **Sync now** button that runs the same sync.
 - The cron needs the Laravel scheduler on the server: `* * * * * cd <project path> && php artisan schedule:run >> /dev/null 2>&1`
 
+## Monthly attendance (Odoo reads from FieldKonnect)
+
+Odoo **reads** attendance with the same `X-API-Key` as party prices. Both test and live keys see the same data (it is read only).
+
+| File | Purpose |
+|---|---|
+| `database/migrations/2026_10_14_100000_create_odoo_attendance_exports_table.php` | `odoo_attendance_exports` table, one row per employee per day (`period` = `YYYY-MM`, unique `period + user_id + attendance_date`) |
+| `app/Services/Odoo/AttendanceExport.php` | Builds every employee-day of one month with the same employees and status rules as the CRM Attendance Summary download (`AttendanceController::attendanceSummaryDownload`); re-running a month replaces it |
+| `app/Console/Commands/OdooExportAttendance.php` | `php artisan odoo:export-attendance [--month=YYYY-MM]`, default previous month; refuses the current month |
+| `app/Http/Controllers/Api/Odoo/AttendanceController.php` | `GET /attendance`: paginated, filters `month` and `employee_code`, logs to `odoo_sync_logs` (`entity=attendance`) |
+| `app/Console/Kernel.php` | Runs on the 1st at 01:00 IST |
+
+- Odoo only sees the snapshot, never live attendance, so the month cannot change under them while they pull it.
+- Only these fields leave FieldKonnect: code, name, punch in/out date and time, working time, time zone, status, working type. Location, address, photos and summaries are never sent.
+- `status` / `status_code` are the report codes (P, PW, HF, A, MIS, CL, 1/2P+1/2CL, Comp-Off, H, WOFF, ...). **If the report's rules change, change `AttendanceExport::dayCode()` too.**
+- Employees: `active = Y`, not a customer role, `show_attandance_report = 1` (same as the report). Days before `date_of_joining` (or all no-punch days when it is empty) are skipped, as the report shows `-`.
+- To fix a month after a correction: `php artisan odoo:export-attendance --month=2026-09`.
+
 ## Setup on the server (one time)
 
 The deploy workflow only runs `git pull`. **Migrations and key creation must be run by hand over SSH.**
@@ -104,6 +123,8 @@ The deploy workflow only runs `git pull`. **Migrations and key creation must be 
 cd <project path>
 php artisan migrate --path=database/migrations/2026_09_21_100000_create_odoo_integration_tables.php
 php artisan migrate --path=database/migrations/2026_09_21_110000_add_odoo_sync_permission_and_role.php
+php artisan migrate --path=database/migrations/2026_10_14_100000_create_odoo_attendance_exports_table.php
+php artisan odoo:export-attendance --month=2026-09
 php artisan odoo:client create "Odoo UAT" --mode=test
 php artisan odoo:crm-user "Odoo Developer" <developer email> <developer mobile>
 ```

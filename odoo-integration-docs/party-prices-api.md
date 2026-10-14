@@ -8,7 +8,7 @@
 
 | Item | Value |
 |---|---|
-| Base URL | `https://<fieldkonnect-domain>/api/v1/odoo` |
+| Base URL | `https://duke.fieldkonnect.in/api/v1/odoo` |
 | Test key | Shared separately by the FieldKonnect team (starts with `odk_test_`) |
 | Live key | Shared after testing is signed off (starts with `odk_live_`) |
 
