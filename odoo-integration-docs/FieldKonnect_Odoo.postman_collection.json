@@ -1063,6 +1063,177 @@
           }
         }
       ]
+    },
+    {
+      "name": "4. Leaves (GET /leaves)",
+      "item": [
+        {
+          "name": "Current month",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/leaves",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "leaves"
+              ],
+              "query": []
+            }
+          }
+        },
+        {
+          "name": "Given month",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/leaves?month=2026-07&page=1&page_size=500",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "leaves"
+              ],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "2026-07"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "500"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "One employee",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/leaves?month=2026-07&employee_code=42592",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "leaves"
+              ],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "2026-07"
+                },
+                {
+                  "key": "employee_code",
+                  "value": "42592"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approved only",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/leaves?month=2026-07&status=Approved",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "leaves"
+              ],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "2026-07"
+                },
+                {
+                  "key": "status",
+                  "value": "Approved"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid status (400)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/leaves?status=done",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "leaves"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "done"
+                }
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 }

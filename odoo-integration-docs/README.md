@@ -13,6 +13,7 @@ Setup, testing and go-live steps for the Odoo push integration. The API spec for
 | Product Master Odoo (pull) | Odoo `product.product` / `get_fieldkonnect_product_list` (one call per synced `category_odoo_id`; kept only when the sub-category is synced too) → `odoo_products`, page `/odoo-sync/products` | Built, cron twice a day |
 | Primary Customer Odoo (pull) | Odoo `res.partner` / `get_fieldkonnect_customer_list` (paginated, key `odoo_parent_id`) → `odoo_customers`, page `/odoo-sync/customers` | Built, cron twice a day (06:30, 18:30) |
 | Monthly attendance (Odoo reads) | `GET /api/v1/odoo/attendance` (spec: [attendance-api.md](attendance-api.md)); previous month frozen into `odoo_attendance_exports` on the 1st at 01:00 IST | Built, ready for Odoo testing |
+| Employee leaves (Odoo reads) | `GET /api/v1/odoo/leaves` (spec: [leave-api.md](leave-api.md)); live from `leaves`, filters `month`, `employee_code`, `status` | Built, ready for Odoo testing |
 | Parties, leave balance, order dispatch, invoices, outstanding | — | Not started |
 
 ## How it works
@@ -114,6 +115,15 @@ Odoo **reads** attendance with the same `X-API-Key` as party prices. Both test a
 - `status` / `status_code` are the report codes (P, PW, HF, A, MIS, CL, 1/2P+1/2CL, Comp-Off, H, WOFF, ...). **If the report's rules change, change `AttendanceExport::dayCode()` too.**
 - Employees: `active = Y`, not a customer role, `show_attandance_report = 1` (same as the report). Days before `date_of_joining` (or all no-punch days when it is empty) are skipped, as the report shows `-`.
 - To fix a month after a correction: `php artisan odoo:export-attendance --month=2026-09`.
+
+## Employee leaves (Odoo reads from FieldKonnect)
+
+`app/Http/Controllers/Api/Odoo/LeaveController.php`, route `GET /api/v1/odoo/leaves` (same `odoo.key` middleware). Live read of `leaves` + `users`, no snapshot table and no migration. Logs to `odoo_sync_logs` with `entity=leaves`.
+
+- `status`: `leaves.status` 0 or NULL = Pending, 1 = Approved, 2 = Rejected.
+- Leave hours are fixed per type (agreed with Odoo): Full Day 10:00–18:00, First Half 10:00–13:00, Second Half 13:00–18:00 (`LeaveController::TIMES`).
+- `leave_days` follows the app's balance logic: 0.5 for a half day, otherwise calendar days from `from_date` to `to_date`.
+- Deleting a leave in the CRM hard-deletes the row, so Odoo has to re-read a month to notice deletions.
 
 ## Setup on the server (one time)
 
