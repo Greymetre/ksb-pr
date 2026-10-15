@@ -9,7 +9,12 @@
         <p class="os-subtitle">Primary customers / dealers pulled from Odoo twice a day (06:30 and 18:30). The FieldKonnect customer master is not changed; a customer is linked when its Odoo Code matches the Odoo customer ID, else its GSTIN, else its 10-digit mobile.</p>
       </div>
       <div class="os-head-actions">
-        <a href="{{ route('odoo_sync.customers_export') }}" class="os-btn os-btn-ghost"><span class="material-icons">download</span>Export</a>
+        <select id="osLinkFilter" class="os-select" title="Filter table and export">
+          <option value="">All customers</option>
+          <option value="linked">Linked</option>
+          <option value="unlinked">Not linked</option>
+        </select>
+        <a href="{{ route('odoo_sync.customers_export') }}" id="osExport" class="os-btn os-btn-ghost"><span class="material-icons">download</span>Export</a>
         <button type="button" class="os-btn" id="osSyncNow"><span class="material-icons">sync</span><span class="os-btn-label">Sync now</span></button>
       </div>
     </div>
@@ -53,7 +58,10 @@
     $(function() {
       var table = $('#osCustomersTable').DataTable($.extend({}, window.osDataTableDefaults, {
         order: [[1, 'asc']],
-        ajax: "{{ route('odoo_sync.customers_data') }}",
+        ajax: {
+          url: "{{ route('odoo_sync.customers_data') }}",
+          data: function(d) { d.link = $('#osLinkFilter').val(); }
+        },
         columns: window.osPreserveCase([
           { data: 'customer_odoo_id', name: 'ocu.customer_odoo_id' },
           { data: 'firm_name', name: 'ocu.firm_name' },
@@ -67,6 +75,13 @@
           { data: 'updated_at', name: 'ocu.updated_at', searchable: false }
         ])
       }));
+
+      var exportUrl = "{{ route('odoo_sync.customers_export') }}";
+      $('#osLinkFilter').on('change', function() {
+        var link = $(this).val();
+        $('#osExport').attr('href', link ? exportUrl + '?link=' + link : exportUrl);
+        table.draw();
+      });
 
       $('#osSyncNow').on('click', function() {
         var $btn = $(this).prop('disabled', true).addClass('is-busy');

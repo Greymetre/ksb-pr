@@ -7,6 +7,7 @@ use App\Services\Odoo\CustomerSync;
 use App\Services\Odoo\OdooPullSync;
 use Carbon\Carbon;
 use Gate;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
@@ -69,12 +70,14 @@ class OdooSyncController extends Controller
         return view('odoo_sync.customers', compact('counts', 'lastRun'));
     }
 
-    public function customersData()
+    public function customersData(Request $request)
     {
         abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $query = DB::table('odoo_customers as ocu')
             ->leftJoin('customers as c', 'c.id', '=', 'ocu.customer_id')
+            ->when($request->input('link') === 'linked', fn ($q) => $q->whereNotNull('ocu.customer_id'))
+            ->when($request->input('link') === 'unlinked', fn ($q) => $q->whereNull('ocu.customer_id'))
             ->select('ocu.id', 'ocu.customer_odoo_id', 'ocu.firm_name', 'ocu.contact_person_name', 'ocu.mobile', 'ocu.email',
                 'ocu.city', 'ocu.district', 'ocu.state', 'ocu.pin_code', 'ocu.gstin', 'ocu.customer_type', 'ocu.salesperson',
                 'ocu.active', 'ocu.is_deleted', 'ocu.customer_id', 'ocu.odoo_updated_at', 'ocu.updated_at', 'c.name as fk_customer_name');
@@ -111,14 +114,17 @@ class OdooSyncController extends Controller
     }
 
     /**
-     * Excel of every row on Primary Customer Odoo.
+     * Excel of Primary Customer Odoo rows; ?link=linked|unlinked limits it like the page filter.
      */
-    public function customersExport()
+    public function customersExport(Request $request)
     {
         abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
+        $link = $request->input('link');
         $rows = DB::table('odoo_customers as ocu')
             ->leftJoin('customers as c', 'c.id', '=', 'ocu.customer_id')
+            ->when($link === 'linked', fn ($q) => $q->whereNotNull('ocu.customer_id'))
+            ->when($link === 'unlinked', fn ($q) => $q->whereNull('ocu.customer_id'))
             ->orderBy('ocu.firm_name')
             ->get(['ocu.*', 'c.name as fk_customer_name'])
             ->map(fn ($row) => [
@@ -149,7 +155,7 @@ class OdooSyncController extends Controller
             'Odoo Customer ID', 'Firm Name', 'Contact Person', 'Mobile', 'Phone', 'Email', 'Street', 'Street 2', 'City', 'District',
             'State', 'PIN Code', 'Country', 'GSTIN', 'Customer Type', 'Salesperson', 'FieldKonnect Customer ID', 'FieldKonnect Customer',
             'Status', 'Odoo Updated', 'Synced',
-        ], $rows), 'odoo_customers_' . now()->format('Y-m-d_His') . '.xlsx');
+        ], $rows), 'odoo_customers_' . (in_array($link, ['linked', 'unlinked'], true) ? $link . '_' : '') . now()->format('Y-m-d_His') . '.xlsx');
     }
 
     /**
