@@ -43,7 +43,8 @@ class LeaveController extends Controller
             ])],
             'bal_type'   => ['required', Rule::in([
                 'Casual Balance',
-                'Comp-off Balance'
+                'Comp-off Balance',
+                'Leave Without Pay'
             ])],
             'reason'     => 'nullable|string|max:500',
         ]);
@@ -112,7 +113,7 @@ class LeaveController extends Controller
                     ->where('is_used', false)
                     ->whereDate('expiry_date', '>=', now())
                     ->sum('balance');
-            } else {
+            } elseif ($request->bal_type === 'Casual Balance') {
                 $user->casual_leave_balance -= $leaveDays;
             }
 
@@ -174,6 +175,11 @@ class LeaveController extends Controller
 
     private function checkBalance(User $user, string $balType, float $days): array
     {
+        if ($balType === 'Leave Without Pay') {
+            // Unpaid leave has no balance; allowed even at 0.
+            return ['success' => true];
+        }
+
         if ($balType === 'Casual Balance') {
             $available = (float) ($user->casual_leave_balance ?? 0);
         } elseif ($balType === 'Comp-off Balance') {

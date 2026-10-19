@@ -195,7 +195,7 @@ class LeaveController extends Controller
             'from_date' => 'required|date|before_or_equal:to_date',
             'to_date'   => 'required|date|after_or_equal:from_date',
             'type'      => 'required|in:First Half Leave,Second Half Leave,Full Day Leave,Leave',
-            'bal_type'  => 'required|in:Casual Balance,Comp-off Balance',
+            'bal_type'  => 'required|in:Casual Balance,Comp-off Balance,Leave Without Pay',
             'reason'    => 'nullable|string|max:500',
         ]);
 
@@ -248,6 +248,11 @@ class LeaveController extends Controller
                     ->get()
                     ->sum('balance');
                 $enough_balance = $total_comp_off >= $deduct_amount;
+                break;
+
+            case 'Leave Without Pay':
+                // Unpaid leave has no balance; allowed even at 0.
+                $enough_balance = true;
                 break;
         }
        
@@ -337,7 +342,7 @@ class LeaveController extends Controller
                 ->whereDate('expiry_date', '>=', now())
                 ->sum('balance');
             $user->save();
-        } else {
+        } elseif ($balance_column) {
             // Normal leave types — deduct from correct column
             $user->$balance_column -= $deduct_amount;
 

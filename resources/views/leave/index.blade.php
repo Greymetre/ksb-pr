@@ -282,6 +282,7 @@
                       <!-- <option value="Leave Balance" data-is-city="false">Leave Balance</option> -->
                       <option value="Casual Balance" data-is-city="false">Casual Leave</option>
                       <option value="Comp-off Balance" data-is-city="false">Comp-off Balance</option>
+                      <option value="Leave Without Pay" data-is-city="false">Leave Without Pay</option>
                     </select>
                   </div>
                 </div>
@@ -638,7 +639,9 @@
         ? leaveBalances.casual
         : balanceType === "Comp-off Balance"
           ? leaveBalances.compOff
-          : null;
+          : balanceType === "Leave Without Pay"
+            ? 0
+            : null;
       var required = requiredLeaveDays();
       var message = $("#leave_balance_message");
 
@@ -646,7 +649,8 @@
       message.removeClass("text-danger text-success").text("");
       $("#add_leave").prop("disabled", false);
 
-      if (available !== null && required > 0) {
+      // Leave Without Pay has no balance, so it is never blocked.
+      if (available !== null && required > 0 && balanceType !== "Leave Without Pay") {
         if (available < required) {
           message.addClass("text-danger")
             .text("Insufficient balance. Required: " + required + " day(s).");

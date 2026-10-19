@@ -181,7 +181,11 @@ class AttendanceExport
                 if (($leave?->bal_type ?? '') === 'Comp-off Balance') {
                     return 'Comp-Off';
                 }
-                return array_intersect($workingTypes, ['First Half Leave', 'Second Half Leave']) ? '1/2P+1/2CL' : 'CL';
+                $isHalf = (bool) array_intersect($workingTypes, ['First Half Leave', 'Second Half Leave']);
+                if (($leave?->bal_type ?? '') === 'Leave Without Pay') {
+                    return $isHalf ? '1/2P+1/2LOPN' : 'LOPN';
+                }
+                return $isHalf ? '1/2P+1/2CL' : 'CL';
             }
 
             if (!empty($attendance->punchin_time) && !empty($attendance->punchout_time)) {
@@ -204,7 +208,11 @@ class AttendanceExport
             if (($leave->bal_type ?? '') === 'Comp-off Balance') {
                 return 'Comp-Off';
             }
-            return in_array($leave->type, ['First Half Leave', 'Second Half Leave'], true) ? '1/2P+1/2CL' : 'CL';
+            $isHalf = in_array($leave->type, ['First Half Leave', 'Second Half Leave'], true);
+            if (($leave->bal_type ?? '') === 'Leave Without Pay') {
+                return $isHalf ? '1/2P+1/2LOPN' : 'LOPN';
+            }
+            return $isHalf ? '1/2P+1/2CL' : 'CL';
         }
 
         if (!$doj || $doj->gt($date)) {
@@ -220,10 +228,14 @@ class AttendanceExport
     private function noPunchinCode(int $status, string $workingType, $leave): string
     {
         $compOff = ($leave?->bal_type ?? '') === 'Comp-off Balance';
+        $lwp = ($leave?->bal_type ?? '') === 'Leave Without Pay';
         $fullLeave = in_array($workingType, ['Leave', 'Full Day Leave']);
         $halfLeave = in_array($workingType, ['Second Half Leave', 'First Half Leave']);
 
         if ($status === 0 || $status === 1) {
+            if ($lwp && ($fullLeave || $halfLeave)) {
+                return $fullLeave ? 'LOPN' : '1/2P+1/2LOPN';
+            }
             if ($fullLeave) {
                 return $compOff ? 'Comp Off' : 'AL';
             }

@@ -581,11 +581,16 @@ public function attendanceSummaryDownload(Request $request)
                         ->whereDate('to_date', '>=', $ymd)
                         ->first();
                     $isCompOff = ($leave?->bal_type ?? '') === 'Comp-off Balance';
+                    $isLwp = ($leave?->bal_type ?? '') === 'Leave Without Pay';
                     $isHalfDay = (bool) array_intersect($workingTypes, ['First Half Leave', 'Second Half Leave']);
 
                     if ($isCompOff) {
                         $row[] = 'Comp-Off';
                         $totals['p']++;
+                    } elseif ($isLwp) {
+                        // Unpaid leave: full day counts as Absent, half day as Half Day.
+                        $row[] = $isHalfDay ? '1/2P+1/2LWP' : 'LWP';
+                        $isHalfDay ? $totals['hd']++ : $totals['a']++;
                     } elseif ($isHalfDay) {
                         $row[] = '1/2P+1/2CL';
                         $totals['hd']++;
@@ -655,6 +660,9 @@ public function attendanceSummaryDownload(Request $request)
             if (($leaveExists?->bal_type ?? '') === 'Comp-off Balance') {
                 $row[] = 'Comp Off';
                 $totals['co']++;
+            } elseif (($leaveExists?->bal_type ?? '') === 'Leave Without Pay') {
+                $row[] = 'LWP';
+                $totals['lop']++;
             } else {
                 $row[] = 'AL';
                 $totals['al']++;
@@ -663,6 +671,9 @@ public function attendanceSummaryDownload(Request $request)
             if (($leaveExists?->bal_type ?? '') === 'Comp-off Balance') {
                 $row[] = '1/2P+1/2Comp Off';
                 $totals['co']++;
+            } elseif (($leaveExists?->bal_type ?? '') === 'Leave Without Pay') {
+                $row[] = '1/2P+1/2LWP';
+                $totals['hd']++;
             } else {
                 $row[] = '1/2P+1/2AL';
                 $totals['hdal']++;
@@ -719,11 +730,15 @@ public function attendanceSummaryDownload(Request $request)
 
     if ($leave) {
         $isCompOff = ($leave->bal_type ?? '') === 'Comp-off Balance';
+        $isLwp = ($leave->bal_type ?? '') === 'Leave Without Pay';
         $isHalfDay = in_array($leave->type, ['First Half Leave', 'Second Half Leave'], true);
 
         if ($isCompOff) {
             $row[] = 'Comp-Off';
             $totals['p']++;
+        } elseif ($isLwp) {
+            $row[] = $isHalfDay ? '1/2P+1/2LWP' : 'LWP';
+            $isHalfDay ? $totals['hd']++ : $totals['a']++;
         } elseif ($isHalfDay) {
             $row[] = '1/2P+1/2CL';
             $totals['hd']++;
