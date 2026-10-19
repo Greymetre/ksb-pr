@@ -518,6 +518,7 @@ public function attendanceSummaryDownload(Request $request)
         'Half Day',
         'Absent (A)',
         'Leave (CL)',
+        'Leave Without Pay (LWP)',
         'Holiday (H)',
         'Week Off (W/O)',
         'Miss-Punch',
@@ -539,6 +540,7 @@ public function attendanceSummaryDownload(Request $request)
             'wo' => 0, 'a' => 0, 'lop' => 0, 'mis' => 0, 'pw' => 0,
             'h' => 0, 'hd' => 0, 'p' => 0, 'pn' => 0, 'atte' => 0,
             'al' => 0, 'cl' => 0, 'hdal' => 0, 'co' => 0, 'con' => 0,
+            'lwp' => 0,
         ];
 
         // Pre-fetch holidays once per user
@@ -588,9 +590,12 @@ public function attendanceSummaryDownload(Request $request)
                         $row[] = 'Comp-Off';
                         $totals['p']++;
                     } elseif ($isLwp) {
-                        // Unpaid leave: full day counts as Absent, half day as Half Day.
+                        // Unpaid leave: counted in LWP days (half day = 0.5).
                         $row[] = $isHalfDay ? '1/2P+1/2LWP' : 'LWP';
-                        $isHalfDay ? $totals['hd']++ : $totals['a']++;
+                        if ($isHalfDay) {
+                            $totals['hd']++;
+                        }
+                        $totals['lwp'] += $isHalfDay ? 0.5 : 1;
                     } elseif ($isHalfDay) {
                         $row[] = '1/2P+1/2CL';
                         $totals['hd']++;
@@ -662,7 +667,7 @@ public function attendanceSummaryDownload(Request $request)
                 $totals['co']++;
             } elseif (($leaveExists?->bal_type ?? '') === 'Leave Without Pay') {
                 $row[] = 'LWP';
-                $totals['lop']++;
+                $totals['lwp']++;
             } else {
                 $row[] = 'AL';
                 $totals['al']++;
@@ -674,6 +679,7 @@ public function attendanceSummaryDownload(Request $request)
             } elseif (($leaveExists?->bal_type ?? '') === 'Leave Without Pay') {
                 $row[] = '1/2P+1/2LWP';
                 $totals['hd']++;
+                $totals['lwp'] += 0.5;
             } else {
                 $row[] = '1/2P+1/2AL';
                 $totals['hdal']++;
@@ -738,7 +744,10 @@ public function attendanceSummaryDownload(Request $request)
             $totals['p']++;
         } elseif ($isLwp) {
             $row[] = $isHalfDay ? '1/2P+1/2LWP' : 'LWP';
-            $isHalfDay ? $totals['hd']++ : $totals['a']++;
+            if ($isHalfDay) {
+                $totals['hd']++;
+            }
+            $totals['lwp'] += $isHalfDay ? 0.5 : 1;
         } elseif ($isHalfDay) {
             $row[] = '1/2P+1/2CL';
             $totals['hd']++;
@@ -805,6 +814,7 @@ public function attendanceSummaryDownload(Request $request)
         $row[] = (string) ($totals['hd'] + $totals['hdal']);
         $row[] = (string) $totals['a'];
         $row[] = (string) $totals['cl'];
+        $row[] = (string) $totals['lwp'];
         $row[] = (string) $totals['h'];
         $row[] = (string) $totals['wo'];
         $row[] = (string) $totals['mis'];
