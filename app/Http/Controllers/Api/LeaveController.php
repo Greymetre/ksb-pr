@@ -283,9 +283,18 @@ class LeaveController extends Controller
                 ->where('expiry_date', '>=', now())
                 ->sum('balance');
 
+            $casual = (float) ($user->casual_leave_balance ?? 0);
+            $compOff = round((float) $activeCompOff, 2);
+
             $data = [
-                'casual'   => (float) ($user->casual_leave_balance ?? 0),
-                'comp_off' => round((float) $activeCompOff, 2),
+                'casual'   => $casual,
+                'comp_off' => $compOff,
+                // Leave types for the app dropdown. Send `value` as bal_type to addLeaves.
+                'leave_types' => [
+                    ['value' => 'Casual Balance', 'label' => 'Casual Leave', 'balance' => $casual, 'check_balance' => true],
+                    ['value' => 'Comp-off Balance', 'label' => 'Comp-off Balance', 'balance' => $compOff, 'check_balance' => true],
+                    ['value' => 'Leave Without Pay', 'label' => 'Leave Without Pay', 'balance' => 0, 'check_balance' => false],
+                ],
             ];
 
             return response()->json([
