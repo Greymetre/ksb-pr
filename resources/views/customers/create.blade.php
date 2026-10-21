@@ -1158,25 +1158,39 @@
               </div>
             </div>
           </div>
-          <div class="row" id="security_cheque_list" style="display: none;">
+          <style>
+            .security-cheque-grid { display: flex; flex-wrap: wrap; gap: 16px; }
+            .security-cheque-card { position: relative; width: 120px; flex: 0 0 120px; }
+            .security-cheque-card .cheque-thumb { display: flex; align-items: center; justify-content: center; width: 120px; height: 120px; border-radius: 8px; overflow: hidden; background: #fff; border: 1px solid rgba(255,255,255,.2); }
+            .security-cheque-card .cheque-thumb img { width: 100%; height: 100%; object-fit: cover; }
+            .security-cheque-card .cheque-thumb i { color: #d9534f; }
+            .security-cheque-card .cheque-name { font-size: 11px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .security-cheque-card .cheque-remove { position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: #d9534f; color: #fff; font-size: 14px; line-height: 24px; padding: 0; cursor: pointer; z-index: 2; }
+            .security-cheque-card.is-removed .cheque-thumb { opacity: .3; }
+            .security-cheque-card.is-removed .cheque-remove { background: #5cb85c; }
+            .security-cheque-card .cheque-badge { display: none; font-size: 11px; color: #d9534f; }
+            .security-cheque-card.is-removed .cheque-badge { display: block; }
+          </style>
+          <div class="row mt-3" id="security_cheque_list" style="display: none;">
             <div class="col-md-12">
               <label class="col-form-label">Security Cheques</label>
-              <div class="d-flex flex-wrap" id="security_cheque_items">
+              <div class="security-cheque-grid mt-2">
                 @foreach(($securityCheques ?? collect()) as $cheque)
-                <div class="security-cheque-item mr-3 mb-2 text-center">
-                  <a href="{{ $cheque->file_path }}" target="_blank">
+                <div class="security-cheque-card" data-existing-id="{{ $cheque->id }}">
+                  <button type="button" class="cheque-remove js-remove-existing-cheque" title="Remove">&times;</button>
+                  <a href="{{ $cheque->file_path }}" target="_blank" class="cheque-thumb">
                     @if(\Illuminate\Support\Str::endsWith(strtolower($cheque->file_path), '.pdf'))
                     <i class="fa fa-file-pdf-o fa-4x"></i>
                     @else
-                    <img src="{{ $cheque->file_path }}" style="width: 90px; height: 90px; object-fit: cover;">
+                    <img src="{{ $cheque->file_path }}">
                     @endif
                   </a>
-                  <div>
-                    <label class="small text-danger mb-0"><input type="checkbox" name="remove_security_cheques[]" value="{{ $cheque->id }}"> Remove</label>
-                  </div>
+                  <div class="cheque-name">{{ basename($cheque->file_path) }}</div>
+                  <div class="cheque-badge">Will be removed</div>
+                  <input type="checkbox" name="remove_security_cheques[]" value="{{ $cheque->id }}" class="d-none">
                 </div>
                 @endforeach
-                <div class="d-flex flex-wrap" id="security_cheque_new"></div>
+                <div id="security_cheque_new" style="display: contents;"></div>
               </div>
             </div>
           </div>
@@ -1333,22 +1347,66 @@
 
       }).trigger('change');
 
-      $('#security_cheques').on('change', function() {
+      // input.files gets replaced on every pick, so keep the selected cheques in a DataTransfer
+      var chequeInput = document.getElementById('security_cheques');
+      var chequeFiles = new DataTransfer();
+
+      function renderNewCheques() {
         var preview = $('#security_cheque_new').empty();
-        $.each(this.files || [], function(i, file) {
-          var item = $('<div class="mr-3 mb-2 text-center" style="width: 90px;"></div>');
+        $.each(chequeFiles.files, function(i, file) {
+          var card = $('<div class="security-cheque-card"></div>');
+          card.append($('<button type="button" class="cheque-remove js-remove-new-cheque" title="Remove">&times;</button>').attr('data-index', i));
+          var thumb = $('<div class="cheque-thumb"></div>');
           if (file.type.indexOf('image/') === 0) {
-            var img = $('<img style="width: 90px; height: 90px; object-fit: cover;">');
+            var img = $('<img>');
             var reader = new FileReader();
             reader.onload = function(e) { img.attr('src', e.target.result); };
             reader.readAsDataURL(file);
-            item.append(img);
+            thumb.append(img);
           } else {
-            item.append('<i class="fa fa-file-pdf-o fa-4x"></i>');
+            thumb.append('<i class="fa fa-file-pdf-o fa-4x"></i>');
           }
-          item.append($('<div class="small text-truncate"></div>').text(file.name));
-          preview.append(item);
+          card.append(thumb);
+          card.append($('<div class="cheque-name"></div>').text(file.name).attr('title', file.name));
+          preview.append(card);
         });
+      }
+
+      $(chequeInput).on('change', function() {
+        $.each(this.files || [], function(i, file) {
+          var duplicate = Array.prototype.some.call(chequeFiles.files, function(f) {
+            return f.name === file.name && f.size === file.size && f.lastModified === file.lastModified;
+          });
+          if (!duplicate) {
+            chequeFiles.items.add(file);
+          }
+        });
+        chequeInput.files = chequeFiles.files;
+        renderNewCheques();
+      });
+
+      $(document).on('click', '.js-remove-new-cheque', function() {
+        var index = parseInt($(this).attr('data-index'), 10);
+        var remaining = new DataTransfer();
+        $.each(chequeFiles.files, function(i, file) {
+          if (i !== index) {
+            remaining.items.add(file);
+          }
+        });
+        chequeFiles = remaining;
+        chequeInput.files = chequeFiles.files;
+        renderNewCheques();
+      });
+
+      // existing cheques: toggle removal (deleted on submit)
+      $(document).on('click', '.js-remove-existing-cheque', function() {
+        var card = $(this).closest('.security-cheque-card');
+        var checkbox = card.find('input[name="remove_security_cheques[]"]');
+        var remove = !checkbox.prop('checked');
+        checkbox.prop('checked', remove);
+        card.toggleClass('is-removed', remove);
+        $(this).html(remove ? '&#8634;' : '&times;').attr('title', remove ? 'Undo' : 'Remove');
+      });
       });
 
       $(document).ready(function() {
