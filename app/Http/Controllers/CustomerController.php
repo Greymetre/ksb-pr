@@ -47,6 +47,55 @@ class CustomerController extends Controller
             ->value('id');
     }
 
+    // Security cheques replace the bank passbook for dealer / distributor customers
+    private function isDealerOrDistributorType($customerTypeId): bool
+    {
+        if (empty($customerTypeId)) {
+            return false;
+        }
+
+        return CustomerType::where('id', $customerTypeId)
+            ->whereRaw('LOWER(TRIM(type_name)) IN (?, ?)', ['dealer', 'distributor'])
+            ->exists();
+    }
+
+    private function saveSecurityCheques(Request $request, $customerId): void
+    {
+        if (!$this->isDealerOrDistributorType($request->customertype)) {
+            return;
+        }
+
+        $removeIds = array_filter((array) $request->input('remove_security_cheques', []), 'is_numeric');
+        if (!empty($removeIds)) {
+            Attachment::where('customer_id', $customerId)
+                ->where('document_name', 'security_cheque')
+                ->whereIn('id', $removeIds)
+                ->delete();
+        }
+
+        foreach ((array) $request->file('security_cheques', []) as $file) {
+            if (!$file || !$file->isValid()) {
+                continue;
+            }
+            Attachment::create([
+                'active'        => 'Y',
+                'customer_id'   => $customerId,
+                'file_path'     => fileupload($file, $this->path, 'security_cheque_' . $customerId . '_'),
+                'document_name' => 'security_cheque',
+            ]);
+        }
+    }
+
+    private function securityChequeRules(): array
+    {
+        return [
+            'security_cheques'           => 'nullable|array',
+            'security_cheques.*'         => 'file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+            'remove_security_cheques'    => 'nullable|array',
+            'remove_security_cheques.*'  => 'integer',
+        ];
+    }
+
     private function parentCustomerOptions(?int $excludeCustomerId = null)
     {
         return Customers::with('customertypes')
@@ -369,7 +418,7 @@ class CustomerController extends Controller
                 }
             })
             ->select('id', 'country_name')->orderBy('id', 'desc')->get();
-        $customertype = CustomerType::select('id', 'customertype_name')->orderBy('id', 'desc')->get();
+        $customertype = CustomerType::select('id', 'customertype_name', 'type_name')->orderBy('id', 'desc')->get();
         $firmtype = FirmType::select('id', 'firmtype_name')->orderBy('id', 'desc')->get();
         $fields = Field::with('fieldsData')->whereIn('module', $customertype->pluck('id'))->where('active', '=', 'Y')->get();
         $users = User::whereDoesntHave('roles', function ($query) {
@@ -411,6 +460,10 @@ class CustomerController extends Controller
 
         try {
             abort_if(Gate::denies('customer_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+            $chequeValidator = Validator::make($request->all(), $this->securityChequeRules());
+            if ($chequeValidator->fails()) {
+                return redirect()->back()->withErrors($chequeValidator)->withInput();
+            }
             $request['active'] = 'Y';
             $request['created_by'] = Auth::user()->id;
             $docimages = collect([]);
@@ -457,6 +510,26 @@ class CustomerController extends Controller
                     'document_name' =>  'aadhar',
                 ]);
             }
+            if ($request->file('imgaadharback')) {
+                $image = $request->file('imgaadharback');
+                $filename = 'aadharback';
+                unset($request['imgaadharback']);
+                $docimages->push([
+                    'active'        => 'Y',
+                    'file_path'     => fileupload($image, $this->path, $filename),
+                    'document_name' =>  'aadharback',
+                ]);
+            }
+            if ($request->file('imgbankpass') && !$this->isDealerOrDistributorType($request->customertype)) {
+                $image = $request->file('imgbankpass');
+                $filename = 'bankpass';
+                unset($request['imgbankpass']);
+                $docimages->push([
+                    'active'        => 'Y',
+                    'file_path'     => fileupload($image, $this->path, $filename),
+                    'document_name' =>  'bankpass',
+                ]);
+            }
             if ($request->file('imgother')) {
                 $image = $request->file('imgother');
                 $filename = 'other';
@@ -482,6 +555,7 @@ class CustomerController extends Controller
                 if ($attachments->isNotEmpty()) {
                     Attachment::insert($attachments->toArray());
                 }
+                $this->saveSecurityCheques($request, $request['customer_id']);
                 if (!empty($request['survey'])) {
                     foreach ($request['survey'] as $key => $rows) {
 
@@ -628,7 +702,7 @@ class CustomerController extends Controller
                 });
             }
         })->select('id', 'country_name')->orderBy('id', 'desc')->get();
-        $customertype = CustomerType::select('id', 'customertype_name')->orderBy('id', 'desc')->get();
+        $customertype = CustomerType::select('id', 'customertype_name', 'type_name')->orderBy('id', 'desc')->get();
         $firmtype = FirmType::select('id', 'firmtype_name')->orderBy('id', 'desc')->get();
         $customers['gstin_image'] = $customers['customerdocuments']->where('document_name', 'gstin')->pluck('file_path')->first();
         $customers['pan_image'] = $customers['customerdocuments']->where('document_name', 'pan')->pluck('file_path')->first();
@@ -656,10 +730,15 @@ class CustomerController extends Controller
             }
         }
 
+        $securityCheques = Attachment::where('customer_id', $customers->id)
+            ->where('document_name', 'security_cheque')
+            ->select('id', 'file_path')
+            ->orderBy('id')
+            ->get();
         $retailerCustomerTypeId = $this->retailerCustomerTypeId();
         $parentcustomers = $this->parentCustomerOptions((int) $customers->id);
         $custom_fields = CustomerCustomField::with('values')->orderBy('id', 'desc')->get();
-        return view('customers.create', compact('pincodes', 'customertype', 'firmtype', 'pincodes', 'countries', 'fields', 'users', 'deals', 'parentcustomers', 'retailerCustomerTypeId', 'custom_fields', 'editMobile'))->with('customers', $customers);
+        return view('customers.create', compact('pincodes', 'customertype', 'firmtype', 'pincodes', 'countries', 'fields', 'users', 'deals', 'parentcustomers', 'retailerCustomerTypeId', 'custom_fields', 'editMobile', 'securityCheques'))->with('customers', $customers);
     }
 
     /**
@@ -676,7 +755,7 @@ class CustomerController extends Controller
                 'gstin_no' => 'nullable|min:15|max:15',
                 'pan_no' => 'nullable|regex:/^[a-zA-Z]{5}\d{4}[a-zA-Z]$/',
                 'aadhar_no' => 'nullable|numeric|digits:12',
-            ]);
+            ] + $this->securityChequeRules());
             if ($validator->fails()) {
                 return redirect()->back()
                     ->withErrors($validator)
@@ -750,7 +829,7 @@ class CustomerController extends Controller
                 ]);
                 CustomerDetails::where('customer_id', $request->id)->update(['aadhar_no_status' => '0']);
             }
-            if ($request->file('imgbankpass')) {
+            if ($request->file('imgbankpass') && !$this->isDealerOrDistributorType($request->customertype)) {
                 $path = 'customers';
                 $image = $request->file('imgbankpass');
                 $filename = 'bankpass_' . $id;
@@ -802,6 +881,7 @@ class CustomerController extends Controller
                         Attachment::create(array_merge($docimage, ['customer_id' => $request['customer_id']]));
                     }
                 }
+                $this->saveSecurityCheques($request, $request['customer_id']);
 
                 if ($request['survey']) {
                     foreach ($request['survey'] as $key => $rows) {

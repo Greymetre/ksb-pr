@@ -697,6 +697,28 @@
                         </div>
                      </div>
                   </div>
+
+                  @php($securityCheques = \App\Models\Attachment::where('customer_id', $customers['id'])->where('document_name', 'security_cheque')->orderBy('id')->get())
+                  @if($securityCheques->isNotEmpty())
+                  <div class="row">
+                     <div class="col-md-12">
+                        <div class="img-cvr">
+                           <label class="bmd-label-floating">Security Cheques ({{ $securityCheques->count() }})</label>
+                           <div class="d-flex flex-wrap mt-2">
+                              @foreach($securityCheques as $cheque)
+                              <div class="mr-3 mb-2">
+                                 @if(\Illuminate\Support\Str::endsWith(strtolower($cheque->file_path), '.pdf'))
+                                 <a href="{{ $cheque->file_path }}" target="_blank"><i class="fa fa-file-pdf-o fa-4x"></i></a>
+                                 @else
+                                 <img src="{{ $cheque->file_path }}" class="border-radius-lg shadow-sm imageDisplayModel" style="width: 120px; height: 120px; object-fit: cover;">
+                                 @endif
+                              </div>
+                              @endforeach
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  @endif
                </div>
                <div class="tab-pane " id="transaction_history">
                   <div class="table-responsive">

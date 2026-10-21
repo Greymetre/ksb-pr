@@ -157,7 +157,7 @@
                       <option value="">Select {!! trans('panel.customers.fields.customertype') !!}</option>
                       @if(@isset($customertype ))
                       @foreach($customertype as $type)
-                      <option value="{!! $type['id'] !!}" {{ old( 'customertype' , (!empty($customers->customertype))?($customers->customertype):('') ) == $type['id'] ? 'selected' : '' }}>{!! $type['customertype_name'] !!}</option>
+                      <option value="{!! $type['id'] !!}" data-type="{{ strtolower(trim((string) $type['type_name'])) }}" {{ old( 'customertype' , (!empty($customers->customertype))?($customers->customertype):('') ) == $type['id'] ? 'selected' : '' }}>{!! $type['customertype_name'] !!}</option>
                       @endforeach
                       @endif
                     </select>
@@ -1100,7 +1100,7 @@
                 <label class="bmd-label-floating">{!! trans('panel.customers.fields.aadhar_back_image') !!}</label>
               </div>
             </div>
-            <div class="col-md-2 col-sm-2">
+            <div class="col-md-2 col-sm-2" id="bankpass_box">
               <div class="fileinput fileinput-new">
 
                 <div class="fileinput-new thumbnail">
@@ -1117,6 +1117,25 @@
                 </div>
                 <div class="fileinput-preview fileinput-exists thumbnail img-circle"></div>
                 <label class="bmd-label-floating">{!! trans('panel.customers.fields.bank_passbook_image') !!}</label>
+              </div>
+            </div>
+            <div class="col-md-2 col-sm-2" id="security_cheque_box" style="display: none;">
+              <div class="fileinput fileinput-new">
+                <div class="fileinput-new thumbnail">
+                  <img src="{!! url('/').'/'.asset('assets/img/placeholder.jpg') !!}">
+                  <div class="selectThumbnail">
+                    <span class="btn btn-just-icon btn-round btn-file">
+                      <span class="fileinput-new"><i class="fa fa-pencil"></i></span>
+                      <input type="file" name="security_cheques[]" id="security_cheques" accept="image/*,application/pdf" multiple disabled>
+                    </span>
+                  </div>
+                </div>
+                <label class="bmd-label-floating">Security Cheque <small>(multiple)</small></label>
+                @if ($errors->has('security_cheques.*'))
+                <div class="error">
+                  <p class="text-danger">{{ $errors->first('security_cheques.*') }}</p>
+                </div>
+                @endif
               </div>
             </div>
             <div class="col-md-2 col-sm-2">
@@ -1136,6 +1155,28 @@
                 </div>
                 <div class="fileinput-preview fileinput-exists thumbnail img-circle"></div>
                 <label class="bmd-label-floating">{!! trans('panel.customers.fields.otherid_image') !!}</label>
+              </div>
+            </div>
+          </div>
+          <div class="row" id="security_cheque_list" style="display: none;">
+            <div class="col-md-12">
+              <label class="col-form-label">Security Cheques</label>
+              <div class="d-flex flex-wrap" id="security_cheque_items">
+                @foreach(($securityCheques ?? collect()) as $cheque)
+                <div class="security-cheque-item mr-3 mb-2 text-center">
+                  <a href="{{ $cheque->file_path }}" target="_blank">
+                    @if(\Illuminate\Support\Str::endsWith(strtolower($cheque->file_path), '.pdf'))
+                    <i class="fa fa-file-pdf-o fa-4x"></i>
+                    @else
+                    <img src="{{ $cheque->file_path }}" style="width: 90px; height: 90px; object-fit: cover;">
+                    @endif
+                  </a>
+                  <div>
+                    <label class="small text-danger mb-0"><input type="checkbox" name="remove_security_cheques[]" value="{{ $cheque->id }}"> Remove</label>
+                  </div>
+                </div>
+                @endforeach
+                <div class="d-flex flex-wrap" id="security_cheque_new"></div>
               </div>
             </div>
           </div>
@@ -1278,11 +1319,37 @@
         $('#parentcustomer').toggle(needsParent);
         parentSelect.prop('disabled', !needsParent);
 
+        // dealer / distributor: security cheques (multiple) instead of bank passbook
+        var typeName = $('#type option:selected').data('type');
+        var needsCheque = typeName === 'dealer' || typeName === 'distributor';
+        $('#security_cheque_box, #security_cheque_list').toggle(needsCheque);
+        $('#security_cheques').prop('disabled', !needsCheque);
+        $('#bankpass_box').toggle(!needsCheque);
+        $('#bankpass_box input[name="imgbankpass"]').prop('disabled', needsCheque);
+
         if (!needsParent) {
           parentSelect.val(null).trigger('change');
         }
 
       }).trigger('change');
+
+      $('#security_cheques').on('change', function() {
+        var preview = $('#security_cheque_new').empty();
+        $.each(this.files || [], function(i, file) {
+          var item = $('<div class="mr-3 mb-2 text-center" style="width: 90px;"></div>');
+          if (file.type.indexOf('image/') === 0) {
+            var img = $('<img style="width: 90px; height: 90px; object-fit: cover;">');
+            var reader = new FileReader();
+            reader.onload = function(e) { img.attr('src', e.target.result); };
+            reader.readAsDataURL(file);
+            item.append(img);
+          } else {
+            item.append('<i class="fa fa-file-pdf-o fa-4x"></i>');
+          }
+          item.append($('<div class="small text-truncate"></div>').text(file.name));
+          preview.append(item);
+        });
+      });
 
       $(document).ready(function() {
         $('#change_password').on('click', function() {
