@@ -255,7 +255,7 @@
                   <label class="col-form-label">Working Status<span class="text-danger"> *</span></label>
 
                   <div class="form-group has-default bmd-form-group">
-                    <select class="form-control select2" name="working_status" style="width: 100%;" required id="type">
+                    <select class="form-control select2" name="working_status" style="width: 100%;" required id="working_status">
                       <option value="">Select Working Status</option>
                       <option value="New" {{($customers && $customers['working_status'] == 'New')? 'selected':''}}>New</option>
                       <option value="Existing" {{($customers && $customers['working_status'] == 'Existing')? 'selected':''}}>Existing</option>
@@ -1406,7 +1406,6 @@
         checkbox.prop('checked', remove);
         card.toggleClass('is-removed', remove);
         $(this).html(remove ? '&#8634;' : '&times;').attr('title', remove ? 'Undo' : 'Remove');
-      });
       });
 
       $(document).ready(function() {
