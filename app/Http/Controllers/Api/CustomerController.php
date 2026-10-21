@@ -85,6 +85,50 @@ class CustomerController extends Controller
         return $filePath;
     }
 
+    // Security cheques replace the bank proof for dealer / distributor customers
+    private function isDealerOrDistributorType($customerTypeId): bool
+    {
+        if (empty($customerTypeId)) {
+            return false;
+        }
+
+        return CustomerType::where('id', $customerTypeId)
+            ->whereRaw('LOWER(TRIM(type_name)) IN (?, ?)', ['dealer', 'distributor'])
+            ->exists();
+    }
+
+    private function saveSecurityCheques(Request $request, $customerId, $customerTypeId): void
+    {
+        if (!$this->isDealerOrDistributorType($customerTypeId)) {
+            return;
+        }
+
+        $removeIds = $request->input('remove_security_cheques', []);
+        if (!is_array($removeIds)) {
+            $removeIds = explode(',', (string) $removeIds);
+        }
+        $removeIds = array_filter(array_map('trim', $removeIds), 'is_numeric');
+        if (!empty($removeIds)) {
+            Attachment::where('customer_id', $customerId)
+                ->where('document_name', 'security_cheque')
+                ->whereIn('id', $removeIds)
+                ->delete();
+        }
+
+        $files = $request->file('security_cheques', []);
+        foreach (is_array($files) ? $files : [$files] as $file) {
+            if (!$file || !$file->isValid()) {
+                continue;
+            }
+            Attachment::create([
+                'active'        => 'Y',
+                'customer_id'   => $customerId,
+                'file_path'     => fileupload($file, $this->path, 'security_cheque_' . $customerId . '_'),
+                'document_name' => 'security_cheque',
+            ]);
+        }
+    }
+
     private function normalizeCustomerMobile($mobile): ?string
     {
         if ($mobile === null || $mobile === '') {
@@ -139,6 +183,8 @@ class CustomerController extends Controller
                 'aadhaar_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'aadhaarImage' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'other_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'security_cheques' => 'nullable|array',
+                'security_cheques.*' => 'file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
             ], [
                 'image.file' => 'Profile image must be a valid uploaded file.',
                 'image.mimes' => 'Profile image must be jpg, jpeg, png, webp, or pdf.',
@@ -161,6 +207,8 @@ class CustomerController extends Controller
                 'other_image.file' => 'Bank passbook must be a valid uploaded file.',
                 'other_image.mimes' => 'Bank passbook must be jpg, jpeg, png, webp, or pdf.',
                 'other_image.max' => 'Bank passbook size must not be greater than 5 MB.',
+                'security_cheques.*.mimes' => 'Security cheque must be jpg, jpeg, png, webp, or pdf.',
+                'security_cheques.*.max' => 'Security cheque size must not be greater than 5 MB.',
             ]);
             if ($validator->fails()) {
                 return response()->json(['status' => 'error', 'message' => $validator->messages()->all()], $this->badrequest);
@@ -397,9 +445,12 @@ class CustomerController extends Controller
                             $this->saveCustomerAttachment($request['customer_id'], 'aadhar', $image);
                         }
 
-                        if ($image = $this->requestFileByAnyKey($request, ['other_image'])) {
+                        if (!$this->isDealerOrDistributorType($request['customertype'])
+                            && $image = $this->requestFileByAnyKey($request, ['bank_proof', 'other_image'])) {
                             $this->saveCustomerAttachment($request['customer_id'], 'bankpass', $image);
                         }
+
+                        $this->saveSecurityCheques($request, $request['customer_id'], $request['customertype']);
 
                         CustomerDetails::updateOrCreate(['customer_id' => $request['customer_id']], [
                             'active'        => 'Y',
@@ -1108,6 +1159,7 @@ class CustomerController extends Controller
             'customertype' => $customer->customertype,
             'customer_type_id' => $customer->customertype,
             'customer_type' => optional($customer->customertypes)->customertype_name,
+            'customer_type_key' => strtolower(trim((string) optional($customer->customertypes)->type_name)),
             'sub_type' => $customFields['sub_type'] ?? null,
             'owner_name' => trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? '')),
             'shop_name' => $customer->name ?? '',
@@ -1137,6 +1189,9 @@ class CustomerController extends Controller
             'aadhar_attachment' => $aadharAttachment,
             'aadhar_image' => $aadharAttachment,
             'bank_proof' => optional($documents->firstWhere('document_name', 'bankpass'))->file_path,
+            'security_cheques' => $documents->where('document_name', 'security_cheque')
+                ->map(fn ($document) => ['id' => $document->id, 'file_path' => $document->file_path])
+                ->values(),
             'bank_account_type' => optional($details)->bank_account_type,
             'bank_account_number' => optional($details)->account_number,
             'bank_name' => optional($details)->bank_name,
@@ -1601,6 +1656,8 @@ class CustomerController extends Controller
                 'aadhaar_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'aadhaarImage' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'other_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                'security_cheques' => 'nullable|array',
+                'security_cheques.*' => 'file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 'bank_proof' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
             ]);
             if ($validator->fails()) {
@@ -1791,6 +1848,7 @@ class CustomerController extends Controller
             if ($image = $this->requestFileByAnyKey($request, ['bank_proof', 'bankProof', 'bankProofImage', 'imgbankpass', 'cancelledCheque', 'cancelled_cheque'])) {
                 $this->saveCustomerAttachment($customer->id, 'bankpass', $image);
             }
+            $this->saveSecurityCheques($request, $customer->id, $request->input('customertype') ?: $customer->customertype);
 
             $detailUpdates = ['active' => 'Y', 'customer_id' => $customer->id, 'updated_at' => getcurentDateTime()];
             $detailFieldMap = [

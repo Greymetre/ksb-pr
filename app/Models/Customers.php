@@ -232,7 +232,7 @@ class Customers extends Authenticatable
 
     public function customerdocuments()
     {
-        return $this->hasMany('App\Models\Attachment', 'customer_id', 'id')->select('customer_id', 'file_path', 'document_name');
+        return $this->hasMany('App\Models\Attachment', 'customer_id', 'id')->select('id', 'customer_id', 'file_path', 'document_name');
     }
 
     public function statusname()

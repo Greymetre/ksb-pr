@@ -38,7 +38,7 @@ class CustomController extends Controller
             $pageSize = $request->input('pageSize');
             $query = CustomerType::where(function ($query) {
                 $query->where('active', '=', 'Y');;
-            })->select('id', 'customertype_name');
+            })->select('id', 'customertype_name', 'type_name');
 
             $db_data = (!empty($pageSize)) ? $query->paginate($pageSize) : $query->get();
             $data = collect([]);
@@ -47,6 +47,7 @@ class CustomController extends Controller
                     $data->push([
                         'customertype' => isset($value['id']) ? $value['id'] : 0,
                         'customertype_name' => isset($value['customertype_name']) ? $value['customertype_name'] : '',
+                        'type_name' => strtolower(trim((string) ($value['type_name'] ?? ''))),
                     ]);
                 }
                 return response()->json(['status' => 'success', 'message' => 'Data retrieved successfully.', 'data' => $data], $this->successStatus);
