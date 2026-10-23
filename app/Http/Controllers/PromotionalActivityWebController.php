@@ -124,6 +124,7 @@ class PromotionalActivityWebController extends Controller
             'created_at' => showdatetimeformat($activity->created_at),
             'can_approve' => $canApprove = $this->canApprove($activity),
             'can_complete' => $this->canComplete($activity),
+            'can_delete' => auth()->user()->hasRole('superadmin'),
             // Gift options for editing before approval.
             'available_gifts' => $canApprove ? PromotionalGift::where('active', 'Y')->orderBy('name')->get(['id', 'name', 'quantity']) : [],
         ]]);
@@ -254,6 +255,23 @@ class PromotionalActivityWebController extends Controller
         }
 
         return response()->json(['success' => true, 'message' => 'Promotional activity completed successfully.']);
+    }
+
+    // Superadmin only. A completed activity's gifts go back into gift stock.
+    public function destroy(PromotionalActivity $promotionalActivity)
+    {
+        $this->authorizeAccess();
+        abort_unless(auth()->user()->hasRole('superadmin'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $photoPaths = $promotionalActivity->activity_photos ?: [];
+        DB::transaction(function () use ($promotionalActivity) {
+            app(PromotionalGiftStock::class)->returnForActivity($promotionalActivity, auth()->id());
+            $promotionalActivity->gifts()->detach();
+            $promotionalActivity->delete();
+        });
+        Storage::disk('public')->delete($photoPaths);
+
+        return response()->json(['success' => true, 'message' => 'Promotional activity deleted successfully.']);
     }
 
     public function export(Request $request)

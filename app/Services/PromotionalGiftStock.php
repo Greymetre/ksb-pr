@@ -63,13 +63,7 @@ class PromotionalGiftStock
                 $this->record($gift, 'opening', $opening, $userId, 'Opening stock', null, Carbon::parse($gift->created_at));
             }
 
-            $balance = 0;
-            foreach ($gift->stockMovements()->orderBy('id')->get() as $movement) {
-                $balance += $movement->quantity;
-                if ((int) $movement->balance_after !== $balance) {
-                    $movement->update(['balance_after' => $balance]);
-                }
-            }
+            $this->rebuildBalances($gift);
         });
     }
 
@@ -109,6 +103,35 @@ class PromotionalGiftStock
             $gift = $gifts[$row->promotional_gift_id];
             $gift->decrement('quantity', $row->quantity, ['updated_by' => $userId]);
             $this->record($gift, 'activity', -$row->quantity, $userId, 'Activity #' . $activity->id . ' - ' . $activity->location_name, $activity->id, $at);
+        }
+    }
+
+    /**
+     * Undo an activity's stock issue when the activity is deleted: its gifts go back
+     * into stock and its ledger rows are removed. Must run inside a transaction.
+     */
+    public function returnForActivity(PromotionalActivity $activity, ?int $userId): void
+    {
+        $movements = PromotionalGiftStockMovement::where('promotional_activity_id', $activity->id)->get();
+        foreach ($movements->groupBy('promotional_gift_id') as $giftId => $rows) {
+            PromotionalGiftStockMovement::whereKey($rows->pluck('id'))->delete();
+            $gift = PromotionalGift::whereKey($giftId)->lockForUpdate()->first();
+            if (!$gift) {
+                continue;
+            }
+            $gift->increment('quantity', -(int) $rows->sum('quantity'), ['updated_by' => $userId]);
+            $this->rebuildBalances($gift);
+        }
+    }
+
+    private function rebuildBalances(PromotionalGift $gift): void
+    {
+        $balance = 0;
+        foreach ($gift->stockMovements()->orderBy('id')->get() as $movement) {
+            $balance += $movement->quantity;
+            if ((int) $movement->balance_after !== $balance) {
+                $movement->update(['balance_after' => $balance]);
+            }
         }
     }
 

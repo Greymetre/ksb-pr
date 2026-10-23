@@ -60,6 +60,7 @@
       </div>
       <div class="modal-body">
         <div id="activityDetailBody"><p class="text-center">Loading...</p></div>
+        <div id="activityDeleteBox" class="text-right" style="display:none;"><button type="button" class="btn btn-danger" id="deleteActivityBtn"><i class="material-icons" style="font-size:18px;vertical-align:middle;">delete</i> Delete Activity</button></div>
         <div id="activityApprovalBox" style="display:none;">
           <hr>
           <div class="d-flex align-items-center justify-content-between mb-2">
@@ -123,7 +124,7 @@ $(function () {
     if (!row) return;
     activeActivityId = row.id;
     $('#activityDetailBody').html('<p class="text-center">Loading...</p>');
-    $('#activityApprovalBox, #activityCompleteBox').hide();
+    $('#activityApprovalBox, #activityCompleteBox, #activityDeleteBox').hide();
     $('#activityApprovalRemark, #activityExecutionRemark').val('');
     selectedPhotos = []; renderPhotos();
     $('#activityGiftRows, #activityParticipantRows').empty();
@@ -148,6 +149,7 @@ $(function () {
         d.gifts.forEach(function (g) { addGiftRow(g.id, g.quantity); });
         $('#activityApprovalBox').show();
       }
+      if (d.can_delete) $('#activityDeleteBox').show();
       if (d.can_complete) {
         addParticipantRow();
         loadDistributors(d.id);
@@ -276,6 +278,25 @@ $(function () {
     }).fail(function (xhr) {
       Swal.fire(errorMessage(xhr, 'Unable to complete activity'), '', 'error');
     }).always(function () { button.prop('disabled', false); });
+  });
+  $('#deleteActivityBtn').on('click', function () {
+    Swal.fire({
+      title: 'Delete this activity?', text: "You won't be able to revert this! Gifts of a completed activity go back into stock.",
+      type: 'warning', showCancelButton: true, confirmButtonText: 'Yes, delete it!', cancelButtonText: 'No, cancel!'
+    }).then(function (result) {
+      if (!result.value) return;
+      var button = $('#deleteActivityBtn').prop('disabled', true);
+      $.ajax({
+        url: "{{ url('promotional-activities-crm') }}/" + activeActivityId, method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+      }).done(function (response) {
+        $('#activityDetailModal').modal('hide');
+        Swal.fire(response.message, '', 'success');
+        table.draw(false);
+      }).fail(function (xhr) {
+        Swal.fire(errorMessage(xhr, 'Unable to delete activity'), '', 'error');
+      }).always(function () { button.prop('disabled', false); });
+    });
   });
   $('#applyActivityFilter').on('click', function(){ table.draw(); });
   $('#resetActivityFilter').on('click', function(){ $('#activity_type_filter').val('').trigger('change'); $('#date_from,#date_to').val(''); table.draw(); });
