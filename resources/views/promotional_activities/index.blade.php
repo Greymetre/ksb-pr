@@ -11,6 +11,8 @@
   body.fk-shell .fk-activity-status-tab:hover { border-color: rgba(var(--tab-rgb), .5); color: #e3ecff; }
   body.fk-shell .fk-activity-status-tab.active { border-color: rgba(var(--tab-rgb), .6); background: rgba(var(--tab-rgb), .12); color: var(--tab-color); }
   body.fk-shell .fk-activity-status-tab.active span { background: rgba(var(--tab-rgb), .22); color: var(--tab-color); }
+  /* Alerts and confirms opened from the detail popup must show above it. */
+  .swal2-container { z-index: 99999 !important; }
   body.fk-shell table.fk-glass-table tbody td .badge-info { border: 1px solid rgba(74, 157, 255, .38); background: rgba(74, 157, 255, .10); color: #4a9dff; }
 </style>
 <section class="fk-manual-listing">
