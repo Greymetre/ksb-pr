@@ -214,6 +214,38 @@ $(document).ready(function () {
     unhighlight: function(element) {
       $(element).closest('.error').css("display", "block");
     },
+    // select2 hides the real <select>, so put the message after the visible widget
+    errorPlacement: function(error, element) {
+      if (element.hasClass('select2-hidden-accessible')) {
+        error.insertAfter(element.next('.select2'));
+      } else {
+        error.insertAfter(element);
+      }
+    },
+    // the form is long: without this a failed submit looked like nothing happened
+    invalidHandler: function(event, validator) {
+      if (!validator.numberOfInvalids()) {
+        return;
+      }
+      var list = $.map(validator.errorList, function(item) {
+        var label = $(item.element).closest('.input_section, .form-group').find('label.col-form-label').first().text().replace('*', '').trim();
+        return '<li>' + $('<div>').text((label ? label + ': ' : '') + item.message).html() + '</li>';
+      }).join('');
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({ icon: 'error', title: 'Please fix the following', html: '<ul style="text-align:left">' + list + '</ul>' });
+      } else if (typeof swal !== 'undefined') {
+        swal({ type: 'error', title: 'Please fix the following', html: '<ul style="text-align:left">' + list + '</ul>' });
+      }
+      var first = $(validator.errorList[0].element);
+      var target = first.hasClass('select2-hidden-accessible') ? first.next('.select2') : first;
+      if (target.length && target.offset()) {
+        $('html, body').animate({ scrollTop: target.offset().top - 150 }, 300);
+      }
+    },
+    submitHandler: function(form) {
+      $(form).find('[type="submit"]').prop('disabled', true).val('Saving...');
+      form.submit();
+    },
     messages:{
       name:{
         required: "Please enter Firm Name",

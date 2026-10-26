@@ -42,7 +42,7 @@
                 <div class="fileinput fileinput-new">
 
                   <div class="fileinput-new thumbnail">
-                    <img src="{!! !empty($customers['profile_image']) ? $customers['profile_image'] : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview7">
+                    <img loading="lazy" src="{!! !empty($customers['profile_image']) ? $customers['profile_image'] : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview7">
                     <div class="selectThumbnail">
                       <span class="btn btn-just-icon btn-round btn-file">
                         <span class="fileinput-new"><i class="fa fa-pencil"></i></span>
@@ -66,7 +66,7 @@
                 <div class="fileinput fileinput-new">
 
                   <div class="fileinput-new thumbnail">
-                    <img src="{!! !empty($customers['shop_image']) ? $customers['shop_image'] : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview8">
+                    <img loading="lazy" src="{!! !empty($customers['shop_image']) ? $customers['shop_image'] : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview8">
                     <div class="selectThumbnail">
                       <span class="btn btn-just-icon btn-round btn-file">
                         <span class="fileinput-new"><i class="fa fa-pencil"></i></span>
@@ -788,11 +788,9 @@
                       <div class="form-group has-default bmd-form-group">
                         <select class="form-control shipping_pincode select2" name="shipping_pincode_id" onchange="getShippingAddressData()" style="width: 100%;">
                           <option value="">Select {!! trans('panel.global.pincode') !!}</option>
-                          @if(@isset($pincodes ))
-                          @foreach($pincodes as $pincode)
+                          @foreach(($shippingPincodes ?? $pincodes ?? []) as $pincode)
                           <option value="{!! $pincode['id'] !!}" {{ old( 'shipping_pincode_id' , (!empty($customers['customershippingaddress']['pincode_id']))?($customers['customershippingaddress']['pincode_id']):('') ) == $pincode['id'] ? 'selected' : '' }}>{!! $pincode['pincode'] !!}</option>
                           @endforeach
-                          @endif
                         </select>
                       </div>
                       @if ($errors->has('shipping_pincode_id'))
@@ -1023,7 +1021,7 @@
             <div class="col-md-2 col-sm-2">
               <div class="fileinput fileinput-new">
                 <div class="fileinput-new thumbnail">
-                  <img src="{!! !empty($customers['customerdocuments']->where('document_name','gstin')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','gstin')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview1">
+                  <img loading="lazy" src="{!! !empty($customers['customerdocuments']->where('document_name','gstin')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','gstin')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview1">
                   <div class="selectThumbnail">
                     <span class="btn btn-just-icon btn-round btn-file">
                       <span class="fileinput-new"><i class="fa fa-pencil"></i></span>
@@ -1047,7 +1045,7 @@
               <div class="fileinput fileinput-new">
 
                 <div class="fileinput-new thumbnail">
-                  <img src="{!! !empty($customers['customerdocuments']->where('document_name','pan')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','pan')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview2">
+                  <img loading="lazy" src="{!! !empty($customers['customerdocuments']->where('document_name','pan')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','pan')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview2">
                   <div class="selectThumbnail">
                     <span class="btn btn-just-icon btn-round btn-file">
                       <span class="fileinput-new"><i class="fa fa-pencil"></i></span>
@@ -1066,7 +1064,7 @@
               <div class="fileinput fileinput-new">
 
                 <div class="fileinput-new thumbnail">
-                  <img src="{!! !empty($customers['customerdocuments']->where('document_name','aadhar')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','aadhar')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview3">
+                  <img loading="lazy" src="{!! !empty($customers['customerdocuments']->where('document_name','aadhar')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','aadhar')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview3">
                   <div class="selectThumbnail">
                     <span class="btn btn-just-icon btn-round btn-file">
                       <span class="fileinput-new"><i class="fa fa-pencil"></i></span>
@@ -1085,7 +1083,7 @@
               <div class="fileinput fileinput-new">
 
                 <div class="fileinput-new thumbnail">
-                  <img src="{!! !empty($customers['customerdocuments']->where('document_name','aadharback')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','aadharback')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview4">
+                  <img loading="lazy" src="{!! !empty($customers['customerdocuments']->where('document_name','aadharback')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','aadharback')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview4">
                   <div class="selectThumbnail">
                     <span class="btn btn-just-icon btn-round btn-file">
                       <span class="fileinput-new"><i class="fa fa-pencil"></i></span>
@@ -1104,7 +1102,7 @@
               <div class="fileinput fileinput-new">
 
                 <div class="fileinput-new thumbnail">
-                  <img src="{!! !empty($customers['customerdocuments']->where('document_name','bankpass')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','bankpass')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview5">
+                  <img loading="lazy" src="{!! !empty($customers['customerdocuments']->where('document_name','bankpass')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','bankpass')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview5">
                   <div class="selectThumbnail">
                     <span class="btn btn-just-icon btn-round btn-file">
                       <span class="fileinput-new"><i class="fa fa-pencil"></i></span>
@@ -1122,7 +1120,7 @@
             <div class="col-md-2 col-sm-2" id="security_cheque_box" style="display: none;">
               <div class="fileinput fileinput-new">
                 <div class="fileinput-new thumbnail">
-                  <img src="{!! url('/').'/'.asset('assets/img/placeholder.jpg') !!}">
+                  <img loading="lazy" src="{!! url('/').'/'.asset('assets/img/placeholder.jpg') !!}">
                   <div class="selectThumbnail">
                     <span class="btn btn-just-icon btn-round btn-file">
                       <span class="fileinput-new"><i class="fa fa-pencil"></i></span>
@@ -1142,7 +1140,7 @@
               <div class="fileinput fileinput-new">
 
                 <div class="fileinput-new thumbnail">
-                  <img src="{!! !empty($customers['customerdocuments']->where('document_name','other')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','other')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview6">
+                  <img loading="lazy" src="{!! !empty($customers['customerdocuments']->where('document_name','other')->pluck('file_path')->first()) ? $customers['customerdocuments']->where('document_name','other')->pluck('file_path')->first() : url('/').'/'.asset('assets/img/placeholder.jpg') !!}" class="imagepreview6">
                   <div class="selectThumbnail">
                     <span class="btn btn-just-icon btn-round btn-file">
                       <span class="fileinput-new"><i class="fa fa-pencil"></i></span>
@@ -1182,7 +1180,7 @@
                     @if(\Illuminate\Support\Str::endsWith(strtolower($cheque->file_path), '.pdf'))
                     <i class="fa fa-file-pdf-o fa-4x"></i>
                     @else
-                    <img src="{{ $cheque->file_path }}">
+                    <img loading="lazy" src="{{ $cheque->file_path }}">
                     @endif
                   </a>
                   <div class="cheque-name">{{ basename($cheque->file_path) }}</div>
@@ -1305,7 +1303,7 @@
   </div>
   </div>
   <script src="{{ asset('assets/js/jquery.custom.js') }}?v={{ time() }}"></script>
-  <script src="{{ asset('assets/js/validation_customers.js') }}"></script>
+  <script src="{{ asset('assets/js/validation_customers.js') }}?v={{ filemtime(public_path('assets/js/validation_customers.js')) }}"></script>
   <script type="text/javascript">
     $(function() {
       //Initialize Select2 Elements

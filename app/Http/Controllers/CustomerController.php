@@ -112,6 +112,24 @@ class CustomerController extends Controller
             ->get();
     }
 
+    private function cityPincodeOptions($cityId, $selectedPincodeId = null)
+    {
+        if (empty($cityId) && empty($selectedPincodeId)) {
+            return collect();
+        }
+
+        return Pincode::where(function ($query) use ($cityId, $selectedPincodeId) {
+            if (!empty($cityId)) {
+                $query->orWhere(function ($q) use ($cityId) {
+                    $q->where('city_id', $cityId)->where('active', 'Y');
+                });
+            }
+            if (!empty($selectedPincodeId)) {
+                $query->orWhere('id', $selectedPincodeId);
+            }
+        })->select('id', 'pincode')->orderBy('pincode')->get();
+    }
+
     private function validParentCustomerIds($parentIds, $customerTypeId, ?int $excludeCustomerId = null): array
     {
         if ((int) $customerTypeId !== (int) $this->retailerCustomerTypeId()) {
@@ -688,11 +706,17 @@ class CustomerController extends Controller
         abort_unless($this->canAccessCustomer($customers), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $deals = DealIn::where('customer_id', '=', $id)->get();
-        $pincodes = Pincode::where('active', '=', 'Y')->whereHas('assigncitiesusers', function ($query) use ($userids) {
-            if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
-                $query->whereIn('userid', $userids);
-            }
-        })->select('id', 'pincode')->orderBy('id', 'desc')->get();
+        // Only the pincodes of the customer's own city are needed here; the
+        // rest are loaded via ajax when the city changes. Rendering every
+        // pincode (twice) made the edit page very slow to open.
+        $pincodes = $this->cityPincodeOptions(
+            $customers->customeraddress->city_id ?? null,
+            $customers->customeraddress->pincode_id ?? null
+        );
+        $shippingPincodes = $this->cityPincodeOptions(
+            $customers->customershippingaddress->city_id ?? null,
+            $customers->customershippingaddress->pincode_id ?? null
+        );
         $countries = Country::where('active', '=', 'Y')->whereHas('countrystates', function ($query) use ($userids) {
             if (!Auth::user()->hasRole('superadmin') && !Auth::user()->hasRole('Admin')) {
                 $query->whereHas('statecities', function ($query) use ($userids) {
@@ -738,7 +762,7 @@ class CustomerController extends Controller
         $retailerCustomerTypeId = $this->retailerCustomerTypeId();
         $parentcustomers = $this->parentCustomerOptions((int) $customers->id);
         $custom_fields = CustomerCustomField::with('values')->orderBy('id', 'desc')->get();
-        return view('customers.create', compact('pincodes', 'customertype', 'firmtype', 'pincodes', 'countries', 'fields', 'users', 'deals', 'parentcustomers', 'retailerCustomerTypeId', 'custom_fields', 'editMobile', 'securityCheques'))->with('customers', $customers);
+        return view('customers.create', compact('pincodes', 'customertype', 'firmtype', 'pincodes', 'countries', 'fields', 'users', 'deals', 'parentcustomers', 'retailerCustomerTypeId', 'custom_fields', 'editMobile', 'securityCheques', 'shippingPincodes'))->with('customers', $customers);
     }
 
     /**
@@ -966,7 +990,7 @@ class CustomerController extends Controller
             }
             return redirect()->back()->with('message_danger', $response['message'])->withInput();
         } catch (\Exception $e) {
-            dd($e->getMessage());
+            report($e);
             return redirect()->back()->withErrors($e->getMessage())->withInput();
         }
     }
