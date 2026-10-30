@@ -851,8 +851,8 @@ class ExpensesController extends Controller
             ->when(!empty($validated['user_id']), function ($query) use ($validated) {
                 $query->where('user_id', $validated['user_id']);
             })
-            // PDF report should contain only approved expenses
-            ->where('checker_status', '1')
+            // PDF report excludes pending (0) and rejected (2) expenses
+            ->whereNotIn('checker_status', ['0', '2'])
             ->whereBetween('date', [$validated['start_date'], $validated['end_date']])
             ->orderBy('date')
             ->orderBy('user_id')
