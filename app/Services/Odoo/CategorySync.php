@@ -11,10 +11,12 @@ use Illuminate\Support\Facades\DB;
 | Odoo: product.category / get_fieldkonnect_category_list (paginated).
 | Each record: category_odoo_id, category_name, active, is_deleted, created_at, updated_at.
 | Run by `php artisan odoo:sync-categories` (cron, twice a day) and by the
-| "Sync now" button on Odoo Sync -> Category Master Odoo.
+| "Sync now" buttons on Category List and Odoo Sync -> Category Master Odoo.
 |
-| - Only the categories in SYNCED_CATEGORIES are kept; the rest are skipped
-|   and removed if stored earlier.
+| - Every Odoo category is stored (listed on Odoo Sync -> Category Master Odoo),
+|   but only the ones in SYNCED_CATEGORIES get a FieldKonnect category
+|   (category_id); the rest keep category_id null, so sub-category and
+|   product sync ignore them.
 | - Upsert key is category_odoo_id; re-syncing never duplicates.
 | - A record whose updated_at is not newer than the stored one is skipped.
 | - Odoo is the master for FieldKonnect `categories`: the matching category
@@ -39,15 +41,16 @@ class CategorySync extends OdooPullSync
     }
 
     /**
-     * Rows of categories no longer synced are removed (only after Odoo was read fully).
+     * Categories no longer synced lose their FieldKonnect link (only after Odoo was read fully).
      */
     protected function prepare(array $records): void
     {
         $synced = array_map('mb_strtolower', self::SYNCED_CATEGORIES);
 
         DB::table('odoo_categories')
+            ->whereNotNull('category_id')
             ->whereNotIn(DB::raw('LOWER(TRIM(category_name))'), $synced)
-            ->delete();
+            ->update(['category_id' => null, 'updated_at' => now()]);
 
         // Categories no longer synced drop off Category List
         DB::table('categories')
@@ -65,22 +68,19 @@ class CategorySync extends OdooPullSync
             return ['status' => 'failed', 'errors' => ['record' => ['category_odoo_id and category_name are required.']]];
         }
 
-        if (!$this->isSynced($name)) {
-            return ['status' => 'skipped'];
-        }
-
-        $categoryId = $this->syncFieldKonnectCategory($odooId, $name, $record);
+        // Only synced categories reach FieldKonnect's Category List; the rest are stored for Odoo Sync only
+        $categoryId = $this->isSynced($name) ? $this->syncFieldKonnectCategory($odooId, $name, $record) : null;
 
         $odooUpdatedAt = $this->toLocal($record['updated_at'] ?? null);
 
         // Rows synced before category_odoo_id existed are matched by their FieldKonnect category
         $existing = DB::table('odoo_categories')->where('category_odoo_id', $odooId)
             ->first(['id', 'odoo_updated_at', 'category_id'])
-            ?? DB::table('odoo_categories')->whereNull('category_odoo_id')->where('category_id', $categoryId)
-                ->first(['id', 'odoo_updated_at', 'category_id']);
+            ?? ($categoryId ? DB::table('odoo_categories')->whereNull('category_odoo_id')->where('category_id', $categoryId)
+                ->first(['id', 'odoo_updated_at', 'category_id']) : null);
 
         // Unchanged in Odoo: nothing to do, unless the FieldKonnect link changed
-        if ($existing && $this->isUnchanged($existing, $odooUpdatedAt) && (int) $existing->category_id === $categoryId) {
+        if ($existing && $this->isUnchanged($existing, $odooUpdatedAt) && (int) $existing->category_id === (int) $categoryId) {
             DB::table('odoo_categories')->where('id', $existing->id)->update(['category_odoo_id' => $odooId]);
             return ['status' => 'skipped'];
         }

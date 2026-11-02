@@ -393,6 +393,9 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     //Odoo Sync Routs (odoo-integration-docs/README.md)
     Route::get('odoo-sync', [OdooSyncController::class, 'index'])->name('odoo_sync.index');
     Route::get('odoo-sync/logs', [OdooSyncController::class, 'logs'])->name('odoo_sync.logs');
+    Route::get('odoo-sync/categories', [OdooSyncController::class, 'categories'])->name('odoo_sync.categories');
+    Route::get('odoo-sync/categories/data', [OdooSyncController::class, 'categoriesData'])->name('odoo_sync.categories_data');
+    Route::post('odoo-sync/categories/sync', [OdooSyncController::class, 'syncCategories'])->name('odoo_sync.categories_sync');
     Route::get('odoo-sync/customers', [OdooSyncController::class, 'customers'])->name('odoo_sync.customers');
     Route::get('odoo-sync/customers/data', [OdooSyncController::class, 'customersData'])->name('odoo_sync.customers_data');
     Route::post('odoo-sync/customers/sync', [OdooSyncController::class, 'syncCustomers'])->name('odoo_sync.customers_sync');

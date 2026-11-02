@@ -2993,6 +2993,13 @@
                                     <div class="d-none mobile_hide">Sync Overview</div>
                                 </a>
                             </li>
+                            <li class="nav-link-btn {{ request()->routeIs('odoo_sync.categories') ? 'active' : '' }}">
+                                <a class="hoveradd2" href="{{ route('odoo_sync.categories') }}">
+                                    <i class="material-icons icon">category</i>
+                                    <span>Category Master Odoo</span>
+                                    <div class="d-none mobile_hide">Category Master Odoo</div>
+                                </a>
+                            </li>
                             <li class="nav-link-btn {{ request()->routeIs('odoo_sync.customers') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ route('odoo_sync.customers') }}">
                                     <i class="material-icons icon">storefront</i>
