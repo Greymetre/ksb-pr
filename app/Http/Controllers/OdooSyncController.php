@@ -6,6 +6,7 @@ use App\Exports\ExcelExport;
 use App\Services\Odoo\CategorySync;
 use App\Services\Odoo\CustomerSync;
 use App\Services\Odoo\OdooPullSync;
+use App\Services\Odoo\SubcategorySync;
 use Carbon\Carbon;
 use Gate;
 use Illuminate\Http\Request;
@@ -102,6 +103,64 @@ class OdooSyncController extends Controller
     }
 
     public function syncCategories(CategorySync $sync)
+    {
+        return $this->runPullSync($sync);
+    }
+
+    /**
+     * Sub Category Master Odoo: sub-categories of every Odoo category (cron twice a day, or Sync now).
+     * Sub Category List under Product Management shows only those of the synced categories.
+     */
+    public function subcategories()
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $lastRun = DB::table('odoo_sync_logs')->where('entity', SubcategorySync::ENTITY)->orderByDesc('id')
+            ->first(['created_at', 'status_code', 'received_count', 'failed_count']);
+
+        $counts = [
+            'total' => DB::table('odoo_subcategories')->count(),
+            'active' => DB::table('odoo_subcategories')->where('active', true)->where('is_deleted', false)->count(),
+            'synced' => DB::table('odoo_subcategories')->whereNotNull('subcategory_id')->count(),
+        ];
+
+        return view('odoo_sync.subcategories', compact('counts', 'lastRun'));
+    }
+
+    public function subcategoriesData(Request $request)
+    {
+        abort_if(Gate::denies('odoo_sync_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $query = DB::table('odoo_subcategories as os')
+            ->leftJoin('odoo_categories as oc', 'oc.category_odoo_id', '=', 'os.category_odoo_id')
+            ->leftJoin('subcategories as s', 's.id', '=', 'os.subcategory_id')
+            ->when($request->input('link') === 'synced', fn ($q) => $q->whereNotNull('os.subcategory_id'))
+            ->when($request->input('link') === 'not_synced', fn ($q) => $q->whereNull('os.subcategory_id'))
+            ->select('os.id', 'os.subcategory_odoo_id', 'os.category_odoo_id', 'os.subcategory_name',
+                'os.active', 'os.is_deleted', 'os.subcategory_id', 'os.odoo_updated_at', 'os.updated_at',
+                'oc.category_name', 's.subcategory_name as fk_subcategory_name');
+
+        return datatables()->query($query)
+            ->editColumn('subcategory_odoo_id', fn ($row) => '<span class="os-mono os-copy os-strong" title="Click to copy" data-copy="' . e($row->subcategory_odoo_id) . '">' . e($row->subcategory_odoo_id) . '</span>')
+            ->editColumn('subcategory_name', fn ($row) => '<div class="os-strong">' . e($row->subcategory_name) . '</div>')
+            ->editColumn('category_name', fn ($row) => '<div class="os-strong">' . e($row->category_name ?? '—') . '</div>'
+                . '<div class="os-sub">Odoo ID <span class="os-mono os-copy" title="Click to copy" data-copy="' . e($row->category_odoo_id) . '">' . e($row->category_odoo_id) . '</span></div>')
+            ->addColumn('linked', fn ($row) => $row->subcategory_id
+                ? '<div class="os-sub">' . e($row->fk_subcategory_name) . ' <span class="os-tag">#' . (int) $row->subcategory_id . '</span></div>'
+                : '<span class="os-pill os-pill-neutral os-pill-sm">Not synced</span>')
+            ->addColumn('status', function ($row) {
+                if ($row->is_deleted) {
+                    return '<span class="os-pill os-pill-danger">Deleted</span>';
+                }
+                return $row->active ? '<span class="os-pill os-pill-success">Active</span>' : '<span class="os-pill os-pill-neutral">Inactive</span>';
+            })
+            ->editColumn('odoo_updated_at', fn ($row) => $this->dateTimeCell($row->odoo_updated_at))
+            ->editColumn('updated_at', fn ($row) => $this->dateTimeCell($row->updated_at))
+            ->rawColumns(['subcategory_odoo_id', 'subcategory_name', 'category_name', 'linked', 'status', 'odoo_updated_at', 'updated_at'])
+            ->make(true);
+    }
+
+    public function syncSubcategories(SubcategorySync $sync)
     {
         return $this->runPullSync($sync);
     }

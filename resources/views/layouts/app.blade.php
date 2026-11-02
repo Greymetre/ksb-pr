@@ -3000,6 +3000,13 @@
                                     <div class="d-none mobile_hide">Category Master Odoo</div>
                                 </a>
                             </li>
+                            <li class="nav-link-btn {{ request()->routeIs('odoo_sync.subcategories') ? 'active' : '' }}">
+                                <a class="hoveradd2" href="{{ route('odoo_sync.subcategories') }}">
+                                    <i class="material-icons icon">account_tree</i>
+                                    <span>Sub Category Master Odoo</span>
+                                    <div class="d-none mobile_hide">Sub Category Master Odoo</div>
+                                </a>
+                            </li>
                             <li class="nav-link-btn {{ request()->routeIs('odoo_sync.customers') ? 'active' : '' }}">
                                 <a class="hoveradd2" href="{{ route('odoo_sync.customers') }}">
                                     <i class="material-icons icon">storefront</i>

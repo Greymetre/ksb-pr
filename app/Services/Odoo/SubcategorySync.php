@@ -9,12 +9,15 @@ use Illuminate\Support\Facades\DB;
 | Pulls product sub-categories from Odoo into odoo_subcategories.
 |--------------------------------------------------------------------------
 | Odoo: product.category / get_fieldkonnect_subcategory_list, called once per
-| synced category (odoo_categories.category_odoo_id), paginated.
+| Odoo category (odoo_categories.category_odoo_id), paginated.
 | Each record: subcategory_odoo_id, subcategory_name, active, is_deleted, created_at, updated_at.
 | Run by `php artisan odoo:sync-subcategories` (cron, twice a day, 10 minutes
-| after the category sync) and by "Sync now" on Odoo Sync -> Sub Category Master Odoo.
+| after the category sync) and by "Sync now" on Sub Category List and
+| Odoo Sync -> Sub Category Master Odoo.
 |
-| - Only sub-categories of the synced categories are kept; the rest are removed.
+| - Sub-categories of every Odoo category are stored (listed on Odoo Sync ->
+|   Sub Category Master Odoo), but only those of the synced categories get a
+|   FieldKonnect sub-category (subcategory_id); the rest keep it null.
 | - Upsert key is subcategory_odoo_id; re-syncing never duplicates.
 | - A record whose updated_at is not newer than the stored one is skipped.
 | - Odoo returns nested sub-categories (PVC Pipes > Column Pipe > Heavy Pipe) as one
@@ -47,7 +50,7 @@ class SubcategorySync extends OdooPullSync
     }
 
     /**
-     * One read per synced category (Scenario C: sub-categories under a category id).
+     * One read per Odoo category (Scenario C: sub-categories under a category id).
      */
     protected function requests(): array
     {
@@ -58,7 +61,12 @@ class SubcategorySync extends OdooPullSync
             ->map(fn ($id) => (int) $id)
             ->all();
 
-        return array_map(fn ($odooId) => ['category_odoo_id' => (int) $odooId], array_keys($this->categories));
+        return DB::table('odoo_categories')
+            ->whereNotNull('category_odoo_id')
+            ->orderBy('category_odoo_id')
+            ->pluck('category_odoo_id')
+            ->map(fn ($odooId) => ['category_odoo_id' => (int) $odooId])
+            ->all();
     }
 
     /**
@@ -67,6 +75,17 @@ class SubcategorySync extends OdooPullSync
      */
     protected function transform(array $records): array
     {
+        // A sub-category returned under more than one category is kept once, preferring a synced category
+        $unique = [];
+        foreach ($records as $record) {
+            $key = (int) ($record['subcategory_odoo_id'] ?? 0);
+            if (!$key || !isset($unique[$key]) || (!isset($this->categories[(int) ($unique[$key]['category_odoo_id'] ?? 0)])
+                && isset($this->categories[(int) ($record['category_odoo_id'] ?? 0)]))) {
+                $unique[$key ?: 'invalid_' . count($unique)] = $record;
+            }
+        }
+        $records = array_values($unique);
+
         $withSubcategories = array_flip(array_map(fn ($r) => (int) ($r['category_odoo_id'] ?? 0), $records));
 
         $empty = DB::table('odoo_categories')
@@ -111,10 +130,15 @@ class SubcategorySync extends OdooPullSync
             ->whereNotIn(DB::raw('LOWER(TRIM(subcategory_name))'), $names ?: [''])
             ->delete();
 
-        // FieldKonnect sub-categories no longer in Odoo drop off Sub Category List
+        // FieldKonnect sub-categories no longer in Odoo, or whose category is no longer synced, drop off Sub Category List
+        $syncedIds = array_values(array_filter(array_map(
+            fn ($r) => isset($this->categories[(int) ($r['category_odoo_id'] ?? 0)]) ? (int) ($r['subcategory_odoo_id'] ?? 0) : 0,
+            $records
+        )));
+
         DB::table('subcategories')
             ->whereNotNull('odoo_subcategory_id')
-            ->whereNotIn('odoo_subcategory_id', $ids ?: [0])
+            ->whereNotIn('odoo_subcategory_id', $syncedIds ?: [0])
             ->update(['odoo_subcategory_id' => null, 'updated_at' => now()]);
     }
 
@@ -130,13 +154,8 @@ class SubcategorySync extends OdooPullSync
 
         $categoryId = $this->categories[$categoryOdooId] ?? null;
 
-        // Category not synced/linked in FieldKonnect: do not keep this sub-category
-        if (!$categoryId) {
-            DB::table('odoo_subcategories')->where('subcategory_odoo_id', $odooId)->delete();
-            return ['status' => 'skipped'];
-        }
-
-        $subcategoryId = $this->syncFieldKonnectSubcategory($odooId, $name, $categoryId, $record);
+        // Only sub-categories of synced categories reach Sub Category List; the rest are stored for Odoo Sync only
+        $subcategoryId = $categoryId ? $this->syncFieldKonnectSubcategory($odooId, $name, $categoryId, $record) : null;
         $odooUpdatedAt = $this->toLocal($record['updated_at'] ?? null);
 
         $existing = DB::table('odoo_subcategories')->where('subcategory_odoo_id', $odooId)
