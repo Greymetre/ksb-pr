@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use App\Services\PromotionalGiftStock;
+use App\Services\PromotionalActivityExecution;
 
 class PromotionalActivityController extends Controller
 {
@@ -298,11 +298,8 @@ class PromotionalActivityController extends Controller
             || in_array((int) $promotionalActivity->created_by, $visibleUserIds, true);
         abort_unless($canView, 403);
 
-        $canApprove = $promotionalActivity->approval_status === 'pending'
-            && ($user->hasRole('superadmin') || (
-                (int) $promotionalActivity->created_by !== (int) $user->id
-                && $this->isDirectManager($user, $promotionalActivity)
-            ));
+        $canApprove = $promotionalActivity->approval_status === 'pending' && $this->canManagerAct($user, $promotionalActivity);
+        $canReview = $promotionalActivity->approval_status === 'closure_pending' && $this->canManagerAct($user, $promotionalActivity);
         $canComplete = $promotionalActivity->approval_status === 'approved'
             && ((int) $promotionalActivity->created_by === (int) $user->id || $user->hasRole('superadmin'));
         $canResubmit = $promotionalActivity->approval_status === 'revision_required'
@@ -338,61 +335,59 @@ class PromotionalActivityController extends Controller
             'can_approve' => $canApprove,
             'can_complete' => $canComplete,
             'can_resubmit' => $canResubmit,
+            'can_review' => $canReview,
             'distributor' => $promotionalActivity->distributor,
             'activity_photos' => collect($promotionalActivity->activity_photos ?: [])->values(),
             'participants' => $promotionalActivity->participants ?: [],
             'execution_remark' => $promotionalActivity->execution_remark,
+            'actual_expense' => $promotionalActivity->actual_expense !== null ? (float) $promotionalActivity->actual_expense : null,
+            'over_budget' => $promotionalActivity->isOverBudget(),
+            'bills' => collect($promotionalActivity->bills ?: [])->values(),
+            'review_remark' => $promotionalActivity->review_remark,
         ]]);
     }
 
+    // Superadmin, or one of the creator's reporting managers (never the creator).
+    private function canManagerAct($user, PromotionalActivity $activity): bool
+    {
+        return $user->hasRole('superadmin') || (
+            (int) $activity->created_by !== (int) $user->id
+            && $this->isDirectManager($user, $activity)
+        );
+    }
+
+    // Execution details and expenses go to the manager for review; the activity is not closed yet.
     public function complete(Request $request, PromotionalActivity $promotionalActivity)
     {
         $user = $request->user();
         abort_unless((int) $promotionalActivity->created_by === (int) $user->id || $user->hasRole('superadmin'), 403);
-        abort_if($promotionalActivity->approval_status !== 'approved', 422, 'Only an approved activity can be completed.');
-
-        $participants = json_decode((string) $request->input('participants', '[]'), true);
-        $request->merge(['participants_data' => $participants]);
-        $validator = Validator::make($request->all(), [
-            'distributor_id' => 'required|integer|exists:customers,id',
-            'photos' => 'required|array|min:1|max:3',
-            'photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
-            'participants_data' => 'required|array|min:1|max:50',
-            'participants_data.*.name' => 'required|string|max:150',
-            'participants_data.*.mobile' => ['required', 'regex:/^[0-9]{10}$/'],
-            'participants_data.*.address' => 'required|string|max:255',
-            'execution_remark' => 'nullable|string|max:1000',
-        ]);
-        if ($validator->fails()) return response()->json(['success' => false, 'message' => $validator->errors()], 422);
-
-        $photoPaths = [];
-        foreach ($request->file('photos', []) as $photo) {
-            $photoPaths[] = $photo->store('promotional-activities', 'public');
-        }
+        abort_if($promotionalActivity->approval_status !== 'approved', 422, 'Only an approved activity can be submitted.');
 
         try {
-            DB::transaction(function () use ($request, $promotionalActivity, $photoPaths, $participants) {
-                $activity = PromotionalActivity::whereKey($promotionalActivity->id)->lockForUpdate()->firstOrFail();
-                abort_if($activity->approval_status !== 'approved', 422, 'Only an approved activity can be completed.');
-
-                // Gifts given in the activity are deducted from gift stock
-                app(PromotionalGiftStock::class)->issueForActivity($activity, $request->user()->id);
-
-                $activity->update([
-                    'distributor_id' => $request->distributor_id,
-                    'activity_photos' => $photoPaths,
-                    'participants' => array_values($participants),
-                    'execution_remark' => $request->input('execution_remark'),
-                    'approval_status' => 'completed',
-                    'completed_at' => now(),
-                ]);
-            });
+            app(PromotionalActivityExecution::class)->submit($request, $promotionalActivity, $user);
         } catch (ValidationException $e) {
-            Storage::disk('public')->delete($photoPaths);
             return response()->json(['success' => false, 'message' => $e->errors()], 422);
         }
 
-        return response()->json(['success' => true, 'message' => 'Promotional activity completed successfully.']);
+        return response()->json(['success' => true, 'message' => 'Activity details submitted for manager review.']);
+    }
+
+    public function review(Request $request, PromotionalActivity $promotionalActivity)
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => ['required', Rule::in(PromotionalActivityExecution::REVIEW_DECISIONS)],
+            'remark' => 'required_if:status,returned|nullable|string|max:1000',
+        ], ['remark.required_if' => 'Remark is required to return an activity for correction.']);
+        if ($validator->fails()) return response()->json(['success' => false, 'message' => $validator->errors()], 422);
+
+        $promotionalActivity->load('creator:id,name,reportingid');
+        $user = $request->user();
+        abort_unless($this->canManagerAct($user, $promotionalActivity), 403);
+        abort_if($promotionalActivity->approval_status !== 'closure_pending', 422, 'Activity is not waiting for review.');
+
+        app(PromotionalActivityExecution::class)->review($promotionalActivity, $request->status, $request->remark, $user);
+
+        return response()->json(['success' => true, 'message' => $request->status === 'closed' ? 'Activity closed successfully.' : 'Activity returned for correction.']);
     }
 
     public function updateApproval(Request $request, PromotionalActivity $promotionalActivity)
@@ -404,14 +399,7 @@ class PromotionalActivityController extends Controller
         if ($validator->fails()) return response()->json(['success' => false, 'message' => $validator->errors()], 422);
 
         $promotionalActivity->load('creator:id,name,reportingid');
-        $user = $request->user();
-        abort_unless(
-            $user->hasRole('superadmin') || (
-                (int) $promotionalActivity->created_by !== (int) $user->id
-                && $this->isDirectManager($user, $promotionalActivity)
-            ),
-            403
-        );
+        abort_unless($this->canManagerAct($request->user(), $promotionalActivity), 403);
         abort_if($promotionalActivity->approval_status !== 'pending', 422, 'Activity has already been actioned.');
 
         $promotionalActivity->update([

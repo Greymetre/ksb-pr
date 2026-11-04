@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Services\PromotionalActivityExecution;
 use App\Services\PromotionalGiftStock;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\Response;
@@ -57,7 +58,7 @@ class PromotionalActivityWebController extends Controller
                 ->addColumn('total_amount', fn ($row) => number_format((float) $row->company_share + (float) $row->distributor_share, 2))
                 ->addColumn('participants_count', fn ($row) => count($row->participants ?: []))
                 ->editColumn('activity_date', fn ($row) => $row->activity_date ? $row->activity_date->format('d-M-Y') : '-')
-                ->editColumn('approval_status', fn ($row) => '<span class="badge badge-'.($row->approval_status === 'completed' ? 'success' : ($row->approval_status === 'rejected' ? 'danger' : ($row->approval_status === 'approved' ? 'info' : ($row->approval_status === 'revision_required' ? 'secondary' : 'warning')))).'">'.ucwords(str_replace('_', ' ', $row->approval_status)).'</span>')
+                ->editColumn('approval_status', fn ($row) => '<span class="badge badge-'.($row->approval_status === 'completed' ? 'success' : ($row->approval_status === 'rejected' ? 'danger' : ($row->approval_status === 'approved' ? 'info' : ($row->approval_status === 'revision_required' ? 'secondary' : ($row->approval_status === 'closure_pending' ? 'primary' : 'warning'))))).'">'.ucwords(str_replace('_', ' ', $row->approval_status)).'</span>')
                 ->editColumn('created_at', fn ($row) => showdatetimeformat($row->created_at))
                 ->rawColumns(['approval_status'])->make(true);
         }
@@ -75,8 +76,18 @@ class PromotionalActivityWebController extends Controller
     // Same rule as the mobile app: superadmin, or the creator's direct reporting manager (not the creator).
     private function canApprove(PromotionalActivity $activity): bool
     {
+        return $activity->approval_status === 'pending' && $this->isManagerOf($activity);
+    }
+
+    // The same managers close an activity after checking its execution details and expenses.
+    private function canReview(PromotionalActivity $activity): bool
+    {
+        return $activity->approval_status === 'closure_pending' && $this->isManagerOf($activity);
+    }
+
+    private function isManagerOf(PromotionalActivity $activity): bool
+    {
         $user = auth()->user();
-        if ($activity->approval_status !== 'pending') return false;
         if ($user->hasRole('superadmin')) return true;
         if ((int) $activity->created_by === (int) $user->id || !$activity->creator) return false;
         $managerIds = array_map('intval', array_filter(array_map('trim', explode(',', (string) $activity->creator->reportingid))));
@@ -96,7 +107,7 @@ class PromotionalActivityWebController extends Controller
         $this->authorizeAccess();
         $promotionalActivity->load([
             'activityType:id,display_name,status_name', 'creator:id,name,reportingid',
-            'reportingManager:id,name', 'approver:id,name', 'gifts:id,name', 'distributor:id,name,customer_code',
+            'reportingManager:id,name', 'approver:id,name', 'reviewer:id,name', 'gifts:id,name', 'distributor:id,name,customer_code',
         ]);
         abort_unless($this->canView($promotionalActivity), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
@@ -125,9 +136,19 @@ class PromotionalActivityWebController extends Controller
             'distributor_id' => $activity->distributor_id,
             'participants' => $activity->participants ?: [],
             'photos' => collect($activity->activity_photos ?: [])->map(fn ($path) => Storage::disk('public')->url($path))->values(),
+            // Paths let a returned submission keep its files when it is corrected.
+            'photo_files' => collect($activity->activity_photos ?: [])->map(fn ($path) => ['path' => $path, 'url' => Storage::disk('public')->url($path)])->values(),
             'execution_remark' => $activity->execution_remark,
+            'actual_expense' => $activity->actual_expense !== null ? number_format((float) $activity->actual_expense, 2) : null,
+            'over_budget' => $activity->isOverBudget(),
+            'bills' => collect($activity->bills ?: [])->map(fn ($path) => ['path' => $path, 'url' => Storage::disk('public')->url($path), 'name' => basename($path)])->values(),
+            'execution_submitted_at' => $activity->execution_submitted_at ? showdatetimeformat($activity->execution_submitted_at) : null,
+            'reviewed_by' => $activity->reviewer->name ?? null,
+            'reviewed_at' => $activity->reviewed_at ? showdatetimeformat($activity->reviewed_at) : null,
+            'review_remark' => $activity->review_remark,
             'created_at' => showdatetimeformat($activity->created_at),
             'can_approve' => $canApprove = $this->canApprove($activity),
+            'can_review' => $this->canReview($activity),
             'can_complete' => $this->canComplete($activity),
             'can_delete' => auth()->user()->hasRole('superadmin'),
             // Gift options for editing before approval.
@@ -215,52 +236,35 @@ class PromotionalActivityWebController extends Controller
             ->map(fn ($customer) => ['id' => $customer->id, 'text' => $customer->name.($customer->mobile ? ' ('.$customer->mobile.')' : '')])]);
     }
 
+    // Execution details and expenses go to the manager for review; the activity is not closed yet.
     public function complete(Request $request, PromotionalActivity $promotionalActivity)
     {
         $this->authorizeAccess();
-        abort_unless($this->canComplete($promotionalActivity), 422, 'Only an approved activity can be completed.');
-
-        $participants = json_decode((string) $request->input('participants', '[]'), true);
-        $request->merge(['participants_data' => $participants]);
-        $request->validate([
-            'distributor_id' => 'required|integer|exists:customers,id',
-            'photos' => 'required|array|min:1|max:3',
-            'photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
-            'participants_data' => 'required|array|min:1|max:50',
-            'participants_data.*.name' => 'required|string|max:150',
-            'participants_data.*.mobile' => ['required', 'regex:/^[0-9]{10}$/'],
-            'participants_data.*.address' => 'required|string|max:255',
-            'execution_remark' => 'nullable|string|max:1000',
-        ]);
-
-        $photoPaths = [];
-        foreach ($request->file('photos', []) as $photo) {
-            $photoPaths[] = $photo->store('promotional-activities', 'public');
-        }
+        abort_unless($this->canComplete($promotionalActivity), 422, 'Only an approved activity can be submitted.');
 
         try {
-            DB::transaction(function () use ($request, $promotionalActivity, $photoPaths, $participants) {
-                $activity = PromotionalActivity::whereKey($promotionalActivity->id)->lockForUpdate()->firstOrFail();
-                abort_if($activity->approval_status !== 'approved', 422, 'Only an approved activity can be completed.');
-
-                // Gifts given in the activity are deducted from gift stock
-                app(PromotionalGiftStock::class)->issueForActivity($activity, auth()->id());
-
-                $activity->update([
-                    'distributor_id' => $request->distributor_id,
-                    'activity_photos' => $photoPaths,
-                    'participants' => array_values($participants),
-                    'execution_remark' => $request->input('execution_remark'),
-                    'approval_status' => 'completed',
-                    'completed_at' => now(),
-                ]);
-            });
+            app(PromotionalActivityExecution::class)->submit($request, $promotionalActivity, auth()->user());
         } catch (ValidationException $e) {
-            Storage::disk('public')->delete($photoPaths);
             return response()->json(['success' => false, 'message' => collect($e->errors())->flatten()->first()], 422);
         }
 
-        return response()->json(['success' => true, 'message' => 'Promotional activity completed successfully.']);
+        return response()->json(['success' => true, 'message' => 'Activity details submitted for manager review.']);
+    }
+
+    public function review(Request $request, PromotionalActivity $promotionalActivity)
+    {
+        $this->authorizeAccess();
+        $request->validate([
+            'status' => ['required', Rule::in(PromotionalActivityExecution::REVIEW_DECISIONS)],
+            'remark' => 'required_if:status,returned|nullable|string|max:1000',
+        ], ['remark.required_if' => 'Remark is required to return an activity for correction.']);
+        $promotionalActivity->load('creator:id,name,reportingid');
+        abort_if($promotionalActivity->approval_status !== 'closure_pending', 422, 'Activity is not waiting for review.');
+        abort_unless($this->canReview($promotionalActivity), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        app(PromotionalActivityExecution::class)->review($promotionalActivity, $request->status, $request->remark, auth()->user());
+
+        return response()->json(['success' => true, 'message' => $request->status === 'closed' ? 'Activity closed successfully.' : 'Activity returned for correction.']);
     }
 
     // Superadmin only. A completed activity's gifts go back into gift stock.
@@ -269,7 +273,7 @@ class PromotionalActivityWebController extends Controller
         $this->authorizeAccess();
         abort_unless(auth()->user()->hasRole('superadmin'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $filePaths = array_merge($promotionalActivity->activity_photos ?: [], $promotionalActivity->attachments ?: []);
+        $filePaths = array_merge($promotionalActivity->activity_photos ?: [], $promotionalActivity->attachments ?: [], $promotionalActivity->bills ?: []);
         DB::transaction(function () use ($promotionalActivity) {
             app(PromotionalGiftStock::class)->returnForActivity($promotionalActivity, auth()->id());
             $promotionalActivity->gifts()->detach();

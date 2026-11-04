@@ -16,6 +16,7 @@ class PromotionalActivity extends Model
         'reporting_manager_id', 'approved_rejected_by', 'approved_rejected_at',
         'approval_remark',
         'distributor_id', 'activity_photos', 'participants', 'execution_remark', 'completed_at',
+        'actual_expense', 'bills', 'execution_submitted_at', 'reviewed_by', 'reviewed_at', 'review_remark',
     ];
 
     protected $casts = [
@@ -28,6 +29,10 @@ class PromotionalActivity extends Model
         'activity_photos' => 'array',
         'participants' => 'array',
         'completed_at' => 'datetime',
+        'actual_expense' => 'decimal:2',
+        'bills' => 'array',
+        'execution_submitted_at' => 'datetime',
+        'reviewed_at' => 'datetime',
     ];
 
     public const MAX_ATTACHMENTS = 5;
@@ -47,6 +52,13 @@ class PromotionalActivity extends Model
     public static function decisionMessage(string $status): string
     {
         return $status === 'revision_required' ? 'Activity sent back for correction.' : 'Activity '.$status.' successfully.';
+    }
+
+    // Actual expense above the estimated budget is flagged to the reviewing manager.
+    public function isOverBudget(): bool
+    {
+        return $this->actual_expense !== null && $this->estimated_budget !== null
+            && (float) $this->actual_expense > (float) $this->estimated_budget;
     }
 
     // Push + in-app notification to everyone in the creator's reporting line (they can all approve).
@@ -93,6 +105,11 @@ class PromotionalActivity extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_rejected_by')->select('id', 'name');
+    }
+
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by')->select('id', 'name');
     }
 
     public function gifts()

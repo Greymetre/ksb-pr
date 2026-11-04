@@ -5,6 +5,7 @@
   body.fk-shell .fk-activity-status-tab::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--tab-color); }
   body.fk-shell .fk-activity-status-tab[data-status="pending"] { --tab-color: #ffb547; --tab-rgb: 255, 181, 71; }
   body.fk-shell .fk-activity-status-tab[data-status="approved"] { --tab-color: #4a9dff; --tab-rgb: 74, 157, 255; }
+  body.fk-shell .fk-activity-status-tab[data-status="closure_pending"] { --tab-color: #2dd4bf; --tab-rgb: 45, 212, 191; }
   body.fk-shell .fk-activity-status-tab[data-status="revision_required"] { --tab-color: #c084fc; --tab-rgb: 192, 132, 252; }
   body.fk-shell .fk-activity-status-tab[data-status="rejected"] { --tab-color: #ff5d7a; --tab-rgb: 255, 93, 122; }
   body.fk-shell .fk-activity-status-tab[data-status="completed"] { --tab-color: #12d18e; --tab-rgb: 18, 209, 142; }
@@ -15,6 +16,7 @@
   /* Alerts and confirms opened from the detail popup must show above it. */
   .swal2-container { z-index: 99999 !important; }
   body.fk-shell table.fk-glass-table tbody td .badge-info { border: 1px solid rgba(74, 157, 255, .38); background: rgba(74, 157, 255, .10); color: #4a9dff; }
+  body.fk-shell table.fk-glass-table tbody td .badge-primary { border: 1px solid rgba(45, 212, 191, .38); background: rgba(45, 212, 191, .10); color: #2dd4bf; }
   body.fk-shell table.fk-glass-table tbody td .badge-secondary { border: 1px solid rgba(192, 132, 252, .38); background: rgba(192, 132, 252, .10); color: #c084fc; }
 </style>
 <section class="fk-manual-listing">
@@ -31,6 +33,7 @@
       <button type="button" class="fk-activity-status-tab active" data-status="">All <span data-count="all">0</span></button>
       <button type="button" class="fk-activity-status-tab" data-status="pending">Pending <span data-count="pending">0</span></button>
       <button type="button" class="fk-activity-status-tab" data-status="approved">Approved <span data-count="approved">0</span></button>
+      <button type="button" class="fk-activity-status-tab" data-status="closure_pending">Closure Pending <span data-count="closure_pending">0</span></button>
       <button type="button" class="fk-activity-status-tab" data-status="revision_required">Revision Required <span data-count="revision_required">0</span></button>
       <button type="button" class="fk-activity-status-tab" data-status="rejected">Rejected <span data-count="rejected">0</span></button>
       <button type="button" class="fk-activity-status-tab" data-status="completed">Completed <span data-count="completed">0</span></button>
@@ -83,9 +86,21 @@
             <button type="button" class="btn btn-success activity-approval-btn" data-status="approved">Approve</button>
           </div>
         </div>
+        <div id="activityReviewBox" style="display:none;">
+          <hr>
+          <h5 class="mb-3" style="color:#e3ecff;font-weight:700;">Review Activity</h5>
+          <div class="form-group">
+            <label for="activityReviewRemark" class="col-form-label">Review Remark</label>
+            <textarea id="activityReviewRemark" class="form-control" rows="3" maxlength="1000" placeholder="Add remark (required to return for correction)"></textarea>
+          </div>
+          <div class="text-right">
+            <button type="button" class="btn btn-warning activity-review-btn" data-status="returned">Return for Correction</button>
+            <button type="button" class="btn btn-success activity-review-btn" data-status="closed">Close Activity</button>
+          </div>
+        </div>
         <form id="activityCompleteBox" style="display:none;" enctype="multipart/form-data">
           <hr>
-          <h5 class="mb-3" style="color:#e3ecff;font-weight:700;">Complete Activity</h5>
+          <h5 class="mb-3" style="color:#e3ecff;font-weight:700;">Activity Details &amp; Expenses</h5>
           <div class="form-group">
             <label class="col-form-label">Distributor <span class="text-danger">*</span></label>
             <select id="activityDistributor" class="form-control" style="width:100%;"><option value=""></option></select>
@@ -98,6 +113,17 @@
             <small class="text-muted ml-2" id="activityPhotoCount">No photo selected</small></div>
             <div id="activityPhotoPreview" class="d-flex flex-wrap mt-2"></div>
           </div>
+          <div class="form-group">
+            <label for="activityActualExpense" class="col-form-label">Actual Expense (₹) <span class="text-danger">*</span></label>
+            <input type="number" min="0" step="0.01" id="activityActualExpense" class="form-control" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label class="col-form-label">Bills / Invoices <small class="text-muted">(needed when expense is above 0; up to 5 images or PDFs, max 5 MB each)</small></label>
+            <input type="file" id="activityBills" accept="image/jpeg,image/png,image/webp,application/pdf" multiple style="display:none;">
+            <div><button type="button" class="btn btn-sm btn-info" id="chooseActivityBills"><i class="material-icons" style="font-size:18px;vertical-align:middle;">receipt_long</i> Choose Bills</button>
+            <small class="text-muted ml-2" id="activityBillCount">No bill selected</small></div>
+            <div id="activityBillList" class="mt-2"></div>
+          </div>
           <div class="d-flex align-items-center justify-content-between mb-2">
             <label class="col-form-label mb-0">Participants <span class="text-danger">*</span></label>
             <button type="button" class="btn btn-sm btn-info" id="addActivityParticipant">+ Add Participant</button>
@@ -107,7 +133,7 @@
             <label for="activityExecutionRemark" class="col-form-label">Execution Remark</label>
             <textarea id="activityExecutionRemark" class="form-control" rows="3" maxlength="1000" placeholder="Add remark (optional)"></textarea>
           </div>
-          <div class="text-right"><button type="submit" class="btn btn-success" id="completeActivityBtn">Complete Activity</button></div>
+          <div class="text-right"><button type="submit" class="btn btn-success" id="completeActivityBtn">Submit for Review</button></div>
         </form>
       </div>
     </div>
@@ -120,7 +146,7 @@ $(function () {
   function filters() { return { activity_type_id: $('#activity_type_filter').val(), date_from: $('#date_from').val(), date_to: $('#date_to').val(), approval_status: activeStatus }; }
   var table = $('#activityTable').DataTable({ processing: true, serverSide: true, order: [[2, 'desc']], ajax: { url: "{{ route('promotional-activities-crm.index') }}", data: function (data) { $.extend(data, filters()); } }, columns: [
     {data:'DT_RowIndex', orderable:false, searchable:false}, {data:'request_no', name:'request_no'}, {data:'activity_date', name:'activity_date'}, {data:'activity_type_name', name:'activityType.display_name', orderable:false}, {data:'creator_name', name:'creator.name', orderable:false}, {data:'location_name', name:'location_name'}, {data:'approval_status', name:'approval_status'}, {data:'distributor_name', orderable:false, searchable:false}, {data:'total_amount', orderable:false, searchable:false}, {data:'participants_count', orderable:false, searchable:false}, {data:'created_at', name:'created_at'}
-  ], drawCallback:function(){ var info=this.api().page.info(); $('#activityRecordCount').text((info.recordsDisplay||0)+' records'); $('#activityTableMeta').text('Live directory · page '+((info.page||0)+1)+' of '+(info.pages||1)); var counts=(this.api().ajax.json()||{}).status_counts||{}, total=0; $.each(['pending','approved','revision_required','rejected','completed'], function(i,key){ var value=parseInt(counts[key]||0,10); total+=value; $('#activityStatusTabs [data-count="'+key+'"]').text(value); }); $('#activityStatusTabs [data-count="all"]').text(total); }});
+  ], drawCallback:function(){ var info=this.api().page.info(); $('#activityRecordCount').text((info.recordsDisplay||0)+' records'); $('#activityTableMeta').text('Live directory · page '+((info.page||0)+1)+' of '+(info.pages||1)); var counts=(this.api().ajax.json()||{}).status_counts||{}, total=0; $.each(['pending','approved','closure_pending','revision_required','rejected','completed'], function(i,key){ var value=parseInt(counts[key]||0,10); total+=value; $('#activityStatusTabs [data-count="'+key+'"]').text(value); }); $('#activityStatusTabs [data-count="all"]').text(total); }});
   $('#activityStatusTabs').on('click', '.fk-activity-status-tab', function(){ activeStatus=$(this).data('status'); $('#activityStatusTabs .fk-activity-status-tab').removeClass('active'); $(this).addClass('active'); table.draw(); });
   var activeActivityId = null;
   function esc(value) { return $('<div>').text(value === null || value === undefined || value === '' ? '-' : value).html(); }
@@ -130,9 +156,10 @@ $(function () {
     if (!row) return;
     activeActivityId = row.id;
     $('#activityDetailBody').html('<p class="text-center">Loading...</p>');
-    $('#activityApprovalBox, #activityCompleteBox, #activityDeleteBox').hide();
-    $('#activityApprovalRemark, #activityExecutionRemark').val('');
-    selectedPhotos = []; renderPhotos();
+    $('#activityApprovalBox, #activityCompleteBox, #activityDeleteBox, #activityReviewBox').hide();
+    $('#activityApprovalRemark, #activityExecutionRemark, #activityReviewRemark, #activityActualExpense').val('');
+    selectedPhotos = []; keptPhotos = []; renderPhotos();
+    selectedBills = []; keptBills = []; renderBills();
     $('#activityGiftRows, #activityParticipantRows').empty();
     $('#activityDistributor').val('');
     $('#activityDetailModal').modal('show');
@@ -151,6 +178,11 @@ $(function () {
       if (d.gifts.length && !d.can_approve) html += '<div class="mb-3"><small class="text-muted d-block">Gifts</small>' + d.gifts.map(function (g) { return esc(g.name) + ' × ' + esc(g.quantity); }).join('<br>') + '</div>';
       if (d.participants.length) html += '<div class="mb-3"><small class="text-muted d-block">Participants</small>' + d.participants.map(function (p) { return esc(p.name) + ' (' + esc(p.mobile) + ') - ' + esc(p.address); }).join('<br>') + '</div>';
       if (d.execution_remark) html += '<div class="mb-3"><small class="text-muted d-block">Execution Remark</small>' + esc(d.execution_remark) + '</div>';
+      if (d.actual_expense !== null) html += '<div class="row">' + detailRow('Actual Expense', d.actual_expense) + detailRow('Estimated Budget', d.estimated_budget) + detailRow('Submitted For Review', d.execution_submitted_at) + '</div>'
+        + (d.over_budget ? '<div class="alert alert-warning py-2">Actual expense is over the estimated budget.</div>' : '');
+      if (d.bills.length) html += '<div class="mb-3"><small class="text-muted d-block">Bills</small>' + d.bills.map(function (b) { return '<a href="' + esc(b.url) + '" target="_blank">' + esc(b.name) + '</a>'; }).join('<br>') + '</div>';
+      if (d.reviewed_by) html += '<div class="row">' + detailRow(d.approval_status === 'completed' ? 'Closed By' : 'Returned By', d.reviewed_by) + detailRow(d.approval_status === 'completed' ? 'Closed At' : 'Returned At', d.reviewed_at) + '</div>';
+      if (d.review_remark) html += '<div class="mb-3"><small class="text-muted d-block">' + (d.approval_status === 'approved' ? 'Returned For Correction' : 'Review Remark') + '</small>' + esc(d.review_remark) + '</div>';
       if (d.photos.length) html += '<div class="mb-3"><small class="text-muted d-block">Photos</small>' + d.photos.map(function (url) { return '<a href="' + esc(url) + '" target="_blank"><img src="' + esc(url) + '" style="width:90px;height:90px;object-fit:cover;border-radius:8px;margin:4px 6px 0 0;"></a>'; }).join('') + '</div>';
       $('#activityDetailBody').html(html);
       availableGifts = d.available_gifts || [];
@@ -159,8 +191,14 @@ $(function () {
         $('#activityApprovalBox').show();
       }
       if (d.can_delete) $('#activityDeleteBox').show();
+      if (d.can_review) $('#activityReviewBox').show();
       if (d.can_complete) {
-        addParticipantRow();
+        // A submission the manager returned is prefilled for correction.
+        if (d.participants.length) d.participants.forEach(function (p) { addParticipantRow(p); }); else addParticipantRow();
+        $('#activityExecutionRemark').val(d.execution_remark || '');
+        $('#activityActualExpense').val(d.actual_expense !== null ? String(d.actual_expense).replace(/,/g, '') : '');
+        keptPhotos = d.photo_files || []; renderPhotos();
+        keptBills = d.bills || []; renderBills();
         loadDistributors(d.id, d.distributor_id, d.distributor);
         $('#activityCompleteBox').show();
       }
@@ -177,15 +215,19 @@ $(function () {
       + '<div class="col-3"><input type="number" min="1" class="form-control gift-qty" placeholder="Qty" value="' + (quantity || 1) + '"></div>'
       + '<div class="col-2 text-right"><button type="button" class="btn btn-sm btn-danger remove-row">×</button></div></div>');
   }
-  function addParticipantRow() {
+  function addParticipantRow(participant) {
     if ($('#activityParticipantRows .activity-participant-row').length >= 50) return;
-    $('#activityParticipantRows').append('<div class="form-row align-items-center mb-2 activity-participant-row"><div class="col-md-3"><input type="text" maxlength="150" class="form-control participant-name" placeholder="Name"></div>'
+    var row = $('<div class="form-row align-items-center mb-2 activity-participant-row"><div class="col-md-3"><input type="text" maxlength="150" class="form-control participant-name" placeholder="Name"></div>'
       + '<div class="col-md-3"><input type="text" maxlength="10" class="form-control participant-mobile" placeholder="Mobile (10 digits)"></div>'
       + '<div class="col-md-5"><input type="text" maxlength="255" class="form-control participant-address" placeholder="Address"></div>'
       + '<div class="col-md-1 text-right"><button type="button" class="btn btn-sm btn-danger remove-row">×</button></div></div>');
+    if (participant && participant.name) {
+      row.find('.participant-name').val(participant.name); row.find('.participant-mobile').val(participant.mobile); row.find('.participant-address').val(participant.address);
+    }
+    $('#activityParticipantRows').append(row);
   }
   $('#addActivityGift').on('click', function () { addGiftRow('', 1); });
-  $('#addActivityParticipant').on('click', addParticipantRow);
+  $('#addActivityParticipant').on('click', function () { addParticipantRow(); });
   $('#activityDetailModal').on('click', '.remove-row', function () { $(this).closest('.form-row').remove(); });
   // Distributors are loaded when the popup opens so the full list shows by default; select2 searches it locally.
   // select2 is set up only after the list loads: initialising it on page load lets the layout's global
@@ -214,28 +256,74 @@ $(function () {
       Swal.fire(errorMessage(xhr, 'Unable to load distributors'), '', 'error');
     });
   }
-  var selectedPhotos = [];
+  // keptPhotos / keptBills: files of a returned submission, kept unless removed.
+  var selectedPhotos = [], keptPhotos = [];
   function renderPhotos() {
     var preview = $('#activityPhotoPreview').empty();
+    keptPhotos.forEach(function (photo, index) {
+      var item = $('<div style="position:relative;margin:0 8px 8px 0;"></div>');
+      item.append($('<img style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid rgba(90,130,220,.35);">').attr('src', photo.url));
+      item.append('<button type="button" class="btn btn-danger btn-sm remove-kept-photo" data-index="' + index + '" style="position:absolute;top:-8px;right:-8px;padding:0 7px;border-radius:50%;min-width:0;">×</button>');
+      preview.append(item);
+    });
     selectedPhotos.forEach(function (file, index) {
       var item = $('<div style="position:relative;margin:0 8px 8px 0;"></div>');
       item.append($('<img style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid rgba(90,130,220,.35);">').attr('src', URL.createObjectURL(file)));
       item.append('<button type="button" class="btn btn-danger btn-sm remove-photo" data-index="' + index + '" style="position:absolute;top:-8px;right:-8px;padding:0 7px;border-radius:50%;min-width:0;">×</button>');
       preview.append(item);
     });
-    $('#activityPhotoCount').text(selectedPhotos.length ? selectedPhotos.length + ' of 3 photos selected' : 'No photo selected');
-    $('#chooseActivityPhotos').prop('disabled', selectedPhotos.length >= 3);
+    var count = keptPhotos.length + selectedPhotos.length;
+    $('#activityPhotoCount').text(count ? count + ' of 3 photos selected' : 'No photo selected');
+    $('#chooseActivityPhotos').prop('disabled', count >= 3);
   }
   $('#chooseActivityPhotos').on('click', function () { $('#activityPhotos').trigger('click'); });
   $('#activityPhotos').on('change', function () {
     var files = Array.prototype.slice.call(this.files || []);
-    var skipped = files.length > 3 - selectedPhotos.length;
-    selectedPhotos = selectedPhotos.concat(files.slice(0, 3 - selectedPhotos.length));
+    var room = 3 - keptPhotos.length - selectedPhotos.length, skipped = files.length > room;
+    selectedPhotos = selectedPhotos.concat(files.slice(0, Math.max(room, 0)));
     $(this).val('');
     renderPhotos();
     if (skipped) Swal.fire('Only 3 photos can be uploaded', '', 'warning');
   });
   $('#activityPhotoPreview').on('click', '.remove-photo', function () { selectedPhotos.splice($(this).data('index'), 1); renderPhotos(); });
+  $('#activityPhotoPreview').on('click', '.remove-kept-photo', function () { keptPhotos.splice($(this).data('index'), 1); renderPhotos(); });
+  var selectedBills = [], keptBills = [];
+  function renderBills() {
+    var list = $('#activityBillList').empty();
+    function billRow(name, cls, index) { return $('<div class="mb-1"></div>').text(name).append(' <button type="button" class="btn btn-danger btn-sm ' + cls + '" data-index="' + index + '" style="padding:0 7px;min-width:0;">×</button>'); }
+    keptBills.forEach(function (bill, index) { list.append(billRow(bill.name, 'remove-kept-bill', index)); });
+    selectedBills.forEach(function (file, index) { list.append(billRow(file.name, 'remove-bill', index)); });
+    var count = keptBills.length + selectedBills.length;
+    $('#activityBillCount').text(count ? count + ' of 5 bills selected' : 'No bill selected');
+    $('#chooseActivityBills').prop('disabled', count >= 5);
+  }
+  $('#chooseActivityBills').on('click', function () { $('#activityBills').trigger('click'); });
+  $('#activityBills').on('change', function () {
+    var files = Array.prototype.slice.call(this.files || []);
+    var room = 5 - keptBills.length - selectedBills.length, skipped = files.length > room;
+    selectedBills = selectedBills.concat(files.slice(0, Math.max(room, 0)));
+    $(this).val('');
+    renderBills();
+    if (skipped) Swal.fire('Only 5 bills can be uploaded', '', 'warning');
+  });
+  $('#activityBillList').on('click', '.remove-bill', function () { selectedBills.splice($(this).data('index'), 1); renderBills(); });
+  $('#activityBillList').on('click', '.remove-kept-bill', function () { keptBills.splice($(this).data('index'), 1); renderBills(); });
+  $('.activity-review-btn').on('click', function () {
+    var status = $(this).data('status');
+    if (status === 'returned' && !$.trim($('#activityReviewRemark').val())) { Swal.fire('Please add a remark saying what to correct', '', 'warning'); return; }
+    var buttons = $('.activity-review-btn').prop('disabled', true);
+    $.ajax({
+      url: "{{ url('promotional-activities-crm') }}/" + activeActivityId + '/review', method: 'POST',
+      headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+      data: { status: status, remark: $('#activityReviewRemark').val() }
+    }).done(function (response) {
+      $('#activityDetailModal').modal('hide');
+      Swal.fire(response.message, '', 'success');
+      table.draw(false);
+    }).fail(function (xhr) {
+      Swal.fire(errorMessage(xhr, 'Unable to review activity'), '', 'error');
+    }).always(function () { buttons.prop('disabled', false); });
+  });
   function errorMessage(xhr, fallback) {
     var json = xhr.responseJSON || {};
     if (json.errors) return Object.values(json.errors)[0][0];
@@ -265,20 +353,27 @@ $(function () {
   });
   $('#activityCompleteBox').on('submit', function (e) {
     e.preventDefault();
-    var photos = selectedPhotos, participants = [], participantError = false;
+    var participants = [], participantError = false, photoCount = keptPhotos.length + selectedPhotos.length;
+    var expense = $.trim($('#activityActualExpense').val());
     $('#activityParticipantRows .activity-participant-row').each(function () {
       var p = { name: $.trim($(this).find('.participant-name').val()), mobile: $.trim($(this).find('.participant-mobile').val()), address: $.trim($(this).find('.participant-address').val()) };
       if (!p.name || !/^[0-9]{10}$/.test(p.mobile) || !p.address) participantError = true;
       participants.push(p);
     });
     if (!$('#activityDistributor').val()) { Swal.fire('Please select a distributor', '', 'warning'); return; }
-    if (!photos.length || photos.length > 3) { Swal.fire('Please upload 1 to 3 photos', '', 'warning'); return; }
+    if (!photoCount || photoCount > 3) { Swal.fire('Please upload 1 to 3 photos', '', 'warning'); return; }
+    if (expense === '' || !(parseFloat(expense) >= 0)) { Swal.fire('Please enter the actual expense', '', 'warning'); return; }
+    if (parseFloat(expense) > 0 && !(keptBills.length + selectedBills.length)) { Swal.fire('Please upload at least one bill for the expense', '', 'warning'); return; }
     if (!participants.length || participantError) { Swal.fire('Fill name, 10 digit mobile and address for every participant', '', 'warning'); return; }
     var formData = new FormData();
     formData.append('distributor_id', $('#activityDistributor').val());
     formData.append('participants', JSON.stringify(participants));
     formData.append('execution_remark', $.trim($('#activityExecutionRemark').val()));
-    $.each(photos, function (i, file) { formData.append('photos[]', file); });
+    formData.append('actual_expense', expense);
+    $.each(selectedPhotos, function (i, file) { formData.append('photos[]', file); });
+    $.each(keptPhotos, function (i, photo) { formData.append('keep_photos[]', photo.path); });
+    $.each(selectedBills, function (i, file) { formData.append('bills[]', file); });
+    $.each(keptBills, function (i, bill) { formData.append('keep_bills[]', bill.path); });
     var button = $('#completeActivityBtn').prop('disabled', true);
     $.ajax({
       url: "{{ url('promotional-activities-crm') }}/" + activeActivityId + '/complete', method: 'POST', data: formData, processData: false, contentType: false,
@@ -288,7 +383,7 @@ $(function () {
       Swal.fire(response.message, '', 'success');
       table.draw(false);
     }).fail(function (xhr) {
-      Swal.fire(errorMessage(xhr, 'Unable to complete activity'), '', 'error');
+      Swal.fire(errorMessage(xhr, 'Unable to submit activity details'), '', 'error');
     }).always(function () { button.prop('disabled', false); });
   });
   $('#deleteActivityBtn').on('click', function () {
