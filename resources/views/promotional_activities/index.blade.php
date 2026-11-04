@@ -150,6 +150,13 @@ $(function () {
   $('#activityStatusTabs').on('click', '.fk-activity-status-tab', function(){ activeStatus=$(this).data('status'); $('#activityStatusTabs .fk-activity-status-tab').removeClass('active'); $(this).addClass('active'); table.draw(); });
   var activeActivityId = null;
   function esc(value) { return $('<div>').text(value === null || value === undefined || value === '' ? '-' : value).html(); }
+  // Images show as thumbnails like the photos; other files (PDF) as a link with the file name.
+  function fileLinks(files) {
+    return files.map(function (f) {
+      if (/\.(jpe?g|png|webp)$/i.test(f.name)) return '<a href="' + esc(f.url) + '" target="_blank"><img src="' + esc(f.url) + '" style="width:90px;height:90px;object-fit:cover;border-radius:8px;margin:4px 6px 0 0;"></a>';
+      return '<a href="' + esc(f.url) + '" target="_blank" class="d-inline-block mr-2 mt-1"><i class="material-icons" style="font-size:18px;vertical-align:middle;">picture_as_pdf</i> ' + esc(f.name) + '</a>';
+    }).join('');
+  }
   function detailRow(label, value) { return '<div class="col-md-4 mb-3"><small class="text-muted d-block">' + label + '</small><strong>' + esc(value) + '</strong></div>'; }
   $('#activityTable tbody').css('cursor', 'pointer').on('click', 'tr', function () {
     var row = table.row(this).data();
@@ -173,14 +180,14 @@ $(function () {
         + (d.approved_rejected_by ? detailRow(decisionLabel + ' By', d.approved_rejected_by) + detailRow(decisionLabel + ' At', d.approved_rejected_at) : '') + '</div>'
         + '<div class="mb-3"><small class="text-muted d-block">Purpose</small>' + esc(d.purpose) + '</div>'
         + '<div class="mb-3"><small class="text-muted d-block">Remark</small>' + esc(d.remark) + '</div>';
-      if (d.attachments.length) html += '<div class="mb-3"><small class="text-muted d-block">Attachments</small>' + d.attachments.map(function (a) { return '<a href="' + esc(a.url) + '" target="_blank">' + esc(a.name) + '</a>'; }).join('<br>') + '</div>';
+      if (d.attachments.length) html += '<div class="mb-3"><small class="text-muted d-block">Attachments</small>' + fileLinks(d.attachments) + '</div>';
       if (d.approval_remark) html += '<div class="mb-3"><small class="text-muted d-block">Approval Remark</small>' + esc(d.approval_remark) + '</div>';
       if (d.gifts.length && !d.can_approve) html += '<div class="mb-3"><small class="text-muted d-block">Gifts</small>' + d.gifts.map(function (g) { return esc(g.name) + ' × ' + esc(g.quantity); }).join('<br>') + '</div>';
       if (d.participants.length) html += '<div class="mb-3"><small class="text-muted d-block">Participants</small>' + d.participants.map(function (p) { return esc(p.name) + ' (' + esc(p.mobile) + ') - ' + esc(p.address); }).join('<br>') + '</div>';
       if (d.execution_remark) html += '<div class="mb-3"><small class="text-muted d-block">Execution Remark</small>' + esc(d.execution_remark) + '</div>';
       if (d.actual_expense !== null) html += '<div class="row">' + detailRow('Actual Expense', d.actual_expense) + detailRow('Estimated Budget', d.estimated_budget) + detailRow('Submitted For Review', d.execution_submitted_at) + '</div>'
         + (d.over_budget ? '<div class="alert alert-warning py-2">Actual expense is over the estimated budget.</div>' : '');
-      if (d.bills.length) html += '<div class="mb-3"><small class="text-muted d-block">Bills</small>' + d.bills.map(function (b) { return '<a href="' + esc(b.url) + '" target="_blank">' + esc(b.name) + '</a>'; }).join('<br>') + '</div>';
+      if (d.bills.length) html += '<div class="mb-3"><small class="text-muted d-block">Bills</small>' + fileLinks(d.bills) + '</div>';
       if (d.reviewed_by) html += '<div class="row">' + detailRow(d.approval_status === 'completed' ? 'Closed By' : 'Returned By', d.reviewed_by) + detailRow(d.approval_status === 'completed' ? 'Closed At' : 'Returned At', d.reviewed_at) + '</div>';
       if (d.review_remark) html += '<div class="mb-3"><small class="text-muted d-block">' + (d.approval_status === 'approved' ? 'Returned For Correction' : 'Review Remark') + '</small>' + esc(d.review_remark) + '</div>';
       if (d.photos.length) html += '<div class="mb-3"><small class="text-muted d-block">Photos</small>' + d.photos.map(function (url) { return '<a href="' + esc(url) + '" target="_blank"><img src="' + esc(url) + '" style="width:90px;height:90px;object-fit:cover;border-radius:8px;margin:4px 6px 0 0;"></a>'; }).join('') + '</div>';
