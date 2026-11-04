@@ -39,7 +39,7 @@
       <button type="button" class="fk-activity-status-tab" data-status="completed">Completed <span data-count="completed">0</span></button>
     </div>
     <div class="table-responsive"><table class="table fk-glass-table" id="activityTable"><thead><tr>
-      <th>#</th><th>Request ID</th><th>Activity Date</th><th>Activity Type</th><th>Created By</th><th>Location</th><th>Status</th><th>Distributor</th><th>Total Amount</th><th>Participants</th><th>Created At</th>
+      <th>#</th><th>Request ID</th><th>Proposed Date</th><th>Activity Type</th><th>Created By</th><th>Location</th><th>Status</th><th>Distributor</th><th>Total Amount</th><th>Participants</th><th>Created At</th>
     </tr></thead></table></div>
   </div></div>
 </section>
@@ -173,7 +173,7 @@ $(function () {
     $.get("{{ url('promotional-activities-crm') }}/" + row.id).done(function (response) {
       var d = response.data;
       var decisionLabel = { rejected: 'Rejected', revision_required: 'Sent Back' }[d.approval_status] || 'Approved';
-      var html = '<div class="row">' + detailRow('Request ID', d.request_no) + detailRow('Activity Type', d.activity_type) + detailRow('Activity Date', d.activity_date) + detailRow('Location', d.location_name)
+      var html = '<div class="row">' + detailRow('Request ID', d.request_no) + detailRow('Activity Type', d.activity_type) + detailRow('Proposed Date', d.activity_date) + detailRow('Location', d.location_name)
         + detailRow('Created By', d.creator) + detailRow('Reporting Manager', d.reporting_manager) + detailRow('Status', (d.approval_status || '').replace(/_/g, ' ').toUpperCase())
         + detailRow('Estimated Budget', d.estimated_budget) + detailRow('Company Share', d.company_share) + detailRow('Distributor Share', d.distributor_share) + detailRow('Total Amount', d.total_amount)
         + detailRow('Created At', d.created_at) + (d.distributor ? detailRow('Distributor', d.distributor) : '')

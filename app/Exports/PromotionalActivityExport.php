@@ -13,7 +13,7 @@ class PromotionalActivityExport implements FromQuery, WithHeadings, WithMapping,
     public function query() { return $this->activityQuery->latest('activity_date'); }
     public function headings(): array
     {
-        return ['Request ID', 'Activity Date', 'Activity Type', 'Created By', 'Location', 'Purpose', 'Status', 'Distributor', 'Estimated Budget', 'Company Share', 'Distributor Share', 'Total', 'Actual Expense', 'Over Budget', 'Participants', 'Created At'];
+        return ['Request ID', 'Proposed Date', 'Activity Type', 'Created By', 'Location', 'Purpose', 'Status', 'Distributor', 'Estimated Budget', 'Company Share', 'Distributor Share', 'Total', 'Actual Expense', 'Over Budget', 'Participants', 'Created At'];
     }
     public function map($row): array
     {
