@@ -5,6 +5,7 @@
   body.fk-shell .fk-activity-status-tab::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--tab-color); }
   body.fk-shell .fk-activity-status-tab[data-status="pending"] { --tab-color: #ffb547; --tab-rgb: 255, 181, 71; }
   body.fk-shell .fk-activity-status-tab[data-status="approved"] { --tab-color: #4a9dff; --tab-rgb: 74, 157, 255; }
+  body.fk-shell .fk-activity-status-tab[data-status="revision_required"] { --tab-color: #c084fc; --tab-rgb: 192, 132, 252; }
   body.fk-shell .fk-activity-status-tab[data-status="rejected"] { --tab-color: #ff5d7a; --tab-rgb: 255, 93, 122; }
   body.fk-shell .fk-activity-status-tab[data-status="completed"] { --tab-color: #12d18e; --tab-rgb: 18, 209, 142; }
   body.fk-shell .fk-activity-status-tab span { min-width: 24px; height: 20px; line-height: 20px; padding: 0 7px; border-radius: 999px; background: rgba(90, 130, 220, .18); color: #cbd9ff; font-size: 11px; text-align: center; }
@@ -14,6 +15,7 @@
   /* Alerts and confirms opened from the detail popup must show above it. */
   .swal2-container { z-index: 99999 !important; }
   body.fk-shell table.fk-glass-table tbody td .badge-info { border: 1px solid rgba(74, 157, 255, .38); background: rgba(74, 157, 255, .10); color: #4a9dff; }
+  body.fk-shell table.fk-glass-table tbody td .badge-secondary { border: 1px solid rgba(192, 132, 252, .38); background: rgba(192, 132, 252, .10); color: #c084fc; }
 </style>
 <section class="fk-manual-listing">
   <div class="fk-list-page-head">
@@ -29,6 +31,7 @@
       <button type="button" class="fk-activity-status-tab active" data-status="">All <span data-count="all">0</span></button>
       <button type="button" class="fk-activity-status-tab" data-status="pending">Pending <span data-count="pending">0</span></button>
       <button type="button" class="fk-activity-status-tab" data-status="approved">Approved <span data-count="approved">0</span></button>
+      <button type="button" class="fk-activity-status-tab" data-status="revision_required">Revision Required <span data-count="revision_required">0</span></button>
       <button type="button" class="fk-activity-status-tab" data-status="rejected">Rejected <span data-count="rejected">0</span></button>
       <button type="button" class="fk-activity-status-tab" data-status="completed">Completed <span data-count="completed">0</span></button>
     </div>
@@ -72,10 +75,11 @@
           <div id="activityGiftRows"></div>
           <div class="form-group">
             <label for="activityApprovalRemark" class="col-form-label">Remark</label>
-            <textarea id="activityApprovalRemark" class="form-control" rows="3" maxlength="1000" placeholder="Add remark (required to reject)"></textarea>
+            <textarea id="activityApprovalRemark" class="form-control" rows="3" maxlength="1000" placeholder="Add remark (required to reject or send back)"></textarea>
           </div>
           <div class="text-right">
             <button type="button" class="btn btn-danger activity-approval-btn" data-status="rejected">Reject</button>
+            <button type="button" class="btn btn-warning activity-approval-btn" data-status="revision_required">Send Back for Correction</button>
             <button type="button" class="btn btn-success activity-approval-btn" data-status="approved">Approve</button>
           </div>
         </div>
@@ -116,7 +120,7 @@ $(function () {
   function filters() { return { activity_type_id: $('#activity_type_filter').val(), date_from: $('#date_from').val(), date_to: $('#date_to').val(), approval_status: activeStatus }; }
   var table = $('#activityTable').DataTable({ processing: true, serverSide: true, order: [[2, 'desc']], ajax: { url: "{{ route('promotional-activities-crm.index') }}", data: function (data) { $.extend(data, filters()); } }, columns: [
     {data:'DT_RowIndex', orderable:false, searchable:false}, {data:'request_no', name:'request_no'}, {data:'activity_date', name:'activity_date'}, {data:'activity_type_name', name:'activityType.display_name', orderable:false}, {data:'creator_name', name:'creator.name', orderable:false}, {data:'location_name', name:'location_name'}, {data:'approval_status', name:'approval_status'}, {data:'distributor_name', orderable:false, searchable:false}, {data:'total_amount', orderable:false, searchable:false}, {data:'participants_count', orderable:false, searchable:false}, {data:'created_at', name:'created_at'}
-  ], drawCallback:function(){ var info=this.api().page.info(); $('#activityRecordCount').text((info.recordsDisplay||0)+' records'); $('#activityTableMeta').text('Live directory · page '+((info.page||0)+1)+' of '+(info.pages||1)); var counts=(this.api().ajax.json()||{}).status_counts||{}, total=0; $.each(['pending','approved','rejected','completed'], function(i,key){ var value=parseInt(counts[key]||0,10); total+=value; $('#activityStatusTabs [data-count="'+key+'"]').text(value); }); $('#activityStatusTabs [data-count="all"]').text(total); }});
+  ], drawCallback:function(){ var info=this.api().page.info(); $('#activityRecordCount').text((info.recordsDisplay||0)+' records'); $('#activityTableMeta').text('Live directory · page '+((info.page||0)+1)+' of '+(info.pages||1)); var counts=(this.api().ajax.json()||{}).status_counts||{}, total=0; $.each(['pending','approved','revision_required','rejected','completed'], function(i,key){ var value=parseInt(counts[key]||0,10); total+=value; $('#activityStatusTabs [data-count="'+key+'"]').text(value); }); $('#activityStatusTabs [data-count="all"]').text(total); }});
   $('#activityStatusTabs').on('click', '.fk-activity-status-tab', function(){ activeStatus=$(this).data('status'); $('#activityStatusTabs .fk-activity-status-tab').removeClass('active'); $(this).addClass('active'); table.draw(); });
   var activeActivityId = null;
   function esc(value) { return $('<div>').text(value === null || value === undefined || value === '' ? '-' : value).html(); }
@@ -134,11 +138,12 @@ $(function () {
     $('#activityDetailModal').modal('show');
     $.get("{{ url('promotional-activities-crm') }}/" + row.id).done(function (response) {
       var d = response.data;
+      var decisionLabel = { rejected: 'Rejected', revision_required: 'Sent Back' }[d.approval_status] || 'Approved';
       var html = '<div class="row">' + detailRow('Request ID', d.request_no) + detailRow('Activity Type', d.activity_type) + detailRow('Activity Date', d.activity_date) + detailRow('Location', d.location_name)
         + detailRow('Created By', d.creator) + detailRow('Reporting Manager', d.reporting_manager) + detailRow('Status', (d.approval_status || '').replace(/_/g, ' ').toUpperCase())
         + detailRow('Estimated Budget', d.estimated_budget) + detailRow('Company Share', d.company_share) + detailRow('Distributor Share', d.distributor_share) + detailRow('Total Amount', d.total_amount)
         + detailRow('Created At', d.created_at) + (d.distributor ? detailRow('Distributor', d.distributor) : '')
-        + (d.approved_rejected_by ? detailRow(d.approval_status === 'rejected' ? 'Rejected By' : 'Approved By', d.approved_rejected_by) + detailRow(d.approval_status === 'rejected' ? 'Rejected At' : 'Approved At', d.approved_rejected_at) : '') + '</div>'
+        + (d.approved_rejected_by ? detailRow(decisionLabel + ' By', d.approved_rejected_by) + detailRow(decisionLabel + ' At', d.approved_rejected_at) : '') + '</div>'
         + '<div class="mb-3"><small class="text-muted d-block">Purpose</small>' + esc(d.purpose) + '</div>'
         + '<div class="mb-3"><small class="text-muted d-block">Remark</small>' + esc(d.remark) + '</div>';
       if (d.attachments.length) html += '<div class="mb-3"><small class="text-muted d-block">Attachments</small>' + d.attachments.map(function (a) { return '<a href="' + esc(a.url) + '" target="_blank">' + esc(a.name) + '</a>'; }).join('<br>') + '</div>';
@@ -238,7 +243,7 @@ $(function () {
   }
   $('.activity-approval-btn').on('click', function () {
     var status = $(this).data('status');
-    if (status === 'rejected' && !$.trim($('#activityApprovalRemark').val())) { Swal.fire('Please add a remark to reject', '', 'warning'); return; }
+    if (status !== 'approved' && !$.trim($('#activityApprovalRemark').val())) { Swal.fire(status === 'rejected' ? 'Please add a remark to reject' : 'Please add a remark saying what to correct', '', 'warning'); return; }
     var gifts = [], giftError = false;
     $('#activityGiftRows .activity-gift-row').each(function () {
       var id = $(this).find('.gift-id').val(), qty = parseInt($(this).find('.gift-qty').val(), 10);

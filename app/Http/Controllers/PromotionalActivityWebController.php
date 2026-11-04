@@ -57,7 +57,7 @@ class PromotionalActivityWebController extends Controller
                 ->addColumn('total_amount', fn ($row) => number_format((float) $row->company_share + (float) $row->distributor_share, 2))
                 ->addColumn('participants_count', fn ($row) => count($row->participants ?: []))
                 ->editColumn('activity_date', fn ($row) => $row->activity_date ? $row->activity_date->format('d-M-Y') : '-')
-                ->editColumn('approval_status', fn ($row) => '<span class="badge badge-'.($row->approval_status === 'completed' ? 'success' : ($row->approval_status === 'rejected' ? 'danger' : ($row->approval_status === 'approved' ? 'info' : 'warning'))).'">'.ucwords(str_replace('_', ' ', $row->approval_status)).'</span>')
+                ->editColumn('approval_status', fn ($row) => '<span class="badge badge-'.($row->approval_status === 'completed' ? 'success' : ($row->approval_status === 'rejected' ? 'danger' : ($row->approval_status === 'approved' ? 'info' : ($row->approval_status === 'revision_required' ? 'secondary' : 'warning')))).'">'.ucwords(str_replace('_', ' ', $row->approval_status)).'</span>')
                 ->editColumn('created_at', fn ($row) => showdatetimeformat($row->created_at))
                 ->rawColumns(['approval_status'])->make(true);
         }
@@ -139,12 +139,12 @@ class PromotionalActivityWebController extends Controller
     {
         $this->authorizeAccess();
         $request->validate([
-            'status' => ['required', Rule::in(['approved', 'rejected'])],
-            'remark' => 'required_if:status,rejected|nullable|string|max:1000',
+            'status' => ['required', Rule::in(PromotionalActivity::DECISIONS)],
+            'remark' => 'required_unless:status,approved|nullable|string|max:1000',
             'gifts' => 'nullable|array',
             'gifts.*.gift_id' => 'required|integer|exists:promotional_gifts,id',
             'gifts.*.quantity' => 'required|integer|min:1',
-        ], ['remark.required_if' => 'Remark is required to reject an activity.']);
+        ], ['remark.required_unless' => 'Remark is required to reject or send back an activity.']);
         $promotionalActivity->load('creator:id,name,reportingid');
         abort_if($promotionalActivity->approval_status !== 'pending', 422, 'Activity has already been actioned.');
         abort_unless($this->canApprove($promotionalActivity), Response::HTTP_FORBIDDEN, '403 Forbidden');
@@ -175,8 +175,9 @@ class PromotionalActivityWebController extends Controller
                 'approval_remark' => $request->remark,
             ]);
         });
+        $promotionalActivity->notifyCreatorOfDecision();
 
-        return response()->json(['success' => true, 'message' => 'Activity '.$request->status.' successfully.']);
+        return response()->json(['success' => true, 'message' => PromotionalActivity::decisionMessage($request->status)]);
     }
 
     // Distributor/dealer customers assigned to the activity creator or their team, as the app's execution form lists them.

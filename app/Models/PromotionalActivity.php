@@ -30,6 +30,10 @@ class PromotionalActivity extends Model
         'completed_at' => 'datetime',
     ];
 
+    public const MAX_ATTACHMENTS = 5;
+
+    public const DECISIONS = ['approved', 'rejected', 'revision_required'];
+
     // Activity Request ID, e.g. PA-00012, given once the row has its id.
     protected static function booted()
     {
@@ -38,6 +42,37 @@ class PromotionalActivity extends Model
                 $activity->forceFill(['request_no' => 'PA-' . str_pad($activity->id, 5, '0', STR_PAD_LEFT)])->saveQuietly();
             }
         });
+    }
+
+    public static function decisionMessage(string $status): string
+    {
+        return $status === 'revision_required' ? 'Activity sent back for correction.' : 'Activity '.$status.' successfully.';
+    }
+
+    // Push + in-app notification to everyone in the creator's reporting line (they can all approve).
+    public function notifyManagers(string $message, string $title): void
+    {
+        $creator = User::select('id', 'reportingid')->find($this->created_by);
+        $managerIds = collect(explode(',', (string) optional($creator)->reportingid))
+            ->map(fn ($id) => trim($id))->filter(fn ($id) => ctype_digit($id))
+            ->map(fn ($id) => (int) $id)->reject(fn ($id) => $id === (int) $this->created_by)->unique();
+
+        foreach ($managerIds as $managerId) {
+            SendPushNotification($managerId, $message, 'promotional_activity', $this->id, $title);
+        }
+    }
+
+    // Tells the creator what the manager decided, with the manager's remark.
+    public function notifyCreatorOfDecision(): void
+    {
+        [$title, $message] = match ($this->approval_status) {
+            'approved' => ['Promotional activity approved', 'Your promotional activity '.$this->request_no.' has been approved.'],
+            'rejected' => ['Promotional activity rejected', 'Your promotional activity '.$this->request_no.' has been rejected.'],
+            'revision_required' => ['Promotional activity needs correction', 'Your promotional activity '.$this->request_no.' has been sent back for correction.'],
+        };
+        if ($this->approval_remark) $message .= ' Remark: '.$this->approval_remark;
+
+        SendPushNotification($this->created_by, $message, 'promotional_activity', $this->id, $title);
     }
 
     public function activityType()
