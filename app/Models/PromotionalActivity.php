@@ -10,8 +10,9 @@ class PromotionalActivity extends Model
     use HasFactory;
 
     protected $fillable = [
-        'activity_status_id', 'activity_date', 'location_name', 'company_share',
-        'distributor_share', 'remark', 'approval_status', 'created_by',
+        'request_no', 'activity_status_id', 'activity_date', 'location_name', 'purpose',
+        'estimated_budget', 'company_share', 'distributor_share', 'remark', 'attachments',
+        'approval_status', 'created_by',
         'reporting_manager_id', 'approved_rejected_by', 'approved_rejected_at',
         'approval_remark',
         'distributor_id', 'activity_photos', 'participants', 'execution_remark', 'completed_at',
@@ -19,13 +20,25 @@ class PromotionalActivity extends Model
 
     protected $casts = [
         'activity_date' => 'date',
+        'estimated_budget' => 'decimal:2',
         'company_share' => 'decimal:2',
         'distributor_share' => 'decimal:2',
+        'attachments' => 'array',
         'approved_rejected_at' => 'datetime',
         'activity_photos' => 'array',
         'participants' => 'array',
         'completed_at' => 'datetime',
     ];
+
+    // Activity Request ID, e.g. PA-00012, given once the row has its id.
+    protected static function booted()
+    {
+        static::created(function (PromotionalActivity $activity) {
+            if (!$activity->request_no) {
+                $activity->forceFill(['request_no' => 'PA-' . str_pad($activity->id, 5, '0', STR_PAD_LEFT)])->saveQuietly();
+            }
+        });
+    }
 
     public function activityType()
     {

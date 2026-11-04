@@ -103,9 +103,13 @@ class PromotionalActivityWebController extends Controller
         $activity = $promotionalActivity;
         return response()->json(['success' => true, 'data' => [
             'id' => $activity->id,
+            'request_no' => $activity->request_no,
             'activity_type' => $activity->activityType->display_name ?? $activity->activityType->status_name ?? 'Promotional Activity',
             'activity_date' => $activity->activity_date ? $activity->activity_date->format('d-M-Y') : '-',
             'location_name' => $activity->location_name,
+            'purpose' => $activity->purpose,
+            'estimated_budget' => $activity->estimated_budget !== null ? number_format((float) $activity->estimated_budget, 2) : null,
+            'attachments' => collect($activity->attachments ?: [])->map(fn ($path) => ['url' => Storage::disk('public')->url($path), 'name' => basename($path)])->values(),
             'creator' => $activity->creator->name ?? '-',
             'reporting_manager' => $activity->reportingManager->name ?? '-',
             'company_share' => number_format((float) $activity->company_share, 2),
@@ -118,6 +122,7 @@ class PromotionalActivityWebController extends Controller
             'approved_rejected_at' => $activity->approved_rejected_at ? showdatetimeformat($activity->approved_rejected_at) : null,
             'gifts' => $activity->gifts->map(fn ($gift) => ['id' => $gift->id, 'name' => $gift->name, 'quantity' => (int) $gift->pivot->quantity])->values(),
             'distributor' => $activity->distributor->name ?? null,
+            'distributor_id' => $activity->distributor_id,
             'participants' => $activity->participants ?: [],
             'photos' => collect($activity->activity_photos ?: [])->map(fn ($path) => Storage::disk('public')->url($path))->values(),
             'execution_remark' => $activity->execution_remark,
@@ -263,13 +268,13 @@ class PromotionalActivityWebController extends Controller
         $this->authorizeAccess();
         abort_unless(auth()->user()->hasRole('superadmin'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $photoPaths = $promotionalActivity->activity_photos ?: [];
+        $filePaths = array_merge($promotionalActivity->activity_photos ?: [], $promotionalActivity->attachments ?: []);
         DB::transaction(function () use ($promotionalActivity) {
             app(PromotionalGiftStock::class)->returnForActivity($promotionalActivity, auth()->id());
             $promotionalActivity->gifts()->detach();
             $promotionalActivity->delete();
         });
-        Storage::disk('public')->delete($photoPaths);
+        Storage::disk('public')->delete($filePaths);
 
         return response()->json(['success' => true, 'message' => 'Promotional activity deleted successfully.']);
     }

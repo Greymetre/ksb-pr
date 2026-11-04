@@ -76,6 +76,7 @@ class PromotionalActivityController extends Controller
         if ($request->filled('activity_type_id')) $query->where('activity_status_id', $request->activity_type_id);
         $activities = $query->latest('activity_date')->get()->map(fn ($activity) => [
             'id' => $activity->id,
+            'request_no' => $activity->request_no,
             'activity_type_id' => $activity->activity_status_id,
             'activity_type' => $activity->activityType->display_name ?? $activity->activityType->status_name ?? 'Promotional Activity',
             'activity_date' => $activity->activity_date->format('Y-m-d'),
@@ -138,12 +139,17 @@ class PromotionalActivityController extends Controller
             'activity_type_id' => ['required', 'integer', Rule::exists('statuses', 'id')->where(fn ($q) => $q->where('module', 'Promotional Activity')->where('active', 'Y'))],
             'activity_date' => 'required|date',
             'location_name' => 'required|string|max:255',
+            'distributor_id' => 'required|integer|exists:customers,id',
+            'purpose' => 'required|string|max:1000',
+            'estimated_budget' => 'required|numeric|min:0',
             'company_share' => 'required|numeric|min:0',
             'distributor_share' => 'required|numeric|min:0',
             'remark' => 'nullable|string|max:1000',
             'gifts' => 'nullable|array',
             'gifts.*.gift_id' => 'required|integer|exists:promotional_gifts,id',
             'gifts.*.quantity' => 'required|integer|min:1',
+            'attachments' => 'nullable|array|max:5',
+            'attachments.*' => 'file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
         ]);
         if ($validator->fails()) return response()->json(['success' => false, 'message' => $validator->errors()], 422);
 
@@ -160,26 +166,40 @@ class PromotionalActivityController extends Controller
             }
         }
 
-        $activity = DB::transaction(function () use ($request, $user, $giftRows) {
-            $reportingManagerId = collect(explode(',', (string) $user->reportingid))->map(fn ($id) => trim($id))->first(fn ($id) => ctype_digit($id));
-            $activity = PromotionalActivity::create([
-                'activity_status_id' => $request->activity_type_id,
-                'activity_date' => $request->activity_date,
-                'location_name' => $request->location_name,
-                'company_share' => $request->company_share,
-                'distributor_share' => $request->distributor_share,
-                'remark' => $request->remark,
-                'approval_status' => 'pending',
-                'created_by' => $user->id,
-                'reporting_manager_id' => $reportingManagerId ?: null,
-            ]);
-            foreach ($giftRows as $row) {
-                $activity->gifts()->attach($row['gift_id'], ['quantity' => $row['quantity']]);
-            }
-            return $activity;
-        });
+        $attachmentPaths = [];
+        foreach ($request->file('attachments', []) as $attachment) {
+            $attachmentPaths[] = $attachment->store('promotional-activities/attachments', 'public');
+        }
 
-        return response()->json(['success' => true, 'message' => 'Promotional activity submitted for approval.', 'data' => ['id' => $activity->id, 'approval_status' => 'pending']], 201);
+        try {
+            $activity = DB::transaction(function () use ($request, $user, $giftRows, $attachmentPaths) {
+                $reportingManagerId = collect(explode(',', (string) $user->reportingid))->map(fn ($id) => trim($id))->first(fn ($id) => ctype_digit($id));
+                $activity = PromotionalActivity::create([
+                    'activity_status_id' => $request->activity_type_id,
+                    'activity_date' => $request->activity_date,
+                    'location_name' => $request->location_name,
+                    'distributor_id' => $request->distributor_id,
+                    'purpose' => $request->purpose,
+                    'estimated_budget' => $request->estimated_budget,
+                    'company_share' => $request->company_share,
+                    'distributor_share' => $request->distributor_share,
+                    'remark' => $request->remark,
+                    'attachments' => $attachmentPaths,
+                    'approval_status' => 'pending',
+                    'created_by' => $user->id,
+                    'reporting_manager_id' => $reportingManagerId ?: null,
+                ]);
+                foreach ($giftRows as $row) {
+                    $activity->gifts()->attach($row['gift_id'], ['quantity' => $row['quantity']]);
+                }
+                return $activity;
+            });
+        } catch (\Throwable $e) {
+            Storage::disk('public')->delete($attachmentPaths);
+            throw $e;
+        }
+
+        return response()->json(['success' => true, 'message' => 'Promotional activity '.$activity->request_no.' submitted for approval.', 'data' => ['id' => $activity->id, 'request_no' => $activity->request_no, 'approval_status' => 'pending']], 201);
     }
 
     public function show(Request $request, PromotionalActivity $promotionalActivity)
@@ -210,9 +230,13 @@ class PromotionalActivityController extends Controller
 
         return response()->json(['success' => true, 'data' => [
             'id' => $promotionalActivity->id,
+            'request_no' => $promotionalActivity->request_no,
             'activity_type' => $promotionalActivity->activityType->display_name ?? $promotionalActivity->activityType->status_name ?? 'Promotional Activity',
             'activity_date' => $promotionalActivity->activity_date->format('Y-m-d'),
             'location_name' => $promotionalActivity->location_name,
+            'purpose' => $promotionalActivity->purpose,
+            'estimated_budget' => $promotionalActivity->estimated_budget !== null ? (float) $promotionalActivity->estimated_budget : null,
+            'attachments' => collect($promotionalActivity->attachments ?: [])->values(),
             'remark' => $promotionalActivity->remark,
             'approval_status' => $promotionalActivity->approval_status,
             'approval_remark' => $promotionalActivity->approval_remark,

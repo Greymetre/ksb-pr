@@ -13,15 +13,17 @@ class PromotionalActivityExport implements FromQuery, WithHeadings, WithMapping,
     public function query() { return $this->activityQuery->latest('activity_date'); }
     public function headings(): array
     {
-        return ['Activity Date', 'Activity Type', 'Created By', 'Location', 'Status', 'Distributor', 'Company Share', 'Distributor Share', 'Total', 'Participants', 'Created At'];
+        return ['Request ID', 'Activity Date', 'Activity Type', 'Created By', 'Location', 'Purpose', 'Status', 'Distributor', 'Estimated Budget', 'Company Share', 'Distributor Share', 'Total', 'Participants', 'Created At'];
     }
     public function map($row): array
     {
         return [
+            $row->request_no ?? '-',
             optional($row->activity_date)->format('d-M-Y'),
             $row->activityType->display_name ?? $row->activityType->status_name ?? '-',
-            $row->creator->name ?? '-', $row->location_name, ucfirst($row->approval_status),
-            $row->distributor->name ?? '-', (float) $row->company_share, (float) $row->distributor_share,
+            $row->creator->name ?? '-', $row->location_name, $row->purpose ?? '-', ucfirst($row->approval_status),
+            $row->distributor->name ?? '-', $row->estimated_budget !== null ? (float) $row->estimated_budget : '-',
+            (float) $row->company_share, (float) $row->distributor_share,
             (float) $row->company_share + (float) $row->distributor_share, count($row->participants ?: []),
             optional($row->created_at)->format('d-M-Y h:i A'),
         ];

@@ -33,7 +33,7 @@
       <button type="button" class="fk-activity-status-tab" data-status="completed">Completed <span data-count="completed">0</span></button>
     </div>
     <div class="table-responsive"><table class="table fk-glass-table" id="activityTable"><thead><tr>
-      <th>#</th><th>Activity Date</th><th>Activity Type</th><th>Created By</th><th>Location</th><th>Status</th><th>Distributor</th><th>Total Amount</th><th>Participants</th><th>Created At</th>
+      <th>#</th><th>Request ID</th><th>Activity Date</th><th>Activity Type</th><th>Created By</th><th>Location</th><th>Status</th><th>Distributor</th><th>Total Amount</th><th>Participants</th><th>Created At</th>
     </tr></thead></table></div>
   </div></div>
 </section>
@@ -114,8 +114,8 @@
 $(function () {
   var activeStatus = '';
   function filters() { return { activity_type_id: $('#activity_type_filter').val(), date_from: $('#date_from').val(), date_to: $('#date_to').val(), approval_status: activeStatus }; }
-  var table = $('#activityTable').DataTable({ processing: true, serverSide: true, order: [[1, 'desc']], ajax: { url: "{{ route('promotional-activities-crm.index') }}", data: function (data) { $.extend(data, filters()); } }, columns: [
-    {data:'DT_RowIndex', orderable:false, searchable:false}, {data:'activity_date', name:'activity_date'}, {data:'activity_type_name', name:'activityType.display_name', orderable:false}, {data:'creator_name', name:'creator.name', orderable:false}, {data:'location_name', name:'location_name'}, {data:'approval_status', name:'approval_status'}, {data:'distributor_name', orderable:false, searchable:false}, {data:'total_amount', orderable:false, searchable:false}, {data:'participants_count', orderable:false, searchable:false}, {data:'created_at', name:'created_at'}
+  var table = $('#activityTable').DataTable({ processing: true, serverSide: true, order: [[2, 'desc']], ajax: { url: "{{ route('promotional-activities-crm.index') }}", data: function (data) { $.extend(data, filters()); } }, columns: [
+    {data:'DT_RowIndex', orderable:false, searchable:false}, {data:'request_no', name:'request_no'}, {data:'activity_date', name:'activity_date'}, {data:'activity_type_name', name:'activityType.display_name', orderable:false}, {data:'creator_name', name:'creator.name', orderable:false}, {data:'location_name', name:'location_name'}, {data:'approval_status', name:'approval_status'}, {data:'distributor_name', orderable:false, searchable:false}, {data:'total_amount', orderable:false, searchable:false}, {data:'participants_count', orderable:false, searchable:false}, {data:'created_at', name:'created_at'}
   ], drawCallback:function(){ var info=this.api().page.info(); $('#activityRecordCount').text((info.recordsDisplay||0)+' records'); $('#activityTableMeta').text('Live directory · page '+((info.page||0)+1)+' of '+(info.pages||1)); var counts=(this.api().ajax.json()||{}).status_counts||{}, total=0; $.each(['pending','approved','rejected','completed'], function(i,key){ var value=parseInt(counts[key]||0,10); total+=value; $('#activityStatusTabs [data-count="'+key+'"]').text(value); }); $('#activityStatusTabs [data-count="all"]').text(total); }});
   $('#activityStatusTabs').on('click', '.fk-activity-status-tab', function(){ activeStatus=$(this).data('status'); $('#activityStatusTabs .fk-activity-status-tab').removeClass('active'); $(this).addClass('active'); table.draw(); });
   var activeActivityId = null;
@@ -134,12 +134,14 @@ $(function () {
     $('#activityDetailModal').modal('show');
     $.get("{{ url('promotional-activities-crm') }}/" + row.id).done(function (response) {
       var d = response.data;
-      var html = '<div class="row">' + detailRow('Activity Type', d.activity_type) + detailRow('Activity Date', d.activity_date) + detailRow('Location', d.location_name)
+      var html = '<div class="row">' + detailRow('Request ID', d.request_no) + detailRow('Activity Type', d.activity_type) + detailRow('Activity Date', d.activity_date) + detailRow('Location', d.location_name)
         + detailRow('Created By', d.creator) + detailRow('Reporting Manager', d.reporting_manager) + detailRow('Status', (d.approval_status || '').replace(/_/g, ' ').toUpperCase())
-        + detailRow('Company Share', d.company_share) + detailRow('Distributor Share', d.distributor_share) + detailRow('Total Amount', d.total_amount)
+        + detailRow('Estimated Budget', d.estimated_budget) + detailRow('Company Share', d.company_share) + detailRow('Distributor Share', d.distributor_share) + detailRow('Total Amount', d.total_amount)
         + detailRow('Created At', d.created_at) + (d.distributor ? detailRow('Distributor', d.distributor) : '')
         + (d.approved_rejected_by ? detailRow(d.approval_status === 'rejected' ? 'Rejected By' : 'Approved By', d.approved_rejected_by) + detailRow(d.approval_status === 'rejected' ? 'Rejected At' : 'Approved At', d.approved_rejected_at) : '') + '</div>'
+        + '<div class="mb-3"><small class="text-muted d-block">Purpose</small>' + esc(d.purpose) + '</div>'
         + '<div class="mb-3"><small class="text-muted d-block">Remark</small>' + esc(d.remark) + '</div>';
+      if (d.attachments.length) html += '<div class="mb-3"><small class="text-muted d-block">Attachments</small>' + d.attachments.map(function (a) { return '<a href="' + esc(a.url) + '" target="_blank">' + esc(a.name) + '</a>'; }).join('<br>') + '</div>';
       if (d.approval_remark) html += '<div class="mb-3"><small class="text-muted d-block">Approval Remark</small>' + esc(d.approval_remark) + '</div>';
       if (d.gifts.length && !d.can_approve) html += '<div class="mb-3"><small class="text-muted d-block">Gifts</small>' + d.gifts.map(function (g) { return esc(g.name) + ' × ' + esc(g.quantity); }).join('<br>') + '</div>';
       if (d.participants.length) html += '<div class="mb-3"><small class="text-muted d-block">Participants</small>' + d.participants.map(function (p) { return esc(p.name) + ' (' + esc(p.mobile) + ') - ' + esc(p.address); }).join('<br>') + '</div>';
@@ -154,7 +156,7 @@ $(function () {
       if (d.can_delete) $('#activityDeleteBox').show();
       if (d.can_complete) {
         addParticipantRow();
-        loadDistributors(d.id);
+        loadDistributors(d.id, d.distributor_id, d.distributor);
         $('#activityCompleteBox').show();
       }
     }).fail(function () {
@@ -188,7 +190,8 @@ $(function () {
     if (select.hasClass('select2-hidden-accessible')) select.select2('destroy');
     select.select2({ dropdownParent: $('#activityDetailModal'), placeholder: 'Select distributor', allowClear: true, width: '100%' });
   }
-  function loadDistributors(activityId) {
+  // The dealer chosen when the request was created is preselected.
+  function loadDistributors(activityId, selectedId, selectedName) {
     var select = $('#activityDistributor');
     select.empty().append('<option value=""></option>');
     initDistributorSelect();
@@ -196,6 +199,8 @@ $(function () {
     $.get("{{ url('promotional-activities-crm') }}/" + activityId + '/distributors').done(function (response) {
       if (String(activityId) !== String(activeActivityId)) return;
       (response.results || []).forEach(function (item) { select.append(new Option(item.text, item.id, false, false)); });
+      if (selectedId && !select.find('option[value="' + selectedId + '"]').length) select.append(new Option(selectedName || ('Customer ' + selectedId), selectedId, false, false));
+      if (selectedId) select.val(String(selectedId));
       initDistributorSelect();
       $('#activityDistributorInfo').text((response.results || []).length + ' distributors loaded');
       if (!(response.results || []).length) Swal.fire('No distributor found for this user', '', 'warning');
