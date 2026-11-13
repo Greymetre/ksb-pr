@@ -149,6 +149,11 @@ class PromotionalActivityController extends Controller
             'gifts' => 'nullable|array',
             'gifts.*.gift_id' => 'required|integer|exists:promotional_gifts,id',
             'gifts.*.quantity' => 'required|integer|min:1',
+            'pop_delivery_address' => 'nullable|required_with:gifts|string|max:1000',
+            'sample_materials' => 'nullable|array',
+            'sample_materials.*.name' => 'required|string|max:255',
+            'sample_materials.*.quantity' => 'required|integer|min:1',
+            'sample_delivery_address' => 'nullable|required_with:sample_materials|string|max:1000',
             'attachments' => 'nullable|array|max:'.PromotionalActivity::MAX_ATTACHMENTS,
             'attachments.*' => 'file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
             'keep_attachments' => 'nullable|array',
@@ -183,6 +188,9 @@ class PromotionalActivityController extends Controller
             'company_share' => $request->company_share,
             'distributor_share' => $request->distributor_share,
             'remark' => $request->remark,
+            'pop_delivery_address' => $request->filled('gifts') ? $request->pop_delivery_address : null,
+            'sample_materials' => $request->filled('sample_materials') ? array_values($request->input('sample_materials')) : null,
+            'sample_delivery_address' => $request->filled('sample_materials') ? $request->sample_delivery_address : null,
         ];
     }
 
@@ -332,6 +340,9 @@ class PromotionalActivityController extends Controller
                 'name' => $gift->name,
                 'quantity' => (int) $gift->pivot->quantity,
             ])->values(),
+            'pop_delivery_address' => $promotionalActivity->pop_delivery_address,
+            'sample_materials' => $promotionalActivity->sample_materials ?: [],
+            'sample_delivery_address' => $promotionalActivity->sample_delivery_address,
             'can_approve' => $canApprove,
             'can_complete' => $canComplete,
             'can_resubmit' => $canResubmit,

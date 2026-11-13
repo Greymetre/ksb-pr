@@ -15,6 +15,7 @@ class PromotionalActivity extends Model
         'approval_status', 'created_by',
         'reporting_manager_id', 'approved_rejected_by', 'approved_rejected_at',
         'approval_remark',
+        'pop_delivery_address', 'sample_materials', 'sample_delivery_address',
         'distributor_id', 'activity_photos', 'participants', 'execution_remark', 'completed_at',
         'actual_expense', 'bills', 'execution_submitted_at', 'reviewed_by', 'reviewed_at', 'review_remark',
     ];
@@ -33,6 +34,7 @@ class PromotionalActivity extends Model
         'bills' => 'array',
         'execution_submitted_at' => 'datetime',
         'reviewed_at' => 'datetime',
+        'sample_materials' => 'array',
     ];
 
     public const MAX_ATTACHMENTS = 5;
