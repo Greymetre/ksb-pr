@@ -71,11 +71,20 @@
         <div id="activityDeleteBox" class="text-right" style="display:none;"><button type="button" class="btn btn-danger" id="deleteActivityBtn"><i class="material-icons" style="font-size:18px;vertical-align:middle;">delete</i> Delete Activity</button></div>
         <div id="activityApprovalBox" style="display:none;">
           <hr>
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <small class="text-muted">Gifts (edit before approving)</small>
-            <button type="button" class="btn btn-sm btn-info" id="addActivityGift">+ Add Gift</button>
+          <div class="form-row mb-3">
+            <div class="col-md-6"><label class="mb-0"><input type="checkbox" id="hasActivityPapMaterial"> <strong>PAP Material</strong></label></div>
+            <div class="col-md-6"><label class="mb-0"><input type="checkbox" id="hasActivitySampleMaterial"> <strong>Sample Material</strong></label></div>
           </div>
-          <div id="activityGiftRows"></div>
+          <div id="activityPapMaterialBox" style="display:none;">
+            <div class="d-flex align-items-center justify-content-between mb-2"><small class="text-muted">PAP Material</small><button type="button" class="btn btn-sm btn-info" id="addActivityGift">+ Add PAP Material</button></div>
+            <div id="activityGiftRows"></div>
+            <div class="form-group"><label for="activityPapDeliveryAddress">Delivery Address</label><textarea id="activityPapDeliveryAddress" class="form-control" rows="2" maxlength="1000" placeholder="PAP material delivery address"></textarea></div>
+          </div>
+          <div id="activitySampleMaterialBox" style="display:none;">
+            <div class="d-flex align-items-center justify-content-between mb-2"><small class="text-muted">Sample Material</small><button type="button" class="btn btn-sm btn-info" id="addActivitySample">+ Add Sample</button></div>
+            <div id="activitySampleRows"></div>
+            <div class="form-group"><label for="activitySampleDeliveryAddress">Delivery Address</label><textarea id="activitySampleDeliveryAddress" class="form-control" rows="2" maxlength="1000" placeholder="Sample material delivery address"></textarea></div>
+          </div>
           <div class="form-group">
             <label for="activityApprovalRemark" class="col-form-label">Remark</label>
             <textarea id="activityApprovalRemark" class="form-control" rows="3" maxlength="1000" placeholder="Add remark (required to reject or send back)"></textarea>
@@ -167,7 +176,10 @@ $(function () {
     $('#activityApprovalRemark, #activityExecutionRemark, #activityReviewRemark, #activityActualExpense').val('');
     selectedPhotos = []; keptPhotos = []; renderPhotos();
     selectedBills = []; keptBills = []; renderBills();
-    $('#activityGiftRows, #activityParticipantRows').empty();
+    $('#activityGiftRows, #activitySampleRows, #activityParticipantRows').empty();
+    $('#hasActivityPapMaterial, #hasActivitySampleMaterial').prop('checked', false);
+    $('#activityPapMaterialBox, #activitySampleMaterialBox').hide();
+    $('#activityPapDeliveryAddress, #activitySampleDeliveryAddress').val('');
     $('#activityDistributor').val('');
     $('#activityDetailModal').modal('show');
     $.get("{{ url('promotional-activities-crm') }}/" + row.id).done(function (response) {
@@ -182,7 +194,10 @@ $(function () {
         + '<div class="mb-3"><small class="text-muted d-block">Remark</small>' + esc(d.remark) + '</div>';
       if (d.attachments.length) html += '<div class="mb-3"><small class="text-muted d-block">Attachments</small>' + fileLinks(d.attachments) + '</div>';
       if (d.approval_remark) html += '<div class="mb-3"><small class="text-muted d-block">Approval Remark</small>' + esc(d.approval_remark) + '</div>';
-      if (d.gifts.length && !d.can_approve) html += '<div class="mb-3"><small class="text-muted d-block">Gifts</small>' + d.gifts.map(function (g) { return esc(g.name) + ' × ' + esc(g.quantity); }).join('<br>') + '</div>';
+      if (d.gifts.length) html += '<div class="mb-3"><small class="text-muted d-block">PAP Material</small>' + d.gifts.map(function (g) { return esc(g.name) + ' × ' + esc(g.quantity); }).join('<br>')
+        + (d.pop_delivery_address ? '<small class="text-muted d-block mt-2">Delivery Address</small>' + esc(d.pop_delivery_address) : '') + '</div>';
+      if (d.sample_materials.length) html += '<div class="mb-3"><small class="text-muted d-block">Sample Material</small>' + d.sample_materials.map(function (s) { return esc(s.name) + ' × ' + esc(s.quantity); }).join('<br>')
+        + (d.sample_delivery_address ? '<small class="text-muted d-block mt-2">Delivery Address</small>' + esc(d.sample_delivery_address) : '') + '</div>';
       if (d.participants.length) html += '<div class="mb-3"><small class="text-muted d-block">Participants</small>' + d.participants.map(function (p) { return esc(p.name) + ' (' + esc(p.mobile) + ') - ' + esc(p.address); }).join('<br>') + '</div>';
       if (d.execution_remark) html += '<div class="mb-3"><small class="text-muted d-block">Execution Remark</small>' + esc(d.execution_remark) + '</div>';
       if (d.actual_expense !== null) html += '<div class="row">' + detailRow('Actual Expense', d.actual_expense) + detailRow('Estimated Budget', d.estimated_budget) + detailRow('Submitted For Review', d.execution_submitted_at) + '</div>'
@@ -194,7 +209,13 @@ $(function () {
       $('#activityDetailBody').html(html);
       availableGifts = d.available_gifts || [];
       if (d.can_approve) {
-        d.gifts.forEach(function (g) { addGiftRow(g.id, g.quantity); });
+        var hasPap = d.gifts.length > 0, hasSample = d.sample_materials.length > 0;
+        $('#hasActivityPapMaterial').prop('checked', hasPap); $('#activityPapMaterialBox').toggle(hasPap);
+        $('#hasActivitySampleMaterial').prop('checked', hasSample); $('#activitySampleMaterialBox').toggle(hasSample);
+        if (hasPap) d.gifts.forEach(function (g) { addGiftRow(g.id, g.quantity); });
+        if (hasSample) d.sample_materials.forEach(function (s) { addSampleRow(s.name, s.quantity); });
+        $('#activityPapDeliveryAddress').val(d.pop_delivery_address || '');
+        $('#activitySampleDeliveryAddress').val(d.sample_delivery_address || '');
         $('#activityApprovalBox').show();
       }
       if (d.can_delete) $('#activityDeleteBox').show();
@@ -215,12 +236,18 @@ $(function () {
   });
   var availableGifts = [];
   function addGiftRow(giftId, quantity) {
-    var options = '<option value="">Select gift</option>' + availableGifts.map(function (g) {
+    var options = '<option value="">Select PAP material</option>' + availableGifts.map(function (g) {
       return '<option value="' + g.id + '"' + (String(g.id) === String(giftId) ? ' selected' : '') + '>' + esc(g.name) + ' (stock ' + esc(g.quantity) + ')</option>';
     }).join('');
     $('#activityGiftRows').append('<div class="form-row align-items-center mb-2 activity-gift-row"><div class="col-7"><select class="form-control gift-id">' + options + '</select></div>'
       + '<div class="col-3"><input type="number" min="1" class="form-control gift-qty" placeholder="Qty" value="' + (quantity || 1) + '"></div>'
       + '<div class="col-2 text-right"><button type="button" class="btn btn-sm btn-danger remove-row">×</button></div></div>');
+  }
+  function addSampleRow(name, quantity) {
+    $('#activitySampleRows').append('<div class="form-row align-items-center mb-2 activity-sample-row"><div class="col-7"><input type="text" maxlength="255" class="form-control sample-name" placeholder="Enter sample material"></div>'
+      + '<div class="col-3"><input type="number" min="1" class="form-control sample-qty" placeholder="Qty"></div>'
+      + '<div class="col-2 text-right"><button type="button" class="btn btn-sm btn-danger remove-row">×</button></div></div>');
+    var row = $('#activitySampleRows .activity-sample-row').last(); row.find('.sample-name').val(name || ''); row.find('.sample-qty').val(quantity || 1);
   }
   function addParticipantRow(participant) {
     if ($('#activityParticipantRows .activity-participant-row').length >= 50) return;
@@ -234,6 +261,15 @@ $(function () {
     $('#activityParticipantRows').append(row);
   }
   $('#addActivityGift').on('click', function () { addGiftRow('', 1); });
+  $('#addActivitySample').on('click', function () { addSampleRow('', 1); });
+  $('#hasActivityPapMaterial').on('change', function () {
+    var checked = this.checked; $('#activityPapMaterialBox').toggle(checked);
+    if (checked && !$('#activityGiftRows .activity-gift-row').length) addGiftRow('', 1);
+  });
+  $('#hasActivitySampleMaterial').on('change', function () {
+    var checked = this.checked; $('#activitySampleMaterialBox').toggle(checked);
+    if (checked && !$('#activitySampleRows .activity-sample-row').length) addSampleRow('', 1);
+  });
   $('#addActivityParticipant').on('click', function () { addParticipantRow(); });
   $('#activityDetailModal').on('click', '.remove-row', function () { $(this).closest('.form-row').remove(); });
   // Distributors are loaded when the popup opens so the full list shows by default; select2 searches it locally.
@@ -339,17 +375,27 @@ $(function () {
   $('.activity-approval-btn').on('click', function () {
     var status = $(this).data('status');
     if (status !== 'approved' && !$.trim($('#activityApprovalRemark').val())) { Swal.fire(status === 'rejected' ? 'Please add a remark to reject' : 'Please add a remark saying what to correct', '', 'warning'); return; }
-    var gifts = [], giftError = false;
-    $('#activityGiftRows .activity-gift-row').each(function () {
+    var hasPap = $('#hasActivityPapMaterial').is(':checked'), hasSample = $('#hasActivitySampleMaterial').is(':checked');
+    var gifts = [], giftError = false, samples = [], sampleError = false;
+    if (hasPap) $('#activityGiftRows .activity-gift-row').each(function () {
       var id = $(this).find('.gift-id').val(), qty = parseInt($(this).find('.gift-qty').val(), 10);
       if (!id || !(qty > 0)) giftError = true; else gifts.push({ gift_id: id, quantity: qty });
     });
-    if (status === 'approved' && giftError) { Swal.fire('Select a gift and quantity in every gift row', '', 'warning'); return; }
+    if (hasSample) $('#activitySampleRows .activity-sample-row').each(function () {
+      var name = $.trim($(this).find('.sample-name').val()), qty = parseInt($(this).find('.sample-qty').val(), 10);
+      if (!name || !(qty > 0)) sampleError = true; else samples.push({ name: name, quantity: qty });
+    });
+    if (status === 'approved' && hasPap && (!gifts.length || giftError)) { Swal.fire('Select a PAP material and quantity in every row', '', 'warning'); return; }
+    if (status === 'approved' && hasPap && !$.trim($('#activityPapDeliveryAddress').val())) { Swal.fire('Add the PAP material delivery address', '', 'warning'); return; }
+    if (status === 'approved' && hasSample && (!samples.length || sampleError)) { Swal.fire('Enter a sample material and quantity in every row', '', 'warning'); return; }
+    if (status === 'approved' && hasSample && !$.trim($('#activitySampleDeliveryAddress').val())) { Swal.fire('Add the sample material delivery address', '', 'warning'); return; }
     var buttons = $('.activity-approval-btn').prop('disabled', true);
     $.ajax({
       url: "{{ url('promotional-activities-crm') }}/" + activeActivityId + '/approval', method: 'POST',
       headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-      data: { status: status, remark: $('#activityApprovalRemark').val(), gifts: gifts.length ? gifts : '' }
+      data: { status: status, remark: $('#activityApprovalRemark').val(), has_pap_material: hasPap ? 1 : 0, gifts: gifts,
+        pop_delivery_address: hasPap ? $('#activityPapDeliveryAddress').val() : '', has_sample_material: hasSample ? 1 : 0,
+        sample_materials: samples, sample_delivery_address: hasSample ? $('#activitySampleDeliveryAddress').val() : '' }
     }).done(function (response) {
       $('#activityDetailModal').modal('hide');
       Swal.fire(response.message, '', 'success');

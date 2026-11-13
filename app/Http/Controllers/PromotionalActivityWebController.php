@@ -132,6 +132,9 @@ class PromotionalActivityWebController extends Controller
             'approved_rejected_by' => $activity->approver->name ?? null,
             'approved_rejected_at' => $activity->approved_rejected_at ? showdatetimeformat($activity->approved_rejected_at) : null,
             'gifts' => $activity->gifts->map(fn ($gift) => ['id' => $gift->id, 'name' => $gift->name, 'quantity' => (int) $gift->pivot->quantity])->values(),
+            'pop_delivery_address' => $activity->pop_delivery_address,
+            'sample_materials' => $activity->sample_materials ?: [],
+            'sample_delivery_address' => $activity->sample_delivery_address,
             'distributor' => $activity->distributor->name ?? null,
             'distributor_id' => $activity->distributor_id,
             'participants' => $activity->participants ?: [],
@@ -165,6 +168,13 @@ class PromotionalActivityWebController extends Controller
             'gifts' => 'nullable|array',
             'gifts.*.gift_id' => 'required|integer|exists:promotional_gifts,id',
             'gifts.*.quantity' => 'required|integer|min:1',
+            'has_pap_material' => 'nullable|boolean',
+            'pop_delivery_address' => 'nullable|string|max:1000',
+            'has_sample_material' => 'nullable|boolean',
+            'sample_materials' => 'nullable|array',
+            'sample_materials.*.name' => 'required|string|max:255',
+            'sample_materials.*.quantity' => 'required|integer|min:1',
+            'sample_delivery_address' => 'nullable|string|max:1000',
         ], ['remark.required_unless' => 'Remark is required to reject or send back an activity.']);
         $promotionalActivity->load('creator:id,name,reportingid');
         abort_if($promotionalActivity->approval_status !== 'pending', 422, 'Activity has already been actioned.');
@@ -172,7 +182,13 @@ class PromotionalActivityWebController extends Controller
 
         // Gifts edited in the detail popup are saved only when the activity is approved.
         $giftRows = null;
-        if ($request->status === 'approved' && $request->has('gifts')) {
+        if ($request->status === 'approved') {
+            if ($request->boolean('has_pap_material') && (!$request->filled('gifts') || !$request->filled('pop_delivery_address'))) {
+                return response()->json(['success' => false, 'message' => 'PAP material and delivery address are required when PAP Material is selected.'], 422);
+            }
+            if ($request->boolean('has_sample_material') && (!$request->filled('sample_materials') || !$request->filled('sample_delivery_address'))) {
+                return response()->json(['success' => false, 'message' => 'Sample material and delivery address are required when Sample Material is selected.'], 422);
+            }
             $giftRows = collect($request->input('gifts', []))->groupBy('gift_id')->map(fn ($rows, $giftId) => [
                 'gift_id' => (int) $giftId,
                 'quantity' => (int) $rows->sum('quantity'),
@@ -189,12 +205,20 @@ class PromotionalActivityWebController extends Controller
             if ($giftRows !== null) {
                 $promotionalActivity->gifts()->sync($giftRows->mapWithKeys(fn ($row) => [$row['gift_id'] => ['quantity' => $row['quantity']]])->all());
             }
-            $promotionalActivity->update([
+            $fields = [
                 'approval_status' => $request->status,
                 'approved_rejected_by' => auth()->id(),
                 'approved_rejected_at' => now(),
                 'approval_remark' => $request->remark,
-            ]);
+            ];
+            if ($request->status === 'approved') {
+                $fields += [
+                    'pop_delivery_address' => $request->boolean('has_pap_material') ? $request->pop_delivery_address : null,
+                    'sample_materials' => $request->boolean('has_sample_material') ? array_values($request->input('sample_materials', [])) : null,
+                    'sample_delivery_address' => $request->boolean('has_sample_material') ? $request->sample_delivery_address : null,
+                ];
+            }
+            $promotionalActivity->update($fields);
         });
         $promotionalActivity->notifyCreatorOfDecision();
 
