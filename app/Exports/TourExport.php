@@ -358,8 +358,13 @@
 
 namespace App\Exports;
 
+use App\Models\Attendance;
+use App\Models\City;
+use App\Models\District;
+use App\Models\TourLog;
 use App\Models\TourProgramme;
 use App\Models\User;
+use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -370,20 +375,25 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class TourExport implements 
-    FromCollection, 
-    WithHeadings, 
-    ShouldAutoSize, 
-    WithMapping, 
+class TourExport implements
+    FromCollection,
+    WithHeadings,
+    ShouldAutoSize,
+    WithMapping,
     WithEvents
 {
     protected $reportingUsers;
+    protected $attendanceMap = [];   // "userid|Y-m-d" => first punch-in of that day
+    protected $cityMap = [];         // normalized city name => City (with district)
+    protected $districtMap = [];     // normalized district name => district name
+    protected $rejectRemarks = [];   // tour id => latest rejection remark from tour_logs
+
     public function __construct($request)
     {
         $this->userids     = getUsersReportingToAuth();
         $this->user_id     = $request->input('executive_id');
         $this->division_id = $request->input('division_id');
-        $this->designation_id = $request->input('designation_id'); 
+        $this->designation_id = $request->input('designation_id');
         $this->start_date  = $request->input('start_date');
         $this->end_date    = $request->input('end_date');
         $this->reportingUsers = User::pluck('name', 'id');
@@ -391,6 +401,11 @@ class TourExport implements
 
     public function collection()
     {
+        $columns = ['id', 'date', 'userid', 'town', 'district', 'objectives', 'type', 'status'];
+        if (Schema::hasColumn('tour_programmes', 'remark')) {
+            $columns[] = 'remark';
+        }
+
         $tours = TourProgramme::with([
             'tourdetails.visitedcities.districtname',
             'userinfo.getbranch',
@@ -398,7 +413,7 @@ class TourExport implements
             'cityRelation',
             'districtRelation'
         ])
-        ->select('id', 'date', 'userid', 'town', 'district', 'objectives', 'type', 'status')
+        ->select($columns)
         ->when($this->user_id, fn($q) => $q->where('userid', $this->user_id))
         ->when($this->division_id, function ($q) {
             $userIds = User::where('division_id', $this->division_id)->pluck('id');
@@ -414,7 +429,22 @@ class TourExport implements
         ->orderByRaw('YEAR(date) DESC, DATE(date) ASC')
         ->get();
 
+        $this->loadPunchinLocations($tours);
+        $this->loadRejectRemarks($tours->where('status', 2)->pluck('id'));
+
         return $tours->flatMap(function ($tour) {
+            // Actual location = where the user punched in on the tour date
+            $punchin = $this->punchinLocation($tour);
+            if ($punchin) {
+                return [[
+                    'tour'            => $tour,
+                    'actual_city'     => $punchin['city'],
+                    'actual_district' => $punchin['district'],
+                    'visited_cityid'  => $punchin['city_id'],
+                ]];
+            }
+
+            // Fallback: visited cities recorded on the tour details
             if ($tour->tourdetails->isEmpty()) {
                 return [[
                     'tour'            => $tour,
@@ -437,6 +467,130 @@ class TourExport implements
         });
     }
 
+    /**
+     * Load punch-ins for all users/dates in the export with one query,
+     * plus the city/district lookups used to resolve the punch-in district.
+     */
+    protected function loadPunchinLocations($tours)
+    {
+        if ($tours->isEmpty()) {
+            return;
+        }
+
+        $dates = $tours->pluck('date')->filter()->map(fn($d) => date('Y-m-d', strtotime($d)));
+
+        Attendance::whereIn('user_id', $tours->pluck('userid')->filter()->unique()->values())
+            ->whereDate('punchin_date', '>=', $dates->min())
+            ->whereDate('punchin_date', '<=', $dates->max())
+            ->orderBy('id')
+            ->get(['user_id', 'punchin_date', 'city', 'punchin_address'])
+            ->each(function ($att) {
+                $key = $att->user_id . '|' . date('Y-m-d', strtotime($att->punchin_date));
+                if (!isset($this->attendanceMap[$key])) {
+                    $this->attendanceMap[$key] = $att;
+                }
+            });
+
+        City::with('districtname')->get(['id', 'city_name', 'district_id'])
+            ->each(function ($city) {
+                $name = $this->normalize($city->city_name);
+                if ($name !== '' && !isset($this->cityMap[$name])) {
+                    $this->cityMap[$name] = $city;
+                }
+            });
+
+        District::get(['id', 'district_name'])
+            ->each(function ($district) {
+                $name = $this->normalize($district->district_name);
+                if ($name !== '' && !isset($this->districtMap[$name])) {
+                    $this->districtMap[$name] = $district->district_name;
+                }
+            });
+    }
+
+    protected function normalize($value)
+    {
+        return strtolower(trim(preg_replace('/\s+/', ' ', (string) $value)));
+    }
+
+    /**
+     * Town + district of the user's punch-in on the tour date.
+     * Uses the city sent by the app, then the parts of the punch-in address.
+     */
+    protected function punchinLocation($tour)
+    {
+        $key = $tour->userid . '|' . date('Y-m-d', strtotime($tour->date));
+        $att = $this->attendanceMap[$key] ?? null;
+        if (!$att) {
+            return null;
+        }
+
+        $appCity = trim((string) $att->city);
+        $candidates = collect(explode(',', (string) $att->punchin_address))
+            ->map(fn($p) => trim(preg_replace('/\b\d{6}\b/', '', $p)))
+            ->filter()
+            ->prepend($appCity)
+            ->filter()
+            ->values();
+
+        $city = null;
+        foreach ($candidates as $candidate) {
+            if (isset($this->cityMap[$this->normalize($candidate)])) {
+                $city = $this->cityMap[$this->normalize($candidate)];
+                break;
+            }
+        }
+
+        $district = $city->districtname->district_name ?? '';
+        if ($district === '') {
+            foreach ($candidates as $candidate) {
+                $name = $this->normalize(preg_replace('/\s+district$/i', '', $candidate));
+                if (isset($this->districtMap[$name])) {
+                    $district = $this->districtMap[$name];
+                    break;
+                }
+            }
+        }
+
+        $town = $city->city_name ?? ($appCity !== '' ? $appCity : ($candidates->first() ?? ''));
+
+        if ($town === '' && $district === '') {
+            return null;
+        }
+
+        return [
+            'city'     => $town,
+            'district' => $district,
+            'city_id'  => $city->id ?? null,
+        ];
+    }
+
+    /**
+     * Latest rejection remark per tour from the activity log
+     * (skips the generic "Status changed from X to Y" entries).
+     */
+    protected function loadRejectRemarks($tourIds)
+    {
+        if ($tourIds->isEmpty()) {
+            return;
+        }
+
+        foreach ($tourIds->chunk(1000) as $chunk) {
+            TourLog::whereIn('tour_programme_id', $chunk)
+                ->where('action', 'rejected')
+                ->whereNotNull('remark')
+                ->where('remark', '!=', '')
+                ->where('remark', 'not like', 'Status changed%')
+                ->orderByDesc('id')
+                ->get(['tour_programme_id', 'remark'])
+                ->each(function ($log) {
+                    if (!isset($this->rejectRemarks[$log->tour_programme_id])) {
+                        $this->rejectRemarks[$log->tour_programme_id] = $log->remark;
+                    }
+                });
+        }
+    }
+
     public function headings(): array
     {
         return [
@@ -454,6 +608,7 @@ class TourExport implements
             'Deviation',
             'Approval Status',
             'Reporting Manager',
+            'Remark',
         ];
     }
 
@@ -471,33 +626,17 @@ class TourExport implements
             default => 'Rejected',
         };
 
-        // Actual Punch-in City from Attendance
-        $attendance = \App\Models\Attendance::where('user_id', $tour->userid)
-            ->whereDate('punchin_date', $tour->date)
-            ->first();
-
-        // if ($attendance && $attendance->punchin_latitude && $attendance->punchin_longitude) {
-        //     $actualPunchinCity = getLatLongToCity($attendance->punchin_latitude, $attendance->punchin_longitude);
-        // } else {
-        //     $actualPunchinCity = '';
-        // }
-
-        // Deviation
+        // Deviation: planned town vs actual (by id, else by name)
         $plannedTownId = $tour->town;
         $deviation = '-';
         if (!empty($plannedTownId) && $actualCityId !== null) {
             $deviation = ($plannedTownId == $actualCityId) ? 'No' : 'Yes';
+        } elseif (!empty($plannedTownId) && $actualCity !== '') {
+            $plannedName = $tour->cityRelation?->city_name ?? '';
+            $deviation = ($this->normalize($plannedName) === $this->normalize($actualCity)) ? 'No' : 'Yes';
         }
 
         // Reporting Manager
-
-
-        // $reportingManager = '—';
-        // if (!empty($tour->userinfo?->reportingid)) {
-        //     $manager = User::select('name')->where('id', $tour->userinfo->reportingid)->first();
-        //     $reportingManager = $manager?->name ?? '—';
-        // }
-
         $reportingManager = '—';
 
         $employee = $tour->userinfo;
@@ -515,6 +654,15 @@ class TourExport implements
                 ->implode(', ');
         }
 
+        // Remark (rejected tours only)
+        $remark = '-';
+        if ((string) $tour->status === '2') {
+            $remark = $tour->remark ?? '';
+            if ($remark === '') {
+                $remark = $this->rejectRemarks[$tour->id] ?? '-';
+            }
+        }
+
         return [
             date('d-m-Y', strtotime($tour->date ?? now())),
             $tour->userinfo->getbranch->branch_name ?? '-',
@@ -524,12 +672,13 @@ class TourExport implements
             $tour->districtRelation?->district_name ?? '-',
             $tour->cityRelation?->city_name ?? $tour->town ?? '-',
             !empty($tour->objectives) ? $tour->objectives : '-',
-            $actualDistrict ?: '-',           // Show '-' if empty
-            $actualCity ?: '-',               // Show '-' if empty
+            $actualDistrict ?: '-',
+            $actualCity ?: '-',
             !empty($tour->type) ? $tour->type : '-',
             $deviation,
             $status,
             $reportingManager,
+            $remark,
         ];
     }
 
@@ -538,7 +687,7 @@ class TourExport implements
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $lastColumn = 'N';
+                $lastColumn = 'O';
                 $headerRange = "A1:{$lastColumn}1";
                 $dataRange = "A1:{$lastColumn}" . $sheet->getHighestRow();
 
@@ -581,6 +730,7 @@ class TourExport implements
                 // Wrap text
                 $sheet->getStyle('H:H')->getAlignment()->setWrapText(true); // Objectives
                 $sheet->getStyle('J:J')->getAlignment()->setWrapText(true); // Actual Town
+                $sheet->getStyle('O:O')->getAlignment()->setWrapText(true); // Remark
             },
         ];
     }
