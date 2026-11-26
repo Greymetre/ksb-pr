@@ -72,6 +72,15 @@ class Kernel extends ConsoleKernel
             ->monthlyOn(1, '01:00')
             ->withoutOverlapping();
         $schedule->command('tasks:send-pending-today')->everyMinute();
+        // Attendance reminders: not punched in by 09:30 IST, not punched out by 20:30 IST
+        $schedule->command('attendance:send-reminder punchin')
+            ->timezone('Asia/Kolkata')
+            ->dailyAt('09:30')
+            ->withoutOverlapping();
+        $schedule->command('attendance:send-reminder punchout')
+            ->timezone('Asia/Kolkata')
+            ->dailyAt('20:30')
+            ->withoutOverlapping();
     }
 
     /**
