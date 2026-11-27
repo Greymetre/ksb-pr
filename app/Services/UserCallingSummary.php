@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 class UserCallingSummary
 {
     private array $branchCache = [];
+    private $typeCache = null;
 
     public function forUser(User $user, string $date): array
     {
@@ -45,9 +46,44 @@ class UserCallingSummary
                 ->where('created_by', $user->id)
                 ->whereDate('order_date', $date)
                 ->count(),
-            'retailer_registered' => $this->registeredCount($user->id, $date, ['retailer'], ['RETAILER', 'WORKSHOP']),
-            'influencer_registered' => $this->registeredCount($user->id, $date, ['influencer'], ['MECHANIC', 'GARAGE']),
+            'registrations' => $this->registrations($user->id, $date),
         ];
+    }
+
+    /**
+     * Active customer types from the Customer Type master, in master order.
+     */
+    public function customerTypes()
+    {
+        if ($this->typeCache === null) {
+            $this->typeCache = DB::table('customer_types')
+                ->where('active', 'Y')
+                ->whereNull('deleted_at')
+                ->orderBy('id')
+                ->get(['id', 'customertype_name']);
+        }
+
+        return $this->typeCache;
+    }
+
+    /**
+     * Customers the user registered that day, counted per customer type.
+     * Every active type is listed (0 when none) so the report columns stay fixed.
+     */
+    private function registrations(int $userId, string $date): array
+    {
+        $counts = DB::table('customers')
+            ->whereNull('deleted_at')
+            ->where('created_by', $userId)
+            ->whereDate('created_at', $date)
+            ->groupBy('customertype')
+            ->pluck(DB::raw('COUNT(*) as total'), 'customertype');
+
+        return $this->customerTypes()->map(fn ($type) => [
+            'type_id' => $type->id,
+            'label' => $type->customertype_name,
+            'count' => (int) ($counts[$type->id] ?? 0),
+        ])->values()->all();
     }
 
     private function branchNames($branchIds): ?string
@@ -61,34 +97,6 @@ class UserCallingSummary
         }
 
         return $this->branchCache[$key];
-    }
-
-    /**
-     * Customers of the given type (customer master) plus secondary customers
-     * (retailer app module) created by the user on that date.
-     */
-    private function registeredCount(int $userId, string $date, array $customerTypes, array $secondaryTypes): int
-    {
-        $placeholders = implode(',', array_fill(0, count($customerTypes), '?'));
-
-        $customers = DB::table('customers')
-            ->join('customer_types', 'customer_types.id', '=', 'customers.customertype')
-            ->whereNull('customers.deleted_at')
-            ->where('customers.created_by', $userId)
-            ->whereDate('customers.created_at', $date)
-            ->where(function ($query) use ($placeholders, $customerTypes) {
-                $query->whereRaw("LOWER(TRIM(customer_types.type_name)) IN ($placeholders)", $customerTypes)
-                    ->orWhereRaw("LOWER(TRIM(customer_types.customertype_name)) IN ($placeholders)", $customerTypes);
-            })
-            ->count();
-
-        $secondary = DB::table('secondary_customers')
-            ->where('created_by', $userId)
-            ->whereIn('type', $secondaryTypes)
-            ->whereDate('created_at', $date)
-            ->count();
-
-        return $customers + $secondary;
     }
 
     private function workedTime($attendance): ?string

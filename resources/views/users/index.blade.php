@@ -245,7 +245,7 @@
       display: block; color: var(--fk-list-text); font-size: 14px; font-weight: 500; word-break: break-word;
     }
 
-    .fk-call-modal .fk-call-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .fk-call-modal .fk-call-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }
     .fk-call-modal .fk-call-stat {
       position: relative; padding: 14px 16px; border-radius: 14px; overflow: hidden;
       background: var(--fk-list-row); border: 1px solid var(--fk-list-border);
@@ -578,8 +578,7 @@
         ] }
       ];
       var callStats = [
-        ['total_visit', 'Total Visits', 'storefront'], ['total_order', 'Total Orders', 'shopping_cart'],
-        ['retailer_registered', 'Retailers Registered', 'add_business'], ['influencer_registered', 'Influencers Registered', 'engineering']
+        ['total_visit', 'Total Visits', 'storefront'], ['total_order', 'Total Orders', 'shopping_cart']
       ];
 
       function escapeHtml(value) {
@@ -640,6 +639,11 @@
             $.each(callStats, function(i, s) {
               html += '<div class="fk-call-stat"><i class="material-icons">' + s[2] + '</i><strong>' +
                 (parseInt(d[s[0]], 10) || 0) + '</strong><span>' + s[1] + '</span></div>';
+            });
+            // one card per active type in the Customer Type master
+            $.each(d.registrations || [], function(i, r) {
+              html += '<div class="fk-call-stat"><i class="material-icons">person_add</i><strong>' +
+                (parseInt(r.count, 10) || 0) + '</strong><span>' + escapeHtml(r.label) + ' Registered</span></div>';
             });
             html += '</div>';
 
