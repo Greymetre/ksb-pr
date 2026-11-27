@@ -10,15 +10,29 @@
     .fk-issue-status.is-in_progress { color: #3b82f6; background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.32); }
     .fk-issue-status.is-resolved { color: #22c55e; background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.32); }
 
-    /* Row actions */
-    .fk-issue-resolve, .fk-issue-resolve:hover, .fk-issue-resolve:focus {
-      display: inline-flex !important; align-items: center; gap: 6px; margin: 0 !important; padding: 6px 14px !important;
-      border-radius: 10px !important; border: 1px solid rgba(34,197,94,.40) !important;
+    /* Row actions — the theme squeezes every table .btn into a 34px icon square,
+       so the Resolve pill overrides it with a more specific selector */
+    body.fk-shell table.dataTable tbody td .btn.fk-issue-resolve,
+    body.fk-shell table.table tbody td .btn.fk-issue-resolve,
+    .fk-issue-resolve {
+      width: auto !important; min-width: 104px !important; height: 34px !important; min-height: 34px !important;
+      display: inline-flex !important; align-items: center; justify-content: center; gap: 6px;
+      margin: 0 !important; padding: 0 14px !important; overflow: visible !important;
+      border-radius: 10px !important; border: 1px solid rgba(34,197,94,.42) !important;
       background: rgba(34,197,94,.14) !important; color: #22c55e !important; box-shadow: none !important;
-      font-size: 12px !important; font-weight: 600 !important; text-transform: none !important; white-space: nowrap;
+      font-family: 'Sora', 'Inter', sans-serif; font-size: 12px !important; font-weight: 600 !important;
+      letter-spacing: .2px; line-height: 1 !important; text-transform: none !important; white-space: nowrap;
+      transition: background .18s ease, border-color .18s ease;
     }
-    .fk-issue-resolve:hover { background: rgba(34,197,94,.24) !important; }
-    .fk-issue-resolve .material-icons { font-size: 17px; }
+    body.fk-shell table.dataTable tbody td .btn.fk-issue-resolve:hover,
+    body.fk-shell table.table tbody td .btn.fk-issue-resolve:hover,
+    .fk-issue-resolve:hover {
+      background: rgba(34,197,94,.26) !important; border-color: rgba(34,197,94,.62) !important;
+    }
+    body.fk-shell table.dataTable tbody td .btn.fk-issue-resolve .material-icons,
+    body.fk-shell table.table tbody td .btn.fk-issue-resolve .material-icons,
+    .fk-issue-resolve .material-icons { color: #22c55e !important; font-size: 17px !important; }
+    #issuesTable td:last-child, #issuesTable th:last-child { text-align: center; min-width: 130px; }
     .fk-issue-locked { color: var(--fk-list-dim); display: inline-flex; }
     .fk-issue-locked .material-icons { font-size: 20px; }
     #issuesTable td.fk-issue-text { white-space: normal; min-width: 220px; max-width: 320px; }

@@ -2304,7 +2304,7 @@
                             </div>
 
                         </li>
-                        @if(auth()->user()->can('user_access'))
+                        @if(auth()->user()->can('user_access') || auth()->user()->can('user_feedback_calling'))
                         <li
                             class="nav-link {{ request()->is('users*') || request()->is('targets*') || request()->is('permissions*') || request()->is('tours*') || request()->is('usercity*') || request()->is('user-issues*') || request()->is('new-joinings*') ? 'active' : '' }}">
                             <a class="hoveradd" data-toggle="collapse" href="#userMenu" aria-expanded="false">
