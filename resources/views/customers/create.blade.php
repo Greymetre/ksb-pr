@@ -1,4 +1,5 @@
 <x-app-layout>
+  @php($isEditCustomer = !empty($customers['id']))
   <div class="row">
     <div class="col-md-12">
       <div class="card">
@@ -252,10 +253,10 @@
 
               <div class="col-md-6">
                 <div class="input_section">
-                  <label class="col-form-label">Working Status<span class="text-danger"> *</span></label>
+                  <label class="col-form-label">Working Status@unless($isEditCustomer)<span class="text-danger"> *</span>@endunless</label>
 
                   <div class="form-group has-default bmd-form-group">
-                    <select class="form-control select2" name="working_status" style="width: 100%;" required id="working_status">
+                    <select class="form-control select2" name="working_status" style="width: 100%;" {{ $isEditCustomer ? '' : 'required' }} id="working_status">
                       <option value="">Select Working Status</option>
                       <option value="New" {{($customers && $customers['working_status'] == 'New')? 'selected':''}}>New</option>
                       <option value="Existing" {{($customers && $customers['working_status'] == 'Existing')? 'selected':''}}>Existing</option>
@@ -637,10 +638,10 @@
                 <div class="row">
                   <div class="col-md-12">
                     <div class="input_section">
-                      <label class="col-form-label">{!! trans('panel.address.address1') !!} <span class="text-danger"> *</span></label>
+                      <label class="col-form-label">{!! trans('panel.address.address1') !!} @unless($isEditCustomer)<span class="text-danger"> *</span>@endunless</label>
 
                       <div class="form-group has-default bmd-form-group">
-                        <input type="text" name="shipping_address1" class="form-control" value="{!! old( 'shipping_address1', isset($customers['customershippingaddress']['address1']) ? $customers['customershippingaddress']['address1'] :'' ) !!}" maxlength="200" required>
+                        <input type="text" name="shipping_address1" class="form-control" value="{!! old( 'shipping_address1', isset($customers['customershippingaddress']['address1']) ? $customers['customershippingaddress']['address1'] :'' ) !!}" maxlength="200" {{ $isEditCustomer ? '' : 'required' }}>
                         @if ($errors->has('shipping_address1'))
                         <div class="error col-lg-12">
                           <p class="text-danger">{{ $errors->first('shipping_address1') }}</p>
@@ -975,7 +976,7 @@
                 <div class="input_section">
                   <label class="col-form-label">Visit Status</label>
                   <div class="form-group has-default bmd-form-group">
-                    <select class="form-control" name="visit_status" id="visit_status" style="width: 100%;" required>
+                    <select class="form-control" name="visit_status" id="visit_status" style="width: 100%;" {{ $isEditCustomer ? '' : 'required' }}>
                       <option value="" selected disabled>Select Visit Status</option>
                       <option value="Hot" @if(!empty($customers->customerdetails) && $customers->customerdetails->visit_status == "Hot") selected @endif>Hot</option>
                       <option value="Warm" @if(!empty($customers->customerdetails) && $customers->customerdetails->visit_status == "Warm") selected @endif>Warm</option>
@@ -997,7 +998,7 @@
                   <label class="col-form-label">Grade</label>
 
                   <div class="form-group has-default bmd-form-group">
-                    <select class="form-control" name="grade" id="grade" style="width: 100%;" required>
+                    <select class="form-control" name="grade" id="grade" style="width: 100%;" {{ $isEditCustomer ? '' : 'required' }}>
                       <option value="" selected disabled>Select Grade</option>
                       <option value="Grade A" @if(!empty($customers->customerdetails) && $customers->customerdetails->grade == "Grade A") selected @endif>A</option>
                       <option value="Grade B" @if(!empty($customers->customerdetails) && $customers->customerdetails->grade == "Grade B") selected @endif>B</option>
@@ -1428,7 +1429,7 @@
           $('#billing_address').removeClass('col-md-6').addClass('col-md-12');
         } else {
           $('#shipping_address').show();
-          $('#shipping_address [name="shipping_address1"]').prop('required', true);
+          $('#shipping_address [name="shipping_address1"]').prop('required', @json(!$isEditCustomer));
           $('#billing_address').removeClass('col-md-12').addClass('col-md-6');
         }
       }
