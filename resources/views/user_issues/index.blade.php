@@ -60,10 +60,86 @@
     .fk-issue-modal .modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px 18px; border-top: 1px solid var(--fk-list-border); }
     .fk-issue-modal .modal-footer .btn { margin: 0; }
     .fk-issue-modal .fk-req { color: #ff5d7a; margin-left: 2px; }
-    .fk-issue-modal .select2-container { width: 100% !important; }
-    .fk-issue-modal .select2-dropdown { z-index: 2000; }
-    .fk-issue-modal .select2-results__option { color: var(--fk-list-text); }
-    .fk-issue-modal .select2-results__option--highlighted[aria-selected] { background: rgba(34,211,238,.16) !important; color: var(--fk-list-heading) !important; }
+    .fk-issue-modal .form-group { margin-bottom: 16px !important; }
+    .fk-issue-modal textarea.form-control { min-height: 96px !important; }
+
+    /* ---- User picker (select2) — same height, radius and colours as the CRM inputs ---- */
+    body.fk-shell .fk-issue-modal .select2-container { width: 100% !important; }
+    body.fk-shell .fk-issue-modal .select2-container--default .select2-selection--single {
+      height: 44px !important; min-height: 44px !important; display: flex !important; align-items: center;
+      padding: 0 40px 0 14px !important; border: 1px solid var(--fk-form-border) !important; border-radius: 12px !important;
+      background: var(--fk-form-bg) !important; box-shadow: none !important; outline: 0 !important;
+    }
+    body.fk-shell .fk-issue-modal .select2-container--open .select2-selection--single,
+    body.fk-shell .fk-issue-modal .select2-container--focus .select2-selection--single {
+      border-color: var(--fk-form-border-focus) !important; background: var(--fk-form-bg-strong) !important; box-shadow: var(--fk-form-shadow) !important;
+    }
+    body.fk-shell .fk-issue-modal .select2-container--open .select2-selection--single { border-radius: 12px 12px 0 0 !important; }
+    body.fk-shell .fk-issue-modal .select2-selection--single .select2-selection__rendered {
+      padding: 0 !important; line-height: 1.3 !important; color: var(--fk-list-text) !important; font-size: 13px !important; font-weight: 400 !important;
+    }
+    body.fk-shell .fk-issue-modal .select2-selection--single .select2-selection__placeholder { color: var(--fk-form-placeholder) !important; }
+    body.fk-shell .fk-issue-modal .select2-selection--single .select2-selection__arrow {
+      top: 0 !important; right: 12px !important; height: 100% !important; width: 20px !important;
+      display: flex !important; align-items: center; justify-content: center;
+    }
+    body.fk-shell .fk-issue-modal .select2-selection--single .select2-selection__arrow b {
+      position: static !important; margin: 0 !important; border: 0 !important;
+      width: 8px !important; height: 8px !important; border-right: 2px solid var(--fk-list-muted) !important;
+      border-bottom: 2px solid var(--fk-list-muted) !important; transform: rotate(45deg) translate(-2px, -2px); transition: transform .18s ease;
+    }
+    body.fk-shell .fk-issue-modal .select2-container--open .select2-selection__arrow b { transform: rotate(-135deg) translate(-2px, -2px); }
+    body.fk-shell .fk-issue-modal .select2-selection__clear {
+      position: absolute; right: 36px; color: var(--fk-list-muted) !important; font-size: 18px; font-weight: 400; margin: 0 !important;
+    }
+
+    body.fk-shell .fk-issue-modal .select2-dropdown {
+      z-index: 2000; overflow: hidden; border: 1px solid var(--fk-form-border-focus) !important; border-top: 0 !important;
+      border-radius: 0 0 12px 12px !important; background: var(--fk-form-bg-strong) !important;
+      box-shadow: 0 18px 40px rgba(0,0,0,.35) !important; backdrop-filter: blur(12px);
+    }
+    body.fk-shell .fk-issue-modal .select2-search--dropdown { padding: 10px !important; }
+    body.fk-shell .fk-issue-modal .select2-search--dropdown .select2-search__field {
+      height: 38px !important; padding: 0 12px 0 34px !important; border: 1px solid var(--fk-form-border) !important; border-radius: 10px !important;
+      background: var(--fk-form-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237d8fbf' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 11px center !important;
+      color: var(--fk-list-text) !important; font-size: 13px !important; outline: 0 !important; box-shadow: none !important;
+    }
+    body.fk-shell .fk-issue-modal .select2-search--dropdown .select2-search__field:focus { border-color: var(--fk-form-border-focus) !important; }
+    body.fk-shell .fk-issue-modal .select2-results > .select2-results__options { max-height: 240px !important; padding: 0 6px 6px; }
+    body.fk-shell .fk-issue-modal .select2-results__option {
+      margin: 2px 0; padding: 8px 10px !important; border-radius: 10px; background: transparent !important;
+      color: var(--fk-list-text) !important; font-size: 13px;
+    }
+    body.fk-shell .fk-issue-modal .select2-results__option--highlighted[aria-selected],
+    body.fk-shell .fk-issue-modal .select2-results__option--highlighted {
+      background: rgba(34,211,238,.12) !important; color: var(--fk-list-heading) !important;
+    }
+    body.fk-shell .fk-issue-modal .select2-results__option[aria-selected=true]:not(.select2-results__option--highlighted) { background: rgba(34,211,238,.06) !important; }
+    body.fk-shell .fk-issue-modal .select2-results__message { color: var(--fk-list-muted) !important; text-align: center; padding: 14px 10px !important; }
+    .fk-opt { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .fk-opt-av {
+      width: 30px; height: 30px; flex: 0 0 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, rgba(34,211,238,.22), rgba(59,130,246,.22)); color: var(--fk-list-accent);
+      font-size: 11px; font-weight: 700; letter-spacing: .4px;
+    }
+    .fk-opt-text { min-width: 0; line-height: 1.25; }
+    .fk-opt-text b { display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fk-opt-text small { display: block; color: var(--fk-list-muted); font-size: 11px; }
+
+    /* ---- Status segmented toggle ---- */
+    .fk-issue-seg {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border-radius: 14px;
+      background: var(--fk-form-bg); border: 1px solid var(--fk-form-border);
+    }
+    .fk-issue-seg button {
+      display: flex; align-items: center; justify-content: center; gap: 7px; height: 38px; border: 1px solid transparent; border-radius: 10px;
+      background: transparent; color: var(--fk-list-muted); font-family: 'Sora', 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all .18s ease;
+    }
+    .fk-issue-seg button .material-icons { font-size: 18px; }
+    .fk-issue-seg button:hover { color: var(--fk-list-text); }
+    .fk-issue-seg button.is-active[data-status="in_progress"] { color: #3b82f6; background: rgba(59,130,246,.14); border-color: rgba(59,130,246,.40); }
+    .fk-issue-seg button.is-active[data-status="resolved"] { color: #22c55e; background: rgba(34,197,94,.14); border-color: rgba(34,197,94,.40); }
     .fk-issue-summary {
       margin-bottom: 16px; padding: 12px 14px; border-radius: 12px;
       background: var(--fk-list-row); border: 1px solid var(--fk-list-border);
@@ -232,11 +308,12 @@
               <p id="resolveIssueText"></p>
             </div>
             <div class="form-group">
-              <label for="resolveIssueStatus">Status</label>
-              <select class="form-control" id="resolveIssueStatus" name="status">
-                <option value="in_progress">In Progress</option>
-                <option value="resolved">Resolved</option>
-              </select>
+              <label>Status</label>
+              <input type="hidden" id="resolveIssueStatus" name="status" value="in_progress">
+              <div class="fk-issue-seg" role="radiogroup" aria-label="Status">
+                <button type="button" data-status="in_progress" role="radio"><i class="material-icons">autorenew</i>In Progress</button>
+                <button type="button" data-status="resolved" role="radio"><i class="material-icons">task_alt</i>Resolved</button>
+              </div>
             </div>
             <p class="fk-issue-note" id="resolveIssueNote">Solve By and Solve Remark are captured only when the issue is resolved.</p>
             <div id="resolveIssueFields">
@@ -347,8 +424,21 @@
           language: {
             noResults: function() { return 'No user found'; },
             searching: function() { return 'Loading users...'; }
-          }
+          },
+          templateResult: renderUserOption,
+          templateSelection: function(item) { return item.name || item.text; }
         });
+      }
+
+      // "Name (CODE)" -> initials badge + name + code line
+      function renderUserOption(item) {
+        if (item.loading || !item.id) return item.text;
+        var name = item.name || item.text, code = item.code || '';
+        var initials = $.trim(name).split(/\s+/).slice(0, 2).map(function(p) { return p.charAt(0); }).join('').toUpperCase();
+        return $('<div class="fk-opt"><span class="fk-opt-av"></span><span class="fk-opt-text"><b></b><small></small></span></div>')
+          .find('.fk-opt-av').text(initials).end()
+          .find('b').text(name).end()
+          .find('small').text(code ? 'Emp Code ' + code : '').end();
       }
       // The layout runs $('.select2').select2() on page ready. Select2's own container
       // also carries the "select2" class, so if our pickers exist first the layout
@@ -392,11 +482,19 @@
 
       // ---------- Resolve / In progress ----------
       function toggleResolveFields() {
-        var resolved = $('#resolveIssueStatus').val() === 'resolved';
+        var status = $('#resolveIssueStatus').val();
+        var resolved = status === 'resolved';
+        $('.fk-issue-seg button').each(function() {
+          var active = $(this).data('status') === status;
+          $(this).toggleClass('is-active', active).attr('aria-checked', active ? 'true' : 'false');
+        });
         $('#resolveIssueFields').toggle(resolved);
         $('#resolveIssueNote').toggle(!resolved);
       }
-      $('#resolveIssueStatus').on('change', toggleResolveFields);
+      $('.fk-issue-seg').on('click', 'button', function() {
+        $('#resolveIssueStatus').val($(this).data('status'));
+        toggleResolveFields();
+      });
 
       $('#issuesTable').on('click', '.fk-issue-resolve', function() {
         var issue = $(this).data('issue');

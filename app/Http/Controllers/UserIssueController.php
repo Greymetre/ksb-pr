@@ -63,6 +63,8 @@ class UserIssueController extends Controller
             'results' => $users->map(fn ($u) => [
                 'id' => $u->id,
                 'text' => $u->name . ($u->employee_codes ? ' (' . $u->employee_codes . ')' : ''),
+                'name' => $u->name,
+                'code' => $u->employee_codes,
             ])->values(),
         ]);
     }
