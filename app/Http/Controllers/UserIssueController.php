@@ -40,6 +40,33 @@ class UserIssueController extends Controller
         ]);
     }
 
+    /**
+     * Select2 source for the User / Solve By pickers in the popups.
+     */
+    public function users(Request $request)
+    {
+        $term = trim((string) $request->q);
+
+        $users = $this->employeeQuery()
+            ->when($term !== '', function ($q) use ($term) {
+                $q->where(function ($q) use ($term) {
+                    $q->where('name', 'like', '%' . $term . '%')
+                        ->orWhere('employee_codes', 'like', '%' . $term . '%')
+                        ->orWhere('mobile', 'like', '%' . $term . '%');
+                });
+            })
+            ->orderBy('name')
+            ->limit(50)
+            ->get(['id', 'name', 'employee_codes']);
+
+        return response()->json([
+            'results' => $users->map(fn ($u) => [
+                'id' => $u->id,
+                'text' => $u->name . ($u->employee_codes ? ' (' . $u->employee_codes . ')' : ''),
+            ])->values(),
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [

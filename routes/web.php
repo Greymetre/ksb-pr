@@ -488,6 +488,7 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     // User Issues (raised from the calling popup or created on the screen)
     Route::get('user-issues', [\App\Http\Controllers\UserIssueController::class, 'index'])->name('user-issues.index');
     Route::post('user-issues', [\App\Http\Controllers\UserIssueController::class, 'store'])->name('user-issues.store');
+    Route::get('user-issues/users', [\App\Http\Controllers\UserIssueController::class, 'users'])->name('user-issues.users');
     Route::get('user-issues/download', [\App\Http\Controllers\UserIssueController::class, 'download'])->name('user-issues.download');
     Route::post('user-issues/{id}/status', [\App\Http\Controllers\UserIssueController::class, 'update'])->whereNumber('id')->name('user-issues.update');
     Route::delete('users/destroy', [UsersController::class, 'massDestroy'])->name('users.massDestroy');

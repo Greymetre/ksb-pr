@@ -47,6 +47,9 @@
     .fk-issue-modal .modal-footer .btn { margin: 0; }
     .fk-issue-modal .fk-req { color: #ff5d7a; margin-left: 2px; }
     .fk-issue-modal .select2-container { width: 100% !important; }
+    .fk-issue-modal .select2-dropdown { z-index: 2000; }
+    .fk-issue-modal .select2-results__option { color: var(--fk-list-text); }
+    .fk-issue-modal .select2-results__option--highlighted[aria-selected] { background: rgba(34,211,238,.16) !important; color: var(--fk-list-heading) !important; }
     .fk-issue-summary {
       margin-bottom: 16px; padding: 12px 14px; border-radius: 12px;
       background: var(--fk-list-row); border: 1px solid var(--fk-list-border);
@@ -178,12 +181,7 @@
           <div class="modal-body">
             <div class="form-group">
               <label for="createIssueUser">User<span class="fk-req">*</span></label>
-              <select class="form-control" id="createIssueUser" name="user_id" required>
-                <option value="">Select user</option>
-                @foreach($employees as $employee)
-                <option value="{{ $employee->id }}">{{ $employee->name }}{{ $employee->employee_codes ? ' ('.$employee->employee_codes.')' : '' }}</option>
-                @endforeach
-              </select>
+              <select class="fk-user-picker" id="createIssueUser" name="user_id" style="width:100%"></select>
             </div>
             <div class="form-group">
               <label for="createIssueText">Issue<span class="fk-req">*</span></label>
@@ -230,12 +228,7 @@
             <div id="resolveIssueFields">
               <div class="form-group">
                 <label for="resolveIssueSolvedBy">Solve By<span class="fk-req">*</span></label>
-                <select class="form-control" id="resolveIssueSolvedBy" name="solved_by">
-                  <option value="">Select user</option>
-                  @foreach($employees as $employee)
-                  <option value="{{ $employee->id }}">{{ $employee->name }}{{ $employee->employee_codes ? ' ('.$employee->employee_codes.')' : '' }}</option>
-                  @endforeach
-                </select>
+                <select class="fk-user-picker" id="resolveIssueSolvedBy" name="solved_by" style="width:100%"></select>
               </div>
               <div class="form-group">
                 <label for="resolveIssueRemark">Solve Remark<span class="fk-req">*</span></label>
@@ -318,11 +311,33 @@
         table.draw();
       });
 
-      // Searchable user pickers inside the popups
-      if ($.fn.select2) {
-        $('#createIssueUser').select2({ dropdownParent: $('#createIssueModal'), placeholder: 'Select user', width: '100%' });
-        $('#resolveIssueSolvedBy').select2({ dropdownParent: $('#resolveIssueModal'), placeholder: 'Select user', width: '100%' });
+      // Searchable user pickers inside the popups: users come from the server
+      // (first 50 on open, then by name / code / mobile as you type)
+      function userPicker($select, $modal) {
+        if (!$.fn.select2) return;
+        if ($select.hasClass('select2-hidden-accessible')) $select.select2('destroy');
+        $select.select2({
+          dropdownParent: $modal.find('.modal-content'),
+          placeholder: 'Select user',
+          allowClear: true,
+          width: '100%',
+          minimumInputLength: 0,
+          ajax: {
+            url: "{{ route('user-issues.users') }}",
+            dataType: 'json',
+            delay: 250,
+            data: function(params) { return { q: params.term || '' }; },
+            processResults: function(data) { return { results: data.results || [] }; },
+            cache: true
+          },
+          language: {
+            noResults: function() { return 'No user found'; },
+            searching: function() { return 'Loading users...'; }
+          }
+        });
       }
+      userPicker($('#createIssueUser'), $('#createIssueModal'));
+      userPicker($('#resolveIssueSolvedBy'), $('#resolveIssueModal'));
 
       // ---------- Create ----------
       $('#openCreateIssue').on('click', function() {
