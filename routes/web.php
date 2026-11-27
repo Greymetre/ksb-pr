@@ -1051,6 +1051,8 @@ Route::post('secondary-customers/toggle-active',
     Route::any('reports/reports_sale', [UsersController::class, 'reports_sale']);
     Route::any('reports/user_performance', [UsersController::class, 'user_performance_report']);
     Route::get('reports/user_performance/download', [UsersController::class, 'user_performance_report_download']);
+    Route::get('reports/promotional_activity', [\App\Http\Controllers\PromotionalActivityReportController::class, 'index'])->name('reports.promotional_activity');
+    Route::get('reports/promotional_activity/download', [\App\Http\Controllers\PromotionalActivityReportController::class, 'download'])->name('reports.promotional_activity.download');
     Route::any('reports/fos_rating', [UsersController::class, 'fos_rating']);
     Route::any('reports/asm_rating', [UsersController::class, 'asm_rating']);
     Route::any('reports/ch_rating', [UsersController::class, 'ch_rating']);
