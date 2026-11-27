@@ -1134,6 +1134,7 @@ Route::post('ajax/user-cities-by-district', [TourController::class, 'ajaxUserCit
     Route::post('expenses-type-active', [ExpensesTypeController::class, 'changeStatus']);
 
     // /Expenses
+    Route::get('expenses/{expense}/distance', [ExpensesController::class, 'distance'])->whereNumber('expense')->name('expenses.distance');
     Route::resource('expenses', ExpensesController::class);
     Route::post('expenses-active', [ExpensesController::class, 'changeStatus']);
     Route::any('map-all', [ExpensesController::class, 'all_map']);

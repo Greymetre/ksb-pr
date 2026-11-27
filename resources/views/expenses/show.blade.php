@@ -328,7 +328,26 @@ foreach ($expense->getMedia('expense_file') as $expenseMedia) {
               </div>
               <div class="expense-meta-row">
                 <span>Total KM Run</span>
+                @if(!empty($distance_pending))
+                <strong class="js-expense-distance" data-url="{{ url('expenses/' . $expense->id . '/distance') }}">
+                  {{ is_numeric($expense->total_distance) && $expense->total_distance > 0 ? number_format($expense->total_distance, 2) . ' · ' : '' }}<span class="text-muted">Calculating...</span>
+                </strong>
+                <script>
+                  // KM run is fetched after the popup is on screen (Google road distance is slow)
+                  (function() {
+                    var els = document.querySelectorAll('.js-expense-distance:not([data-loading])');
+                    els.forEach(function(el) {
+                      el.setAttribute('data-loading', '1');
+                      fetch(el.getAttribute('data-url'), { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+                        .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+                        .then(function(res) { el.textContent = res.total_distance !== null ? res.total_distance : '0.00'; })
+                        .catch(function() { el.innerHTML = '<span class="text-muted">Not available</span>'; });
+                    });
+                  })();
+                </script>
+                @else
                 <strong>{{$total_dis? number_format($total_dis, 2) :"0.00"}}</strong>
+                @endif
               </div>
               <div class="expense-meta-row">
                 <span>Location</span>

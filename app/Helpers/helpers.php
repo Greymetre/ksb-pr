@@ -1767,6 +1767,95 @@ function getRoadDistance($lat1, $lng1, $lat2, $lng2): ?float
     return null;
 }
 
+/**
+ * Road-driving distance (km) along an ordered path of points, e.g. one day's
+ * punch-in -> live locations -> check-ins -> punch-out.
+ *
+ * Same result as calling getRoadDistance() for every consecutive pair and
+ * adding them up (each Directions "leg" is exactly that pair's route), but the
+ * points go to Google 25 at a time as waypoints, so a day with 300 points needs
+ * ~13 requests instead of ~300. Returns null when any part cannot be routed.
+ *
+ * @param array<int, array{latitude: float, longitude: float}> $points
+ */
+if (! function_exists('getRoadDistanceForPath')) {
+    function getRoadDistanceForPath(array $points): ?float
+    {
+        // consecutive duplicates add nothing to the route
+        $path = [];
+        foreach ($points as $point) {
+            $last = end($path);
+            if ($last && $last['latitude'] == $point['latitude'] && $last['longitude'] == $point['longitude']) {
+                continue;
+            }
+            $path[] = ['latitude' => $point['latitude'], 'longitude' => $point['longitude']];
+        }
+
+        if (count($path) < 2) {
+            return 0.0;
+        }
+
+        $apiKey = config('services.google.maps_api_key');
+        if (empty($apiKey)) {
+            return null;
+        }
+
+        $perRequest = 25; // origin + 23 waypoints + destination
+        $total = 0.0;
+        $count = count($path);
+
+        // each chunk starts where the previous one ended so no leg is skipped
+        for ($start = 0; $start < $count - 1; $start += $perRequest - 1) {
+            $chunk = array_slice($path, $start, $perRequest);
+            if (count($chunk) < 2) {
+                break;
+            }
+
+            $coords = array_map(fn ($p) => $p['latitude'] . ',' . $p['longitude'], $chunk);
+            $origin = array_shift($coords);
+            $destination = array_pop($coords);
+
+            $params = [
+                'origin' => $origin,
+                'destination' => $destination,
+                'mode' => 'driving',
+                'key' => $apiKey,
+            ];
+            if ($coords) {
+                $params['waypoints'] = implode('|', $coords);
+            }
+
+            try {
+                $response = \Illuminate\Support\Facades\Http::connectTimeout(3)
+                    ->timeout(10)
+                    ->retry(2, 200)
+                    ->get('https://maps.googleapis.com/maps/api/directions/json', $params);
+            } catch (\Throwable $exception) {
+                report($exception);
+                return null;
+            }
+
+            if (!$response->successful() || $response->json('status') !== 'OK') {
+                return null;
+            }
+
+            $legs = $response->json('routes.0.legs') ?? [];
+            if (count($legs) !== count($chunk) - 1) {
+                return null;
+            }
+            foreach ($legs as $leg) {
+                $meters = $leg['distance']['value'] ?? null;
+                if (!is_numeric($meters)) {
+                    return null;
+                }
+                $total += ((float) $meters) / 1000;
+            }
+        }
+
+        return round($total, 3);
+    }
+}
+
 if (! function_exists('sanitizeForExcel')) {
     function sanitizeForExcel($value)
     {

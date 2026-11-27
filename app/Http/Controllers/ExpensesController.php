@@ -150,27 +150,55 @@ class ExpensesController extends Controller
             });
 
         $events = $events->sortBy('timestamp')->values();
-        $totalDistance = 0.0;
 
-        for ($index = 1; $index < $events->count(); $index++) {
-            $previous = $events[$index - 1];
-            $current = $events[$index];
-            $roadDistance = getRoadDistance(
-                $previous['latitude'],
-                $previous['longitude'],
-                $current['latitude'],
-                $current['longitude']
-            );
+        // Road distance through every point in time order, batched 25 points per Google call.
+        $totalDistance = getRoadDistanceForPath($events->all());
 
-            // Do not silently replace a driving route with straight-line distance.
-            if ($roadDistance === null) {
-                throw new \RuntimeException('Unable to calculate road-driving distance from Google Maps.');
-            }
-
-            $totalDistance += $roadDistance;
+        // Do not silently replace a driving route with straight-line distance.
+        if ($totalDistance === null) {
+            throw new \RuntimeException('Unable to calculate road-driving distance from Google Maps.');
         }
 
-        return round($totalDistance, 3);
+        return $totalDistance;
+    }
+
+    /**
+     * Total KM for the expense popup, loaded after the popup is already open.
+     * Past days are calculated once and cached on the expense.
+     */
+    private function expenseDistance(Expenses $expense): ?float
+    {
+        if ($expense->distance_calculated) {
+            return (float) $expense->total_distance;
+        }
+
+        try {
+            $total = $this->calculateExpenseDistance($expense);
+            // Save today's current distance but keep it open for recalculation.
+            // Once the date has passed, save the final distance and close the cache.
+            $expense->total_distance = $total;
+            $expense->distance_calculated = Carbon::parse($expense->date)->startOfDay()->lt(Carbon::today());
+            $expense->save();
+
+            return $total;
+        } catch (\Throwable $exception) {
+            // Distance is supplementary information. A temporary Maps failure or an
+            // unroutable coordinate must not break the expense popup.
+            report($exception);
+
+            return is_numeric($expense->total_distance) ? (float) $expense->total_distance : null;
+        }
+    }
+
+    public function distance(Expenses $expense)
+    {
+        $this->abortUnlessCanAccessExpense($expense);
+        $total = $this->expenseDistance($expense);
+
+        return response()->json([
+            'status' => $total === null ? 'error' : 'success',
+            'total_distance' => $total === null ? null : number_format($total, 2),
+        ]);
     }
 
     /**
@@ -449,28 +477,11 @@ class ExpensesController extends Controller
             );
         }
 
-        $isPastExpense = Carbon::parse($expense->date)->startOfDay()->lt(Carbon::today());
-
-        if ($expense->distance_calculated) {
-            $total_dis = (float) $expense->total_distance;
-        } else {
-            try {
-                $total_dis = $this->calculateExpenseDistance($expense);
-
-                // Save today's current distance but keep it open for recalculation.
-                // Once the date has passed, save the final distance and close the cache.
-                $expense->total_distance = $total_dis;
-                $expense->distance_calculated = $isPastExpense;
-                $expense->save();
-            } catch (\Throwable $exception) {
-                // Distance is supplementary information. A temporary Maps failure or an
-                // unroutable coordinate must not prevent the expense popup from opening.
-                report($exception);
-                $total_dis = is_numeric($expense->total_distance)
-                    ? (float) $expense->total_distance
-                    : 0.0;
-            }
-        }
+        // Google road distance can take a few seconds, so the popup opens with the
+        // cached value (or a "calculating" placeholder) and the view fetches the
+        // live figure from expenses/{id}/distance once it is on screen.
+        $distance_pending = !$expense->distance_calculated;
+        $total_dis = $expense->distance_calculated ? (float) $expense->total_distance : null;
 
         // the geolocator link replays the expense date on the track activity map, so only
         // offer it when that day still has a live location trail (they are purged after 45 days)
@@ -490,6 +501,7 @@ class ExpensesController extends Controller
             'paln',
             'total_visit',
             'total_dis',
+            'distance_pending',
             'attendance',
             'total_working_hours',
             'has_track_activity'

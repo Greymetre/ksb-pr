@@ -156,27 +156,16 @@ class ExpensesTypeController extends Controller
             });
 
         $events = $events->sortBy('timestamp')->values();
-        $totalDistance = 0.0;
 
-        for ($index = 1; $index < $events->count(); $index++) {
-            $previous = $events[$index - 1];
-            $current = $events[$index];
-            $roadDistance = getRoadDistance(
-                $previous['latitude'],
-                $previous['longitude'],
-                $current['latitude'],
-                $current['longitude']
-            );
+        // Road distance through every point in time order, batched 25 points per Google call.
+        $totalDistance = getRoadDistanceForPath($events->all());
 
-            // Do not silently replace a driving route with straight-line distance.
-            if ($roadDistance === null) {
-                throw new \RuntimeException('Unable to calculate road-driving distance from Google Maps.');
-            }
-
-            $totalDistance += $roadDistance;
+        // Do not silently replace a driving route with straight-line distance.
+        if ($totalDistance === null) {
+            throw new \RuntimeException('Unable to calculate road-driving distance from Google Maps.');
         }
 
-        return round($totalDistance, 3);
+        return $totalDistance;
     }
 
     private function expenseRate(Expenses $expense): string

@@ -576,21 +576,42 @@
        window.location.href = expensesMainUrl;
      }
 
+     // Open the popup straight away with a loader, then fill it in. The KM run is
+     // fetched separately because Google road distance can take a few seconds.
+     if (!document.getElementById('fkExpenseSpinnerCss')) {
+       $('head').append('<style id="fkExpenseSpinnerCss">.fk-expense-spinner{width:40px;height:40px;margin:0 auto;border-radius:50%;' +
+         'border:3px solid rgba(34,211,238,.18);border-top-color:#22d3ee;animation:fkExpenseSpin .8s linear infinite}' +
+         '@keyframes fkExpenseSpin{to{transform:rotate(360deg)}}</style>');
+     }
+     var expenseRequest = null;
      function showExpense(eid) {
-       $.ajax({
-         url: '/expenses/' + eid, // The URL to the route that returns the expense details
+       if (expenseRequest) expenseRequest.abort();
+       $('#expenseDetails').html(
+         '<div class="text-center" style="padding:60px 20px;">' +
+           '<div class="fk-expense-spinner" role="status" aria-label="Loading"></div>' +
+           '<p class="text-muted" style="margin-top:14px;">Loading expense details...</p>' +
+         '</div>'
+       );
+       $('#expenseModal').modal('show');
+
+       expenseRequest = $.ajax({
+         url: "{{ url('expenses') }}/" + eid,
          method: 'GET',
          success: function(response) {
-
+           // the KM run fills itself in via the small script inside the response
            $('#expenseDetails').html(response);
-           // Show the modal
-           $('#expenseModal').modal('show');
          },
-         error: function(xhr, status, error) {
-           console.error('Error fetching expense details:', error);
-         }
+         error: function(xhr, status) {
+           if (status === 'abort') return;
+           $('#expenseDetails').html(
+             '<div class="text-center text-danger" style="padding:50px 20px;">Unable to load the expense. ' +
+             '<a href="#" onclick="showExpense(' + parseInt(eid, 10) + ');return false;">Try again</a></div>'
+           );
+         },
+         complete: function() { expenseRequest = null; }
        });
      }
+
      $("#payroll").on("change", function() {
        localStorage.removeItem('executive_id');
        var payroll = $(this).val();
