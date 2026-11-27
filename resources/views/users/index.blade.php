@@ -115,6 +115,12 @@
               <span>Export</span>
             </button>
             @endif
+            @if(auth()->user()->can('user_feedback_calling'))
+            <button class="btn fk-tool-calling" type="button" id="openCallingReport">
+              <span class="material-icons">support_agent</span>
+              <span>Calling Report</span>
+            </button>
+            @endif
           </div>
           <div class="fk-filter-drawer-foot">
             <button class="btn fk-filter-reset" type="button">Reset</button>
@@ -175,107 +181,117 @@
     }
 
     /* Calling details popup — built on the CRM theme variables (fk-dark-shell / fk-light-shell) */
-    #callingDetailsModal .modal-dialog { max-width: 980px; margin-top: 28px; margin-bottom: 28px; }
-    #callingDetailsModal .modal-content { overflow: hidden; }
-    #callingDetailsModal .fk-call-head {
+    .fk-call-modal .modal-dialog { max-width: 980px; margin-top: 28px; margin-bottom: 28px; }
+    .fk-call-modal .modal-content { overflow: hidden; }
+    .fk-call-modal .fk-call-head {
       display: flex; align-items: center; gap: 14px; padding: 18px 22px;
       border-bottom: 1px solid var(--fk-list-border, rgba(120,160,255,.14));
     }
-    #callingDetailsModal .fk-call-avatar {
+    .fk-call-modal .fk-call-avatar {
       width: 46px; height: 46px; flex: 0 0 46px; border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
       background: linear-gradient(135deg, rgba(34,197,94,.22), rgba(34,211,238,.16));
       border: 1px solid rgba(34,197,94,.35); color: #22c55e;
     }
-    #callingDetailsModal .fk-call-title { flex: 1; min-width: 0; }
-    #callingDetailsModal .fk-call-title h4 {
+    .fk-call-modal .fk-call-title { flex: 1; min-width: 0; }
+    .fk-call-modal .fk-call-title h4 {
       margin: 0; color: var(--fk-list-heading); font-family: 'Sora', 'Inter', sans-serif;
       font-size: 18px; font-weight: 700;
     }
-    #callingDetailsModal .fk-call-title p {
+    .fk-call-modal .fk-call-title p {
       margin: 3px 0 0; color: var(--fk-list-muted); font-size: 13px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    #callingDetailsModal .fk-call-title p b { color: var(--fk-list-accent); font-weight: 600; }
-    #callingDetailsModal .fk-call-close {
+    .fk-call-modal .fk-call-title p b { color: var(--fk-list-accent); font-weight: 600; }
+    .fk-call-modal .fk-call-close {
       width: 38px; height: 38px; flex: 0 0 38px; border-radius: 12px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       background: var(--fk-form-bg); border: 1px solid var(--fk-form-border); color: var(--fk-list-soft);
       transition: all .18s ease;
     }
-    #callingDetailsModal .fk-call-close:hover { background: rgba(255,93,122,.14); border-color: rgba(255,93,122,.45); color: #ff5d7a; }
+    .fk-call-modal .fk-call-close:hover { background: rgba(255,93,122,.14); border-color: rgba(255,93,122,.45); color: #ff5d7a; }
 
-    #callingDetailsModal .modal-body { padding: 18px 22px 6px; max-height: calc(100vh - 220px); overflow-y: auto; }
-    #callingDetailsModal .fk-call-toolbar {
+    .fk-call-modal .modal-body { padding: 18px 22px 6px; max-height: calc(100vh - 220px); overflow-y: auto; }
+    .fk-call-modal .fk-call-toolbar {
       display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px;
     }
-    #callingDetailsModal .fk-call-toolbar .form-group { margin: 0 !important; width: 200px; }
-    body.fk-dark-shell #callingDetailsModal #callDate { color-scheme: dark; }
-    #callingDetailsModal .fk-call-status {
+    .fk-call-modal .fk-call-toolbar .form-group { margin: 0 !important; width: 200px; }
+    body.fk-dark-shell .fk-call-modal #callDate { color-scheme: dark; }
+    .fk-call-modal .fk-call-status {
       display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 14px; border-radius: 999px;
       font-size: 12px; font-weight: 600; letter-spacing: .4px;
     }
-    #callingDetailsModal .fk-call-status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-    #callingDetailsModal .fk-call-status.is-present { color: #22c55e; background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.32); }
-    #callingDetailsModal .fk-call-status.is-open { color: #f59e0b; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.32); }
-    #callingDetailsModal .fk-call-status.is-absent { color: #ff5d7a; background: rgba(255,93,122,.12); border: 1px solid rgba(255,93,122,.32); }
+    .fk-call-modal .fk-call-status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .fk-call-modal .fk-call-status.is-present { color: #22c55e; background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.32); }
+    .fk-call-modal .fk-call-status.is-open { color: #f59e0b; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.32); }
+    .fk-call-modal .fk-call-status.is-absent { color: #ff5d7a; background: rgba(255,93,122,.12); border: 1px solid rgba(255,93,122,.32); }
 
-    #callingDetailsModal .fk-call-section {
+    .fk-call-modal .fk-call-section {
       margin-bottom: 14px; padding: 14px 16px; border-radius: 14px;
       background: var(--fk-list-row); border: 1px solid var(--fk-list-border);
     }
-    #callingDetailsModal .fk-call-section-title {
+    .fk-call-modal .fk-call-section-title {
       display: flex; align-items: center; gap: 8px; margin: 0 0 12px;
       color: var(--fk-form-label); font-family: 'Sora', 'Inter', sans-serif;
       font-size: 10px; font-weight: 600; letter-spacing: 1.8px; text-transform: uppercase;
     }
-    #callingDetailsModal .fk-call-section-title .material-icons { font-size: 16px; color: var(--fk-list-accent); }
-    #callingDetailsModal .fk-call-info { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 18px; }
-    #callingDetailsModal .fk-call-info .is-wide { grid-column: span 2; }
-    #callingDetailsModal .fk-call-info span {
+    .fk-call-modal .fk-call-section-title .material-icons { font-size: 16px; color: var(--fk-list-accent); }
+    .fk-call-modal .fk-call-info { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 18px; }
+    .fk-call-modal .fk-call-info .is-wide { grid-column: span 2; }
+    .fk-call-modal .fk-call-info span {
       display: block; color: var(--fk-list-muted); font-size: 11px; letter-spacing: .3px; margin-bottom: 3px;
     }
-    #callingDetailsModal .fk-call-info b {
+    .fk-call-modal .fk-call-info b {
       display: block; color: var(--fk-list-text); font-size: 14px; font-weight: 500; word-break: break-word;
     }
 
-    #callingDetailsModal .fk-call-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
-    #callingDetailsModal .fk-call-stat {
+    .fk-call-modal .fk-call-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .fk-call-modal .fk-call-stat {
       position: relative; padding: 14px 16px; border-radius: 14px; overflow: hidden;
       background: var(--fk-list-row); border: 1px solid var(--fk-list-border);
     }
-    #callingDetailsModal .fk-call-stat::after {
+    .fk-call-modal .fk-call-stat::after {
       content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
       background: linear-gradient(180deg, var(--fk-list-accent), var(--fk-list-accent-2, #3b82f6));
     }
-    #callingDetailsModal .fk-call-stat .material-icons { float: right; font-size: 20px; color: var(--fk-list-dim); }
-    #callingDetailsModal .fk-call-stat strong {
+    .fk-call-modal .fk-call-stat .material-icons { float: right; font-size: 20px; color: var(--fk-list-dim); }
+    .fk-call-modal .fk-call-stat strong {
       display: block; color: var(--fk-list-heading); font-family: 'Sora', 'Inter', sans-serif; font-size: 24px; font-weight: 700; line-height: 1.1;
     }
-    #callingDetailsModal .fk-call-stat span { display: block; margin-top: 4px; color: var(--fk-list-muted); font-size: 12px; }
+    .fk-call-modal .fk-call-stat span { display: block; margin-top: 4px; color: var(--fk-list-muted); font-size: 12px; }
 
-    #callingDetailsModal .fk-call-notes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    #callingDetailsModal .fk-call-notes .form-group { margin-bottom: 8px !important; }
-    #callingDetailsModal .modal-footer {
+    .fk-call-modal .fk-call-notes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .fk-call-modal .fk-call-notes .form-group { margin-bottom: 8px !important; }
+    .fk-call-modal .modal-footer {
       display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px 18px;
       border-top: 1px solid var(--fk-list-border);
     }
-    #callingDetailsModal .modal-footer .btn { margin: 0; }
-    #callingDetailsModal .fk-call-empty { padding: 30px 0; text-align: center; color: var(--fk-list-muted); }
-    #callingDetailsModal .fk-call-loading { opacity: .45; pointer-events: none; transition: opacity .15s ease; }
+    .fk-call-modal .modal-footer .btn { margin: 0; }
+    .fk-call-modal .fk-call-empty { padding: 30px 0; text-align: center; color: var(--fk-list-muted); }
+    .fk-call-modal .fk-call-loading { opacity: .45; pointer-events: none; transition: opacity .15s ease; }
+
+    /* Calling Report button sits on its own full-width row under Template / Import / Export */
+    body.fk-shell .fk-filter-drawer-tools .fk-tool-calling { order: 4; grid-column: 1 / -1; }
+    body.fk-shell .fk-filter-drawer-tools .fk-tool-calling .material-icons { color: #22c55e; }
+
+    #callingReportModal .modal-dialog { max-width: 480px; }
+    #callingReportModal .fk-call-range { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    #callingReportModal .fk-call-range .form-group { margin-bottom: 0 !important; }
+    #callingReportModal .fk-call-hint { margin: 14px 0 8px; color: var(--fk-list-muted); font-size: 12px; line-height: 1.5; }
+    body.fk-dark-shell #callingReportModal input[type="date"] { color-scheme: dark; }
 
     @media (max-width: 991px) {
-      #callingDetailsModal .fk-call-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      #callingDetailsModal .fk-call-info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .fk-call-modal .fk-call-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .fk-call-modal .fk-call-info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 575px) {
-      #callingDetailsModal .fk-call-info, #callingDetailsModal .fk-call-notes { grid-template-columns: 1fr; }
-      #callingDetailsModal .fk-call-info .is-wide { grid-column: auto; }
-      #callingDetailsModal .fk-call-toolbar .form-group { width: 100%; }
+      .fk-call-modal .fk-call-info, .fk-call-modal .fk-call-notes { grid-template-columns: 1fr; }
+      .fk-call-modal .fk-call-info .is-wide { grid-column: auto; }
+      .fk-call-modal .fk-call-toolbar .form-group { width: 100%; }
     }
   </style>
 
-  <div class="modal fade" id="callingDetailsModal" tabindex="-1" role="dialog" aria-labelledby="callTitle" aria-hidden="true">
+  <div class="modal fade fk-call-modal" id="callingDetailsModal" tabindex="-1" role="dialog" aria-labelledby="callTitle" aria-hidden="true">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="fk-call-head">
@@ -314,6 +330,44 @@
       </div>
     </div>
   </div>
+
+  @if(auth()->user()->can('user_feedback_calling'))
+  <div class="modal fade fk-call-modal" id="callingReportModal" tabindex="-1" role="dialog" aria-labelledby="callReportTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <form action="{{ route('users.calling.report') }}" method="get" id="callingReportForm">
+          <div class="fk-call-head">
+            <div class="fk-call-avatar"><i class="material-icons">support_agent</i></div>
+            <div class="fk-call-title">
+              <h4 id="callReportTitle">Calling Report Export</h4>
+              <p>Calling remarks with each employee's day summary</p>
+            </div>
+            <button type="button" class="fk-call-close" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
+          </div>
+          <div class="modal-body">
+            <div class="fk-call-range">
+              <div class="form-group">
+                <label for="callReportStart">Start Date</label>
+                <input type="date" class="form-control" name="start_date" id="callReportStart" required max="{{ date('Y-m-d') }}">
+              </div>
+              <div class="form-group">
+                <label for="callReportEnd">End Date</label>
+                <input type="date" class="form-control" name="end_date" id="callReportEnd" required max="{{ date('Y-m-d') }}">
+              </div>
+            </div>
+            <p class="fk-call-hint">One row per saved calling remark in this date range.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="material-icons" style="font-size:18px;vertical-align:middle">download</i> Download
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  @endif
 
   <script src="{{ url('/').'/'.asset('assets/js/jquery.custom.js') }}"></script>
   <script type="text/javascript">
@@ -620,6 +674,31 @@
         $('#callRemark, #callIssue').val('');
         $('#callingDetailsModal').modal('show');
         loadCallingDetails();
+      });
+
+      // ---------- Calling report export ----------
+      function ymd(d) {
+        return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+      }
+
+      $('#openCallingReport').on('click', function() {
+        var end = new Date(), start = new Date();
+        start.setMonth(start.getMonth() - 1);
+        $('#callReportStart').val(ymd(start));
+        $('#callReportEnd').val(ymd(end));
+        $('#user-filter-drawer').removeClass('is-open');
+        $('body').removeClass('fk-filter-open');
+        $('#callingReportModal').modal('show');
+      });
+
+      $('#callingReportForm').on('submit', function(e) {
+        if ($('#callReportStart').val() > $('#callReportEnd').val()) {
+          e.preventDefault();
+          callNotify('error', 'Start date cannot be after end date.');
+          return;
+        }
+        // file download keeps the page; close the popup once the request has started
+        setTimeout(function() { $('#callingReportModal').modal('hide'); }, 300);
       });
 
       $('#callDate').on('change', function() {

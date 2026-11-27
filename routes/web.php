@@ -484,6 +484,7 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     // Users
     Route::get('user-calling/details', [\App\Http\Controllers\UserCallingController::class, 'details'])->name('users.calling.details');
     Route::post('user-calling/store', [\App\Http\Controllers\UserCallingController::class, 'store'])->name('users.calling.store');
+    Route::get('user-calling/report', [\App\Http\Controllers\UserCallingController::class, 'report'])->name('users.calling.report');
     Route::delete('users/destroy', [UsersController::class, 'massDestroy'])->name('users.massDestroy');
     Route::resource('users', UsersController::class);
     Route::any('users-download', [UsersController::class, 'download'])->name('users.download');
