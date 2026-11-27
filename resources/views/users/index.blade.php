@@ -168,55 +168,148 @@
     </div>
   </div>
   <style>
-    .fk-call-user, .fk-call-user:hover, .fk-call-user:focus { background: #e7f5ea !important; color: #2e7d32 !important; box-shadow: none !important; }
-    #callingDetailsModal .modal-dialog { max-width: 960px; }
-    #callingDetailsModal .modal-content { border-radius: 10px; }
-    #callingDetailsModal .fk-call-head { display: flex; align-items: center; gap: 14px; padding: 18px 22px; border-bottom: 1px solid #e9ecef; }
-    #callingDetailsModal .fk-call-head-icon { width: 46px; height: 46px; border-radius: 10px; background: #e7f5ea; color: #2e7d32; display: flex; align-items: center; justify-content: center; }
-    #callingDetailsModal .fk-call-head h4 { margin: 0; flex: 1; font-size: 20px; }
-    #callingDetailsModal .fk-call-head h4 small { color: #6c757d; font-size: 15px; }
-    #callingDetailsModal .fk-call-close { background: #dc3545; color: #fff; border: 0; border-radius: 6px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-    #callingDetailsModal .modal-body { padding: 20px 22px; }
-    #callingDetailsModal .fk-call-date { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-    #callingDetailsModal .fk-call-date label { font-weight: 600; color: #212529; margin: 0; }
-    #callingDetailsModal .fk-call-date input { width: 180px; border: 1px solid #ced4da; border-radius: 6px; padding: 6px 10px; }
-    #callingDetailsModal .fk-call-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
-    #callingDetailsModal .fk-call-tile { display: flex; justify-content: space-between; gap: 10px; background: #f8f9fb; border: 1px solid #edf0f3; border-radius: 6px; padding: 10px 14px; }
-    #callingDetailsModal .fk-call-tile span { color: #495057; }
-    #callingDetailsModal .fk-call-tile b { color: #212529; text-align: right; }
-    #callingDetailsModal .fk-call-field { margin-top: 16px; }
-    #callingDetailsModal .fk-call-field label { font-weight: 600; color: #212529; }
-    #callingDetailsModal .fk-call-field textarea { width: 100%; min-height: 80px; border: 1px solid #ced4da; border-radius: 6px; padding: 8px 12px; }
-    #callingDetailsModal .fk-call-loading { opacity: .5; pointer-events: none; }
-    @media (max-width: 767px) { #callingDetailsModal .fk-call-grid { grid-template-columns: 1fr; } }
+    /* Row action: same footprint as edit/delete, green "call" tint that works on both shells */
+    .fk-call-user, .fk-call-user:hover, .fk-call-user:focus {
+      background: rgba(34, 197, 94, .14) !important; color: #22c55e !important;
+      border: 1px solid rgba(34, 197, 94, .32) !important; box-shadow: none !important;
+    }
+
+    /* Calling details popup — built on the CRM theme variables (fk-dark-shell / fk-light-shell) */
+    #callingDetailsModal .modal-dialog { max-width: 980px; margin-top: 28px; margin-bottom: 28px; }
+    #callingDetailsModal .modal-content { overflow: hidden; }
+    #callingDetailsModal .fk-call-head {
+      display: flex; align-items: center; gap: 14px; padding: 18px 22px;
+      border-bottom: 1px solid var(--fk-list-border, rgba(120,160,255,.14));
+    }
+    #callingDetailsModal .fk-call-avatar {
+      width: 46px; height: 46px; flex: 0 0 46px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, rgba(34,197,94,.22), rgba(34,211,238,.16));
+      border: 1px solid rgba(34,197,94,.35); color: #22c55e;
+    }
+    #callingDetailsModal .fk-call-title { flex: 1; min-width: 0; }
+    #callingDetailsModal .fk-call-title h4 {
+      margin: 0; color: var(--fk-list-heading); font-family: 'Sora', 'Inter', sans-serif;
+      font-size: 18px; font-weight: 700;
+    }
+    #callingDetailsModal .fk-call-title p {
+      margin: 3px 0 0; color: var(--fk-list-muted); font-size: 13px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #callingDetailsModal .fk-call-title p b { color: var(--fk-list-accent); font-weight: 600; }
+    #callingDetailsModal .fk-call-close {
+      width: 38px; height: 38px; flex: 0 0 38px; border-radius: 12px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--fk-form-bg); border: 1px solid var(--fk-form-border); color: var(--fk-list-soft);
+      transition: all .18s ease;
+    }
+    #callingDetailsModal .fk-call-close:hover { background: rgba(255,93,122,.14); border-color: rgba(255,93,122,.45); color: #ff5d7a; }
+
+    #callingDetailsModal .modal-body { padding: 18px 22px 6px; max-height: calc(100vh - 220px); overflow-y: auto; }
+    #callingDetailsModal .fk-call-toolbar {
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px;
+    }
+    #callingDetailsModal .fk-call-toolbar .form-group { margin: 0 !important; width: 200px; }
+    body.fk-dark-shell #callingDetailsModal #callDate { color-scheme: dark; }
+    #callingDetailsModal .fk-call-status {
+      display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 14px; border-radius: 999px;
+      font-size: 12px; font-weight: 600; letter-spacing: .4px;
+    }
+    #callingDetailsModal .fk-call-status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    #callingDetailsModal .fk-call-status.is-present { color: #22c55e; background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.32); }
+    #callingDetailsModal .fk-call-status.is-open { color: #f59e0b; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.32); }
+    #callingDetailsModal .fk-call-status.is-absent { color: #ff5d7a; background: rgba(255,93,122,.12); border: 1px solid rgba(255,93,122,.32); }
+
+    #callingDetailsModal .fk-call-section {
+      margin-bottom: 14px; padding: 14px 16px; border-radius: 14px;
+      background: var(--fk-list-row); border: 1px solid var(--fk-list-border);
+    }
+    #callingDetailsModal .fk-call-section-title {
+      display: flex; align-items: center; gap: 8px; margin: 0 0 12px;
+      color: var(--fk-form-label); font-family: 'Sora', 'Inter', sans-serif;
+      font-size: 10px; font-weight: 600; letter-spacing: 1.8px; text-transform: uppercase;
+    }
+    #callingDetailsModal .fk-call-section-title .material-icons { font-size: 16px; color: var(--fk-list-accent); }
+    #callingDetailsModal .fk-call-info { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 18px; }
+    #callingDetailsModal .fk-call-info .is-wide { grid-column: span 2; }
+    #callingDetailsModal .fk-call-info span {
+      display: block; color: var(--fk-list-muted); font-size: 11px; letter-spacing: .3px; margin-bottom: 3px;
+    }
+    #callingDetailsModal .fk-call-info b {
+      display: block; color: var(--fk-list-text); font-size: 14px; font-weight: 500; word-break: break-word;
+    }
+
+    #callingDetailsModal .fk-call-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+    #callingDetailsModal .fk-call-stat {
+      position: relative; padding: 14px 16px; border-radius: 14px; overflow: hidden;
+      background: var(--fk-list-row); border: 1px solid var(--fk-list-border);
+    }
+    #callingDetailsModal .fk-call-stat::after {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      background: linear-gradient(180deg, var(--fk-list-accent), var(--fk-list-accent-2, #3b82f6));
+    }
+    #callingDetailsModal .fk-call-stat .material-icons { float: right; font-size: 20px; color: var(--fk-list-dim); }
+    #callingDetailsModal .fk-call-stat strong {
+      display: block; color: var(--fk-list-heading); font-family: 'Sora', 'Inter', sans-serif; font-size: 24px; font-weight: 700; line-height: 1.1;
+    }
+    #callingDetailsModal .fk-call-stat span { display: block; margin-top: 4px; color: var(--fk-list-muted); font-size: 12px; }
+
+    #callingDetailsModal .fk-call-notes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    #callingDetailsModal .fk-call-notes .form-group { margin-bottom: 8px !important; }
+    #callingDetailsModal .modal-footer {
+      display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px 18px;
+      border-top: 1px solid var(--fk-list-border);
+    }
+    #callingDetailsModal .modal-footer .btn { margin: 0; }
+    #callingDetailsModal .fk-call-empty { padding: 30px 0; text-align: center; color: var(--fk-list-muted); }
+    #callingDetailsModal .fk-call-loading { opacity: .45; pointer-events: none; transition: opacity .15s ease; }
+
+    @media (max-width: 991px) {
+      #callingDetailsModal .fk-call-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      #callingDetailsModal .fk-call-info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 575px) {
+      #callingDetailsModal .fk-call-info, #callingDetailsModal .fk-call-notes { grid-template-columns: 1fr; }
+      #callingDetailsModal .fk-call-info .is-wide { grid-column: auto; }
+      #callingDetailsModal .fk-call-toolbar .form-group { width: 100%; }
+    }
   </style>
 
-  <div class="modal fade" id="callingDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+  <div class="modal fade" id="callingDetailsModal" tabindex="-1" role="dialog" aria-labelledby="callTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="fk-call-head">
-          <div class="fk-call-head-icon"><i class="material-icons">call</i></div>
-          <h4>Calling Details <small id="callUserName"></small></h4>
+          <div class="fk-call-avatar"><i class="material-icons">call</i></div>
+          <div class="fk-call-title">
+            <h4 id="callTitle">Calling Details</h4>
+            <p id="callSubtitle"></p>
+          </div>
           <button type="button" class="fk-call-close" data-dismiss="modal" aria-label="Close"><i class="material-icons">close</i></button>
         </div>
         <div class="modal-body">
           <input type="hidden" id="callUserId">
-          <div class="fk-call-date">
-            <label for="callDate">Date</label>
-            <input type="date" id="callDate" max="{{ date('Y-m-d') }}">
+          <div class="fk-call-toolbar">
+            <div class="form-group">
+              <label for="callDate">Date</label>
+              <input type="date" class="form-control" id="callDate" max="{{ date('Y-m-d') }}">
+            </div>
+            <span class="fk-call-status" id="callStatus" style="display:none"></span>
           </div>
-          <div class="fk-call-grid" id="callGrid"></div>
-          <div class="fk-call-field">
-            <label for="callRemark">Calling Remark</label>
-            <textarea id="callRemark" placeholder="Enter calling remark..."></textarea>
-          </div>
-          <div class="fk-call-field">
-            <label for="callIssue">Issue</label>
-            <textarea id="callIssue" placeholder="Enter issue..."></textarea>
+          <div id="callContent"></div>
+          <div class="fk-call-notes">
+            <div class="form-group">
+              <label for="callRemark">Calling Remark</label>
+              <textarea class="form-control" id="callRemark" placeholder="What did the employee say on the call?"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="callIssue">Issue</label>
+              <textarea class="form-control" id="callIssue" placeholder="Any issue raised by the employee"></textarea>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-info" id="callSubmit">Submit</button>
+          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="callSubmit">Save Remark</button>
         </div>
       </div>
     </div>
@@ -419,20 +512,43 @@
       });
 
       // ---------- Calling details popup ----------
-      var callFields = [
-        ['zone', 'Zone'], ['branch', 'Branch'],
-        ['employee_code', 'Employee Code'], ['employee_name', 'Employee Name'],
-        ['designation', 'Designation'], ['head_quarter', 'Head Quarters'],
-        ['date_of_joining', 'Date Of Joining'], ['date', 'Date'],
-        ['punchin_time', 'Punchin Time'], ['punchout_time', 'Punchout Time'],
-        ['worked_time', 'Total Working Time'], ['working_type', 'Working Type'],
-        ['first_checkin_time', 'First Customer Checkin Time'], ['last_checkout_time', 'Last Customer Checkout Time'],
-        ['total_visit', 'Total Visit'], ['total_order', 'Total Order'],
-        ['retailer_registered', 'Total Retailer Registered'], ['influencer_registered', 'Total Influencer Registered']
+      var callSections = [
+        { title: 'Employee', icon: 'badge', fields: [
+          ['zone', 'Zone'], ['branch', 'Branch'], ['employee_code', 'Employee Code'],
+          ['designation', 'Designation'], ['head_quarter', 'Head Quarters'], ['date_of_joining', 'Date Of Joining']
+        ] },
+        { title: 'Attendance', icon: 'schedule', fields: [
+          ['punchin_time', 'Punch In'], ['punchout_time', 'Punch Out'], ['worked_time', 'Total Working Time'],
+          ['working_type', 'Working Type', true], ['first_checkin_time', 'First Customer Check-in'],
+          ['last_checkout_time', 'Last Customer Check-out']
+        ] }
+      ];
+      var callStats = [
+        ['total_visit', 'Total Visits', 'storefront'], ['total_order', 'Total Orders', 'shopping_cart'],
+        ['retailer_registered', 'Retailers Registered', 'add_business'], ['influencer_registered', 'Influencers Registered', 'engineering']
       ];
 
       function escapeHtml(value) {
         return $('<div>').text(value).html();
+      }
+
+      function callValue(v) {
+        return (v === null || v === undefined || v === '') ? '-' : escapeHtml(v);
+      }
+
+      function callNotify(type, message) {
+        if (window.Swal && Swal.fire) {
+          Swal.fire({ icon: type, title: message, timer: type === 'success' ? 1800 : undefined, showConfirmButton: type !== 'success' });
+        } else {
+          alert(message);
+        }
+      }
+
+      function prettyDate(ymd) {
+        if (!ymd) return '';
+        var p = ymd.split('-');
+        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return p[2] + ' ' + months[parseInt(p[1], 10) - 1] + ' ' + p[0];
       }
 
       function yesterday() {
@@ -450,17 +566,45 @@
           dataType: 'json',
           success: function(res) {
             var d = res.data, html = '';
-            $.each(callFields, function(i, f) {
-              var v = d[f[0]];
-              html += '<div class="fk-call-tile"><span>' + f[1] + '</span><b>' +
-                (v === null || v === undefined || v === '' ? '-' : escapeHtml(v)) + '</b></div>';
+
+            $('#callSubtitle').html('<b>' + callValue(d.employee_name) + '</b>' +
+              (d.employee_code ? ' &middot; ' + escapeHtml(d.employee_code) : '') +
+              (d.designation ? ' &middot; ' + escapeHtml(d.designation) : '') +
+              ' &middot; ' + prettyDate(d.date));
+
+            var $status = $('#callStatus').removeClass('is-present is-open is-absent');
+            if (d.punchin_time && d.punchout_time) {
+              $status.addClass('is-present').text('Present');
+            } else if (d.punchin_time) {
+              $status.addClass('is-open').text('Punched in · not punched out');
+            } else {
+              $status.addClass('is-absent').text('No attendance');
+            }
+            $status.show();
+
+            html += '<div class="fk-call-stats">';
+            $.each(callStats, function(i, s) {
+              html += '<div class="fk-call-stat"><i class="material-icons">' + s[2] + '</i><strong>' +
+                (parseInt(d[s[0]], 10) || 0) + '</strong><span>' + s[1] + '</span></div>';
             });
-            $('#callGrid').html(html);
+            html += '</div>';
+
+            $.each(callSections, function(i, section) {
+              html += '<div class="fk-call-section"><div class="fk-call-section-title"><i class="material-icons">' +
+                section.icon + '</i>' + section.title + '</div><div class="fk-call-info">';
+              $.each(section.fields, function(j, f) {
+                html += '<div' + (f[2] ? ' class="is-wide"' : '') + '><span>' + f[1] + '</span><b>' + callValue(d[f[0]]) + '</b></div>';
+              });
+              html += '</div></div>';
+            });
+
+            $('#callContent').html(html);
             $('#callRemark').val(d.calling_remark || '');
             $('#callIssue').val(d.issue || '');
           },
           error: function(xhr) {
-            $('#callGrid').html('<p class="text-danger">' + escapeHtml((xhr.responseJSON && xhr.responseJSON.message) || 'Unable to load details.') + '</p>');
+            $('#callStatus').hide();
+            $('#callContent').html('<div class="fk-call-empty">' + escapeHtml((xhr.responseJSON && xhr.responseJSON.message) || 'Unable to load details.') + '</div>');
           },
           complete: function() { $modal.removeClass('fk-call-loading'); }
         });
@@ -469,9 +613,10 @@
       $('body').on('click', '.fk-call-user', function(e) {
         e.preventDefault();
         $('#callUserId').val($(this).data('user-id'));
-        $('#callUserName').text('— ' + $(this).data('user-name'));
+        $('#callSubtitle').text($(this).data('user-name'));
         $('#callDate').val(yesterday());
-        $('#callGrid').empty();
+        $('#callStatus').hide();
+        $('#callContent').html('<div class="fk-call-empty">Loading...</div>');
         $('#callRemark, #callIssue').val('');
         $('#callingDetailsModal').modal('show');
         loadCallingDetails();
@@ -493,11 +638,11 @@
             issue: $('#callIssue').val()
           },
           success: function(res) {
-            alert(res.message);
             $('#callingDetailsModal').modal('hide');
+            callNotify('success', res.message);
           },
           error: function(xhr) {
-            alert((xhr.responseJSON && xhr.responseJSON.message) || 'Unable to save.');
+            callNotify('error', (xhr.responseJSON && xhr.responseJSON.message) || 'Unable to save.');
           },
           complete: function() { $btn.prop('disabled', false); }
         });
