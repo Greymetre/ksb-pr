@@ -336,8 +336,17 @@
           }
         });
       }
-      userPicker($('#createIssueUser'), $('#createIssueModal'));
-      userPicker($('#resolveIssueSolvedBy'), $('#resolveIssueModal'));
+      // The layout runs $('.select2').select2() on page ready. Select2's own container
+      // also carries the "select2" class, so if our pickers exist first the layout
+      // builds a second, empty select2 on top of them ("No results found").
+      // Build ours after the layout and clear any stray instance it made.
+      setTimeout(function() {
+        $('#createIssueModal, #resolveIssueModal').find('span.select2-hidden-accessible').each(function() {
+          $(this).select2('destroy');
+        });
+        userPicker($('#createIssueUser'), $('#createIssueModal'));
+        userPicker($('#resolveIssueSolvedBy'), $('#resolveIssueModal'));
+      }, 0);
 
       // ---------- Create ----------
       $('#openCreateIssue').on('click', function() {
