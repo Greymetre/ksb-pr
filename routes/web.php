@@ -485,6 +485,11 @@ Route::group(['middleware' => ['auth', 'resource.permission']], function () {
     Route::get('user-calling/details', [\App\Http\Controllers\UserCallingController::class, 'details'])->name('users.calling.details');
     Route::post('user-calling/store', [\App\Http\Controllers\UserCallingController::class, 'store'])->name('users.calling.store');
     Route::get('user-calling/report', [\App\Http\Controllers\UserCallingController::class, 'report'])->name('users.calling.report');
+    // User Issues (raised from the calling popup or created on the screen)
+    Route::get('user-issues', [\App\Http\Controllers\UserIssueController::class, 'index'])->name('user-issues.index');
+    Route::post('user-issues', [\App\Http\Controllers\UserIssueController::class, 'store'])->name('user-issues.store');
+    Route::get('user-issues/download', [\App\Http\Controllers\UserIssueController::class, 'download'])->name('user-issues.download');
+    Route::post('user-issues/{id}/status', [\App\Http\Controllers\UserIssueController::class, 'update'])->whereNumber('id')->name('user-issues.update');
     Route::delete('users/destroy', [UsersController::class, 'massDestroy'])->name('users.massDestroy');
     Route::resource('users', UsersController::class);
     Route::any('users-download', [UsersController::class, 'download'])->name('users.download');

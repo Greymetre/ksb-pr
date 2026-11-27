@@ -2306,7 +2306,7 @@
                         </li>
                         @if(auth()->user()->can('user_access'))
                         <li
-                            class="nav-link {{ request()->is('users*') || request()->is('targets*') || request()->is('permissions*') || request()->is('tours*') || request()->is('usercity*') || request()->is('new-joinings*') ? 'active' : '' }}">
+                            class="nav-link {{ request()->is('users*') || request()->is('targets*') || request()->is('permissions*') || request()->is('tours*') || request()->is('usercity*') || request()->is('user-issues*') || request()->is('new-joinings*') ? 'active' : '' }}">
                             <a class="hoveradd" data-toggle="collapse" href="#userMenu" aria-expanded="false">
                                 <i class="material-icons icon">badge</i>
                                 <!-- <span> {!! trans('panel.sidemenu.users_master') !!}</span> -->
@@ -2386,6 +2386,15 @@
                                             <i class="material-icons icon">location_city</i>
                                             <span>City Assigned</span>
                                             <div class="d-none mobile_hide">City Assigned</div>
+                                        </a>
+                                    </li>
+                                    @endif
+                                    @if(auth()->user()->can('user_feedback_calling'))
+                                    <li class="nav-link-btn {{ request()->is('user-issues*') ? 'active' : '' }}">
+                                        <a class="hoveradd2" href="{{ route('user-issues.index') }}">
+                                            <i class="material-icons icon">report_problem</i>
+                                            <span>User Issues</span>
+                                            <div class="d-none mobile_hide">User Issues</div>
                                         </a>
                                     </li>
                                     @endif

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\CallingReportExport;
 use App\Models\User;
 use App\Models\UserCallingRemark;
+use App\Models\UserIssue;
 use App\Services\UserCallingSummary;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -83,6 +84,8 @@ class UserCallingController extends Controller
         $remark->updated_by = Auth::id();
         $remark->save();
 
+        $this->syncIssue($remark);
+
         return response()->json(['status' => 'success', 'message' => 'Calling details saved successfully.']);
     }
 
@@ -97,6 +100,41 @@ class UserCallingController extends Controller
         $end = Carbon::parse($request->end_date)->toDateString();
 
         return Excel::download(new CallingReportExport($start, $end), "Calling_Report_{$start}_{$end}.xlsx");
+    }
+
+    /**
+     * An issue typed in the calling popup becomes a pending User Issue.
+     * Editing the call again updates (or removes) it until someone starts on it.
+     */
+    private function syncIssue(UserCallingRemark $remark): void
+    {
+        $text = trim((string) $remark->issue);
+        $issue = UserIssue::where('calling_remark_id', $remark->id)->first();
+
+        if ($issue && $issue->status !== 'pending') {
+            return;
+        }
+
+        if ($text === '') {
+            optional($issue)->delete();
+            return;
+        }
+
+        if (!$issue) {
+            UserIssue::create([
+                'user_id' => $remark->user_id,
+                'issue_date' => Carbon::parse($remark->call_date)->toDateString(),
+                'description' => $text,
+                'status' => 'pending',
+                'source' => 'calling',
+                'calling_remark_id' => $remark->id,
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
+            ]);
+            return;
+        }
+
+        $issue->update(['description' => $text, 'updated_by' => Auth::id()]);
     }
 
     /**

@@ -27,7 +27,7 @@ class CallingReportExport implements FromArray, WithHeadings, ShouldAutoSize, Wi
             'Date', 'Zone', 'Branch', 'Employee Code', 'Employee Name', 'Designation', 'Head Quarters',
             'Date of Joining', 'Punchin Time', 'Punchout Time', 'Total Working Time', 'Working Type',
             'First Customer Checkin Time', 'Last Customer Checkout Time', 'Total Visit', 'Total Order',
-            'Total Retailer Registered', 'Total Influencer Registered', 'Calling Remark', 'Issue',
+            'Total Retailer Registered', 'Total Influencer Registered', 'Calling Remark',
             'Called By', 'Called At',
         ];
     }
@@ -57,7 +57,7 @@ class CallingReportExport implements FromArray, WithHeadings, ShouldAutoSize, Wi
                 $d['head_quarter'], $d['date_of_joining'], $d['punchin_time'], $d['punchout_time'], $d['worked_time'],
                 $d['working_type'], $d['first_checkin_time'], $d['last_checkout_time'], $d['total_visit'],
                 $d['total_order'], $d['retailer_registered'], $d['influencer_registered'],
-                $remark->calling_remark, $remark->issue,
+                $remark->calling_remark,
                 optional($remark->createdBy)->name,
                 optional($remark->updated_at)->format('Y-m-d h:i A'),
             ];
@@ -71,7 +71,7 @@ class CallingReportExport implements FromArray, WithHeadings, ShouldAutoSize, Wi
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $sheet->getStyle('A1:V1')->getFont()->setBold(true);
+                $sheet->getStyle('A1:U1')->getFont()->setBold(true);
                 $sheet->freezePane('A2');
             },
         ];
