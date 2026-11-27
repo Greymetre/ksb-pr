@@ -50,7 +50,7 @@ class UsersDataTable extends DataTable
                     }
                 }
                 // Calling details popup (employees only, not customer logins)
-                if (!$query->roles->whereIn('id', config('constants.customer_roles'))->count()) {
+                if (auth()->user()->can('user_feedback_calling') && !$query->roles->whereIn('id', config('constants.customer_roles'))->count()) {
                     $btn = $btn . ' <a type="button" href="#" class="btn btn-just-icon btn-sm fk-call-user" data-user-id="' . $query->id . '" data-user-name="' . e($query->name) . '" title="Calling Details">
                                 <i class="material-icons">call</i>
                               </a>';

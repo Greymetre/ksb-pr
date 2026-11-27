@@ -17,6 +17,14 @@ use Illuminate\Support\Facades\Validator;
  */
 class UserCallingController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            abort_unless(Auth::user() && Auth::user()->can('user_feedback_calling'), 403, '403 Forbidden');
+            return $next($request);
+        });
+    }
+
     public function details(Request $request)
     {
         $validator = Validator::make($request->all(), [
