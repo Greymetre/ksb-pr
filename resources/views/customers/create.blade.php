@@ -253,7 +253,7 @@
 
               <div class="col-md-6">
                 <div class="input_section">
-                  <label class="col-form-label">Working Status@unless($isEditCustomer)<span class="text-danger"> *</span>@endunless</label>
+                  <label class="col-form-label">Working Status @if(!$isEditCustomer)<span class="text-danger"> *</span>@endif</label>
 
                   <div class="form-group has-default bmd-form-group">
                     <select class="form-control select2" name="working_status" style="width: 100%;" {{ $isEditCustomer ? '' : 'required' }} id="working_status">
