@@ -49,6 +49,12 @@ class UsersDataTable extends DataTable
                             </a>';
                     }
                 }
+                // Calling details popup (employees only, not customer logins)
+                if (!$query->roles->whereIn('id', config('constants.customer_roles'))->count()) {
+                    $btn = $btn . ' <a type="button" href="#" class="btn btn-just-icon btn-sm fk-call-user" data-user-id="' . $query->id . '" data-user-name="' . e($query->name) . '" title="Calling Details">
+                                <i class="material-icons">call</i>
+                              </a>';
+                }
                 // if(auth()->user()->can(['user_show']))
                 // {
                 //   $btn = $btn.'<a href="'.url("users/".encrypt($query->id)).'" class="btn btn-theme btn-just-icon btn-sm show" id="'.encrypt($query->id).'" title="'.trans('panel.global.show').' '.trans('panel.user.title_singular').'">
